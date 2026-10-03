@@ -6,10 +6,12 @@ import { object, parse, set, text, JobsError } from '../contracts/workspace/valu
 export const answerCommands = {
     'answer-key': ['--question', '--scope'], 'answer-find': ['--question', '--scope'],
     'answer-get': ['--key', '--include-trashed'], 'answer-reveal': ['--key'],
-    'answer-list': ['--state', '--review-status', '--all-review-statuses', '--query', '--offset', '--limit', '--include-trashed', '--trashed-only'],
+    'answer-list': ['--state', '--review-status', '--all-review-statuses', '--query', '--offset', '--limit', '--include-trashed', '--trashed-only', '--consent-only'],
     'answer-put': ['--input', '--expected-revision', '--remember-sensitive'],
     'answer-observe': ['--input'],
     'answer-semantic-lookup': ['--input'],
+    'answer-consent-candidates': ['--input'],
+    'answer-consent-audit': [],
     'answer-cleanup-preview': [],
     'answer-cleanup-approve': ['--input', '--owner-confirmed'],
     'answer-merge': ['--winner-key', '--source-key', '--expected-winner-revision', '--expected-source-revision'],
@@ -45,7 +47,7 @@ export async function runAnswerCommand(command, repository, options, payload) {
             if (options.has('--all-review-statuses') && options.has('--review-status'))
                 throw new JobsError('answer review filters are mutually exclusive');
             return service.query({ query: options.get('--query') ?? '', state: options.get('--state') ?? null, reviewStatus: options.has('--all-review-statuses') ? null : options.get('--review-status') ?? 'accepted',
-                offset: Number(options.get('--offset') ?? '0'), limit: Number(options.get('--limit') ?? '50'), includeTrashed: options.has('--include-trashed'), trashedOnly: options.has('--trashed-only') });
+                offset: Number(options.get('--offset') ?? '0'), limit: Number(options.get('--limit') ?? '50'), includeTrashed: options.has('--include-trashed'), trashedOnly: options.has('--trashed-only'), consentOnly: options.has('--consent-only') });
         }
         case 'answer-put': return service.put(await payload(), consent, options.has('--expected-revision') ? revision() : null);
         case 'answer-observe': return service.observe(await payload());
@@ -53,6 +55,8 @@ export async function runAnswerCommand(command, repository, options, payload) {
         case 'answer-merge': return new AnswerMergeService(repository).merge(required('--winner-key'), required('--source-key'), revision('--expected-winner-revision'), revision('--expected-source-revision'));
         case 'answer-cleanup-preview': return service.cleanupPreview();
         case 'answer-semantic-lookup': return service.semanticLookup(await payload());
+        case 'answer-consent-candidates': return service.consentCandidates(await payload());
+        case 'answer-consent-audit': return service.consentMigrationPreview();
         case 'answer-update': return service.update(required('--key'), await payload(), revision(), consent);
         case 'answer-review': {
             const status = required('--decision');

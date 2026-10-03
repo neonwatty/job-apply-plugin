@@ -1,6 +1,6 @@
-import { answerKey, answerNames, answerRevision, answerView, fallback, normalizeAnswerQuestion, sameAnswerScope, validateAnswer, validateAnswers } from './answers.js';
+import { answerKey, answerNames, answerRevision, answerView, consentIntent, fallback, normalizeAnswerQuestion, sameAnswerScope, validateAnswer, validateAnswers } from './answers.js';
 import { emptyObject } from './jobs.js';
-import { copy, get, has, int, integer, keys, object, set, string, text, JobsError } from './values.js';
+import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from './values.js';
 const nonblank = (value) => {
     const result = string(value);
     return result !== null && /[^\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]/u.test(result) ? result : null;
@@ -64,6 +64,10 @@ export function applyAnswerMerge(document, operation) {
         throw new JobsError('answer merge winner must be accepted');
     if (!sameAnswerScope(fallback(winner, 'scope', emptyObject()), fallback(source, 'scope', emptyObject()))) {
         throw new JobsError('answer merge requires exact matching scope');
+    }
+    const winnerIntent = consentIntent(winner), sourceIntent = consentIntent(source);
+    if (sourceIntent !== null && (winnerIntent === null || !same(winnerIntent, sourceIntent))) {
+        throw new JobsError('answer merge would discard or change a consent default');
     }
     const winnerQuestion = normalizeAnswerQuestion(nonblank(get(winner, 'question')) ?? winnerKey);
     const aliases = [];

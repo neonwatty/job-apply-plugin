@@ -19,7 +19,7 @@ export function answerSnapshot(raw: string): Document {
 }
 export function answerDraft(record: Document): Document {
   const result = new PythonObject<Value>();
-  for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity']) if (has(record, key)) set(result, key, get(record, key));
+  for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent']) if (has(record, key)) set(result, key, get(record, key));
   return result;
 }
 export function answerPatch(base: Document, draft: Document): Document {
@@ -41,8 +41,10 @@ export function answerMutation(base: Document, draft: Document, remember: boolea
 }
 export const cloneAnswer = (record: Document): Document => copy(record);
 
-export function newAnswerDraft(): Document {
-  return object(parse('{"question":"","aliases":[],"value":"","state":"confirmed","source":"user","scope":{},"fieldClass":"general","sensitivity":"none"}'), 'new answer');
+export function newAnswerDraft(consentOnly = false): Document {
+  return object(parse(consentOnly
+    ? '{"question":"","aliases":[],"value":null,"state":"sensitive","source":"user","scope":{},"fieldClass":"general","sensitivity":"high","consentIntent":{"kind":"opt_in","purpose":""}}'
+    : '{"question":"","aliases":[],"value":"","state":"confirmed","source":"user","scope":{},"fieldClass":"general","sensitivity":"none"}'), 'new answer');
 }
 export function answerCreateMutation(draft: Document, remember: boolean): string {
   const result = new PythonObject<Value>();

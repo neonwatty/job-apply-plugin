@@ -30,6 +30,10 @@ node "<plugin-root>/apps/companion/command.mjs" store answer-list [--state <stat
   [--review-status <accepted|pending|declined> | --all-review-statuses] \
   [--query <text>] [--offset <n>] [--limit <n>] \
   [--include-trashed] [--trashed-only]
+node "<plugin-root>/apps/companion/command.mjs" store answer-list --consent-only
+node "<plugin-root>/apps/companion/command.mjs" store answer-consent-audit
+node "<plugin-root>/apps/companion/command.mjs" store answer-consent-candidates \
+  --input <private-json-containing-consentIntent-and-scope>
 node "<plugin-root>/apps/companion/command.mjs" store answer-observe --input <observation.json>
 node "<plugin-root>/apps/companion/command.mjs" store answer-review \
   --key <answer-key> --decision <accepted|declined> \
@@ -84,3 +88,8 @@ narrower scope. The [consent-intent workflow](../../job-apply/references/consent
 matches the live purpose, requests current-use action approval, and maps the
 decision to a checkbox, menu, radio group, or requested assent phrase. Remembering
 the answer alone never authorizes the action.
+Reviewed consent defaults carry a `consentIntent` purpose ID and kind. Marking
+an existing sensitive answer is an exact-revision metadata edit that preserves
+its value, key, scope, and retention marker. The audit command suggests
+possible classifications but never modifies records. Candidate lookup returns
+redacted metadata only and grants no current-use or browser authority.

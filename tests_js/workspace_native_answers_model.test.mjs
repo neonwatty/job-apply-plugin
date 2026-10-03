@@ -80,3 +80,16 @@ test('create consent is explicit and each new draft starts fresh', () => {
   assert.equal(serialize(get(model.newAnswerDraft(), 'question')), '""');
   assert.equal(get(record(model.answerCreateMutation(model.newAnswerDraft(), false)), 'rememberSensitive'), false);
 });
+test('consent draft starts sensitive and metadata-only edits do not replace hidden values', () => {
+  const fresh = model.newAnswerDraft(true);
+  assert.equal(serialize(get(fresh, 'state')), '"sensitive"');
+  assert.equal(serialize(get(fresh, 'sensitivity')), '"high"');
+  assert.equal(serialize(get(get(fresh, 'consentIntent'), 'kind')), '"opt_in"');
+  const base = record('{"key":"sms","revision":1,"question":"Recruiting texts?","state":"sensitive","sensitivity":"high","valueRedacted":true,"consentIntent":{"kind":"opt_in","purpose":"recruiting_sms"}}');
+  const draft = model.answerDraft(base);
+  set(draft, 'consentIntent', parse('{"kind":"opt_in","purpose":"recruiting_messages"}'));
+  assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch,
+    { consentIntent: { kind: 'opt_in', purpose: 'recruiting_messages' } });
+  set(draft, 'consentIntent', null);
+  assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch, { consentIntent: null });
+});

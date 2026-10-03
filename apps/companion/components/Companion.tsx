@@ -19,7 +19,7 @@ import './title-discovery.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
-type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention'|'accounts'|'automation'|'settings'|'trash';
+type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'consents'|'extractions'|'attention'|'accounts'|'automation'|'settings'|'trash';
 export default function Companion() {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
@@ -123,6 +123,7 @@ export default function Companion() {
                             {navButton('facts','Facts')}
                             {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
                             {nativeWorkspace&&navButton('answers','Answers')}
+                            {nativeWorkspace&&navButton('consents','Consent defaults')}
                         </div>
                     </div>
                     <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
@@ -162,7 +163,7 @@ export default function Companion() {
             client={client}
             openJobs={() => navigate('jobs')}
             openWorkspace={nativeWorkspace ? navigate : undefined}
-            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged} openExtractions={()=>navigate('extractions')}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged} openResumes={()=>navigate('resumes')}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:tab==='settings'?<ApplicationSettings client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeWorkspace} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} workspaceChanged={refreshShellCounts} />):!error&&<p>Loading workspace…
+            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged} openExtractions={()=>navigate('extractions')}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged} openResumes={()=>navigate('resumes')}/>:tab==='answers'||tab==='consents'?<Answers key={tab} client={client} dirtyChanged={dirtyChanged} consentOnly={tab==='consents'}/>:tab==='settings'?<ApplicationSettings client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeWorkspace} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} workspaceChanged={refreshShellCounts} />):!error&&<p>Loading workspace…
             </p>}
         </main>
     </>;

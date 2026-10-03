@@ -169,7 +169,7 @@ export const storeRequiredOptions: Record<string, string[]> = {
 
 const booleanOptions = new Set([
   '--include-trashed', '--trashed-only', '--replace', '--remember-sensitive',
-  '--all-review-statuses', '--summary-only', '--owner-confirmed',
+  '--all-review-statuses', '--consent-only', '--summary-only', '--owner-confirmed',
   '--owner-confirmed-not-submitted', '--user-confirmed',
 ]);
 function storeUsage(command?: string): string {

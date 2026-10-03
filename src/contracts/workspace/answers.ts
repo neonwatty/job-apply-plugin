@@ -7,10 +7,26 @@ import type { Document, Value } from './values.js';
 export const answerStates = new Set(['confirmed', 'inferred', 'missing', 'sensitive']);
 export const answerReviews = new Set(['accepted', 'pending', 'declined']);
 export const answerSensitivities = new Set(['none', 'personal', 'high']);
-export const answerPatchFields = new Set(['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity']);
+export const answerPatchFields = new Set(['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent']);
 export const fallback = (record: Document, key: string, value: Value): Value => has(record, key) ? get(record, key) : value;
 export const answerRevision = (record: Document): bigint => int(fallback(record, 'revision', integer(1n)))!;
 export const sensitiveAnswer = (record: Document): boolean => string(get(record, 'state')) === 'sensitive' || string(fallback(record, 'sensitivity', text('none'))) !== 'none';
+export const consentKinds = new Set(['opt_in', 'acknowledgment', 'agreement']);
+const consentPurposePattern = /^[a-z][a-z0-9_]{0,63}$/;
+export function validateConsentIntent(value: Value): Document {
+  const intent = object(value, 'consent intent');
+  if (intent.size !== 2 || !has(intent, 'kind') || !has(intent, 'purpose')
+    || !consentKinds.has(string(get(intent, 'kind'))!)
+    || !consentPurposePattern.test(string(get(intent, 'purpose')) ?? '')) {
+    throw new JobsError('consent intent is invalid');
+  }
+  return intent;
+}
+export function consentIntent(record: Document): Document | null {
+  const value = get(record, 'consentIntent');
+  if (value === null) return null;
+  return validateConsentIntent(value);
+}
 const whitespace = /[\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/u;
 export function normalizeAnswerQuestion(question: string): string {
   if (!question.split(whitespace).join('')) throw new JobsError('question must be a non-empty string');
@@ -49,6 +65,10 @@ export function validateAnswer(key: string, value: Value): Document {
   if (!answerReviews.has(string(fallback(record, 'reviewStatus', text('accepted')))!)) throw new JobsError('answer record review status is unsupported');
   if (!answerSensitivities.has(string(fallback(record, 'sensitivity', text('none')))!)) throw new JobsError('answer record sensitivity is unsupported');
   if (!/^[a-z][a-z0-9_]{0,63}$/.test(string(fallback(record, 'fieldClass', text('general'))) ?? '')) throw new JobsError('answer record field class is invalid');
+  if (consentIntent(record) !== null && (string(get(record, 'state')) !== 'sensitive'
+    || string(get(record, 'sensitivity')) !== 'high')) {
+    throw new JobsError('consent defaults must be sensitive with high sensitivity');
+  }
   if (get(record, 'question') !== null && string(get(record, 'question')) === null) throw new JobsError('answer record question must be a string');
   const aliases = fallback(record, 'aliases', []);
   if (!Array.isArray(aliases) || aliases.some(alias => string(alias) === null)) throw new JobsError('answer record aliases must be strings');

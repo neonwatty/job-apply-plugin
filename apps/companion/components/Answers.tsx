@@ -7,11 +7,12 @@ import { string, get, int, object, parse, serialize } from '../../../src/contrac
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
-export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void }) {
+export function Answers({ client, dirtyChanged, consentOnly = false }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean }) {
   const [pendingBusy, setPendingBusy] = useState(false);
   const [mergeBusy, setMergeBusy] = useState(false);
   const [cleanupRevision, setCleanupRevision] = useState(0);
   const [items, setItems] = useState<Document[]>([]);
+  const [migrationSuggestions, setMigrationSuggestions] = useState<Document[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('accepted');
@@ -43,18 +44,24 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
     setLoading(true);
     setError('');
     try {
-      const raw = await client.answerRequest('/api/answers/query', 'POST', JSON.stringify({ query, reviewStatus: status === 'all' ? null : status }), controller.signal);
+      const [raw, auditRaw] = await Promise.all([
+        client.answerRequest('/api/answers/query', 'POST', JSON.stringify({ query, reviewStatus: status === 'all' ? null : status, consentOnly }), controller.signal),
+        consentOnly ? client.answerRequest('/api/answers/consent-audit', 'GET', undefined, controller.signal) : Promise.resolve(null),
+      ]);
       const page = object(parse(raw), 'answers response'), values = get(page, 'items');
       if (!Array.isArray(values)) throw Error('Invalid answer list');
+      const suggestions = auditRaw === null ? [] : get(object(parse(auditRaw), 'consent audit'), 'suggestions');
+      if (!Array.isArray(suggestions)) throw Error('Invalid consent audit');
       if (version !== listGeneration.current) return;
       setItems(values.map(value => object(value, 'answer')));
+      setMigrationSuggestions(suggestions.map(value => object(value, 'suggestion')));
       setLoaded(true);
       if (get(page, 'hasMore') === true) setNotice('Showing the first 50 results. Narrow your search to find more.');
     } catch (failure) {
       if (version === listGeneration.current && !controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load answers');
     } finally { if (version === listGeneration.current) setLoading(false); }
   }
-  useEffect(() => { void refreshList(); }, [client]);
+  useEffect(() => { void refreshList(); }, [client, consentOnly]);
   async function select(key: string, refresh = false, reveal = false) {
     if (pendingBusy || mergeBusy || busy) return;
     if (!refresh && dirty && !confirm('Discard your unsaved answer changes?')) return;
@@ -94,7 +101,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
     generation.current++;
     setCreating(true);
     setBase(null);
-    setDraft(newAnswerDraft());
+    setDraft(newAnswerDraft(consentOnly));
     setLatest(null);
     setRemember(false);
     setInvalid(false);
@@ -154,13 +161,22 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
       } catch { /* Preserve the original mutation error and draft. */ }
     } finally { if (version === generation.current) setBusy(false); }
   }
+  const label = consentOnly ? 'Consent defaults' : 'Answers';
   return <section className="answers-workspace" aria-labelledby="answers-workspace-title">
     <header className="workspace-hero">
-      <div className="workspace-hero-copy"><p className="eyebrow">Answers workspace</p><h1 id="answers-workspace-title">Reusable answers, reviewed by you.</h1><p>Observed questions and reusable answers share one canonical local record. Sensitive values stay hidden until you explicitly reveal them.</p></div>
-      <div className="workspace-hero-actions"><button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy} onClick={() => void refreshList()}>Refresh answers</button><button className="primary" disabled={pendingBusy || mergeBusy || busy} onClick={startNew}>New answer</button></div>
+      <div className="workspace-hero-copy"><p className="eyebrow">{label} workspace</p><h1 id="answers-workspace-title">{consentOnly ? 'Consent choices, saved by purpose.' : 'Reusable answers, reviewed by you.'}</h1><p>{consentOnly ? 'A saved choice suggests an action on a matching form. The live notice and current-form approval are still required. Sensitive decisions remain hidden until you reveal them.' : 'Observed questions and reusable answers share one canonical local record. Sensitive values stay hidden until you explicitly reveal them.'}</p></div>
+      <div className="workspace-hero-actions"><button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy} onClick={() => void refreshList()}>Refresh {label.toLowerCase()}</button><button className="primary" disabled={pendingBusy || mergeBusy || busy} onClick={startNew}>New {consentOnly ? 'consent default' : 'answer'}</button></div>
     </header>
+    {consentOnly && migrationSuggestions.length > 0 && <section className="workspace-panel" aria-label="Possible saved consent choices">
+      <h2>Review existing answers</h2><p>These answers may belong in Consent defaults. Review each purpose and scope before marking it; this suggestion does not change saved data.</p>
+      <ul>{migrationSuggestions.map(item => <li key={string(get(item, 'key'))}>
+        <button className="text-action" onClick={() => void select(string(get(item, 'key'))!)}>{string(get(item, 'question'))}</button>
+        {' · Suggested purpose: '}{string(get(object(get(item, 'suggestedIntent'), 'intent'), 'purpose'))}
+        {get(item, 'requiresRetentionConsent') === true && ' · Needs your permission to remember this as a sensitive decision'}
+      </li>)}</ul>
+    </section>}
     <section className="workspace-panel answers-panel" aria-labelledby="answer-library-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="answer-library-heading">Answers</h2></div>
+      <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="answer-library-heading">{label}</h2></div>
         <form className="answer-filters" onSubmit={event => { event.preventDefault(); void refreshList(); }}>
           <label>Find answers<input type="search" placeholder="Question or alias" value={query} onChange={event => setQuery(event.target.value)} /></label>
           <label>Review status<select aria-label="Review status" value={status} onChange={event => setStatus(event.target.value)}>
@@ -171,11 +187,18 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
       </div>
       <p className="workspace-status" role="status">{loading ? 'Loading answers…' : notice || (loaded ? `${items.length} ${items.length === 1 ? 'answer' : 'answers'} shown.` : '')}</p>
       {error && <p className="error" role="alert">{error}</p>}
-      {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : 'No answers with this review status.'}</strong><span>Create an answer or wait for an agent to observe a question.</span></div>}
+      {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : `No ${label.toLowerCase()} with this review status.`}</strong><span>{consentOnly ? 'Create a purpose-specific consent default or mark an existing answer as one in Answers.' : 'Create an answer or wait for an agent to observe a question.'}</span></div>}
       <ul className="answer-list-native">{items.map(item => {
         const key = string(get(item, 'key'))!;
         const state = get(item, 'valueRedacted') === true ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value';
+        const intent = get(item, 'consentIntent');
+        const purpose = intent ? string(get(object(intent, 'consent intent'), 'purpose'))?.replaceAll('_', ' ') : null;
+        const kind = intent ? string(get(object(intent, 'consent intent'), 'kind'))?.replaceAll('_', ' ') : null;
+        const scope = get(item, 'scope');
+        const employer = scope ? string(get(object(scope, 'scope'), 'employer')) : null;
+        const scopeLabel = scope && object(scope, 'scope').size ? employer ?? 'Specific scope' : 'General';
         return <li key={key}><div><span className="answer-question-mark" aria-hidden="true">Q</span><button className="text-action" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(key)}>{string(get(item, 'question')) || key}</button></div>
+          {consentOnly && <span className="answer-value-state">{purpose} · {kind} · {scopeLabel} · {string(get(item, 'source')) ?? 'Unknown source'}</span>}
           <span className={get(item, 'valueRedacted') === true ? 'answer-value-state sensitive' : 'answer-value-state'}>{state}</span>
           <span className="answer-row-action" aria-hidden="true">Open →</span>
         </li>;
@@ -222,7 +245,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
       </form>
     </div> : <div className="workspace-empty answer-editor-empty"><strong>Select an answer to review.</strong><span>Choose a question from the library or create a new reusable answer.</span></div>}
     </section>
-    <div className="answer-support-grid">
+    {!consentOnly && <div className="answer-support-grid">
       <AnswerCleanup client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setMergeBusy} onMerged={() => { setBase(null); setDraft(null); setLatest(null); setRemember(false); setInvalid(false); setCreating(false); setNotice('Answers merged.'); setCleanupRevision(value => value + 1); void refreshList(); }} />
       <PendingAnswers client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setPendingBusy} onOpenAnswer={key => { void select(key); }} onResolved={() => {
         setBase(null); setDraft(null); setLatest(null); setRemember(false); setInvalid(false); setCreating(false);
@@ -230,6 +253,6 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
         setCleanupRevision(value => value + 1);
         void refreshList();
       }} />
-    </div>
+    </div>}
   </section>;
 }

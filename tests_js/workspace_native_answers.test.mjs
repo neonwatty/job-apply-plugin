@@ -57,6 +57,77 @@ test('sensitive values require consent and stay out of every incidental projecti
   await assert.rejects(service.update('secret', fromJSON({ value: 'new-private-test-value' }), 2n), /remember consent/);
   assert.equal(writes(), 2);
 });
+test('consent classification preserves sensitive value, identity and retention marker', async () => {
+  const { service, writes } = fixture();
+  const saved = plain(await service.put(fromJSON({ key: 'sms', question: 'Recruiting texts?', state: 'sensitive',
+    value: 'No', sensitivity: 'high', fieldClass: 'sms_consent', scope: {} }), true));
+  const before = plain(await service.get('sms', true));
+  const audit = plain(await service.consentMigrationPreview());
+  assert.equal(audit.mutated, false);
+  assert.equal(audit.suggestions[0].key, 'sms');
+  assert.equal(audit.suggestions[0].requiresRetentionConsent, false);
+  assert.equal(JSON.stringify(audit).includes('"No"'), false);
+  assert.equal(writes(), 1);
+  const intent = { kind: 'opt_in', purpose: 'recruiting_sms' };
+  await service.update('sms', fromJSON({ consentIntent: intent }), BigInt(saved.revision));
+  const after = plain(await service.get('sms', true));
+  assert.equal(after.key, before.key);
+  assert.equal(after.value, before.value);
+  assert.equal(after.rememberedWithConsentAt, before.rememberedWithConsentAt);
+  assert.deepEqual(after.consentIntent, intent);
+  assert.equal(plain(await service.query({ consentOnly: true })).total, 1);
+  await assert.rejects(service.update('sms', fromJSON({ consentIntent: null }), 1n), /revision conflict/);
+  await assert.rejects(service.put(fromJSON({ key: 'bad', question: 'Terms?', state: 'confirmed', value: 'yes',
+    sensitivity: 'none', consentIntent: { kind: 'agreement', purpose: 'terms' } })), /must be sensitive/);
+});
+
+test('consent audit flags ordinary answers that need new retention permission', async () => {
+  const { service } = fixture();
+  await service.put(fromJSON({ key: 'old-sms', question: 'Recruiting texts?', state: 'confirmed',
+    value: 'No', sensitivity: 'none', fieldClass: 'sms_consent' }));
+  const audit = plain(await service.consentMigrationPreview());
+  assert.equal(audit.suggestions[0].requiresRetentionConsent, true);
+  const patch = fromJSON({ state: 'sensitive', sensitivity: 'high', consentIntent: audit.suggestions[0].suggestedIntent });
+  await assert.rejects(service.update('old-sms', patch, 1n), /remember consent/);
+  await service.update('old-sms', patch, 1n, true);
+  const saved = plain(await service.get('old-sms', true));
+  assert.equal(saved.value, 'No');
+  assert.ok(saved.rememberedWithConsentAt);
+});
+
+test('consent candidates prefer exact scope, allow explicit general scope, and never reveal values', async () => {
+  const { repository, service } = fixture();
+  const intent = { kind: 'opt_in', purpose: 'recruiting_sms' };
+  for (const [key, scope, value] of [['general', {}, 'No'], ['zillow', { employer: 'Zillow' }, 'Yes'],
+    ['other', { employer: 'Other' }, 'No']]) {
+    await service.put(fromJSON({ key, question: `${key} recruiting SMS?`, state: 'sensitive', value,
+      scope, sensitivity: 'high', fieldClass: 'sms_consent', consentIntent: intent }), true);
+  }
+  await service.put(fromJSON({ key: 'blank', question: 'Unchosen recruiting texts?', state: 'sensitive',
+    value: '  ', scope: {}, sensitivity: 'high', fieldClass: 'sms_consent', consentIntent: intent }), true);
+  await service.put(fromJSON({ key: 'airbnb', question: 'Do you have a non-compete agreement?',
+    state: 'confirmed', value: 'No', fieldClass: 'agreement' }));
+  await service.put(fromJSON({ key: 'old-blank', question: 'Old unanswered recruiting texts?',
+    state: 'confirmed', value: ' ', fieldClass: 'sms_consent' }));
+  await service.observe(fromJSON({ question: 'Zillow recurring recruiting texts?', scope: { employer: 'Zillow' },
+    fieldClass: 'sms_consent', state: 'missing', sensitivity: 'high' }));
+  const request = fromJSON({ consentIntent: intent, scope: { employer: 'Zillow' } });
+  const result = plain(await service.consentCandidates(request));
+  assert.deepEqual(result.candidates.map(item => [item.key, item.scopeMatch]),
+    [['zillow', 'exact'], ['general', 'general']]);
+  assert.equal(result.currentFormApprovalRequired, true);
+  assert.equal(JSON.stringify(result).includes('"Yes"'), false);
+  assert.equal(JSON.stringify(result).includes('"No"'), false);
+  const audit = plain(await service.consentMigrationPreview());
+  assert.equal(audit.suggestions.length, 0);
+  assert.equal(audit.pendingObservations.length, 1);
+  assert.deepEqual(plain(await runAnswerCommand('answer-consent-candidates', repository, new Map(), async () => request)).candidates.map(item => item.key),
+    ['zillow', 'general']);
+  const http = await answerHttp(repository, 'POST', '/api/answers/consent-candidates', serialize(request));
+  assert.deepEqual(JSON.parse(http.body).candidates.map(item => item.key), ['zillow', 'general']);
+  assert.equal(JSON.parse((await answerHttp(repository, 'POST', '/api/answers/query', '{"consentOnly":true}')).body).total, 4);
+  await assert.rejects(service.consentCandidates(fromJSON({ consentIntent: intent, scope: {}, extra: true })), /invalid/);
+});
 test('revision/collision/review rejection leaves canonical bytes unchanged and unknown data lossless', async () => {
   const f = fixture();
   await f.service.put(parse('{"key":"a","question":"How many?","state":"confirmed","value":9007199254740993,"scope":{"number":1.0}}'));
