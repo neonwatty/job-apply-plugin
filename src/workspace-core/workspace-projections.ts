@@ -45,7 +45,7 @@ function selectedClaim(tx: ProjectionTransaction, id: string): Document | null {
   const claim = object(raw, 'claim');
   return label(claim, 'jobId') === id ? claim : null;
 }
-const sessionFields = ['attemptRevision', 'readiness', 'blockers', 'browserHandoff'];
+const sessionFields = ['attemptRevision', 'readiness', 'blockers', 'browserHandoff', 'handoffChecklist'];
 const reasons = [
   ['expired_agent_attempt', 'Expired agent attempt', 'Resume this attempt with the CLI claim-recover command for this job.'],
   ['claimless_interrupted_attempt', 'Interrupted agent attempt', 'Reset this claimless attempt to needs_info with the revision-bound CLI job-transition command, then resolve it before starting a new attempt.'],
@@ -62,6 +62,9 @@ function comparePriority(a: Document, b: Document): number {
   return rank(a) === rank(b) ? 0 : rank(a) > rank(b) ? -1 : 1;
 }
 function browserOnly(session: Document): boolean {
+  const missingAnswerActions = new Set(['passport_country', 'country_of_residence', 'age_over_18',
+    'profile_fact', 'saved_answer', 'required_question', 'consent_choice', 'other_required_field']);
+  if (((get(session, 'handoffChecklist') ?? []) as Value[]).some(item => missingAnswerActions.has(string(item) ?? ''))) return false;
   const handoff = get(session, 'browserHandoff');
   if (handoff === null) return false;
   const expected = doc({state:'required', reasonCode:'unsupported-control'});

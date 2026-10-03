@@ -1,6 +1,7 @@
 import { fallback } from '../contracts/workspace/answers.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fields, requireCondition as check } from '../contracts/workspace/answer-session-fields.js';
+import { validateHandoffChecklist } from '../contracts/workspace/handoff-checklist.js';
 import { projectStoredAnswerSession, safeAnswerSessionId, validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
 import { buildClaimPending, claimSessionObject, currentClaimApprovals } from '../contracts/workspace/claim-session-pending.js';
 import { copy, fromJSON, get, has, int, object, parse, same, serialize, set, string, text, truth, JobsError } from '../contracts/workspace/values.js';
@@ -21,7 +22,7 @@ export interface SessionRepository {
 }
 
 const inputFields = ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys',
-  'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff'];
+  'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff', 'handoffChecklist'];
 const agentTypes: Record<string, string> = {
   'login-required': 'browser_handoff', 'captcha-required': 'browser_handoff',
   'mfa-required': 'browser_handoff', 'email-verification-required': 'browser_handoff',
@@ -57,6 +58,8 @@ export class SessionService {
     return this.repository.sessionTransaction(async transaction => {
       if (!jobAllowsMutation(await transaction.canonicalJob(id))) throw new JobsError('canonical job sessions require a coordinator operation');
       const stored = await transaction.load(id), existing = stored === null ? null : projectStoredAnswerSession(stored, id);
+      const checklist = fallback(incoming, 'handoffChecklist', existing ? fallback(existing, 'handoffChecklist', []) : []);
+      validateHandoffChecklist(checklist);
       const answers = await transaction.answers(), timestamp = this.now();
       const atsPresent = has(incoming, 'ats') || existing !== null && has(existing, 'ats');
       const ats = has(incoming, 'ats') ? get(incoming, 'ats')
@@ -110,6 +113,7 @@ export class SessionService {
       set(result, 'status', status); set(result, 'answerKeys', clone(answerKeys)); set(result, 'pendingFields', pending);
       set(result, 'attemptRevision', attempt); set(result, 'readiness', readiness); set(result, 'blockers', unique);
       set(result, 'browserHandoff', handoff);
+      if (has(incoming, 'handoffChecklist') || existing && has(existing, 'handoffChecklist')) set(result, 'handoffChecklist', clone(checklist));
       set(result, 'approvals', currentClaimApprovals(existing, pending, answers, attempt));
       const created = get(incoming, 'createdAt');
       if (truth(created)) set(result, 'createdAt', created);

@@ -50,7 +50,7 @@ If the embedded control remains inaccessible, a direct form on the same ATS may 
 
 If the direct control also fails, save value-free progress and use the `unsupported-control` browser handoff. Report the observed control failure without proposing a permission change that has not been verified as the cause.
 
-Before that handoff, finish and verify every other field supported by the current form, including permitted saved answers, approved consent actions, and conditional questions. Recheck earlier fields after the failed upload because the form may rerender. For multi-selects, count a visible selected chip as a selection even when the underlying text input is empty. Leave only the failed upload, unapproved consent or authentication, and final submission for the owner; list those remaining actions by field name without values. Preserve the visible draft. An unresolved required upload cannot support `awaiting_review`.
+Before that handoff, finish and verify every other field supported by the current form, including permitted saved answers, approved consent actions, and conditional questions. Recheck earlier fields after the failed upload because the form may rerender. For multi-selects, count a visible selected chip as a selection even when the underlying text input is empty. Leave only the failed upload, unapproved consent or authentication, and final submission for the owner; list those remaining actions by field name without values and record the matching closed `handoffChecklist` codes under [durable handoff](application.md#durable-to-do-checklist-for-a-needs-attention-handoff). Preserve the visible draft. An unresolved required upload cannot support `awaiting_review`.
 
 ---
 

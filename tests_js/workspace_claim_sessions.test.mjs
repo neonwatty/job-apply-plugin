@@ -76,6 +76,24 @@ function native(item) {
   } catch (error) { return {error:error.message}; }
   finally { assert.deepEqual([incoming,context.answers,context.existing].map(serialize),before,'inputs must be unchanged'); }
 }
+test('Needs Attention keeps a closed field checklist without applicant values',()=>{
+  const item=base();
+  item.incoming={status:'active',pendingFields:[],blockers:[{type:'browser_handoff',code:'unsupported-control'}],
+    handoffChecklist:['resume_upload','passport_country','country_of_residence','age_over_18']};
+  item.target='needs_info';
+  const result=native(item);
+  assert.deepEqual(result.session?.handoffChecklist,item.incoming.handoffChecklist);
+  assert.doesNotMatch(JSON.stringify(result),/PRIVATE|https:|filename|filepath/iu);
+  item.incoming.handoffChecklist=['required_question','required_question'];
+  assert.deepEqual(native(item).session?.handoffChecklist,item.incoming.handoffChecklist);
+  for (const checklist of [Array(33).fill('required_question'),['PRIVATE_RESUME'],[{code:'resume_upload',value:'PRIVATE'}]]) {
+    item.incoming.handoffChecklist=checklist;
+    assert.match(native(item).error,/handoff checklist/iu);
+  }
+  item.incoming={status:'review',readinessInput:readyPacket(),handoffChecklist:['resume_upload']};
+  item.target='awaiting_review';
+  assert.match(native(item).error,/awaiting_review requires complete/iu);
+});
 function normalize(result, item) {
   const references = new Map();
   const existing = new Set((item.context.existing?.pendingFields ?? []).map(field => field.reference));

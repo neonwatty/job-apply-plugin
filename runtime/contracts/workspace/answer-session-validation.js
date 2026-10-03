@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { answerStates, fallback } from './answers.js';
 import { canonicalJson } from './canonical-json.js';
+import { validateHandoffChecklist } from './handoff-checklist.js';
 import { casefold } from './casefold.js';
 import { copy, fromJSON, get, has, int, object, parse, same, serialize, set, string, text, JobsError } from './values.js';
 import { agentCodes, fields, matches, member, optionalStrings, positive, readinessCodes, requireCondition as check, validateApprovals, validateBlockers, validatePendingFields, } from './answer-session-fields.js';
@@ -41,7 +42,7 @@ function validateHandoff(value) {
 export function validateAnswerSession(value) {
     const session = object(value, 'session');
     validateVersion(session, 'session');
-    check(fields(session, ['schemaVersion', 'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'attemptRevision', 'readiness', 'blockers', 'approvals', 'browserHandoff', 'createdAt', 'updatedAt']), 'session contains unsupported fields');
+    check(fields(session, ['schemaVersion', 'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'attemptRevision', 'readiness', 'blockers', 'approvals', 'browserHandoff', 'handoffChecklist', 'createdAt', 'updatedAt']), 'session contains unsupported fields');
     safeAnswerSessionId(get(session, 'applicationId'));
     check(member(get(session, 'status'), ['active', 'review', 'completed', 'abandoned']), 'session status is unsupported');
     const answerKeys = fallback(session, 'answerKeys', []);
@@ -53,6 +54,7 @@ export function validateAnswerSession(value) {
     if (get(session, 'readiness') !== null)
         validateReadiness(get(session, 'readiness'), attempt);
     validateBlockers(fallback(session, 'blockers', []));
+    validateHandoffChecklist(fallback(session, 'handoffChecklist', []));
     validateApprovals(fallback(session, 'approvals', []));
     if (get(session, 'browserHandoff') !== null)
         validateHandoff(get(session, 'browserHandoff'));

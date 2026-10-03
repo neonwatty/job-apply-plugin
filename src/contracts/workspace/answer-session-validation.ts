@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { answerStates, fallback } from './answers.js';
 import { canonicalJson } from './canonical-json.js';
+import { validateHandoffChecklist } from './handoff-checklist.js';
 import { casefold } from './casefold.js';
 import { copy, fromJSON, get, has, int, object, parse, same, serialize, set, string, text, JobsError } from './values.js';
 import type { Document, Value } from './values.js';
@@ -46,7 +47,7 @@ function validateHandoff(value: Value): void {
 export function validateAnswerSession(value: Value): Document {
   const session = object(value, 'session');
   validateVersion(session, 'session');
-  check(fields(session, ['schemaVersion', 'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'attemptRevision', 'readiness', 'blockers', 'approvals', 'browserHandoff', 'createdAt', 'updatedAt']), 'session contains unsupported fields');
+  check(fields(session, ['schemaVersion', 'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'attemptRevision', 'readiness', 'blockers', 'approvals', 'browserHandoff', 'handoffChecklist', 'createdAt', 'updatedAt']), 'session contains unsupported fields');
   safeAnswerSessionId(get(session, 'applicationId'));
   check(member(get(session, 'status'), ['active', 'review', 'completed', 'abandoned']), 'session status is unsupported');
   const answerKeys = fallback(session, 'answerKeys', []);
@@ -56,6 +57,7 @@ export function validateAnswerSession(value: Value): Document {
   if (attempt !== null) check(positive(attempt), 'session attempt revision is invalid');
   if (get(session, 'readiness') !== null) validateReadiness(get(session, 'readiness'), attempt);
   validateBlockers(fallback(session, 'blockers', []));
+  validateHandoffChecklist(fallback(session, 'handoffChecklist', []));
   validateApprovals(fallback(session, 'approvals', []));
   if (get(session, 'browserHandoff') !== null) validateHandoff(get(session, 'browserHandoff'));
   optionalStrings(session, ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'createdAt', 'updatedAt'], 'session');
