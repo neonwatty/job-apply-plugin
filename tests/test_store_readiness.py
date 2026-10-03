@@ -3,13 +3,13 @@ from tests.support.store_case import *
 
 class StoreTests(StoreTestCase):
 
-    def test_custom_greenhouse_form_can_reach_review_without_bundled_fixture(self):
-        ready = self._make_ready_job(ats="greenhouse")
+    def test_display_style_ashby_job_can_reach_review_from_live_form(self):
+        ready = self._make_ready_job(ats="Ashby")
         acquired = self.store.acquire_ready_job(
             ready["id"], "live-custom-form", ready["revision"]
         )
         form = {
-            "schemaVersion": 1, "platformFamily": "greenhouse",
+            "schemaVersion": 1, "platformFamily": "ashby",
             "observationRevision": 11, "complete": True,
             "controls": [
                 {"id": "contact.email", "role": "textbox", "required": True},

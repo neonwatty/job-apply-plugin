@@ -83,6 +83,17 @@ class JobApplySkillContractTests(unittest.TestCase):
         self.assertIn("compare it privately with the intended value", self.normalized)
         self.assertIn("merely because the browser operation returned no error", self.normalized)
 
+    def test_job_specific_discovery_source_precedes_uncertain_generic_answer(self) -> None:
+        self.assertIn("store job-get --id <job-id>", self.skill)
+        self.assertIn("`/source` provenance", self.skill)
+        self.assertIn("Prefer that specific evidence over a conflicting generic saved answer", self.skill)
+        self.assertIn("Leave an optional source field blank when uncertainty remains", self.skill)
+
+    def test_manual_review_preserves_the_visible_application_tab(self) -> None:
+        self.assertIn("`tab.markHandoff()`", self.skill)
+        self.assertIn("after either `awaiting_review` or a resumable `needs_info` handoff", self.skill)
+        self.assertIn("Reinspect the live form before resuming", self.skill)
+
     def test_field_entry_recovery_is_bounded_and_rerender_safe(self) -> None:
         self.assertIn("at most one safe", self.normalized)
         self.assertIn("Do not repeat the same", self.normalized)

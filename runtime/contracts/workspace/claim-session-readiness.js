@@ -5,6 +5,8 @@ import { fields, matches, member, positive, requireCondition as check } from './
 import { get, object, parse, same, set, string, integer, fromJSON, JobsError } from './values.js';
 const kindByRole = { textbox: 'text', combobox: 'selection', radiogroup: 'selection', checkbox: 'toggle', file: 'upload' };
 const livePlatforms = ['ashby', 'greenhouse', 'lever', 'linkedin-easy-apply', 'rippling', 'workday'];
+const normalizedAts = (value) => string(value)?.trim().toLowerCase().replace(/[ _]+/gu, '-') ?? null;
+const matchesJobAts = (platform, ats) => !string(ats) || platform === normalizedAts(ats);
 const digest = (value) => createHash('sha256').update(canonicalJson(value)).digest('hex');
 function controlsOf(fixture) {
     const steps = get(fixture, 'steps');
@@ -20,7 +22,7 @@ function liveControls(form, revision, ats) {
     check(positive(revision) && same(get(form, 'schemaVersion'), integer(1n)) && same(get(form, 'observationRevision'), revision)
         && get(form, 'complete') === true, 'invalid observed form attestation');
     const platform = string(get(form, 'platformFamily'));
-    check(platform !== null && livePlatforms.includes(platform) && (!string(ats) || platform === string(ats)), 'observed form ATS mismatch');
+    check(platform !== null && livePlatforms.includes(platform) && matchesJobAts(platform, ats), 'observed form ATS mismatch');
     const raw = get(form, 'controls');
     check(Array.isArray(raw) && raw.length > 0 && raw.length <= 256, 'invalid observed form controls');
     const controls = raw.map(item => object(item, 'observed form control'));
@@ -120,7 +122,7 @@ export function recomputeClaimReadiness(raw, attempt, ats) {
             check(matches(get(fixture, 'id'), /^[a-z0-9][a-z0-9-]{0,127}$/u), 'invalid fixture id');
             const trusted = parse(readFileSync(new URL(`../../../qa/fixtures/${string(get(fixture, 'id'))}/fixture.json`, import.meta.url), 'utf8'));
             check(canonicalJson(fixture) === canonicalJson(trusted), 'fixture differs from bundled definition');
-            check(!string(ats) || same(get(fixture, 'platformFamily'), ats), 'fixture ATS mismatch');
+            check(matchesJobAts(string(get(fixture, 'platformFamily')), ats), 'fixture ATS mismatch');
             controls = controlsOf(fixture);
             platform = get(fixture, 'platformFamily');
         }
