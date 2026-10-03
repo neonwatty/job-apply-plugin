@@ -65,6 +65,7 @@ test('consent classification preserves sensitive value, identity and retention m
   const audit = plain(await service.consentMigrationPreview());
   assert.equal(audit.mutated, false);
   assert.equal(audit.suggestions[0].key, 'sms');
+  assert.equal(audit.suggestions[0].requiresRetentionConsent, false);
   assert.equal(JSON.stringify(audit).includes('"No"'), false);
   assert.equal(writes(), 1);
   const intent = { kind: 'opt_in', purpose: 'recruiting_sms' };
@@ -78,6 +79,20 @@ test('consent classification preserves sensitive value, identity and retention m
   await assert.rejects(service.update('sms', fromJSON({ consentIntent: null }), 1n), /revision conflict/);
   await assert.rejects(service.put(fromJSON({ key: 'bad', question: 'Terms?', state: 'confirmed', value: 'yes',
     sensitivity: 'none', consentIntent: { kind: 'agreement', purpose: 'terms' } })), /must be sensitive/);
+});
+
+test('consent audit flags ordinary answers that need new retention permission', async () => {
+  const { service } = fixture();
+  await service.put(fromJSON({ key: 'old-sms', question: 'Recruiting texts?', state: 'confirmed',
+    value: 'No', sensitivity: 'none', fieldClass: 'sms_consent' }));
+  const audit = plain(await service.consentMigrationPreview());
+  assert.equal(audit.suggestions[0].requiresRetentionConsent, true);
+  const patch = fromJSON({ state: 'sensitive', sensitivity: 'high', consentIntent: audit.suggestions[0].suggestedIntent });
+  await assert.rejects(service.update('old-sms', patch, 1n), /remember consent/);
+  await service.update('old-sms', patch, 1n, true);
+  const saved = plain(await service.get('old-sms', true));
+  assert.equal(saved.value, 'No');
+  assert.ok(saved.rememberedWithConsentAt);
 });
 
 test('consent candidates prefer exact scope, allow explicit general scope, and never reveal values', async () => {

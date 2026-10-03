@@ -172,6 +172,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
       <ul>{migrationSuggestions.map(item => <li key={string(get(item, 'key'))}>
         <button className="text-action" onClick={() => void select(string(get(item, 'key'))!)}>{string(get(item, 'question'))}</button>
         {' · Suggested purpose: '}{string(get(object(get(item, 'suggestedIntent'), 'intent'), 'purpose'))}
+        {get(item, 'requiresRetentionConsent') === true && ' · Needs your permission to remember this as a sensitive decision'}
       </li>)}</ul>
     </section>}
     <section className="workspace-panel answers-panel" aria-labelledby="answer-library-heading">

@@ -19,8 +19,9 @@ decision. The canonical question may describe the purpose in ordinary language;
 aliases can record common phrasings. Exact wording and control type are not the
 answer's identity. Store a sensitive value only with field-specific permission to
 remember it; a remembered decision does not authorize a future consent action.
-Consent defaults use `state: "sensitive"` and `sensitivity: "high"`. A
-metadata-only classification preserves the saved value and remember marker.
+Consent defaults use `state: "sensitive"` and `sensitivity: "high"`. For an
+already-sensitive answer with a remember marker, a metadata-only classification
+preserves the saved value and marker.
 For example, a recruiting-text-message opt-in belongs to its own `sms_consent`
 answer. If the owner has not chosen whether to opt in, observe a missing question
 and ask for the decision before storing a value. Do not translate a prior privacy
@@ -44,9 +45,14 @@ new purpose, broader use or sharing, missing notice, conflicting option, or
 unclear assent requires a new owner decision.
 
 For existing unmarked answers, `store answer-consent-audit` produces a read-only,
-value-free classification preview. Review each suggestion and apply only
-explicit, exact-revision metadata edits through Answer Memory. Do not infer
-consent from every `agreement` field class.
+value-free classification preview. Review each suggestion with the owner. If
+the answer is already sensitive with high sensitivity and a remember marker,
+classify it through an exact-revision metadata edit in Answer Memory. An
+audit suggestion marked `requiresRetentionConsent` needs `state: "sensitive"` and
+`sensitivity: "high"`; obtain explicit field-specific permission to retain its
+value and pass `--remember-sensitive` with the exact-revision update. Keep the
+saved value unchanged unless the owner corrects it. Do not infer consent from
+every `agreement` field class.
 
 ## Approve and express it
 

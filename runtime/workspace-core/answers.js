@@ -349,6 +349,9 @@ function consentMigrationPreview(document) {
             set(suggested, 'purpose', text(known[fieldClass].purpose));
             set(item, 'suggestedIntent', suggested);
             set(item, 'requiresOwnerReview', true);
+            set(item, 'requiresRetentionConsent', string(get(record, 'state')) !== 'sensitive'
+                || string(get(record, 'sensitivity')) !== 'high'
+                || !string(get(record, 'rememberedWithConsentAt')));
             suggestions.push(item);
         }
         else if (review === 'pending')

@@ -19,6 +19,10 @@ test('production native CLI composes Store state and account automation commands
 
   assert.equal((await cli('automation-settings-get')).revision, 1);
   assert.deepEqual(await cli('history-list'), []);
+  stdin = { key: 'sms-choice', question: 'Recruiting texts?', state: 'sensitive', value: 'No',
+    sensitivity: 'high', consentIntent: { kind: 'opt_in', purpose: 'recruiting_sms' } };
+  await cli('answer-put', ['--input', '-', '--remember-sensitive']);
+  assert.equal((await cli('answer-list', ['--consent-only'])).total, 1);
   stdin = { status: 'active', step: 'standalone' };
   const saved = await cli('session-save', ['--id', 'standalone', '--input', '-']);
   assert.equal(saved.applicationId, 'standalone');
