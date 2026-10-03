@@ -350,6 +350,11 @@ def _evaluate_controls(
     observed = {
         control["controlId"]: control for control in observation["controls"]
     }
+    optional_unanswered_ids = sorted(
+        control_id for control_id, control in fixture_controls.items()
+        if not control["required"] and control["role"] != "file"
+        and observed.get(control_id, {}).get("state") != "complete"
+    )
     missing_ids = required_ids - set(observed)
     stale_ids = {
         control_id
@@ -445,6 +450,7 @@ def _evaluate_controls(
             name: "passed" if passed else "failed" for name, passed in checks.items()
         },
         "unresolvedControlIds": sorted(unresolved_ids),
+        "optionalUnansweredControlIds": optional_unanswered_ids,
         "blockerCodes": sorted(blockers),
         "fallbackCode": fallback_code,
     }

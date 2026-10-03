@@ -154,7 +154,7 @@ def _validate_session_document(
             "controlSetFingerprint", "requiredControlCount", "assertions",
             "blockerCodes", "fallbackCode",
         }
-        if set(readiness) != required:
+        if set(readiness) - required - {"optionalUnansweredControlIds"} or required - set(readiness):
             raise StoreError("session readiness contains unsupported fields")
         if (
             readiness["status"] not in {"ready", "blocked"}
@@ -177,6 +177,14 @@ def _validate_session_document(
             or readiness["requiredControlCount"] < 1
         ):
             raise StoreError("session readiness form manifest is invalid")
+        if "optionalUnansweredControlIds" in readiness:
+            optional = readiness["optionalUnansweredControlIds"]
+            if (
+                not isinstance(optional, list) or len(optional) > 256
+                or any(not isinstance(item, str) or re.fullmatch(r"[a-z][a-z0-9._-]{0,127}", item) is None for item in optional)
+                or optional != sorted(set(optional))
+            ):
+                raise StoreError("session readiness optional controls are invalid")
         assertions = require_object(readiness["assertions"], "session readiness assertions")
         if set(assertions) != READINESS_ASSERTION_NAMES or not all(
             value in {"passed", "failed"} for value in assertions.values()

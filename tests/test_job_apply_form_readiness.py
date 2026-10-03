@@ -58,6 +58,7 @@ class FormReadinessTests(unittest.TestCase):
                 "observationRevision",
                 "assertions",
                 "unresolvedControlIds",
+                "optionalUnansweredControlIds",
                 "blockerCodes",
                 "fallbackCode",
             },
@@ -93,9 +94,19 @@ class FormReadinessTests(unittest.TestCase):
             upload_capability="available", validation_error_control_ids=(),
             final_control_state="available",
         )
-        self.assertEqual(READINESS.evaluate_live_readiness(
+        ready = READINESS.evaluate_live_readiness(
             form, observation, expected_observation_revision=7,
-        )["status"], "ready")
+        )
+        self.assertEqual(ready["status"], "ready")
+        self.assertEqual(ready["optionalUnansweredControlIds"], ["profile.website"])
+        filled_optional = READINESS.make_live_readiness_observation(
+            form, {**states, "profile.website": "complete"}, observation_revision=7,
+            adapter_state="accessible", upload_capability="available",
+            validation_error_control_ids=(), final_control_state="available",
+        )
+        self.assertEqual(READINESS.evaluate_live_readiness(
+            form, filled_optional, expected_observation_revision=7,
+        )["optionalUnansweredControlIds"], [])
         incomplete = copy.deepcopy(observation)
         incomplete["controls"] = [item for item in incomplete["controls"] if item["controlId"] != "custom.question"]
         report = READINESS.evaluate_live_readiness(

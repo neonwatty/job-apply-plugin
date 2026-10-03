@@ -48,6 +48,9 @@ test('session validation preserves Python legacy fields and rejects invalid evid
  const assertions=Object.fromEntries(['observation-current','adapter-accessible','required-controls-complete','required-uploads-accepted','validation-clear','final-control-available','final-action-untouched'].map(key=>[key,'passed']));
  const readiness={status:'ready',evidenceKind:'repository_replay',attemptRevision:2,observationRevision:1,controlSetFingerprint:'sha256:'+'a'.repeat(64),requiredControlCount:1,assertions,blockerCodes:[],fallbackCode:null};
  fixtures.push({...base(),readiness});
+ fixtures.push({...base(),readiness:{...readiness,optionalUnansweredControlIds:['social.x']}});
+ for(const optionalUnansweredControlIds of [['social.x','social.x'],['private value'],['z','a'],null])
+  fixtures.push({...base(),readiness:{...readiness,optionalUnansweredControlIds}});
  const blocked={...readiness,status:'blocked',assertions:{...assertions,'required-uploads-accepted':'failed'},blockerCodes:['required-upload-missing','external-upload-capability-unavailable'],fallbackCode:'owner-upload-required'};
  fixtures.push({...base(),readiness:blocked});
  fixtures.push({...base(),readiness:{...blocked,blockerCodes:['required-upload-missing','required-upload-missing']}});

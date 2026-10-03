@@ -26,6 +26,17 @@ test('value-free captures retain an upload that disappears after acceptance', ()
   assert.doesNotMatch(JSON.stringify(packet),/PRIVATE|filename|https?:\/\//i);
 });
 
+test('unanswered optional fields are reported without blocking review', () => {
+  const form = observed();
+  form.inventories[1].controls.push({id:'social.x',role:'textbox',required:false},
+    {id:'resume.autofill',role:'file',required:false});
+  const packet = buildReadinessPacket(form);
+  assert.equal(packet.readiness.status,'ready');
+  assert.deepEqual(packet.readiness.optionalUnansweredControlIds,['social.x']);
+  form.verifiedStates.push({id:'social.x',state:'complete'});
+  assert.deepEqual(buildReadinessPacket(form).readiness.optionalUnansweredControlIds,[]);
+});
+
 test('missing and failed controls cannot produce ready evidence', () => {
   const missing = observed();
   missing.verifiedStates.pop();

@@ -282,6 +282,7 @@ class SessionReadinessMixin:
             "requiredControlCount": len(
                 packet["formManifest"]["requiredControlIds"]
             ),
+            "optionalUnansweredControlIds": report["optionalUnansweredControlIds"],
             "assertions": report["assertions"],
             "blockerCodes": report["blockerCodes"],
             "fallbackCode": report["fallbackCode"],

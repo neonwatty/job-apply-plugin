@@ -59,11 +59,18 @@ function nullableRecord(value: Value | undefined): Document | null {
   return value === null || value === undefined ? null : object(value,'projection');
 }
 export interface SessionSummary {
-  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; handoffChecklistRecorded:boolean; attemptRevision?: bigint;
+  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; handoffChecklistRecorded:boolean;
+  optionalUnansweredControlIds:string[]; optionalUnansweredRecorded:boolean; attemptRevision?: bigint;
 }
 function summary(d: Document | null): SessionSummary {
   const readiness = d && nullableRecord(get(d,'readiness'));
   const handoff = d && nullableRecord(get(d,'browserHandoff'));
+  const optionalUnansweredControlIds = readiness ? array(readiness,'optionalUnansweredControlIds',true).map(value=>{
+    const id=string(value);
+    if(id===null || !/^[a-z][a-z0-9._-]{0,127}$/u.test(id)) throw Error('Invalid optional control id');
+    return id;
+  }) : [];
+  if(optionalUnansweredControlIds.some((id,index)=>index>0 && optionalUnansweredControlIds[index-1]!>=id)) throw Error('Invalid optional control order');
   const checklist = d ? array(d,'handoffChecklist',true).map(value=>{
     const code=string(value);
     if (code===null || !Object.hasOwn(handoffActionLabels,code)) throw Error('Invalid handoff checklist');
@@ -76,6 +83,8 @@ function summary(d: Document | null): SessionSummary {
     handoffReason: handoff ? str(handoff,'reasonCode','') : '',
     handoffChecklist:checklist,
     handoffChecklistRecorded:d !== null && has(d,'handoffChecklist'),
+    optionalUnansweredControlIds,
+    optionalUnansweredRecorded:readiness !== null && has(readiness,'optionalUnansweredControlIds'),
     ...(d && has(d,'attemptRevision') && get(d,'attemptRevision') !== null ? {attemptRevision:revision(d,'attemptRevision')} : {}),
   };
 }
