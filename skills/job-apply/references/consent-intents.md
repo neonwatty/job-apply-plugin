@@ -7,7 +7,11 @@ field; the same intent can be expressed through any of them.
 
 ## Remember the decision
 
-Use the canonical Answer Memory Store. Give each distinct purpose a field class
+Use the canonical Answer Memory Store. Mark a reviewed reusable consent answer
+with `consentIntent` containing a `kind` (`opt_in`, `acknowledgment`, or
+`agreement`) and a stable `purpose` ID. The marker classifies the answer; it
+does not authorize browser action. Consent defaults appear in the Companion
+Answers area. Give each distinct purpose a field class
 such as `demographic_consent`; do not use one general "agree to everything"
 answer. A generic scope `{}` permits consideration across employers when the
 owner explicitly chooses that scope. Use a narrower scope for a provider-specific
@@ -15,6 +19,8 @@ decision. The canonical question may describe the purpose in ordinary language;
 aliases can record common phrasings. Exact wording and control type are not the
 answer's identity. Store a sensitive value only with field-specific permission to
 remember it; a remembered decision does not authorize a future consent action.
+Consent defaults use `state: "sensitive"` and `sensitivity: "high"`. A
+metadata-only classification preserves the saved value and remember marker.
 For example, a recruiting-text-message opt-in belongs to its own `sms_consent`
 answer. If the owner has not chosen whether to opt in, observe a missing question
 and ask for the decision before storing a value. Do not translate a prior privacy
@@ -24,14 +30,23 @@ acknowledgment or demographic-data consent into permission for recruiting texts.
 
 Read the visible prompt and relevant surrounding notice before using an answer.
 Compare the purpose, data or rights involved, recipient, and consequence with the
-saved intent. Use `task semantic-lookup` with the observed wording, semantic field
-class, sensitivity, and the chosen scope. An exact or high candidate is still only
-a candidate: reject it if the live meaning differs. For a clearly matching intent
-whose wording is lexically distant, read the canonical answer by its known
-question and scope, then show the proposed match to the owner in the live-form
-approval. Do not turn an uncertain matcher result into automatic authority. A
+saved intent. For a known purpose and kind, call `store answer-consent-candidates
+--input <private-json>` with `consentIntent` and the observed employer scope.
+It returns value-free exact-scope and explicitly general-scope suggestions.
+A pending employer observation is not a saved decision. For an unmarked older
+answer, use `task semantic-lookup` with the observed wording, field class,
+sensitivity, and exact saved scope. Neither lookup grants authority: reject a
+candidate if the live meaning differs. For a clearly matching intent whose
+wording is lexically distant, read the canonical answer by its known question
+and scope, then show the proposed match to the owner in the live-form approval.
+Do not turn an uncertain matcher result into automatic authority. A
 new purpose, broader use or sharing, missing notice, conflicting option, or
 unclear assent requires a new owner decision.
+
+For existing unmarked answers, `store answer-consent-audit` produces a read-only,
+value-free classification preview. Review each suggestion and apply only
+explicit, exact-revision metadata edits through Answer Memory. Do not infer
+consent from every `agreement` field class.
 
 ## Approve and express it
 

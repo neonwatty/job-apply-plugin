@@ -1,4 +1,4 @@
-import { answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers } from '../contracts/workspace/answers.js';
+import { answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
@@ -14,7 +14,7 @@ export interface AnswerRepository {
 }
 export interface AnswerQuery {
   query?: string; state?: string | null; reviewStatus?: string | null;
-  includeTrashed?: boolean; trashedOnly?: boolean; offset?: number; limit?: number;
+  includeTrashed?: boolean; trashedOnly?: boolean; consentOnly?: boolean; offset?: number; limit?: number;
 }
 export function answerProjection(record: Document, references: AnswerReferenceCounts, detail = false, reveal = false): Document {
   const view = answerView(record), result = emptyObject();
@@ -47,6 +47,13 @@ export class AnswersService {
   constructor(readonly repository: AnswerRepository, private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {}
   cleanupPreview(): Promise<Value> {
     return this.repository.answerTransaction(async document => previewAnswerCleanup(validateAnswers(document)));
+  }
+  consentCandidates(input: Value): Promise<Value> {
+    return this.repository.answerTransaction(async document =>
+      consentCandidates(validateAnswers(document), input));
+  }
+  consentMigrationPreview(): Promise<Value> {
+    return this.repository.answerTransaction(async document => consentMigrationPreview(validateAnswers(document)));
   }
   semanticLookup(incoming: Value): Promise<Value> {
     return this.repository.answerTransaction(async document => semanticLookup(validateAnswers(document), incoming));
@@ -84,11 +91,11 @@ export class AnswersService {
     });
   }
   query(options: AnswerQuery = {}): Promise<Document> {
-    const { query = '', state = null, reviewStatus = 'accepted', includeTrashed = false, trashedOnly = false, offset = 0, limit = 50 } = options;
+    const { query = '', state = null, reviewStatus = 'accepted', includeTrashed = false, trashedOnly = false, consentOnly = false, offset = 0, limit = 50 } = options;
     if (typeof query !== 'string') throw new JobsError('answer query must be a string');
     if (state !== null && !answerStates.has(state)) throw new JobsError('answer state is unsupported');
     if (reviewStatus !== null && !answerReviews.has(reviewStatus)) throw new JobsError('answer review status is unsupported');
-    if (typeof includeTrashed !== 'boolean' || typeof trashedOnly !== 'boolean') throw new JobsError('answer trash filters must be booleans');
+    if (typeof includeTrashed !== 'boolean' || typeof trashedOnly !== 'boolean' || typeof consentOnly !== 'boolean') throw new JobsError('answer filters must be booleans');
     if (trashedOnly && !includeTrashed) throw new JobsError('trashed-only query requires include trashed');
     if (!Number.isSafeInteger(offset) || offset < 0) throw new JobsError('answer offset must be a non-negative integer');
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 200) throw new JobsError('answer limit must be between 1 and 200');
@@ -98,6 +105,7 @@ export class AnswersService {
       const records = keys(answers).map(key => object(get(answers, key), 'answer')).filter(record => {
         const trashed = get(record, 'deletedAt') !== null;
         return (includeTrashed || !trashed) && (!trashedOnly || trashed)
+          && (!consentOnly || consentIntent(record) !== null)
           && (state === null || string(get(record, 'state')) === state)
           && (reviewStatus === null || string(fallback(record, 'reviewStatus', text('accepted'))) === reviewStatus)
           && (!needle || answerNames(record).some(name => name.includes(needle)));
@@ -175,6 +183,7 @@ export class AnswersService {
       set(updated, 'source', fallback(incoming, 'source', text('user')));
       set(updated, 'aliases', normalizeAliases(fallback(incoming, 'aliases', [])));
       set(updated, 'fieldClass', fallback(incoming, 'fieldClass', current ? fallback(current, 'fieldClass', text('general')) : text('general')));
+      if (has(incoming, 'consentIntent')) set(updated, 'consentIntent', get(incoming, 'consentIntent'));
       set(updated, 'sensitivity', fallback(incoming, 'sensitivity', text(string(get(updated, 'state')) === 'sensitive' ? 'high' : 'none')));
       set(updated, 'reviewStatus', current ? fallback(current, 'reviewStatus', text('accepted')) : text(requestedReview!));
       set(updated, 'createdAt', current ? get(current, 'createdAt') ?? now : now);
@@ -230,4 +239,73 @@ export class AnswersService {
     const metadata = set(copy(object(get(document, 'metadata'), 'metadata')), 'updatedAt', get(record, 'updatedAt'));
     await save(set(set(copy(document), 'answers', answers), 'metadata', metadata));
   }
+}
+
+/** Suggestions only: the visible notice and current-form approval still decide use. */
+function consentCandidates(document: Document, input: Value): Document {
+  const request = object(input, 'consent candidate request');
+  if (request.size !== 2 || !has(request, 'consentIntent') || !has(request, 'scope')) {
+    throw new JobsError('consent candidate request is invalid');
+  }
+  const intent = validateConsentIntent(get(request, 'consentIntent'));
+  const scope = object(get(request, 'scope'), 'consent candidate scope');
+  const answers = object(get(document, 'answers'), 'answers');
+  const candidates: Document[] = [];
+  for (const key of keys(answers)) {
+    const record = object(get(answers, key), 'answer');
+    const savedIntent = consentIntent(record);
+    if (savedIntent === null || !same(savedIntent, intent) || get(record, 'deletedAt') !== null
+      || string(fallback(record, 'reviewStatus', text('accepted'))) !== 'accepted'
+      || get(record, 'value') === null || !['confirmed', 'sensitive'].includes(string(get(record, 'state')) ?? '')) continue;
+    const savedScope = object(fallback(record, 'scope', emptyObject()), 'consent candidate scope');
+    const exact = sameAnswerScope(savedScope, scope);
+    if (!exact && savedScope.size !== 0) continue;
+    const candidate = emptyObject();
+    for (const field of ['key', 'revision', 'question', 'scope', 'fieldClass', 'sensitivity', 'source', 'consentIntent']) {
+      if (has(record, field)) set(candidate, field, get(record, field));
+    }
+    set(candidate, 'scopeMatch', text(exact ? 'exact' : 'general'));
+    set(candidate, 'decisionRedacted', true);
+    candidates.push(candidate);
+  }
+  candidates.sort((a, b) => {
+    const rank = (item: Document) => string(get(item, 'scopeMatch')) === 'exact' ? 0 : 1;
+    return rank(a) - rank(b) || string(get(a, 'key'))!.localeCompare(string(get(b, 'key'))!);
+  });
+  const result = emptyObject();
+  set(result, 'candidates', candidates);
+  set(result, 'mutated', false);
+  return set(result, 'currentFormApprovalRequired', true);
+}
+
+/** Reviewable migration suggestions; no answer is tagged or modified here. */
+function consentMigrationPreview(document: Document): Document {
+  const suggestions: Document[] = [], pending: Document[] = [];
+  const known: Record<string, { kind: string; purpose: string }> = {
+    demographic_consent: { kind: 'opt_in', purpose: 'demographic_data_processing' },
+    sms_consent: { kind: 'opt_in', purpose: 'recruiting_sms' },
+  };
+  const answers = object(get(document, 'answers'), 'answers');
+  for (const key of keys(answers)) {
+    const record = object(get(answers, key), 'answer');
+    const fieldClass = string(get(record, 'fieldClass')) ?? '';
+    if (get(record, 'deletedAt') !== null || consentIntent(record) !== null || !Object.hasOwn(known, fieldClass)) continue;
+    const review = string(fallback(record, 'reviewStatus', text('accepted')));
+    const item = emptyObject();
+    for (const field of ['key', 'revision', 'question', 'scope', 'fieldClass', 'sensitivity']) {
+      if (has(record, field)) set(item, field, get(record, field));
+    }
+    if (review === 'accepted' && get(record, 'value') !== null) {
+      const suggested = emptyObject();
+      set(suggested, 'kind', text(known[fieldClass]!.kind));
+      set(suggested, 'purpose', text(known[fieldClass]!.purpose));
+      set(item, 'suggestedIntent', suggested);
+      set(item, 'requiresOwnerReview', true);
+      suggestions.push(item);
+    } else if (review === 'pending') pending.push(item);
+  }
+  const result = emptyObject();
+  set(result, 'suggestions', suggestions);
+  set(result, 'pendingObservations', pending);
+  return set(result, 'mutated', false);
 }

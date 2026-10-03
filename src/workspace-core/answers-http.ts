@@ -31,10 +31,12 @@ export async function answerHttp(repository: AnswerRepository, method: string, p
   }
   const service = new AnswersService(repository);
   if (path === '/api/answers/cleanup-preview') return method === 'GET' ? response(await service.cleanupPreview()) : null;
+  if (path === '/api/answers/consent-audit') return method === 'GET' ? response(await service.consentMigrationPreview()) : null;
   if (method === 'POST' && path === '/api/answers/semantic') return response(await service.semanticLookup(parse(body)));
+  if (method === 'POST' && path === '/api/answers/consent-candidates') return response(await service.consentCandidates(parse(body)));
   if (method === 'POST' && path === '/api/answers/query') {
     const payload = object(parse(body), 'body');
-    fields(payload, ['query', 'state', 'reviewStatus', 'includeTrashed', 'trashedOnly', 'offset', 'limit']);
+    fields(payload, ['query', 'state', 'reviewStatus', 'includeTrashed', 'trashedOnly', 'consentOnly', 'offset', 'limit']);
     const options: AnswerQuery = {};
     for (const field of ['query', 'state', 'reviewStatus'] as const) {
       if (!has(payload, field)) continue;
@@ -43,7 +45,7 @@ export async function answerHttp(repository: AnswerRepository, method: string, p
       if (field === 'query') options.query = value!;
       else options[field] = value;
     }
-    for (const field of ['includeTrashed', 'trashedOnly'] as const) {
+    for (const field of ['includeTrashed', 'trashedOnly', 'consentOnly'] as const) {
       if (!has(payload, field)) continue;
       const value = get(payload, field);
       if (typeof value !== 'boolean') throw new JobsError('answer trash filters must be booleans');

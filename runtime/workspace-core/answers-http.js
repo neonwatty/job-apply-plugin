@@ -35,11 +35,15 @@ export async function answerHttp(repository, method, path, body) {
     const service = new AnswersService(repository);
     if (path === '/api/answers/cleanup-preview')
         return method === 'GET' ? response(await service.cleanupPreview()) : null;
+    if (path === '/api/answers/consent-audit')
+        return method === 'GET' ? response(await service.consentMigrationPreview()) : null;
     if (method === 'POST' && path === '/api/answers/semantic')
         return response(await service.semanticLookup(parse(body)));
+    if (method === 'POST' && path === '/api/answers/consent-candidates')
+        return response(await service.consentCandidates(parse(body)));
     if (method === 'POST' && path === '/api/answers/query') {
         const payload = object(parse(body), 'body');
-        fields(payload, ['query', 'state', 'reviewStatus', 'includeTrashed', 'trashedOnly', 'offset', 'limit']);
+        fields(payload, ['query', 'state', 'reviewStatus', 'includeTrashed', 'trashedOnly', 'consentOnly', 'offset', 'limit']);
         const options = {};
         for (const field of ['query', 'state', 'reviewStatus']) {
             if (!has(payload, field))
@@ -52,7 +56,7 @@ export async function answerHttp(repository, method, path, body) {
             else
                 options[field] = value;
         }
-        for (const field of ['includeTrashed', 'trashedOnly']) {
+        for (const field of ['includeTrashed', 'trashedOnly', 'consentOnly']) {
             if (!has(payload, field))
                 continue;
             const value = get(payload, field);
