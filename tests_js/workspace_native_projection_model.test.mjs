@@ -26,6 +26,17 @@ test('Companion parses and labels closed handoff actions',()=>{
  assert.deepEqual(model.handoffChecklistLabels(['resume_upload','required_question','required_question']),['Attach resume','Answer required question (2)']);
  assert.throws(()=>model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:['PRIVATE_VALUE']}}],snapshotSignature:'x'})));
 });
+test('Companion distinguishes recorded optional blanks from older reports',()=>{
+ const projected=readiness=>model.activityProjection(JSON.stringify({job:{status:'awaiting_review',revision:2},
+   session:{revision:3,readiness},claim:{state:'none'},history:[]})).session;
+ const current=projected({status:'ready',optionalUnansweredControlIds:['social.x']});
+ assert.equal(current.optionalUnansweredRecorded,true);
+ assert.deepEqual(current.optionalUnansweredControlIds,['social.x']);
+ assert.equal(projected({status:'ready',optionalUnansweredControlIds:[]}).optionalUnansweredRecorded,true);
+ assert.equal(projected({status:'ready'}).optionalUnansweredRecorded,false);
+ assert.throws(()=>projected({status:'ready',optionalUnansweredControlIds:['social.x','social.x']}));
+ assert.throws(()=>projected({status:'ready',optionalUnansweredControlIds:['private value']}));
+});
 test('malformed attention fails without silently producing an empty queue',()=>{
  for(const items of [null,[{...row,revision:0}],[{...row,missingInformationCount:-1}],[{...row,reasonCode:'secret'}],[row,row]]) assert.throws(()=>model.attentionProjection(JSON.stringify({items,snapshotSignature:'x'})));
 });

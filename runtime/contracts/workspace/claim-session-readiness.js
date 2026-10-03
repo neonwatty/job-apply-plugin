@@ -141,6 +141,14 @@ export function recomputeClaimReadiness(raw, attempt, ats) {
         const observed = validateObservation(observation, platform, controls);
         const byId = new Map(observed.map(item => [string(get(item, 'controlId')), item]));
         const missing = required.filter(item => !byId.has(string(get(item, 'id'))));
+        const optionalUnansweredControlIds = controls.filter(item => {
+            if (get(item, 'required') !== false || string(get(item, 'role')) === 'file')
+                return false;
+            const state = byId.get(string(get(item, 'id')));
+            return state === undefined || string(get(state, 'state')) !== 'complete'
+                || !same(get(state, 'observationRevision'), revision);
+        })
+            .map(item => string(get(item, 'id'))).sort();
         const present = required.flatMap(item => {
             const value = byId.get(string(get(item, 'id')));
             return value ? [value] : [];
@@ -192,7 +200,8 @@ export function recomputeClaimReadiness(raw, attempt, ats) {
             blockers.add('external-upload-capability-unavailable');
         const result = object(fromJSON({ status: Object.values(assertions).every(Boolean) ? 'ready' : 'blocked',
             assertions: Object.fromEntries(Object.entries(assertions).map(([key, passed]) => [key, passed ? 'passed' : 'failed'])),
-            blockerCodes: [...blockers].sort(), fallbackCode: fallback, controlSetFingerprint: fingerprint, requiredControlCount: ids.length }), 'readiness');
+            blockerCodes: [...blockers].sort(), fallbackCode: fallback, controlSetFingerprint: fingerprint, requiredControlCount: ids.length,
+            optionalUnansweredControlIds }), 'readiness');
         set(result, 'attemptRevision', attempt);
         set(result, 'observationRevision', get(observation, 'observationRevision'));
         return set(result, 'evidenceKind', get(packet, 'evidenceKind'));

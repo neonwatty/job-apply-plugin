@@ -14,6 +14,8 @@ The private input has `attemptRevision`, `platformFamily`, positive `observation
 
 Use its `readinessInput` in the review session only when the returned `readiness.status` is `ready` and the current form still matches the observations. Recheck fields after rerenders. A blocked result requires a typed Needs Attention handoff. The helper constructs the manifest and closed observation with the maintained builders below; never hand-author those derived structures.
 
+The recomputed report also lists `optionalUnansweredControlIds`: value-free IDs for optional non-file controls without a verified complete state. These do not block review. Check the list against the visible form, observe genuinely unmatched optional questions in the Answer Store as described in [application filling](application.md), and name the skipped fields without values in the owner handoff. Optional convenience file uploaders are retained in the inventory but excluded from this list. The Companion shows the list in Job Activity; older reports without it say that optional blanks were not recorded.
+
 The pure builders in `<plugin-root>/runtime/contracts/workspace/claim-session-readiness.js` provide the maintained serialization contract (convert ordinary JSON with `fromJSON` from `runtime/contracts/workspace/values.js`):
 
 - `makeLiveFormManifest(observedForm, revision, ats)` derives the manifest from the full current inventory. Set `observedForm` to `{schemaVersion:1, platformFamily, observationRevision:revision, complete:true, controls:[{id,role,required},...]}` only after enumerating the visible form.

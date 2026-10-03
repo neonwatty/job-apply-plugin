@@ -58,6 +58,7 @@ class FormReadinessTests(unittest.TestCase):
                 "observationRevision",
                 "assertions",
                 "unresolvedControlIds",
+                "optionalUnansweredControlIds",
                 "blockerCodes",
                 "fallbackCode",
             },
@@ -93,9 +94,27 @@ class FormReadinessTests(unittest.TestCase):
             upload_capability="available", validation_error_control_ids=(),
             final_control_state="available",
         )
-        self.assertEqual(READINESS.evaluate_live_readiness(
+        ready = READINESS.evaluate_live_readiness(
             form, observation, expected_observation_revision=7,
-        )["status"], "ready")
+        )
+        self.assertEqual(ready["status"], "ready")
+        self.assertEqual(ready["optionalUnansweredControlIds"], ["profile.website"])
+        filled_optional = READINESS.make_live_readiness_observation(
+            form, {**states, "profile.website": "complete"}, observation_revision=7,
+            adapter_state="accessible", upload_capability="available",
+            validation_error_control_ids=(), final_control_state="available",
+        )
+        self.assertEqual(READINESS.evaluate_live_readiness(
+            form, filled_optional, expected_observation_revision=7,
+        )["optionalUnansweredControlIds"], [])
+        stale_optional = copy.deepcopy(filled_optional)
+        next(item for item in stale_optional["controls"]
+             if item["controlId"] == "profile.website")["observationRevision"] = 6
+        stale_report = READINESS.evaluate_live_readiness(
+            form, stale_optional, expected_observation_revision=7,
+        )
+        self.assertEqual(stale_report["status"], "ready")
+        self.assertEqual(stale_report["optionalUnansweredControlIds"], ["profile.website"])
         incomplete = copy.deepcopy(observation)
         incomplete["controls"] = [item for item in incomplete["controls"] if item["controlId"] != "custom.question"]
         report = READINESS.evaluate_live_readiness(

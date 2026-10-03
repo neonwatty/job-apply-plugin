@@ -37,6 +37,11 @@ export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Clie
         <h4>To do on form</h4>
         {data.session.handoffChecklist.length>0 ? <ol>{handoffChecklistLabels(data.session.handoffChecklist).map(label=><li key={label}>{label}</li>)}</ol>
           : <p>{data.job.status==='needs_info' && !data.session.handoffChecklistRecorded ? 'Detailed actions were not recorded for this attempt. Check the agent’s handoff and the visible draft.' : 'No remaining form actions recorded.'}</p>}
+        <h4>Optional fields left blank</h4>
+        {!data.session.optionalUnansweredRecorded ? <p>Not recorded for this attempt.</p>
+          : data.session.optionalUnansweredControlIds.length===0 ? <p>None recorded.</p>
+            : <><p>These fields did not block manual review. Check the visible form if you want to answer them.</p>
+              <ul>{data.session.optionalUnansweredControlIds.map(id=><li key={id}>{humanize(id).replaceAll('.',' ')}</li>)}</ul></>}
         <h4>Blockers</h4>{data.session.blockers.length===0 ? <p>No typed blockers recorded.</p> : <ul>{data.session.blockers.map((blocker,index)=><li key={index}>{humanize(blocker.type)}: {humanize(blocker.code)}</li>)}</ul>}
         <h4>Pending information</h4><p>{data.session.pending.length} pending items · {data.session.approvalCount} current session approvals</p>
         <ul>{data.session.pending.map((field,index)=><li key={index}>Item {index+1} · {humanize(field.fieldClass)} · {humanize(field.state)}. {field.sensitive ? 'Sensitive: separate confirmation required.' : field.eligible ? 'Saved answer eligible for recheck with your confirmation.' : 'Further review required before resolution.'} {field.approved ? 'Current session approval recorded.' : 'No current session approval.'}</li>)}</ul>

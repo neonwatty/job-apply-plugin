@@ -12,11 +12,21 @@ export function safeAnswerSessionId(value) {
 }
 function validateReadiness(value, attempt) {
     const readiness = object(value, 'session readiness');
-    check(fields(readiness, ['status', 'evidenceKind', 'attemptRevision', 'observationRevision', 'controlSetFingerprint', 'requiredControlCount', 'assertions', 'blockerCodes', 'fallbackCode'], true), 'session readiness contains unsupported fields');
+    const required = ['status', 'evidenceKind', 'attemptRevision', 'observationRevision', 'controlSetFingerprint',
+        'requiredControlCount', 'assertions', 'blockerCodes', 'fallbackCode'];
+    check(fields(readiness, [...required, 'optionalUnansweredControlIds'])
+        && required.every(field => has(readiness, field)), 'session readiness contains unsupported fields');
     check(member(get(readiness, 'status'), ['ready', 'blocked']) && member(get(readiness, 'evidenceKind'), ['agent_attested_current_attempt', 'repository_replay']), 'session readiness is invalid');
     check(same(get(readiness, 'attemptRevision'), attempt), 'session readiness is not bound to this attempt');
     check(positive(get(readiness, 'observationRevision')), 'session readiness observation revision is invalid');
     check(matches(get(readiness, 'controlSetFingerprint'), /^sha256:[0-9a-f]{64}$/u) && positive(get(readiness, 'requiredControlCount')), 'session readiness form manifest is invalid');
+    if (has(readiness, 'optionalUnansweredControlIds')) {
+        const optional = get(readiness, 'optionalUnansweredControlIds');
+        check(Array.isArray(optional) && optional.length <= 256, 'session readiness optional controls are invalid');
+        const ids = optional.map(string);
+        check(ids.every(id => id !== null && /^[a-z][a-z0-9._-]{0,127}$/u.test(id))
+            && ids.every((id, index) => index === 0 || ids[index - 1] < id), 'session readiness optional controls are invalid');
+    }
     const assertions = object(get(readiness, 'assertions'), 'session readiness assertions');
     check(fields(assertions, ['observation-current', 'adapter-accessible', 'required-controls-complete', 'required-uploads-accepted', 'validation-clear', 'final-control-available', 'final-action-untouched'], true) && assertions.entries().every(([, item]) => member(item, ['passed', 'failed'])), 'session readiness assertions are invalid');
     const blockers = get(readiness, 'blockerCodes');
