@@ -285,6 +285,11 @@ export class AnswersService {
         await save(set(set(copy(document), 'answers', answers), 'metadata', metadata));
     }
 }
+function hasConsentDecision(record) {
+    const value = get(record, 'value');
+    const written = string(value);
+    return value !== null && (written === null || written.trim().length > 0);
+}
 /** Suggestions only: the visible notice and current-form approval still decide use. */
 function consentCandidates(document, input) {
     const request = object(input, 'consent candidate request');
@@ -300,7 +305,7 @@ function consentCandidates(document, input) {
         const savedIntent = consentIntent(record);
         if (savedIntent === null || !same(savedIntent, intent) || get(record, 'deletedAt') !== null
             || string(fallback(record, 'reviewStatus', text('accepted'))) !== 'accepted'
-            || get(record, 'value') === null || !['confirmed', 'sensitive'].includes(string(get(record, 'state')) ?? ''))
+            || !hasConsentDecision(record) || !['confirmed', 'sensitive'].includes(string(get(record, 'state')) ?? ''))
             continue;
         const savedScope = object(fallback(record, 'scope', emptyObject()), 'consent candidate scope');
         const exact = sameAnswerScope(savedScope, scope);
@@ -343,7 +348,7 @@ function consentMigrationPreview(document) {
             if (has(record, field))
                 set(item, field, get(record, field));
         }
-        if (review === 'accepted' && get(record, 'value') !== null) {
+        if (review === 'accepted' && hasConsentDecision(record)) {
             const suggested = emptyObject();
             set(suggested, 'kind', text(known[fieldClass].kind));
             set(suggested, 'purpose', text(known[fieldClass].purpose));

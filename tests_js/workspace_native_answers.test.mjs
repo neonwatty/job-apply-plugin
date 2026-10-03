@@ -103,8 +103,12 @@ test('consent candidates prefer exact scope, allow explicit general scope, and n
     await service.put(fromJSON({ key, question: `${key} recruiting SMS?`, state: 'sensitive', value,
       scope, sensitivity: 'high', fieldClass: 'sms_consent', consentIntent: intent }), true);
   }
+  await service.put(fromJSON({ key: 'blank', question: 'Unchosen recruiting texts?', state: 'sensitive',
+    value: '  ', scope: {}, sensitivity: 'high', fieldClass: 'sms_consent', consentIntent: intent }), true);
   await service.put(fromJSON({ key: 'airbnb', question: 'Do you have a non-compete agreement?',
     state: 'confirmed', value: 'No', fieldClass: 'agreement' }));
+  await service.put(fromJSON({ key: 'old-blank', question: 'Old unanswered recruiting texts?',
+    state: 'confirmed', value: ' ', fieldClass: 'sms_consent' }));
   await service.observe(fromJSON({ question: 'Zillow recurring recruiting texts?', scope: { employer: 'Zillow' },
     fieldClass: 'sms_consent', state: 'missing', sensitivity: 'high' }));
   const request = fromJSON({ consentIntent: intent, scope: { employer: 'Zillow' } });
@@ -121,7 +125,7 @@ test('consent candidates prefer exact scope, allow explicit general scope, and n
     ['zillow', 'general']);
   const http = await answerHttp(repository, 'POST', '/api/answers/consent-candidates', serialize(request));
   assert.deepEqual(JSON.parse(http.body).candidates.map(item => item.key), ['zillow', 'general']);
-  assert.equal(JSON.parse((await answerHttp(repository, 'POST', '/api/answers/query', '{"consentOnly":true}')).body).total, 3);
+  assert.equal(JSON.parse((await answerHttp(repository, 'POST', '/api/answers/query', '{"consentOnly":true}')).body).total, 4);
   await assert.rejects(service.consentCandidates(fromJSON({ consentIntent: intent, scope: {}, extra: true })), /invalid/);
 });
 test('revision/collision/review rejection leaves canonical bytes unchanged and unknown data lossless', async () => {

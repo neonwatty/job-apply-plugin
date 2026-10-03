@@ -241,6 +241,12 @@ export class AnswersService {
   }
 }
 
+function hasConsentDecision(record: Document): boolean {
+  const value = get(record, 'value');
+  const written = string(value);
+  return value !== null && (written === null || written.trim().length > 0);
+}
+
 /** Suggestions only: the visible notice and current-form approval still decide use. */
 function consentCandidates(document: Document, input: Value): Document {
   const request = object(input, 'consent candidate request');
@@ -256,7 +262,7 @@ function consentCandidates(document: Document, input: Value): Document {
     const savedIntent = consentIntent(record);
     if (savedIntent === null || !same(savedIntent, intent) || get(record, 'deletedAt') !== null
       || string(fallback(record, 'reviewStatus', text('accepted'))) !== 'accepted'
-      || get(record, 'value') === null || !['confirmed', 'sensitive'].includes(string(get(record, 'state')) ?? '')) continue;
+      || !hasConsentDecision(record) || !['confirmed', 'sensitive'].includes(string(get(record, 'state')) ?? '')) continue;
     const savedScope = object(fallback(record, 'scope', emptyObject()), 'consent candidate scope');
     const exact = sameAnswerScope(savedScope, scope);
     if (!exact && savedScope.size !== 0) continue;
@@ -295,7 +301,7 @@ function consentMigrationPreview(document: Document): Document {
     for (const field of ['key', 'revision', 'question', 'scope', 'fieldClass', 'sensitivity']) {
       if (has(record, field)) set(item, field, get(record, field));
     }
-    if (review === 'accepted' && get(record, 'value') !== null) {
+    if (review === 'accepted' && hasConsentDecision(record)) {
       const suggested = emptyObject();
       set(suggested, 'kind', text(known[fieldClass]!.kind));
       set(suggested, 'purpose', text(known[fieldClass]!.purpose));
