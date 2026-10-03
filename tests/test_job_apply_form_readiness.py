@@ -107,6 +107,14 @@ class FormReadinessTests(unittest.TestCase):
         self.assertEqual(READINESS.evaluate_live_readiness(
             form, filled_optional, expected_observation_revision=7,
         )["optionalUnansweredControlIds"], [])
+        stale_optional = copy.deepcopy(filled_optional)
+        next(item for item in stale_optional["controls"]
+             if item["controlId"] == "profile.website")["observationRevision"] = 6
+        stale_report = READINESS.evaluate_live_readiness(
+            form, stale_optional, expected_observation_revision=7,
+        )
+        self.assertEqual(stale_report["status"], "ready")
+        self.assertEqual(stale_report["optionalUnansweredControlIds"], ["profile.website"])
         incomplete = copy.deepcopy(observation)
         incomplete["controls"] = [item for item in incomplete["controls"] if item["controlId"] != "custom.question"]
         report = READINESS.evaluate_live_readiness(

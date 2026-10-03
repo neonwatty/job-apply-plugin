@@ -59,6 +59,16 @@ test('live-form builders serialize observed custom controls without applicant va
   assert.deepEqual(plain(observed),packet.observation);
   assert.doesNotMatch(JSON.stringify(plain(observed)),/PRIVATE|https:|filename|filepath/i);
 });
+test('stale optional completion remains visible in a ready handoff',()=>{
+  const item=base();
+  const packet=livePacket();
+  packet.observation.controls.push({controlId:'profile.website',kind:'text',state:'complete',observationRevision:6});
+  item.incoming={status:'review',readinessInput:packet};
+  item.target='awaiting_review';
+  const readiness=native(item).session?.readiness;
+  assert.equal(readiness?.status,'ready');
+  assert.deepEqual(readiness?.optionalUnansweredControlIds,['profile.website']);
+});
 function base() {
   return {incoming:{status:'active',company:'EPHEMERAL_COMPANY',role:'EPHEMERAL_ROLE',url:'https://private.invalid',
     pendingFields:[{question:' Preferred  CITY? ',state:'missing',answerKey:'answer',scope:{ats:'greenhouse'},matchConfidence:'high',matchReasonCodes:['fabricated']}],answerKeys:['answer']},

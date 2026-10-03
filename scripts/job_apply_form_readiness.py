@@ -353,7 +353,10 @@ def _evaluate_controls(
     optional_unanswered_ids = sorted(
         control_id for control_id, control in fixture_controls.items()
         if not control["required"] and control["role"] != "file"
-        and observed.get(control_id, {}).get("state") != "complete"
+        and (
+            observed.get(control_id, {}).get("state") != "complete"
+            or observed.get(control_id, {}).get("observationRevision") != expected_revision
+        )
     )
     missing_ids = required_ids - set(observed)
     stale_ids = {

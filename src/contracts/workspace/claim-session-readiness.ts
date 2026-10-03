@@ -142,7 +142,8 @@ export function recomputeClaimReadiness(raw: Value, attempt: Value, ats: Value):
     const optionalUnansweredControlIds = controls.filter(item => {
       if (get(item,'required') !== false || string(get(item,'role')) === 'file') return false;
       const state = byId.get(string(get(item,'id'))!);
-      return state === undefined || string(get(state,'state')) !== 'complete';
+      return state === undefined || string(get(state,'state')) !== 'complete'
+        || !same(get(state,'observationRevision'),revision);
     })
       .map(item => string(get(item,'id'))!).sort();
     const present = required.flatMap(item => {
