@@ -30,7 +30,7 @@ PINS = {'scripts/job_apply_store/__init__.py': 'd1f3908a9875fdeda94a2d1823b0e42e
  'scripts/job_apply_store/validation/extraction.py': '6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8',
  'scripts/job_apply_store/validation/jobs_resumes.py': '1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83',
  'scripts/job_apply_store/validation/profile_answers.py': '599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9',
- 'scripts/job_apply_store/validation/sessions.py': '9d1c6158facc0724e5500defbc8027931e2112927677d9f3b79d5a8fde5339ce'}
+ 'scripts/job_apply_store/validation/sessions.py': '3db17eedca5d5cc7681ad21917e40c2adb56333d2a06b0f9f1e7406505acc111'}
 for name, expected in PINS.items():
     if digest((ROOT / name).read_bytes()) != expected:
         raise RuntimeError('original source pin mismatch: ' + name)
