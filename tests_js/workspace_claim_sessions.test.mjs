@@ -94,6 +94,17 @@ test('Needs Attention keeps a closed field checklist without applicant values',(
   item.target='awaiting_review';
   assert.match(native(item).error,/awaiting_review requires complete/iu);
 });
+test('display-style ATS names accept the same platform and reject a different one',()=>{
+  const item=base();
+  item.context.ats='Ashby';
+  item.incoming={status:'review',readinessInput:livePacket('ashby')};
+  item.target='awaiting_review';
+  assert.equal(native(item).session?.readiness.status,'ready');
+  item.context.ats='Greenhouse';
+  assert.match(native(item).error,/readiness evidence is invalid/);
+  item.incoming.readinessInput=readyPacket();
+  assert.equal(native(item).session?.readiness.status,'ready');
+});
 function normalize(result, item) {
   const references = new Map();
   const existing = new Set((item.context.existing?.pendingFields ?? []).map(field => field.reference));
@@ -150,6 +161,7 @@ test('claim sessions preserve Python privacy, reference identity, approvals and 
     item.incoming={status:'review',readinessInput:readyPacket()};item.target='awaiting_review';change(item,item.incoming.readinessInput);
   }); }
   readiness('live ready');
+  readiness('display-style ATS',item=>item.context.ats='Greenhouse');
   readiness('nonobject packet',item=>item.incoming.readinessInput=null);
   readiness('boolean observation revision',(item,packet)=>packet.observation.observationRevision=true);
   readiness('duplicate validation IDs',(item,packet)=>packet.observation.validationErrorControlIds=[packet.observation.controls[0].controlId,packet.observation.controls[0].controlId]);
@@ -179,6 +191,14 @@ test('claim sessions preserve Python privacy, reference identity, approvals and 
     item.incoming={status:'review',readinessInput:livePacket()};item.target='awaiting_review';change(item,item.incoming.readinessInput);
   }); }
   live('custom greenhouse form reaches review');
+  live('display-style Ashby ATS',item=>{
+    item.context.ats='Ashby';
+    item.incoming.readinessInput=livePacket('ashby');
+  });
+  live('spaced LinkedIn ATS',item=>{
+    item.context.ats='LinkedIn Easy Apply';
+    item.incoming.readinessInput=livePacket('linkedin-easy-apply');
+  });
   for (const platform of ['ashby','lever','linkedin-easy-apply','rippling','workday']) live(`${platform} custom form`,(item)=>{
     item.context.ats=platform;
     item.incoming.readinessInput=livePacket(platform);

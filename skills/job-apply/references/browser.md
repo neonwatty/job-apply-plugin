@@ -25,6 +25,7 @@ browser preferences never authorize authentication or data entry.
 - Pause for the user to handle login, password, CAPTCHA, MFA, or account creation. For consent prompts, use [reusable consent intents](consent-intents.md) and act only after the required live-form approval.
 - Use Chrome's visible form controls and local file-upload support. Confirm the selected filename after an upload.
 - If an Apply link opens an external portal or a new tab, continue there in the same host-managed visible browser session.
+- When the Codex in-app browser must remain available for owner review or a later attempt, call its `tab.markHandoff()` on the current application tab before ending the turn. Do this after either `awaiting_review` or a resumable `needs_info` handoff, and keep the tab visible for the owner. The Store handoff preserves value-free status; `markHandoff()` preserves the browser tab. Neither proves that a draft survived a site timeout. Reinspect the live form before resuming, and never infer submission from the handoff.
 
 ### Optional Browser Fallback
 

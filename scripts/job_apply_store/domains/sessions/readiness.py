@@ -226,7 +226,9 @@ class SessionReadinessMixin:
                     raise StoreError("readiness fixture is not the bundled definition")
                 if (
                     isinstance(expected_ats, str) and expected_ats
-                    and fixture.get("platformFamily") != expected_ats
+                    and fixture.get("platformFamily") != _late(
+                        'FORM_READINESS_MODULE'
+                    ).normalize_ats_platform(expected_ats)
                 ):
                     raise StoreError("readiness fixture does not match the job ATS")
                 steps = fixture.get("steps")

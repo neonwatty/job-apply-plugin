@@ -30,6 +30,13 @@ from qa.contracts import (
 
 
 PROOF_SCOPE = "closed-observation-only"
+
+
+def normalize_ats_platform(value: str) -> str:
+    """Compare display-style saved ATS names with canonical form platform IDs."""
+    return re.sub(r"[ _]+", "-", value.strip().lower())
+
+
 FORM_MANIFEST_KEYS = {
     "schemaVersion", "platformFamily", "observationRevision",
     "requiredControlIds", "controlSetFingerprint", "complete",
@@ -186,7 +193,8 @@ def validate_live_form(
         or form["complete"] is not True):
         raise FormReadinessError("invalid observed form attestation")
     platform = form["platformFamily"]
-    if not isinstance(platform, str) or platform not in PLATFORM_CONTROL_KINDS or (expected_platform and platform != expected_platform):
+    if (not isinstance(platform, str) or platform not in PLATFORM_CONTROL_KINDS
+        or (expected_platform and platform != normalize_ats_platform(expected_platform))):
         raise FormReadinessError("observed form platform mismatch")
     raw = form["controls"]
     if not isinstance(raw, list) or not 1 <= len(raw) <= 256:
