@@ -24,7 +24,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
   assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
-  await page.getByRole('heading', { name: 'Resume extraction', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
   assert.equal(await page.title(), 'Resume extraction · Job Apply Workspace');
   await page.waitForFunction(() => document.activeElement?.id === 'workspace-content');
   assert.equal(await page.locator('#workspace-content').evaluate(node => node === document.activeElement), true);
@@ -58,7 +58,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     page.on('dialog', dismissWrite);
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     assert.equal(typeof writePrompt, 'string', 'An unacknowledged extraction request must guard navigation');
-    await page.getByRole('heading', { name: 'Resume extraction', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
   } finally {
     page.off('dialog', dismissWrite);
     releaseWrite();
@@ -106,10 +106,10 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   // The rejected method is synthetic and page-scoped. Reload through the normal
   // application lifecycle so later copy assertions exercise the real clipboard.
   await page.reload();
-  await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Resumes', exact: true }).click();
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
-  await page.getByRole('heading', { name: 'Resume extraction', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
   // Legacy proposal review remains readable, but the UI now requests scoped
   // extraction. Create one legacy request privately to exercise that path.
   const legacyRequest = await cli('resume-extraction-request-create', ['--resume-id', resume.id,
@@ -150,7 +150,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     page.on('dialog', dismissDialog);
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     assert.deepEqual(dialogs, [], 'Saved review decisions must allow navigation after a failed detail refresh');
-    await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Jobs', exact: true, level: 1 }).waitFor();
   } finally {
     page.off('dialog', dismissDialog);
     await page.unroute(detailPath);

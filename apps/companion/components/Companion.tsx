@@ -16,6 +16,7 @@ import './automation.css';
 import './trash.css';
 import './resume-facts.css';
 import './title-discovery.css';
+import './companion-polish.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
@@ -106,11 +107,11 @@ export default function Companion() {
         <a className="skip-link" href="#workspace-content">Skip to workspace</a>
         <header className="topbar">
             <div className="topbar-inner">
-                <button className="brand-home" aria-label="Open overview" onClick={() => navigate('overview')}>J</button>
+                <button className="brand-home" aria-label="Open overview" onClick={() => navigate('overview')}><span className="brand-mark" aria-hidden="true">J</span><span className="brand-name" aria-hidden="true">Job Apply<span>Companion</span></span></button>
                 <p id="workspace-nav-overflow-hint" className="visually-hidden">Workspace navigation scrolls horizontally on narrow screens.</p>
                 <nav className="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-nav-overflow-hint">
                     <div className="nav-group" role="group" aria-labelledby="nav-group-pipeline">
-                        <span id="nav-group-pipeline" className="visually-hidden">Pipeline</span>
+                        <span id="nav-group-pipeline" className="nav-group-label">Pipeline</span>
                         <div className="nav-group-links">
                             {navButton('overview','Overview')}
                             {navButton('jobs','Jobs')}
@@ -118,7 +119,7 @@ export default function Companion() {
                         </div>
                     </div>
                     <div className="nav-group" role="group" aria-labelledby="nav-group-data">
-                        <span id="nav-group-data" className="visually-hidden">Application data</span>
+                        <span id="nav-group-data" className="nav-group-label">Your materials</span>
                         <div className="nav-group-links">
                             {navButton('facts','Facts')}
                             {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
@@ -127,7 +128,7 @@ export default function Companion() {
                         </div>
                     </div>
                     <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
-                        <span id="nav-group-controls" className="visually-hidden">Controls</span>
+                        <span id="nav-group-controls" className="nav-group-label">Controls</span>
                         <div className="nav-group-links">
                             {token&&!nativeWorkspace&&<a className="nav-link" href={legacyHref} onClick={event => {
                                 if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();

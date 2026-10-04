@@ -1,0 +1,107 @@
+/* Shared presentation for the Companion shell and workspaces. */
+:root {
+  --ink:#183127;
+  --muted:#506359;
+  --line:#d7e1d8;
+  --green:#176149;
+  --green-2:#104932;
+  --mint:#e3f2e8;
+  --paper:#f5f7f2;
+  --panel:#fff;
+  --shadow:0 8px 30px rgba(24,49,39,.055);
+}
+body { background:linear-gradient(180deg,#edf5ed 0,#f5f7f2 240px) fixed }
+button,.button { font-weight:680 }
+.topbar { background:rgba(255,255,255,.96);box-shadow:0 3px 20px rgba(24,49,39,.045) }
+.topbar-inner { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 1rem;padding:.75rem 0 .35rem }
+.brand-home { display:flex;align-items:center;gap:.65rem;justify-self:start;width:auto;height:auto;min-height:2.5rem;padding:0;border-radius:0;background:transparent;color:var(--ink);box-shadow:none;font:inherit;text-align:left }
+.brand-home:hover:not(:disabled) { background:transparent;box-shadow:none }
+.brand-mark { display:grid;place-items:center;width:2.35rem;height:2.35rem;border-radius:.7rem;background:var(--green);color:white;font:700 1.1rem Georgia,serif }
+.brand-name { display:grid;gap:0;font-size:.92rem;font-weight:800;line-height:1.08;letter-spacing:-.025em }
+.brand-name span { color:var(--muted);font-size:.72rem;font-weight:600;letter-spacing:.02em }
+.connection { grid-column:2;grid-row:1;align-self:center;background:transparent;border-color:var(--line) }
+.workspace-nav { grid-column:1/-1;grid-row:2;gap:0;min-height:3.25rem;margin-top:.4rem;border-top:1px solid var(--line);scrollbar-width:thin }
+.workspace-nav::-webkit-scrollbar { display:block;height:3px }
+.workspace-nav::-webkit-scrollbar-thumb { background:#b1c5b7 }
+.nav-group { gap:.3rem;padding:0 .5rem;border-left:1px solid var(--line) }
+.nav-group:first-of-type { padding-left:0 }
+.nav-group-label { flex:0 0 auto;color:#4e6658;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap }
+.nav-group-links { gap:.1rem }
+.nav-link { min-height:2.35rem;padding:.45rem .5rem;font-size:.78rem;font-weight:650 }
+.nav-link[aria-current=page] { background:var(--mint);font-weight:800 }
+.nav-link[aria-current=page]::after { display:none }
+.nav-count { background:#edf1ed }
+.companion { width:min(1160px,calc(100% - 3rem));margin-bottom:4rem }
+.fixture-notice { margin:1rem 0 0;padding:.55rem .8rem;border:1px solid #c8dfcf;border-radius:.65rem;background:#edf7ef;font-weight:600 }
+.companion .workspace-hero,.companion .overview-hero { padding:clamp(1.5rem,3.5vw,2.7rem) 0 1.35rem!important }
+.companion .workspace-hero h1,.overview-hero h1 { font:650 clamp(2.15rem,4.5vw,3.65rem)/1.08 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.055em }
+.overview-hero h1 { max-width:760px }
+.overview-hero p:not(.eyebrow),.workspace-hero-copy p:not(.eyebrow) { max-width:590px;margin:.55rem 0 0;font-size:.94rem;line-height:1.55 }
+.eyebrow { margin-bottom:.4rem;color:#36775a;font-size:.68rem;letter-spacing:.12em }
+.overview-grid { grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:1.15rem }
+.overview-grid article,.workspace-panel,.editor-panel { border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow) }
+.overview-grid article { padding:clamp(1.3rem,2.5vw,1.85rem) }
+.overview-grid h2,.workspace-panel-heading h2 { font:700 clamp(1.35rem,2.3vw,1.85rem)/1.2 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.035em }
+.overview-grid h2 { margin:.15rem 0 .55rem }
+.overview-grid p { font-size:.88rem;line-height:1.55 }
+.next-step-card { display:flex;flex-direction:column;align-items:flex-start;min-height:265px;background:linear-gradient(135deg,#176149,#134633)!important }
+.next-step-card h2 { max-width:28rem;font-size:clamp(1.7rem,2.8vw,2.35rem) }
+.next-step-card .primary { margin-top:auto }
+.setup-card { display:flex;flex-direction:column }
+.setup-checklist { gap:0;font-size:.82rem }
+.setup-checklist li,.setup-checklist li.complete { min-height:3.45rem;padding:.55rem 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent }
+.setup-checklist li span { display:flex;align-items:center;gap:.3rem }
+.setup-checklist .text-action { font-size:.78rem;white-space:nowrap }
+.overview-counts { margin-top:auto;padding-top:1rem;font-weight:700 }
+.handoff-card,.recovery-card { grid-column:auto }
+.recovery-card { background:#fdfefa!important }
+.invocation { grid-template-columns:5.5rem minmax(0,1fr) auto;gap:.5rem }
+.invocation .button { padding:.55rem .8rem;font-size:.76rem }
+.workspace-panel { padding:clamp(1.2rem,2.8vw,1.8rem) }
+.companion section.workspace-panel { padding:clamp(1.2rem,2.8vw,1.8rem) }
+.companion section.workspace-panel>header { padding:0 0 1rem }
+.workspace-panel-heading { align-items:center;padding-bottom:.9rem }
+.pipeline-metrics,.resume-metrics,.extraction-metrics,.trash-metrics { gap:.8rem }
+.pipeline-metrics>div,.resume-metrics>div,.extraction-metrics>div,.trash-metrics>div { min-height:90px;padding:1rem 1.2rem;border-color:var(--line);border-radius:12px;background:white }
+.pipeline-metrics strong,.resume-metrics strong,.extraction-metrics strong,.trash-metrics strong { font:700 1.7rem/1.1 ui-sans-serif,system-ui,sans-serif;letter-spacing:-.04em }
+.pipeline-metrics span,.resume-metrics span,.extraction-metrics span,.trash-metrics span { font-size:.75rem }
+.workspace-empty { min-height:180px;padding:2.5rem 1rem }
+.workspace-empty strong { font:700 1.15rem ui-sans-serif,system-ui,sans-serif }
+.job-card strong,.attention-identity strong,.resume-card-heading strong,.trash-card h3 { font-family:ui-sans-serif,system-ui,sans-serif }
+.attention-card { background:white;border-color:var(--line);box-shadow:var(--shadow) }
+.attention-card:hover:not(:disabled) { background:#f3f9f4 }
+.facts-organizer { background:#eff7f0 }
+.fact-card,.resume-card,.answer-support-list>li,.extraction-list>li { background:#fcfdfa }
+label { font-size:.82rem }
+input:not([type=checkbox]):not([type=radio]),textarea,select { min-height:42px;border-color:#b9c9bd }
+@media(max-width:1100px) {
+  .nav-group-label { display:none }
+  .nav-group { padding:0 .55rem }
+}
+@media(max-width:760px) {
+  .topbar-inner { width:calc(100% - 1.5rem);gap:0 .5rem;padding:.55rem 0 .2rem }
+  .brand-home { min-height:2.3rem }
+  .brand-mark { width:2.15rem;height:2.15rem }
+  .brand-name { font-size:.84rem }
+  .connection { width:auto;min-height:2rem;padding:0 .55rem }
+  .connection-label { display:none }
+  .workspace-nav { min-height:2.85rem;margin-top:.3rem }
+  .nav-group { padding:0 .3rem }
+  .nav-link { min-height:2.1rem;padding:.4rem .55rem }
+  .companion { width:calc(100% - 1.5rem) }
+  .companion .workspace-hero,.overview-hero { gap:.85rem;padding:1.6rem 0 1.1rem!important }
+  .companion .workspace-hero h1,.overview-hero h1 { font-size:clamp(2rem,8vw,3rem) }
+  .overview-grid { grid-template-columns:1fr }
+  .next-step-card { min-height:220px }
+  .handoff-card,.recovery-card { grid-column:auto }
+  .invocation { grid-template-columns:minmax(0,1fr) auto }
+  .invocation>span { grid-column:1/-1 }
+  .invocation .button { grid-column:1/-1;justify-self:start }
+  .workspace-panel-heading { align-items:stretch }
+  .setup-checklist li { flex-wrap:wrap }
+}
+@media(max-width:340px) {
+  .brand-name { display:none }
+  .connection-label { display:none }
+  .connection { width:2rem;justify-content:center }
+}

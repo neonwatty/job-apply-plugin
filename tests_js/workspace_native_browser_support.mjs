@@ -70,7 +70,7 @@ export async function nativeJobsBrowser(buildRoot) {
     });
     await page.goto(startup.url);
     await page.getByText(/Synthetic native workspace/).waitFor();
-    await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
     assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
@@ -103,7 +103,7 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: 'Save job', exact: true }).click();
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.reload();
-    await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: /Native fixture role/ }).click();

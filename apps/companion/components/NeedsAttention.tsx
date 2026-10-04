@@ -10,9 +10,9 @@ export function NeedsAttention({client,openJob}:{client:Client;openJob:(id:strin
   return <section className="attention-workspace" aria-label="Needs Attention">
     <header className="workspace-hero">
       <div className="workspace-hero-copy">
-        <p className="eyebrow">Needs attention</p>
-        <h1>A calm queue for human intervention.</h1>
-        <p>Review jobs that need your information, browser action, or recovery. Open a job to use the supported resolution actions; final submission stays manual.</p>
+        <p className="eyebrow">Pipeline</p>
+        <h1>Needs attention</h1>
+        <p>These jobs need information, a browser action, or recovery. Open a job to see what to do next.</p>
       </div>
       <div className="workspace-hero-actions"><button type="button" onClick={refresh} disabled={loading}>Refresh attention</button></div>
     </header>
