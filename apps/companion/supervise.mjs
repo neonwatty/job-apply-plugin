@@ -228,6 +228,7 @@ export async function superviseMain(args = process.argv.slice(2), app = dirname(
   const interrupt = () => stop(0); process.once('SIGINT', interrupt); process.once('SIGTERM', interrupt);
   try {
     const options = parseSupervisorOptions(args, app);
+    if (options.nativeLock) loadPosixFlockProvider(options.nativeLock);
     if (!options.dev) {
       try { await ensureStandalone(options.pluginRoot, { signal: abort.signal,
         report: message => process.stderr.write(`${message}\n`) }); }
