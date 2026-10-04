@@ -3,17 +3,69 @@ import test from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { constants } from 'node:fs';
-import { chmod, mkdir, open, readFile, realpath, stat, symlink, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { chmod, mkdir, mkdtemp, open, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { activateNativeWriter, rollbackNativeWriter } from '../runtime/store/native-writer-switch.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { acquireAttemptExclusion, assertNoLiveDetachedAttempt, parseSupervisorOptions, prepareNativeDefault, resolveSupervisorRoot, runSupervisor } from '../apps/companion/supervise.mjs';
 import { attemptSocketPath } from '../runtime/cli/attempt-protocol.js';
+import { ensureStandalone } from '../apps/companion/ensure-standalone.mjs';
 
 const app = new URL('../apps/companion/', import.meta.url).pathname;
 const execute = promisify(execFile);
+
+test('source-only Companion builds once under a process lock before Store activation', async t => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-bootstrap-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const appRoot = join(root, 'apps/companion'); await mkdir(appRoot, { recursive: true });
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  const steps = [], messages = [];
+  const runner = async (command, args) => {
+    steps.push([command, ...args]);
+    if (args[0] === 'run') {
+      const build = join(appRoot, '.next/standalone/apps/companion');
+      await mkdir(join(build, '.next/static'), { recursive: true });
+      await writeFile(join(build, 'server.js'), 'synthetic build\n');
+    }
+  };
+  const options = { provider, runner, report: message => messages.push(message) };
+  assert.deepEqual(await Promise.all([
+    ensureStandalone(root, options), ensureStandalone(root, options),
+  ]).then(results => results.sort()), [false, true]);
+  assert.deepEqual(steps.map(step => step.slice(0, 2)), [['npm', 'ci'], ['npm', 'run']]);
+  assert.equal(messages.length, 1);
+  assert.equal(await ensureStandalone(root, options), false);
+  assert.equal(steps.length, 2);
+});
+
+test('Companion build failure does not leave a false ready marker', async t => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-bootstrap-fail-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const appRoot = join(root, 'apps/companion'); await mkdir(appRoot, { recursive: true });
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  await assert.rejects(ensureStandalone(root, { provider, runner: async (command, args) => {
+    if (args[0] === 'run') {
+      const partial = join(appRoot, '.next/standalone/apps/companion');
+      await mkdir(partial, { recursive: true });
+      await writeFile(join(partial, 'server.js'), 'incomplete build\n');
+      throw Error('synthetic build failure');
+    }
+  } }), /synthetic build failure/);
+  const steps = [];
+  await ensureStandalone(root, { provider, runner: async (command, args) => {
+    steps.push(args[0]);
+    if (args[0] === 'run') {
+      const build = join(appRoot, '.next/standalone/apps/companion');
+      await mkdir(join(build, '.next/static'), { recursive: true });
+      await writeFile(join(build, 'server.js'), 'synthetic retry\n');
+    }
+  } });
+  assert.deepEqual(steps, ['ci', 'run']);
+});
 
 test('Companion supervisor resolves the ordinary Store root with closed options', () => {
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions(['--root', '/tmp/explicit'], app), {}, '/tmp/home'), '/tmp/explicit');
