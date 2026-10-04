@@ -98,6 +98,11 @@ After installing, confirm that `codex plugin list --json` selects the manifest's
 version directory and start a new Codex task. This keeps branch tests tied to one
 explicit candidate instead of a previously cached package with the same version.
 
+The first Companion launch after a source-only marketplace install builds its
+local standalone server from the pinned npm lockfile before opening the workspace.
+This requires npm and package-registry access; later launches reuse the build
+until the plugin is refreshed.
+
 ### Claude Code
 
 ```bash

@@ -51,6 +51,8 @@ tar --exclude='./.git' \
   --exclude='./qa/runs' \
   --exclude='./.job-apply-qa' \
   --exclude='./node_modules' \
+  --exclude='./apps/companion/.next' \
+  --exclude='./apps/companion/.companion-build' \
   --exclude='./coverage' \
   --exclude='./dist' \
   --exclude='./build' \
@@ -62,12 +64,9 @@ tar --exclude='./.git' \
   -cf "$SMOKE_TEMP_ROOT/plugin-source.tar" -C "$REPO_ROOT" .
 tar -xf "$SMOKE_TEMP_ROOT/plugin-source.tar" -C "$SMOKE_SOURCE_FIXTURE_DIR"
 rm -f -- "$SMOKE_TEMP_ROOT/plugin-source.tar"
-echo "Building production Companion inside isolated marketplace fixture"
-(
-  cd "$SMOKE_SOURCE_FIXTURE_DIR"
-  npm ci
-  npm run companion:build
-)
+echo "Bootstrapping production Companion from source-only marketplace fixture"
+node "$REPO_ROOT/scripts/smoke/source_bootstrap.mjs" "$SMOKE_SOURCE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
+rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/apps/companion/.companion-build"
 echo "Packaging native lock provider for this host"
 node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_SOURCE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" copy-critical \

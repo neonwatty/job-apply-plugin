@@ -11,7 +11,7 @@ For first use or a handoff between Companion and an agent, read the shared [work
 
 ## Launch
 
-1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains `apps/companion/launch.mjs`, its standalone build, and the host's packaged native lock. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks.
+1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains `apps/companion/launch.mjs` and the host's packaged native lock. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks. The launcher assembles a missing standalone build on first use, so the installed build need not exist yet.
 2. Run exactly:
 
    ```bash
@@ -20,7 +20,7 @@ For first use or a handoff between Companion and an agent, read the shared [work
 
 3. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
 
-The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and uses the canonical native Store runtime. The browser never reads or writes Store files directly. It needs no account, cloud service, telemetry, separate database, Python runtime, or frontend installation.
+The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and uses the canonical native Store runtime. The browser never reads or writes Store files directly. A source-only marketplace installation prepares its standalone Companion on first launch using the pinned npm lockfile; this needs npm and package-registry access once per refresh. Applicant data stays local; the workspace needs no account, telemetry, separate database, or Python runtime.
 
 ## Boundaries and completion
 

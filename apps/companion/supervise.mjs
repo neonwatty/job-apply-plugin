@@ -11,6 +11,7 @@ import { withExclusiveFileLock } from '../../runtime/store/exclusive-file-lock.j
 import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
+import { ensureStandalone } from './ensure-standalone.mjs';
 
 const values = new Set(['--root', '--plugin-root', '--port', '--native-lock', '--legacy-profile']);
 export function parseSupervisorOptions(args, app) {
@@ -225,8 +226,20 @@ export async function superviseMain(args = process.argv.slice(2), app = dirname(
   const abort = new AbortController(); let stopped = false;
   const stop = code => { stopped = true; abort.abort(); void running?.controller.stop().catch(() => {}); process.exitCode = code; };
   const interrupt = () => stop(0); process.once('SIGINT', interrupt); process.once('SIGTERM', interrupt);
-  try { running = await runSupervisor(parseSupervisorOptions(args, app), { signal: abort.signal }); process.stdout.write(`${running.line}\n`); }
-  catch { process.stderr.write('Companion native supervisor failed\n'); stop(1); }
+  try {
+    const options = parseSupervisorOptions(args, app);
+    if (options.nativeLock) loadPosixFlockProvider(options.nativeLock);
+    if (!options.dev) {
+      try { await ensureStandalone(options.pluginRoot, { signal: abort.signal,
+        report: message => process.stderr.write(`${message}\n`) }); }
+      catch (error) {
+        if (!abort.signal.aborted) process.stderr.write('Companion local build failed; npm and package-registry access are required for a source-only installation.\n');
+        throw error;
+      }
+    }
+    running = await runSupervisor(options, { signal: abort.signal }); process.stdout.write(`${running.line}\n`);
+  }
+  catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); stop(1); } }
   try { if (running) await running.completion; }
   catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); process.exitCode = 1; } }
   finally { process.off('SIGINT', interrupt); process.off('SIGTERM', interrupt); }
