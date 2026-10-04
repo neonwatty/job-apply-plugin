@@ -65,12 +65,7 @@ tar --exclude='./.git' \
 tar -xf "$SMOKE_TEMP_ROOT/plugin-source.tar" -C "$SMOKE_SOURCE_FIXTURE_DIR"
 rm -f -- "$SMOKE_TEMP_ROOT/plugin-source.tar"
 echo "Bootstrapping production Companion from source-only marketplace fixture"
-(
-  cd "$SMOKE_SOURCE_FIXTURE_DIR"
-  test ! -e apps/companion/.next/standalone/apps/companion/server.js
-  node --input-type=module -e 'import { ensureStandalone } from "./apps/companion/ensure-standalone.mjs"; await ensureStandalone(process.cwd());'
-  test -f apps/companion/.next/standalone/apps/companion/server.js
-)
+node "$REPO_ROOT/scripts/smoke/source_bootstrap.mjs" "$SMOKE_SOURCE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
 rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/apps/companion/.companion-build"
 echo "Packaging native lock provider for this host"
 node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_SOURCE_FIXTURE_DIR"
