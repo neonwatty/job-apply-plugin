@@ -20,7 +20,7 @@ For first use or a handoff between Companion and an agent, read the shared [work
 
 3. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
 
-The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and uses the canonical native Store runtime. The browser never reads or writes Store files directly. A source-only marketplace installation prepares its standalone Companion on first launch using the pinned npm lockfile; this needs npm and package-registry access once per refresh. It needs no account, cloud service, telemetry, separate database, or Python runtime.
+The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and uses the canonical native Store runtime. The browser never reads or writes Store files directly. A source-only marketplace installation prepares its standalone Companion on first launch using the pinned npm lockfile; this needs npm and package-registry access once per refresh. Applicant data stays local; the workspace needs no account, telemetry, separate database, or Python runtime.
 
 ## Boundaries and completion
 
