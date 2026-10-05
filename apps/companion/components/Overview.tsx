@@ -55,7 +55,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     const heading = Array.isArray(guidance) && typeof guidance[0] === 'string'
         ? guidance[0] : 'Review the workspace';
     const guidanceCopy = Array.isArray(guidance) && typeof guidance[1] === 'string'
-        ? guidance[1] : 'Refresh the canonical Store and choose a workspace section.';
+        ? guidance[1] : 'Choose a section to get started.';
     const nativeDestinations = ['facts','resumes','attention','answers','automation','settings','trash'];
     async function copyInvocation(value:string,label:string) {
         try {
@@ -73,7 +73,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
             : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>;
     return <div className="overview-workspace">
         <section className="overview-hero">
-            <div><p className="eyebrow">Private owner workspace</p><h1>Know what to do next.</h1><p>Your setup and next step come from the canonical local Store. This workspace never submits an application.</p></div>
+            <div><p className="eyebrow">Overview</p><h1>Your next move, at a glance.</h1><p>See what needs work, check your setup, and pick up where you left off.</p></div>
             <button className="button secondary" aria-label="Refresh overview" onClick={() => void refresh()}>Refresh</button>
         </section>
         {loading && <p role="status">{data ? 'Refreshing overview…' : 'Loading overview…'}</p>}
@@ -87,7 +87,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
                     <p className="eyebrow">Next step</p><h2>{heading}</h2><p>{guidanceCopy}</p>{action}
                 </article>
                 <article className="setup-card" aria-labelledby="setup-heading">
-                    <p className="eyebrow">Setup</p><h2 id="setup-heading">Local foundation</h2>
+                    <p className="eyebrow">Your setup</p><h2 id="setup-heading">Ready to apply?</h2>
                     <ul className="setup-checklist">
                         <li className={data.setup.hasResume?'complete':''}><span>{data.setup.hasResume?'✓':'○'} Resume {data.setup.hasResume?'available':'needed'}</span>
                             {openWorkspace?<button className="text-action" onClick={() => openWorkspace('resumes')}>Manage Resumes</button>:<a href={link('resumes')}>Manage Resumes</a>}</li>
@@ -101,8 +101,8 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
                     <p className="overview-counts">{data.counts.jobs} jobs · {data.counts.readyJobs} ready · {data.counts.attentionJobs} need attention</p>
                 </article>
                 <article className="handoff-card">
-                    <p className="eyebrow">Ready-job handoff</p><h2>Start an application agent</h2>
-                    <p>When a job is Ready, copy one supported invocation. The workspace does not run commands or submit.</p>
+                    <p className="eyebrow">When a job is ready</p><h2>Continue in your agent</h2>
+                    <p>Copy a command to start the application in Codex or Claude Code.</p>
                     <div className="invocation"><span>Codex</span><code>$job-apply:job-apply</code><button className="button secondary" onClick={() => void copyInvocation('$job-apply:job-apply','Codex')}>Copy Codex invocation</button></div>
                     <div className="invocation"><span>Claude Code</span><code>/job-apply:job-apply</code><button className="button secondary" onClick={() => void copyInvocation('/job-apply:job-apply','Claude Code')}>Copy Claude invocation</button></div>
                     {copyNotice&&<p className="copy-notice" role="status">{copyNotice}</p>}
@@ -110,8 +110,8 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
                     <p className="safety-note">The agent stops for final review. Only you may submit on the third-party site.</p>
                 </article>
                 <article className="recovery-card">
-                    <p className="eyebrow">Restart &amp; recovery</p><h2>Canonical state survives this browser</h2>
-                    <p>Restart the launcher to reconnect. Conflicts preserve your draft; interrupted attempts appear in Needs Attention; Trash restores individual records.</p>
+                    <p className="eyebrow">Recovery</p><h2>Pick up where you left off</h2>
+                    <p>Your local records survive a restart. Drafts stay available after a conflict; interrupted applications appear in Needs Attention, and Trash holds recoverable records.</p>
                     {openWorkspace&&<div className="button-row"><button className="button secondary" onClick={() => openWorkspace('attention')}>Review attention queue</button><button className="button secondary" onClick={() => openWorkspace('trash')}>Open Trash</button></div>}
                 </article>
             </section>

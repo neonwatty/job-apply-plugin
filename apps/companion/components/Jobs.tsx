@@ -157,9 +157,9 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     return <section className="jobs-workspace" aria-labelledby="jobs-workspace-title">
         <header className="workspace-hero">
             <div className="workspace-hero-copy">
-                <p className="eyebrow">Jobs workspace</p>
-                <h1 id="jobs-workspace-title">Keep every opportunity moving.</h1>
-                <p>Save opportunities, prepare applications, and track progress in your canonical local queue.</p>
+                <p className="eyebrow">Pipeline</p>
+                <h1 id="jobs-workspace-title">Jobs</h1>
+                <p>Save opportunities, prepare applications, and track each job from one place.</p>
             </div>
             <div className="workspace-hero-actions">
                 <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Refresh</button>{' '}

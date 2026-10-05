@@ -76,7 +76,7 @@ export async function nativeAutomationBrowser(page, root) {
   page.on('dialog',acceptNavigation);
   try {
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
-    await page.getByRole('heading',{name:'Jobs',exact:true}).waitFor();
+    await page.getByRole('heading',{name:'Jobs',exact:true,level:1}).waitFor();
   } finally { page.off('dialog',acceptNavigation); }
   assert.deepEqual(navigationPrompts,[],'Cancel clears the hidden portal draft before navigation');
   await page.getByRole('button',{name:'Accounts & Sign-in',exact:true}).click();

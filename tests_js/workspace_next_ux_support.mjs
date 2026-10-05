@@ -10,7 +10,7 @@ async function capture(page, name) {
 }
 
 export async function nextSetupAndLoading(page, url) {
-  await page.getByRole('heading', { name: 'Local foundation', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
   await page.evaluate(() => scrollTo(0, 0));
   await page.getByRole('button', { name: 'Answers', exact: true }).click();

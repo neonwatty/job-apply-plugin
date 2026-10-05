@@ -175,7 +175,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     const managed = records.filter(record => record.storageKind === 'managed').length;
     const defaultResume = records.find(record => record.default);
     return <section className="resumes-workspace" aria-labelledby="resumes-workspace-title">
-        <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes workspace</p><h1 id="resumes-workspace-title">Your private resume library.</h1><p>Managed files stay in the canonical local store and remain available to Job Apply agents and the CLI.</p></div><div className="workspace-hero-actions">
+        <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="resumes-workspace-title">Resumes</h1><p>Manage the resume files available to your application agents.</p></div><div className="workspace-hero-actions">
             <button className="secondary" disabled={busy} onClick={() => void refresh()}>Refresh</button>
             {openExtractions&&<button className="secondary" disabled={busy} onClick={openExtractions}>Resume extraction</button>}
             <button className="primary" disabled={busy} onClick={() => open(null)}>Import resume</button>

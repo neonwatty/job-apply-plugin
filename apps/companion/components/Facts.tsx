@@ -54,7 +54,7 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
   }
   return <section className="facts-workspace" aria-labelledby="facts-workspace-title">
     <header className="workspace-hero">
-      <div className="workspace-hero-copy"><p className="eyebrow">Facts workspace</p><h1 id="facts-workspace-title">Your canonical application facts.</h1><p>Review and selectively edit the same local profile used by Job Apply agents.</p></div>
+      <div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="facts-workspace-title">Facts</h1><p>Review the profile details your application agents use.</p></div>
       <div className="workspace-hero-actions">
         <button className="secondary" disabled={busy||loading||invalid} onClick={()=>void refresh()}>Refresh facts</button>
       </div>
