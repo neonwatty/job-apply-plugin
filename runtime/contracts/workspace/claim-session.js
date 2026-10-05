@@ -18,7 +18,7 @@ function blockerType(code) {
         return 'browser_handoff';
     return 'readiness';
 }
-const agentTypes = Object.fromEntries(agentCodes.map(code => [code, code === 'consent-required' ? 'owner_review' : code === 'owner-input-required' ? 'information' : 'browser_handoff']));
+const agentTypes = Object.fromEntries(agentCodes.map(code => [code, ['consent-required', 'site-required-opt-in-conflict'].includes(code) ? 'owner_review' : code === 'owner-input-required' ? 'information' : 'browser_handoff']));
 export function buildClaimSession(applicationId, incoming, context) {
     check(fields(incoming, ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff', 'handoffChecklist']), 'session contains unsupported fields');
     safeAnswerSessionId(text(applicationId));

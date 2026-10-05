@@ -36,3 +36,26 @@ test('native projection HTTP and Python-free CLI agree without rewriting canonic
     assert.deepEqual(await snapshot(root),before);
   } finally { await fixture.cleanup(); }
 });
+
+test('site-required opt-in conflict has a distinct value-free attention state', {timeout:60000}, async () => {
+  const fixture = await nativeFixture();
+  try {
+    const {root, repository, jobs, claims} = await setup(fixture, 'site-consent-conflict');
+    await claims.select('job', 1n, true);
+    const acquired = JSON.parse((await import('../runtime/contracts/workspace/values.js')).serialize(
+      await claims.acquire('job', text('PRIVATE-OWNER'), 2n)));
+    await claims.handoff('job', text(acquired.token), 'needs_info', fromJSON({
+      status:'active', attemptRevision:3, pendingFields:[], handoffChecklist:['consent_choice'],
+      blockers:[{type:'owner_review',code:'site-required-opt-in-conflict'}],
+    }), 3n);
+    const response = await jobsHttp(jobs, repository, 'GET', '/api/attention');
+    assert.equal(response.status, 200);
+    const attention = JSON.parse(response.body);
+    assert.equal(attention.items[0].reasonCode, 'site_consent_conflict');
+    assert.equal(attention.items[0].missingInformationCount, 0);
+    assert.deepEqual(attention.items[0].session.handoffChecklist, ['consent_choice']);
+    assert.match(attention.items[0].guidance, /saved decline/);
+    assert.doesNotMatch(response.body, /PRIVATE-OWNER|recurring automated text messages/);
+    assert.deepEqual(await cli(fixture, root, 'needs-attention'), attention);
+  } finally { await fixture.cleanup(); }
+});

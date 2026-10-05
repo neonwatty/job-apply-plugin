@@ -19,7 +19,7 @@ export function answerSnapshot(raw: string): Document {
 }
 export function answerDraft(record: Document): Document {
   const result = new PythonObject<Value>();
-  for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent']) if (has(record, key)) set(result, key, get(record, key));
+  for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent', 'answerIntent']) if (has(record, key)) set(result, key, get(record, key));
   return result;
 }
 export function answerPatch(base: Document, draft: Document): Document {

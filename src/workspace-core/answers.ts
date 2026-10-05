@@ -18,7 +18,8 @@ export interface AnswerQuery {
 }
 export function answerProjection(record: Document, references: AnswerReferenceCounts, detail = false, reveal = false): Document {
   const view = answerView(record), result = emptyObject();
-  for (const key of keys(view)) if (key !== 'value') set(result, key, get(view, key));
+  for (const key of keys(view)) if (key !== 'value' && (key !== 'answerIntent' || reveal)) set(result, key, get(view, key));
+  if (has(view, 'answerIntent')) set(result, 'hasAnswerIntent', true);
   set(result, 'hasValue', get(view, 'value') !== null);
   set(result, 'valueRedacted', sensitiveAnswer(view) && get(view, 'value') !== null);
   const count = references.get(string(get(view, 'key'))!) ?? { sessions: 0n, history: 0n };
@@ -184,6 +185,7 @@ export class AnswersService {
       set(updated, 'aliases', normalizeAliases(fallback(incoming, 'aliases', [])));
       set(updated, 'fieldClass', fallback(incoming, 'fieldClass', current ? fallback(current, 'fieldClass', text('general')) : text('general')));
       if (has(incoming, 'consentIntent')) set(updated, 'consentIntent', get(incoming, 'consentIntent'));
+      if (has(incoming, 'answerIntent')) set(updated, 'answerIntent', get(incoming, 'answerIntent'));
       set(updated, 'sensitivity', fallback(incoming, 'sensitivity', text(string(get(updated, 'state')) === 'sensitive' ? 'high' : 'none')));
       set(updated, 'reviewStatus', current ? fallback(current, 'reviewStatus', text('accepted')) : text(requestedReview!));
       set(updated, 'createdAt', current ? get(current, 'createdAt') ?? now : now);

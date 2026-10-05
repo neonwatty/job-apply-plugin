@@ -57,6 +57,25 @@ test('sensitive values require consent and stay out of every incidental projecti
   await assert.rejects(service.update('secret', fromJSON({ value: 'new-private-test-value' }), 2n), /remember consent/);
   assert.equal(writes(), 2);
 });
+test('veteran intent requires a precise sensitive answer and stays out of incidental projections', async () => {
+  const { service, writes } = fixture();
+  const base = plain(await service.put(fromJSON({ key: 'veteran', question: 'Veteran Status',
+    state: 'sensitive', value: 'I am not a veteran', sensitivity: 'high', scope: { country: 'US' } }), true));
+  const intent = { kind: 'veteran_status', status: 'not_a_veteran' };
+  await assert.rejects(service.update('veteran', fromJSON({ answerIntent: intent }), BigInt(base.revision)), /inconsistent/);
+  const saved = plain(await service.update('veteran', fromJSON({ answerIntent: intent, fieldClass: 'veteran_status' }), BigInt(base.revision)));
+  assert.equal(saved.hasAnswerIntent, true);
+  assert.equal(saved.answerIntent, undefined);
+  assert.equal(plain(await service.get('veteran')).answerIntent, undefined);
+  assert.equal(plain(await service.find('Veteran Status', fromJSON({ country: 'US' }))).answerIntent, undefined);
+  assert.equal(plain(await service.query()).items[0].answerIntent, undefined);
+  assert.deepEqual(plain(await service.get('veteran', true)).answerIntent, intent);
+  await assert.rejects(service.update('veteran', fromJSON({ value: 'I am a veteran, just not a protected veteran' }), 2n, true), /inconsistent/);
+  await assert.rejects(service.update('veteran', fromJSON({ answerIntent: { kind: 'veteran_status', status: 'unknown' } }), 2n), /answer intent is invalid/);
+  await assert.rejects(service.put(fromJSON({ key: 'other', question: 'Veteran?', state: 'sensitive',
+    value: 'I am not a veteran', sensitivity: 'high', scope: {}, answerIntent: intent }), true), /inconsistent/);
+  assert.equal(writes(), 2);
+});
 test('consent classification preserves sensitive value, identity and retention marker', async () => {
   const { service, writes } = fixture();
   const saved = plain(await service.put(fromJSON({ key: 'sms', question: 'Recruiting texts?', state: 'sensitive',

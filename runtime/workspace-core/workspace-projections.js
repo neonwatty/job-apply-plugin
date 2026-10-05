@@ -50,6 +50,7 @@ const reasons = [
     ['needs_information', 'Needs information', 'Open Job details and resolve the missing facts, resume, or answers, then run preflight and mark the job ready.'],
     ['owner_confirmation_required', 'Confirmation needed', 'Confirm the requested action for the visible application form, then mark the job ready to resume the attempt.'],
     ['pending_live_reconfirmation', 'Live confirmation needed', 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.'],
+    ['site_consent_conflict', 'Site consent conflict', 'The site requires an opt-in that conflicts with a saved decline. Review the visible notice and draft; do not opt in merely to advance.'],
 ];
 function compareText(a, b) {
     return text(a).compare(text(b));
@@ -76,6 +77,11 @@ function consentOnly(session) {
     const blockers = (get(session, 'blockers') ?? []);
     return blockers.length === 1 && label(blockers[0], 'type') === 'owner_review'
         && label(blockers[0], 'code') === 'consent-required';
+}
+function siteConsentConflict(session) {
+    const blockers = (get(session, 'blockers') ?? []);
+    return blockers.some(item => label(item, 'type') === 'owner_review'
+        && label(item, 'code') === 'site-required-opt-in-conflict');
 }
 function attentionLocked(tx, now) {
     const rows = [];
@@ -109,7 +115,9 @@ function attentionLocked(tx, now) {
                 missing = (get(session, 'pendingFields') ?? []).length;
                 revision = integer(sessionRevision(session));
                 projected = select(session, sessionFields);
-                if (reason === 4 && missing === 0 && browserOnly(session))
+                if (reason === 4 && siteConsentConflict(session))
+                    reason = 7;
+                else if (reason === 4 && missing === 0 && browserOnly(session))
                     reason = 3;
                 else if (reason === 4 && missing === 0 && consentOnly(session))
                     reason = 5;

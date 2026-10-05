@@ -93,3 +93,10 @@ test('consent draft starts sensitive and metadata-only edits do not replace hidd
   set(draft, 'consentIntent', null);
   assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch, { consentIntent: null });
 });
+test('revealed structured answer intent survives unrelated Companion edits', () => {
+  const base = record('{"key":"veteran","revision":3,"question":"Veteran Status","state":"sensitive","sensitivity":"high","scope":{"country":"US"},"value":"I am not a veteran","answerIntent":{"kind":"veteran_status","status":"not_a_veteran"}}');
+  const draft = model.answerDraft(base);
+  set(draft, 'aliases', parse('["Military status"]'));
+  assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch, { aliases: ['Military status'] });
+  assert.deepEqual(JSON.parse(serialize(get(draft, 'answerIntent'))), { kind: 'veteran_status', status: 'not_a_veteran' });
+});
