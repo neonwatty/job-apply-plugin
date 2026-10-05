@@ -28,7 +28,7 @@ export function consentIntent(record: Document): Document | null {
   return validateConsentIntent(value);
 }
 const veteranStatuses = new Set(['not_a_veteran', 'veteran_not_protected', 'protected_veteran', 'decline_to_identify']);
-const veteranAnswerValues: Record<string,string> = {
+export const veteranAnswerValues: Record<string,string> = {
   not_a_veteran: 'I am not a veteran',
   veteran_not_protected: 'I am a veteran, just not a protected veteran',
   protected_veteran: 'I am a protected veteran',

@@ -115,7 +115,7 @@ function attentionLocked(tx, now) {
                 missing = (get(session, 'pendingFields') ?? []).length;
                 revision = integer(sessionRevision(session));
                 projected = select(session, sessionFields);
-                if (reason === 4 && siteConsentConflict(session))
+                if (reason === 4 && missing === 0 && siteConsentConflict(session))
                     reason = 7;
                 else if (reason === 4 && missing === 0 && browserOnly(session))
                     reason = 3;

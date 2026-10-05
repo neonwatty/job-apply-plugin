@@ -51,6 +51,16 @@ test('a consent-only handoff requests confirmation rather than missing informati
   assert.equal(attention.items[0].missingInformationCount,0);
   assert.doesNotMatch(attention.items[0].guidance,/missing facts|missing answers/i);
 });
+test('a site consent conflict with another pending answer keeps missing-information guidance',async()=>{
+  const pending={reference:`pending_${'a'.repeat(32)}`,state:'missing',question:'PRIVATE QUESTION'};
+  const stored=session('one',{pendingFields:[pending],blockers:[{type:'owner_review',code:'site-required-opt-in-conflict'}]});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.equal(attention.items[0].missingInformationCount,1);
+  assert.deepEqual(attention.items[0].session.blockers,[{type:'owner_review',code:'site-required-opt-in-conflict'}]);
+  assert.doesNotMatch(JSON.stringify(attention),/PRIVATE QUESTION/);
+});
 test('closed handoff checklist reaches attention and activity without form wording',async()=>{
   const checklist=['resume_upload','passport_country','country_of_residence','age_over_18'];
   const stored=session('one',{handoffChecklist:checklist,blockers:[{type:'browser_handoff',code:'unsupported-control'}],

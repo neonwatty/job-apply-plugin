@@ -1,5 +1,7 @@
 import { FactValue } from './FactValue';
+import { selectVeteranStatus } from './answer-model';
 import { PythonObject } from '../../../src/contracts/python-object';
+import { veteranAnswerValues } from '../../../src/contracts/workspace/answers';
 import { copy, get, has, object, parse, set, string, text } from '../../../src/contracts/workspace/values';
 import type { Document, Value } from '../../../src/contracts/workspace/values';
 
@@ -22,16 +24,19 @@ function consentChoice(value: Value, retained: boolean): string {
   return 'custom';
 }
 
-export function AnswerFields({ draft, change, remember, creating = false }: {
+export function AnswerFields({ draft, change, remember, creating = false, structuredHidden = false }: {
   draft: Document;
   change: (draft: Document) => void;
   remember: boolean;
   creating?: boolean;
+  structuredHidden?: boolean;
 }) {
   const update = (field: string, value: Value) => change(set(copy(draft), field, value));
   const retainedValue = has(draft, 'value');
   const consent = get(draft, 'consentIntent');
   const intent = consent instanceof PythonObject ? consent : null;
+  const answerIntent = get(draft, 'answerIntent');
+  const veteranIntent = answerIntent instanceof PythonObject && string(get(answerIntent, 'kind')) === 'veteran_status' ? answerIntent : null;
   const updateIntent = (field: string, value: Value) => {
     const next = intent ? copy(intent) : object(parse('{"kind":"opt_in","purpose":""}'), 'consent intent');
     set(next, field, value);
@@ -53,7 +58,10 @@ export function AnswerFields({ draft, change, remember, creating = false }: {
       <option value="agree">Yes / agree</option><option value="decline">No / decline</option>
       <option value="acknowledge">Acknowledge</option><option value="custom">Custom wording</option>
     </select></label>}
-    {retainedValue ? <>
+    {retainedValue && veteranIntent ? <label>Veteran status<select aria-label="Veteran status" value={string(get(veteranIntent, 'status')) ?? ''}
+      onChange={event => change(selectVeteranStatus(draft, event.target.value))}>
+      {Object.entries(veteranAnswerValues).map(([status, value]) => <option key={status} value={status}>{value}</option>)}
+    </select></label> : retainedValue ? <>
       <FactValue label="Answer value" value={get(draft, 'value')} change={value => update('value', value)} />
       <label>Answer value type<select aria-label="Answer value type" value={valueType(get(draft, 'value'))} onChange={event => {
         const kind = event.target.value;
@@ -67,8 +75,10 @@ export function AnswerFields({ draft, change, remember, creating = false }: {
       </select></label>
     </> : !retainedValue ? <div>
       <p>The retained answer is hidden. Reveal it to view or edit it.</p>
-      <button type="button" disabled={!remember} onClick={() => update('value', text(''))}>Replace hidden answer</button>
-      {!remember && <p>To replace it without revealing it, first enable remember consent below.</p>}
+      {structuredHidden ? <p>Reveal this answer to change its veteran status.</p> : <>
+        <button type="button" disabled={!remember} onClick={() => update('value', text(''))}>Replace hidden answer</button>
+        {!remember && <p>To replace it without revealing it, first enable remember consent below.</p>}
+      </>}
     </div> : null}
     <label>Answer state<select aria-label="Answer state" disabled={Boolean(intent)} value={string(get(draft, 'state')) ?? 'missing'} onChange={event => update('state', text(event.target.value))}>
       <option value="confirmed">Confirmed</option><option value="inferred">Suggested</option>

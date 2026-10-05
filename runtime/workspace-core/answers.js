@@ -1,4 +1,4 @@
-import { answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
+import { answerIntent, answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { semanticLookup } from './answer-match.js';
@@ -8,7 +8,7 @@ export function answerProjection(record, references, detail = false, reveal = fa
     for (const key of keys(view))
         if (key !== 'value' && (key !== 'answerIntent' || reveal))
             set(result, key, get(view, key));
-    if (has(view, 'answerIntent'))
+    if (answerIntent(view) !== null)
         set(result, 'hasAnswerIntent', true);
     set(result, 'hasValue', get(view, 'value') !== null);
     set(result, 'valueRedacted', sensitiveAnswer(view) && get(view, 'value') !== null);

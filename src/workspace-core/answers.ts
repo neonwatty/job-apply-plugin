@@ -1,4 +1,4 @@
-import { answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
+import { answerIntent, answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
@@ -19,7 +19,7 @@ export interface AnswerQuery {
 export function answerProjection(record: Document, references: AnswerReferenceCounts, detail = false, reveal = false): Document {
   const view = answerView(record), result = emptyObject();
   for (const key of keys(view)) if (key !== 'value' && (key !== 'answerIntent' || reveal)) set(result, key, get(view, key));
-  if (has(view, 'answerIntent')) set(result, 'hasAnswerIntent', true);
+  if (answerIntent(view) !== null) set(result, 'hasAnswerIntent', true);
   set(result, 'hasValue', get(view, 'value') !== null);
   set(result, 'valueRedacted', sensitiveAnswer(view) && get(view, 'value') !== null);
   const count = references.get(string(get(view, 'key'))!) ?? { sessions: 0n, history: 0n };

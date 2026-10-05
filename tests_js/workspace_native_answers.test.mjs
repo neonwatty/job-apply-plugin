@@ -75,6 +75,11 @@ test('veteran intent requires a precise sensitive answer and stays out of incide
   await assert.rejects(service.put(fromJSON({ key: 'other', question: 'Veteran?', state: 'sensitive',
     value: 'I am not a veteran', sensitivity: 'high', scope: {}, answerIntent: intent }), true), /inconsistent/);
   assert.equal(writes(), 2);
+  await service.update('veteran', fromJSON({ answerIntent: null }), 2n);
+  assert.equal(plain(await service.get('veteran')).hasAnswerIntent, undefined);
+  assert.equal(plain(await service.find('Veteran Status', fromJSON({ country: 'US' }))).hasAnswerIntent, undefined);
+  assert.equal(plain(await service.query()).items[0].hasAnswerIntent, undefined);
+  assert.equal(plain(await service.get('veteran', true)).answerIntent, null);
 });
 test('consent classification preserves sensitive value, identity and retention marker', async () => {
   const { service, writes } = fixture();

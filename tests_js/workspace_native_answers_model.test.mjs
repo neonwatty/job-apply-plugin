@@ -7,6 +7,7 @@ import { parse, serialize, object, get, set, text, copy, has } from '../runtime/
 const source = await readFile(new URL('../apps/companion/components/answer-model.ts', import.meta.url), 'utf8');
 const emitted = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText
   .replaceAll('../../../src/contracts/python-object', new URL('../runtime/contracts/python-object.js', import.meta.url).href)
+  .replaceAll('../../../src/contracts/workspace/answers', new URL('../runtime/contracts/workspace/answers.js', import.meta.url).href)
   .replaceAll('../../../src/contracts/workspace/values', new URL('../runtime/contracts/workspace/values.js', import.meta.url).href);
 const model = await import(`data:text/javascript;base64,${Buffer.from(emitted).toString('base64')}`);
 const record = raw => object(parse(raw), 'answer');
@@ -99,4 +100,13 @@ test('revealed structured answer intent survives unrelated Companion edits', () 
   set(draft, 'aliases', parse('["Military status"]'));
   assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch, { aliases: ['Military status'] });
   assert.deepEqual(JSON.parse(serialize(get(draft, 'answerIntent'))), { kind: 'veteran_status', status: 'not_a_veteran' });
+});
+test('Companion veteran selection updates the value and structured status together', () => {
+  const base = record('{"key":"veteran","revision":3,"question":"Veteran Status","state":"sensitive","sensitivity":"high","scope":{"country":"US"},"value":"I am not a veteran","answerIntent":{"kind":"veteran_status","status":"not_a_veteran"}}');
+  const draft = model.selectVeteranStatus(model.answerDraft(base), 'veteran_not_protected');
+  assert.deepEqual(JSON.parse(model.answerMutation(base, draft, true)).patch, {
+    value: 'I am a veteran, just not a protected veteran',
+    answerIntent: { kind: 'veteran_status', status: 'veteran_not_protected' },
+  });
+  assert.throws(() => model.selectVeteranStatus(draft, 'unknown'), /Invalid veteran status/);
 });
