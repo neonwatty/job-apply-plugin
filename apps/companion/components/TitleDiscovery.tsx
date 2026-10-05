@@ -70,9 +70,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   const busyNow = useRef(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => {
-    if (!open) return;
-    const frame = requestAnimationFrame(() => heading.current?.focus());
-    return () => cancelAnimationFrame(frame);
+    if (open) heading.current?.focus();
   }, [open]);
   useEffect(() => {
     const active = new AbortController(); controller.current = active;
