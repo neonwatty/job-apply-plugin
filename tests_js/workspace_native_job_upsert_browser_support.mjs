@@ -1,8 +1,9 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // The caller owns an isolated native fixture; every upsert uses the native CLI.
 export async function jobUpsertBrowser(page, { upsert, readDocument }) {
-  const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
+
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
   const role = 'Native batch capture role';
   const url = 'https://example.invalid/native-batch-capture';
@@ -19,7 +20,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     assert.deepEqual(preview.summary, expected);
     assert.match(preview.token, /^job-upsert-v1\.[a-f0-9]{64}$/);
     assert.equal(await readDocument(), before, 'preview leaves canonical Jobs bytes unchanged');
-    await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     assert.equal(await page.getByRole('button', { name: new RegExp(role) }).count(), 0);
 
@@ -57,10 +58,10 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     assert.equal(updated.provenance['/ats'].origin, 'agent');
     assert.equal(updated.revision, humanRecord.revision + 1);
 
-    await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
+    await clickCompanionNav(page, 'Overview');
     await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     await page.reload();
-    await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: new RegExp(role) }).click();
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human-reviewed company');
@@ -68,7 +69,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     assert.equal(JSON.parse(await readDocument()).jobs[id].ats, 'Fixture ATS');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
-    await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
+    await clickCompanionNav(page, 'Overview');
     await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     assert.equal(navigationPrompts, 0, 'acknowledged CLI/browser writes leave no false unsaved draft');
     return { previewReadOnly: true, cliCommitVisible: true, humanProvenancePreserved: true,

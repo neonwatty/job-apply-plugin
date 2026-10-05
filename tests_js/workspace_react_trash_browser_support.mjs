@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // Caller provides a production Companion page connected only to a disposable Python Store.
@@ -21,8 +22,8 @@ export async function reactTrashBrowser(page, { origin, headers }) {
     ];
     const path = (fixture, action) => `/api/${fixture.collection}/${encodeURIComponent(fixture.id)}/${action}`;
     for (const fixture of fixtures) await api(path(fixture, 'trash'), { expectedRevision: fixture.record.revision });
-    const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
-    await navigation.getByRole('button', { name: 'Trash', exact: true }).click();
+
+    await clickCompanionNav(page, 'Trash');
     const workspace = page.locator('.trash-workspace');
     const refresh = page.getByRole('button', { name: 'Refresh Trash', exact: true });
     await workspace.locator('.trash-card').first().waitFor();
@@ -153,7 +154,7 @@ export async function reactTrashBrowser(page, { origin, headers }) {
         }) });
     });
     await page.reload({ waitUntil: 'networkidle' });
-    await navigation.getByRole('button', { name: 'Trash', exact: true }).click();
+    await clickCompanionNav(page, 'Trash');
     await workspace.getByRole('alert').waitFor();
     assert.equal(await workspace.getByText('Trash is empty', { exact: true }).count(), 0);
     await reload();

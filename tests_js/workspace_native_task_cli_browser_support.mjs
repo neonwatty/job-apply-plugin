@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -46,8 +47,8 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   assert.equal(created.action, 'create');
   const id = created.job.id;
   assert.deepEqual((await cli('snapshot')).snapshot.jobs.find(job => job.id === id), created.job);
-  const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
-  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+
+  await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('button', { name: new RegExp(role) }).click();
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
@@ -87,7 +88,7 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   assert.deepEqual((await cli('snapshot')).snapshot.jobs.find(job => job.id === id), selected.job);
   // Reload closes the old editor and loads the canonical revision before reopening.
   await page.reload();
-  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: new RegExp(role) })
     .filter({ hasText: new RegExp(`revision ${selected.job.revision}$`) }).click();
   await panel.getByText(/Status: ready/i).waitFor();

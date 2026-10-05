@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readyPacket } from './workspace_native_claims_support.mjs';
 
@@ -11,12 +12,12 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
     assert.equal(response.status(), 200, await response.text());
     return response.json();
   }
-  const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
+
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
   const status = modal.getByRole('region', { name: 'Job status', exact: true });
   const close = modal.getByRole('button', { name: 'Close job details', exact: true });
   async function open() {
-    await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     await status.getByRole('group', { name: 'Change local status' }).waitFor();
@@ -103,8 +104,8 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await status.getByText(/After an active claim is released/).waitFor();
   await change('Mark needs info', 'needs_info');
   const attentionCount = (await api('/api/overview')).counts.attentionJobs;
-  await navigation.getByRole('button', { name: 'Needs Attention', exact: true }).locator('.nav-count')
-    .getByText(String(attentionCount), { exact: true }).waitFor();
+  await page.waitForFunction(count =>
+    document.querySelector('#workspace-navigation button[aria-label="Needs Attention"] .nav-count')?.textContent?.trim() === String(count), attentionCount);
 
   // Hold a write, then hold only its background refresh: write guards must end at acknowledgement.
   let releasePost, postSeen, releaseGet, getSeen;
@@ -134,7 +135,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
     const dismiss = dialog => { navigationPrompts++; return dialog.dismiss(); };
     page.on('dialog', dismiss);
     try {
-      await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
+      await clickCompanionNav(page, 'Overview');
       await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
       assert.equal(navigationPrompts, 0);
     } finally { page.off('dialog', dismiss); }

@@ -1,8 +1,9 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // All report mutations and CLI calls are scoped to the caller's synthetic HOME.
 export async function legacyJobsBrowser(page, { legacy, writeReport, readDocument }) {
-  const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
+
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
   const role = 'Native legacy report role';
   const originalUrl = 'https://example.invalid/native-legacy-original';
@@ -17,7 +18,7 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   assert.equal(preview.summary.create, 1);
   assert.match(preview.token, /^legacy-jobs-v1\.[a-f0-9]{64}$/);
   assert.equal(await readDocument(), before, 'discovery and selected preview are read-only');
-  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await page.locator('[data-job-create]:enabled').waitFor();
   assert.equal(await page.getByRole('button', { name: new RegExp(role) }).count(), 0);
   const committed = await legacy('legacy-jobs-commit', [itemId], preview.token);
@@ -71,7 +72,7 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   const conflict = await legacy('legacy-jobs-commit', [itemId], conflictPreview.token);
   assert.equal(conflict.committed, false);
   assert.equal(await readDocument(), humanUrlBytes, 'human-owned URL conflicts leave Jobs unchanged');
-  await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
+  await clickCompanionNav(page, 'Overview');
   await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
   return { discoveryReadOnly: true, previewReadOnly: true, cliCommitVisible: true,
     humanProvenancePreserved: true, sourceLocatorRefreshed: true, humanUrlConflict: true, staleTokenRejected: true };

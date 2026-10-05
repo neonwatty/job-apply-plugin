@@ -1,8 +1,9 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // The caller owns a synthetic Store and invokes intake through the native CLI.
 export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }) {
-  const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
+
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
   const role = 'Native single-task capture role';
   const url = 'https://example.invalid/native-task-capture?private=fixture';
@@ -31,7 +32,7 @@ export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }
     assert.deepEqual(repeated.job, created.job);
     assert.equal(await readDocument(), beforeRepeat);
 
-    await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await page.getByRole('button', { name: new RegExp(role) }).click();
@@ -59,14 +60,14 @@ export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }
     assert.equal(Object.values(JSON.parse(beforeNoop).jobs).filter(job => job.id === id).length, 1);
 
     await page.reload();
-    await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: new RegExp(role) }).click();
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human task company');
     assert.equal(await modal.locator('[name="role"]').inputValue(), role);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
-    await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
+    await clickCompanionNav(page, 'Overview');
   await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     assert.equal(navigationPrompts, 0);
     return { cliIntakeVisible: true, duplicateNoop: true, humanProvenancePreserved: true,

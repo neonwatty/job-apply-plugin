@@ -1,9 +1,10 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export async function nativeAutomationBrowser(page, root) {
-  await page.getByRole('button',{name:'Automation',exact:true}).click();
+  await clickCompanionNav(page, 'Automation');
   const workspace=page.locator('.automation-workspace');
   await workspace.getByRole('heading',{name:'Automation',exact:true}).waitFor();
   await workspace.getByRole('heading',{name:'Application automation',exact:true}).waitFor();
@@ -36,7 +37,7 @@ export async function nativeAutomationBrowser(page, root) {
   await workspace.getByRole('button',{name:'Check approval status',exact:true}).click();
   await workspace.getByText('No approval exists for this job.',{exact:true}).waitFor();
 
-  await page.getByRole('button',{name:'Accounts & Sign-in',exact:true}).click();
+  await clickCompanionNav(page, 'Accounts & Sign-in');
   const accountsWorkspace=page.locator('.accounts-workspace');
   await accountsWorkspace.getByRole('heading',{name:'Accounts & Sign-in',exact:true}).waitFor();
   await accountsWorkspace.getByText('Sign-in is yours to complete',{exact:true}).waitFor();
@@ -73,11 +74,11 @@ export async function nativeAutomationBrowser(page, root) {
   const acceptNavigation=async dialog=>{navigationPrompts.push(dialog.message());await dialog.accept();};
   page.on('dialog',acceptNavigation);
   try {
-    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.getByRole('heading',{name:'Jobs',exact:true,level:1}).waitFor();
   } finally { page.off('dialog',acceptNavigation); }
   assert.deepEqual(navigationPrompts,[],'Cancel clears the hidden portal draft before navigation');
-  await page.getByRole('button',{name:'Accounts & Sign-in',exact:true}).click();
+  await clickCompanionNav(page, 'Accounts & Sign-in');
   await accountsWorkspace.getByRole('heading',{name:'Accounts & Sign-in',exact:true}).waitFor();
   await accountsWorkspace.getByText('Global account',{exact:true}).waitFor();
   assert.equal(await accountsWorkspace.getByRole('listitem').count(),2);

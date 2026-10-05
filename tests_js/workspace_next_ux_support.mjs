@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -13,28 +14,27 @@ export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
   await page.evaluate(() => scrollTo(0, 0));
-  await page.getByRole('button', { name: 'Answers', exact: true }).click();
+  await clickCompanionNav(page, 'Answers');
   assert.equal(await page.evaluate(() => scrollY), 0,
     'workspace navigation moves focus without pulling the page down to main');
-  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await clickCompanionNav(page, 'Overview');
   for (const [label, section] of [['Edit Facts', 'facts'], ['Manage Resumes', 'resumes']]) {
     const control = page.getByRole('button', { name: label, exact: true });
     await control.waitFor();
     await control.click();
-    await page.getByRole('button', { name: section[0].toUpperCase() + section.slice(1), exact: true })
-      .and(page.locator('[aria-current="page"]')).waitFor();
+    await page.locator(`#workspace-navigation button[aria-label="${section[0].toUpperCase() + section.slice(1)}"][aria-current="page"]`).waitFor({ state: 'attached' });
     await page.goto(url, { waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: 'Overview', exact: true }).click();
+    await clickCompanionNav(page, 'Overview');
   }
   // A slow native boot must not override a destination the user chose meanwhile.
   let bootRelease;
   const bootGate = new Promise(resolve => { bootRelease = resolve; });
   await page.route('**/api/boot', async route => { await bootGate; await route.continue(); });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'Facts', exact: true }).click();
+  await clickCompanionNav(page, 'Facts');
   bootRelease();
   await page.waitForLoadState('networkidle');
-  assert.equal(await page.getByRole('button', { name: 'Facts', exact: true }).getAttribute('aria-current'), 'page');
+  assert.equal(await page.locator('#workspace-navigation button[aria-label="Facts"]').getAttribute('aria-current'), 'page');
   await page.unroute('**/api/boot');
   await page.goto(url, { waitUntil: 'networkidle' });
   const boot = '**/api/boot';
@@ -44,7 +44,7 @@ export async function nextSetupAndLoading(page, url) {
   await page.unroute(boot);
   await page.getByRole('button', { name: 'Retry connection' }).click();
   await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await clickCompanionNav(page, 'Overview');
 
   let release;
   const gate = new Promise(resolve => { release = resolve; });
@@ -52,7 +52,7 @@ export async function nextSetupAndLoading(page, url) {
     await gate;
     await route.fulfill({ status: 503, json: { error: { message: 'Synthetic list failure' } } });
   });
-  await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await page.getByText('Loading jobs…', { exact: true }).waitFor();
   assert.equal(await page.getByText('No jobs saved yet.', { exact: true }).count(), 0);
   release();
@@ -143,11 +143,11 @@ export async function nextLateRead(page) {
   await page.waitForFunction(() => document.querySelector('[data-job-create]')?.disabled === false);
   assert.equal(await page.getByRole('button', { name: 'New job', exact: true }).isDisabled(), false,
     'A confirmed save must release controls before its background refresh completes');
-  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await clickCompanionNav(page, 'Overview');
   await cancelled;
   await page.unroute('**/api/state');
   release();
-  await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: /Next synthetic role/ }).waitFor();
   assert.equal(await page.getByText('No jobs saved yet.', { exact: true }).count(), 0);
 }

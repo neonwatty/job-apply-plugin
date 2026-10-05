@@ -1,14 +1,15 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 export async function projectionsBrowser(page, {jobId, markReady}) {
-  const navigation = page.getByRole('navigation', {name:'Workspace sections'});
-  await navigation.getByRole('button', {name:'Overview',exact:true}).click();
+
+  await clickCompanionNav(page, 'Overview');
   await page.getByRole('heading', {name:'Your next move, at a glance.',exact:true}).waitFor();
   await page.getByRole('button', {name:'Open Needs Attention',exact:true}).waitFor();
   assert.equal(await page.getByRole('link', {name:'Edit Facts',exact:true}).count(),0);
   await page.getByRole('button', {name:'Manage Resumes',exact:true}).click();
   await page.getByRole('button', {name:'Import resume',exact:true}).waitFor();
-  await navigation.getByRole('button', {name:'Overview',exact:true}).click();
+  await clickCompanionNav(page, 'Overview');
   await page.getByRole('button', {name:'Open Needs Attention',exact:true}).waitFor();
   await page.route('**/api/overview',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":{"message":"Synthetic outage"}}'}));
   await page.getByRole('button', {name:'Refresh overview',exact:true}).click();
@@ -41,14 +42,14 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   assert.equal(await modal.locator('[name="notes"]').inputValue(),'Projection navigation draft');
   page.once('dialog',dialog=>dialog.accept());
   await modal.getByRole('button',{name:'Close job details',exact:true}).click();
-  await navigation.getByRole('button',{name:'Needs Attention',exact:true}).click();
+  await clickCompanionNav(page, 'Needs Attention');
   await attention.getByRole('button',{name:`Open job ${jobId}`,exact:true}).waitFor();
   await markReady();
   await attention.getByRole('button',{name:'Refresh attention',exact:true}).click();
   await attention.getByRole('button',{name:`Open job ${jobId}`,exact:true}).waitFor({state:'hidden'});
   // The preceding Answers walkthrough deliberately retains another unresolved job.
   await attention.getByRole('button',{name:'Open job pending-browser-job',exact:true}).waitFor();
-  await navigation.getByRole('button',{name:'Overview',exact:true}).click();
+  await clickCompanionNav(page, 'Overview');
   await page.getByRole('button',{name:'Open Needs Attention',exact:true}).waitFor();
   return {overview:true,attention:true,activity:true,staleRetry:true,resolvedAttention:true};
 }

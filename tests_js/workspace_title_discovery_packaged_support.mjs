@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -61,7 +62,7 @@ export async function packagedTitleDiscoveryJourney({ codexRoot, claudeConfigRoo
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(startup.url);
-    await page.getByRole('button', { name: 'Facts', exact: true }).click();
+    await clickCompanionNav(page, 'Facts');
     const panel = page.locator('#title-discovery');
     await panel.getByText('Saved now: No target titles yet.').waitFor();
     const before = JSON.parse(await readFile(join(root, 'profile.json'), 'utf8'));

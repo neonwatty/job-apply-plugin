@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
@@ -6,7 +7,7 @@ import { join } from 'node:path';
 const execute=promisify(execFile);
 export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   await page.getByRole('button',{name:'Close job details'}).click();
-  await page.getByRole('button',{name:'Facts',exact:true}).click();
+  await clickCompanionNav(page, 'Facts');
   await page.getByText('No facts saved yet.',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('Fact name',{exact:true}).count(),0,'new-fact form stays collapsed until requested');
   await page.getByRole('button',{name:'Add a fact',exact:true}).click();
@@ -72,10 +73,10 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   assert.deepEqual(Object.values(groups)[0].paths,['/firstName','/phone ']);
   await page.reload();
   await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-  assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
+  assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
   // Reload returns to Overview; navigate explicitly instead of synchronizing on
   // claim traffic that the Companion must never own.
-  await page.getByRole('button',{name:'Facts',exact:true}).click();
+  await clickCompanionNav(page, 'Facts');
   await page.getByLabel('firstName',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('firstName',{exact:true}).inputValue(),'Browser draft');
   assert.equal(await page.getByLabel('phone',{exact:true}).inputValue(),'CLI phone');

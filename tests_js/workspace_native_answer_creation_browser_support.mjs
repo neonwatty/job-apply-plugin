@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -26,7 +27,7 @@ export async function nativeAnswerCreationBrowser(page, root) {
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
   assert.equal((await answers()).find(record => record.question === 'Browser-created question?').value, 'Created in the browser');
   page.once('dialog', dialog => dialog.dismiss());
-  await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
   await page.getByLabel('Question', { exact: true }).fill('Private browser-created question?');
   await page.getByLabel(/^Sensitivity$/i).selectOption('personal');
@@ -46,7 +47,7 @@ export async function nativeAnswerCreationBrowser(page, root) {
   await page.getByText('New answer discarded.', { exact: true }).waitFor();
   assert.equal((await answers()).some(record => record.question === 'Discard this new answer'), false);
   await page.reload();
-  await page.getByRole('button', { name: 'Answers', exact: true }).click();
+  await clickCompanionNav(page, 'Answers');
   await page.getByRole('button', { name: 'Browser-created question?', exact: true }).click();
   assert.equal(await page.getByRole('heading', { name: 'Answer editor', exact: true }).evaluate(element => element === document.activeElement), true);
   await page.getByText('Revision 1', { exact: true }).waitFor();

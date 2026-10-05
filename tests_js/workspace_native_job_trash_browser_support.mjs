@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -31,10 +32,10 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   const job = await cli('job-create', [], { role, company: 'Trash fixture company',
     url: 'https://example.invalid/trash-browser?private=trash', notes: 'PRIVATE-TRASH-NOTES' });
   const args = revision => ['--id', job.id, '--expected-revision', String(revision)];
-  const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
+
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
   const card = page.getByRole('button', { name: new RegExp(role) });
-  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.click();
   const company = modal.locator('[name="company"]');
@@ -63,7 +64,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   assert.equal(restored.deletedAt, null);
   assert.equal(restored.revision, trashed.revision + 1);
   await page.reload();
-  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await card.filter({ hasText: new RegExp(`revision ${restored.revision}$`) }).click();
   assert.equal(await company.inputValue(), job.company);
   assert.equal(await modal.locator('[name="notes"]').inputValue(), job.notes);
@@ -87,7 +88,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   assert.deepEqual(await cli('job-delete', args(deletion.revision)), { deleted: false, id: job.id });
   assert.equal((await api('/api/trash')).items.some(value => value.id === job.id), false);
   await page.reload();
-  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await card.waitFor({ state: 'hidden' });
   assert.equal(JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id], undefined);
   return { cliTrashHidden: true, apiRestoreReload: true, apiTrashCliRestore: true,

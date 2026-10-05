@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readyPacket } from './workspace_native_claims_support.mjs';
 
@@ -74,7 +75,7 @@ export async function reviewRestartBrowser(page, jobId) {
     assert.equal(await page.evaluate(secret => [...Object.values(localStorage), ...Object.values(sessionStorage)]
         .some(value => value.includes(secret)), result.token), false);
     page.once('dialog', dialog => dialog.dismiss());
-    await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+    await clickCompanionNav(page, 'Resumes');
     await panel.getByRole('button', { name: 'Return for owner input', exact: true }).waitFor();
     const handoff = page.waitForResponse(response => response.url().endsWith('/api/claims/handoff'));
     await panel.getByRole('button', { name: 'Return for owner input', exact: true }).click();
