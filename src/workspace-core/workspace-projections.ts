@@ -84,8 +84,8 @@ function siteConsentConflict(session: Document): boolean {
   const checklist = (get(session, 'handoffChecklist') ?? []) as Value[];
   if (checklist.some(item => string(item) !== 'consent_choice')) return false;
   const blockers = (get(session, 'blockers') ?? []) as Document[];
-  return blockers.some(item => label(item, 'type') === 'owner_review'
-    && label(item, 'code') === 'site-required-opt-in-conflict');
+  return blockers.length === 1 && label(blockers[0]!, 'type') === 'owner_review'
+    && label(blockers[0]!, 'code') === 'site-required-opt-in-conflict';
 }
 function attentionLocked(tx: ProjectionTransaction, now: string): Document {
   const rows: Document[] = [];

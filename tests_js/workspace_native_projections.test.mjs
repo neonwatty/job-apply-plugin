@@ -69,6 +69,16 @@ test('a consent conflict with another required checklist action keeps missing-in
   assert.equal(attention.items[0].reasonCode,'needs_information');
   assert.deepEqual(attention.items[0].session.handoffChecklist,['consent_choice','required_question']);
 });
+test('a consent conflict with another blocker keeps missing-information guidance',async()=>{
+  const stored=session('one',{handoffChecklist:['consent_choice'],blockers:[
+    {type:'owner_review',code:'site-required-opt-in-conflict'},
+    {type:'information',code:'owner-input-required'},
+  ]});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.equal(attention.items[0].session.blockers.length,2);
+});
 test('closed handoff checklist reaches attention and activity without form wording',async()=>{
   const checklist=['resume_upload','passport_country','country_of_residence','age_over_18'];
   const stored=session('one',{handoffChecklist:checklist,blockers:[{type:'browser_handoff',code:'unsupported-control'}],
