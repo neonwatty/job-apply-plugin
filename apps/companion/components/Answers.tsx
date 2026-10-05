@@ -27,6 +27,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
   const [loading, setLoading] = useState(false);
   const [invalid, setInvalid] = useState(false);
   const [editorVersion, setEditorVersion] = useState(0);
+  const [focusEditorVersion, setFocusEditorVersion] = useState(0);
   const editorForm = useRef<HTMLFormElement>(null);
   const generation = useRef(0);
   const request = useRef<AbortController | null>(null);
@@ -36,6 +37,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
   const dirty = creating || invalid || base !== null && draft !== null && serialize(draft) !== serialize(answerDraft(base));
   useEffect(() => { dirtyChanged(dirty || busy || mergeBusy || pendingBusy); return () => dirtyChanged(false); }, [dirty, busy, mergeBusy, pendingBusy, dirtyChanged]);
   useEffect(() => () => { generation.current++; listGeneration.current++; request.current?.abort(); listRequest.current?.abort(); }, []);
+  useEffect(() => { if (focusEditorVersion) heading.current?.focus(); }, [focusEditorVersion]);
   async function refreshList() {
     listRequest.current?.abort();
     const controller = new AbortController();
@@ -88,7 +90,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
         setEditorVersion(value => value + 1);
         setLatest(null);
         setRemember(false);
-        heading.current?.focus();
+        setFocusEditorVersion(value => value + 1);
       }
     } catch (failure) {
       if (version === generation.current && !controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load answer');
@@ -108,7 +110,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     setEditorVersion(value => value + 1);
     setError('');
     setNotice('');
-    heading.current?.focus();
+    setFocusEditorVersion(value => value + 1);
   }
   function cancelNew() {
     if (!confirm('Discard this new answer?')) return;
@@ -178,16 +180,16 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     <section className="workspace-panel answers-panel" aria-labelledby="answer-library-heading">
       <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="answer-library-heading">{label}</h2></div>
         <form className="answer-filters" onSubmit={event => { event.preventDefault(); void refreshList(); }}>
-          <label>Find answers<input type="search" placeholder="Question or alias" value={query} onChange={event => setQuery(event.target.value)} /></label>
+          <label>Find {label.toLowerCase()}<input type="search" placeholder="Question or alias" value={query} onChange={event => setQuery(event.target.value)} /></label>
           <label>Review status<select aria-label="Review status" value={status} onChange={event => setStatus(event.target.value)}>
             <option value="accepted">Accepted</option><option value="pending">Pending</option><option value="declined">Declined</option><option value="all">All</option>
           </select></label>
-          <button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy}>Search answers</button>
+          <button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy}>Search {label.toLowerCase()}</button>
         </form>
       </div>
-      <p className="workspace-status" role="status">{loading ? 'Loading answers…' : notice || (loaded ? `${items.length} ${items.length === 1 ? 'answer' : 'answers'} shown.` : '')}</p>
+      <p className="workspace-status" role="status">{loading ? 'Loading answers…' : notice || (loaded && items.length > 0 ? `${items.length} ${items.length === 1 ? 'answer' : 'answers'} shown.` : '')}</p>
       {error && <p className="error" role="alert">{error}</p>}
-      {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : `No ${label.toLowerCase()} with this review status.`}</strong><span>{consentOnly ? 'Create a purpose-specific consent default or mark an existing answer as one in Answers.' : 'Create an answer or wait for an agent to observe a question.'}</span></div>}
+      {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : `No ${label.toLowerCase()} to show.`}</strong></div>}
       <ul className="answer-list-native">{items.map(item => {
         const key = string(get(item, 'key'))!;
         const state = get(item, 'valueRedacted') === true ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value';
@@ -204,7 +206,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
         </li>;
       })}</ul>
     </section>
-    <section className="workspace-panel answer-editor-panel" aria-labelledby="answer-editor-heading">
+    {(base || creating) && <section className="workspace-panel answer-editor-panel" aria-labelledby="answer-editor-heading">
       <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical answer</p><h2 id="answer-editor-heading" ref={heading} tabIndex={-1}>{creating ? 'New answer' : 'Answer editor'}</h2></div>{base && <span className="facts-revision">Revision {int(get(base, 'revision'))!.toString()}</span>}</div>
     {draft && (base || creating) ? <div className="answer-editor-body">
       {creating && <p>Create an accepted answer. Choose its state and scope, and give consent before storing a sensitive value.</p>}
@@ -243,8 +245,8 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
           </>}</div>
         </fieldset>
       </form>
-    </div> : <div className="workspace-empty answer-editor-empty"><strong>Select an answer to review.</strong><span>Choose a question from the library or create a new reusable answer.</span></div>}
-    </section>
+    </div> : null}
+    </section>}
     {!consentOnly && <div className="answer-support-grid">
       <AnswerCleanup client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setMergeBusy} onMerged={() => { setBase(null); setDraft(null); setLatest(null); setRemember(false); setInvalid(false); setCreating(false); setNotice('Answers merged.'); setCleanupRevision(value => value + 1); void refreshList(); }} />
       <PendingAnswers client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setPendingBusy} onOpenAnswer={key => { void select(key); }} onResolved={() => {

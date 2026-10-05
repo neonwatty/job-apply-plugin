@@ -25,7 +25,8 @@ export async function reactTrashBrowser(page, { origin, headers }) {
     await navigation.getByRole('button', { name: 'Trash', exact: true }).click();
     const workspace = page.locator('.trash-workspace');
     const refresh = page.getByRole('button', { name: 'Refresh Trash', exact: true });
-    await workspace.getByText('1 jobs · 1 resumes · 1 answers', { exact: true }).waitFor();
+    await workspace.locator('.trash-card').first().waitFor();
+    assert.equal(await workspace.locator('.trash-card').count(), 3);
     assert.doesNotMatch(await workspace.innerText(), /PRIVATE-TRASH|react-trash-private|private-fixture/);
     for (const width of [390, 1280]) {
         await page.setViewportSize({ width, height: 844 });
@@ -135,7 +136,7 @@ export async function reactTrashBrowser(page, { origin, headers }) {
         }
     }
     await filter.selectOption('');
-    await workspace.getByText('Trash is empty.', { exact: true }).waitFor();
+    await workspace.getByText('Trash is empty', { exact: true }).waitFor();
     for (const width of [390, 1280]) {
         await page.setViewportSize({ width, height: 844 });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
@@ -154,7 +155,7 @@ export async function reactTrashBrowser(page, { origin, headers }) {
     await page.reload({ waitUntil: 'networkidle' });
     await navigation.getByRole('button', { name: 'Trash', exact: true }).click();
     await workspace.getByRole('alert').waitFor();
-    assert.equal(await workspace.getByText('Trash is empty.', { exact: true }).count(), 0);
+    assert.equal(await workspace.getByText('Trash is empty', { exact: true }).count(), 0);
     await reload();
     for (const fixture of fixtures) {
         const actions = card(fixture).getByRole('button');

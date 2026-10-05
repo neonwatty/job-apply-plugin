@@ -106,11 +106,15 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Overview', exact: true }).click();
     await nextSetupAndLoading(page, startup.url);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Trash', exact: true }).click();
+    await page.getByRole('heading', { name: 'Trash', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByText('Advanced agent model defaults', { exact: true }).click();
     await page.getByRole('heading', { name: 'Find jobs', exact: true }).waitFor();
     await page.getByRole('heading', { name: 'Fill an application', exact: true }).waitFor();
     await page.getByLabel('Claude Code job search worker model').waitFor();
     await page.getByLabel('Claude Code application filling worker model').waitFor();
-    await page.getByText('Job Title Discovery and resume fact extraction currently run in the active task and use its model.').waitFor();
     await page.getByLabel('Preferred Codex browser').selectOption('chrome');
     await page.getByLabel('If that browser is unavailable').selectOption('other_supported');
     await page.getByLabel('Page transitions').selectOption('guided');
@@ -132,6 +136,7 @@ async function productionBrowser(root) {
     });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByText('Advanced agent model defaults', { exact: true }).click();
     assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'chrome');
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
     assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');

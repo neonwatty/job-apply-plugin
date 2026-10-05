@@ -59,19 +59,12 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
         <button className="secondary" disabled={busy||loading||invalid} onClick={()=>void refresh()}>Refresh facts</button>
       </div>
     </header>
-    <p className="workspace-status" role="status">{loading?'Loading facts…':notice||(base?`Canonical profile revision ${base.revision}.`:'')}</p>
+    <p className="workspace-status" role="status">{loading?'Loading facts…':notice}</p>
     {error&&<p className="error" role="alert">{error} <button disabled={busy||loading||invalid} onClick={()=>void refresh()}>Retry loading facts</button></p>}
     {latest&&base&&draft&&<aside className="notice facts-conflict" role="alert"><p><strong>Facts changed elsewhere.</strong> Your draft is retained.</p>
       <button disabled={busy} onClick={()=>{setDraft(reapplyDraft(base.profile,draft,latest.profile));setBase(latest);setLatest(null);setError('');setNotice('Draft reapplied. Review it before saving.');}}>Reapply my facts draft</button>
       <button disabled={busy} onClick={()=>{if(confirm('Discard your facts draft and load saved facts?')){setBase(latest);setDraft(latest.profile);setLatest(null);setError('');}}}>Load saved facts</button>
     </aside>}
-    <TitleDiscovery client={client} dirtyChanged={setTitleDirty} onSaved={next=>{
-      const current=state.current;
-      if(current.base?.revision===next.revision)return;
-      if(current.base&&current.draft&&!same(current.base.profile,current.draft))setLatest(next);
-      else{setBase(next);setDraft(next.profile);setLatest(null);}
-    }}/>
-    <FactGroups client={client} dirtyChanged={groupChanged}/>
     {base&&draft&&<section className="workspace-panel facts-panel" aria-labelledby="facts-form-title">
       <div className="workspace-panel-heading">
         <div><p className="eyebrow">Canonical profile</p><h2 id="facts-form-title">Applicant facts</h2></div>
@@ -80,8 +73,8 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
       </div>
       <form id="facts-form" ref={form} onChange={event=>setInvalid(!event.currentTarget.checkValidity())} onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy}>
         <legend className="visually-hidden">Profile facts</legend>
-        <div className="facts-filter"><label>Find a fact<input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search canonical facts"/></label><span>{visibleFactNames(draft,query).length} shown</span></div>
-        {!visibleFactNames(draft,'').length&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No profile facts yet.</strong><p>Use Add a fact to start your canonical profile.</p></div>}
+        {visibleFactNames(draft,'').length>0&&<div className="facts-filter"><label>Find a fact<input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search facts"/></label><span>{visibleFactNames(draft,query).length} shown</span></div>}
+        {!visibleFactNames(draft,'').length&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No facts saved yet.</strong></div>}
         {visibleFactNames(draft,'').length>0&&!visibleFactNames(draft,query).length&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
         <div className="facts-list">{visibleFactNames(draft,'').map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
           <FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/>
@@ -101,5 +94,12 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
         <button className="secondary" type="button" disabled={!dirty&&!invalid} onClick={()=>{if(confirm('Discard unsaved facts changes?')){setDraft(base.profile);setEditorVersion(value=>value+1);setInvalid(false);setLatest(null);setError('');setNotice('Draft discarded.');}}}>Discard facts changes</button></div>}
       </fieldset></form>
     </section>}
+    <TitleDiscovery client={client} dirtyChanged={setTitleDirty} onSaved={next=>{
+      const current=state.current;
+      if(current.base?.revision===next.revision)return;
+      if(current.base&&current.draft&&!same(current.base.profile,current.draft))setLatest(next);
+      else{setBase(next);setDraft(next.profile);setLatest(null);}
+    }}/>
+    <FactGroups client={client} dirtyChanged={groupChanged}/>
   </section>;
 }

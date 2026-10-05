@@ -12,13 +12,13 @@ test('dedicated account workspace keeps redacted configuration separate from aut
   assert.match(legacy,/id="nav-accounts"[\s\S]*Accounts &amp; Sign-in/);
   assert.match(legacy,/id="accounts-workspace"[\s\S]*Workday stays Keychain-managed[\s\S]*MyGreenhouse[\s\S]*Oracle remains email-only[\s\S]*direct Greenhouse applications require no account/);
   assert.match(companion,/navButton\('accounts','Accounts & Sign-in'\)/);
-  assert.match(automation,/Saved account metadata[\s\S]*Browser session/);
-  assert.match(automation,/agent checks whether that portal requires an account/);
+  assert.match(realm,/Saved account metadata[\s\S]*Browser session/);
+  assert.match(automation,/Sign in through your browser; credentials and email codes stay out of this workspace/);
   assert.doesNotMatch(automation,/Shared credential version|Workday credential strategy|Allow protected Workday preparation/);
   assert.doesNotMatch(legacy,/Shared credential version|Workday credential strategy|Allow protected account preparation/);
   assert.doesNotMatch(automation,/Save settings|Enable account metadata controls/);
   assert.doesNotMatch(legacy,/id="automation-form"|Save settings|Enable account metadata controls/);
-  assert.match(automation,/Direct Greenhouse applications[\s\S]*Account not required[\s\S]*Unpersisted/);
+  assert.match(automation,/Direct Greenhouse applications do not require an account/);
   assert.match(automation,/myGreenhousePasswordlessConfigurationReady[\s\S]*myGreenhousePasswordlessExecutionReady/);
   assert.match(automation,/add\(undefined,'https:\/\/my\.greenhouse\.io\/',false\)/);
   assert.match(realm,/Keychain[\s\S]*browser-delivered email code[\s\S]*No credential provider/);

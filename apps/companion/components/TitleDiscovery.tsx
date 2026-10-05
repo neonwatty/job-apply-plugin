@@ -160,7 +160,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   return <section className="workspace-panel title-discovery" id="title-discovery" aria-labelledby="title-discovery-title">
     <div className="workspace-panel-heading"><div><p className="eyebrow">Search preferences</p><h2 id="title-discovery-title">Target titles</h2></div>
       {!open && <button ref={openButton} className="secondary" type="button" onClick={begin} disabled={!snapshot}>Discover related titles</button>}</div>
-    <p>These saved titles guide Job Search. You can edit them directly or research related roles with the Job Title Discovery skill.</p>
+    <p>These titles guide Job Search. Edit them here or review suggestions from your agent.</p>
     {!snapshot && <p role="status">{loading ? 'Loading saved target titles…' : 'Saved target titles are unavailable.'}</p>}
     {!snapshot && !loading && <button className="secondary" type="button" onClick={() => setReload(value => value + 1)}>Retry loading target titles</button>}
     {snapshot && <p>Saved now: {current.length ? current.join(' · ') : 'No target titles yet.'}</p>}
@@ -172,7 +172,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
       <h3 tabIndex={-1} ref={heading}>Discover and review target titles</h3>
       <label>Role interests, constraints, exclusions, or seed titles to share with the skill
         <textarea value={criteria} onChange={event => setCriteria(event.target.value)} rows={3} placeholder="For example: adjacent engineering leadership roles; no director titles" /></label>
-      <p>Copy an invocation, run it in your agent, then paste its JSON result packet. Research happens in the agent’s browser; this page does not launch the skill.</p>
+      <p>Research runs in your agent. Bring the result here to review and save titles.</p>
       <div className="title-discovery-actions"><button type="button" className="secondary" onClick={() => void copyInvocation('Codex')}>Copy Codex invocation</button><button type="button" className="secondary" onClick={() => void copyInvocation('Claude Code')}>Copy Claude Code invocation</button></div>
       {fallback && <label>Invocation to copy<textarea readOnly value={fallback} onFocus={event => event.currentTarget.select()} rows={5} /></label>}
       <label>Title discovery JSON result packet<textarea value={packetText} onChange={event => { setPacketText(event.target.value); setPacket(null); setReviewedChange(false); setChoices(choicesFor(snapshot)); }} rows={5} /></label>

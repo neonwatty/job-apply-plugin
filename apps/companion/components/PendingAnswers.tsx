@@ -81,8 +81,7 @@ export function PendingAnswers({ client, revision, disabled, onBusyChanged, onRe
   const jobs = result?.client === client && result.revision === revision ? result.jobs : null;
   return <section className="answer-support-panel" aria-label="Pending questions">
     <div className="answer-support-heading"><div><p className="eyebrow">Application inbox</p><h2>Pending questions</h2></div><button className="secondary" type="button" disabled={loading || resolving} onClick={() => void refresh()}>Refresh pending questions</button></div>
-    <p>Review pending questions for applications that need information or live confirmation. Each saved-answer resolution needs your confirmation.</p>
-    <p>Sensitive questions need separate confirmation and cannot be handled by this recheck.</p>
+    <p>Check applications for questions that need your review.</p>
     {loading && <p role="status">Loading pending questions…</p>}
     {resolving && <p role="status">Rechecking the saved answer…</p>}
     {disabled && <p>Save or discard your answer edits before resolving a question.</p>}

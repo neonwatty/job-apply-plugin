@@ -5,6 +5,7 @@ import { join } from 'node:path';
 export async function nativeAnswerCreationBrowser(page, root) {
   const answers = async () => Object.values(JSON.parse(await readFile(join(root, 'answers.json'), 'utf8')).answers);
   await page.getByRole('button', { name: 'New answer', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'New answer', exact: true }).evaluate(element => element === document.activeElement), true);
   const valueType = page.getByLabel('Answer value type', { exact: true });
   assert.equal(await valueType.inputValue(), 'text');
   await valueType.selectOption('number');
@@ -47,6 +48,7 @@ export async function nativeAnswerCreationBrowser(page, root) {
   await page.reload();
   await page.getByRole('button', { name: 'Answers', exact: true }).click();
   await page.getByRole('button', { name: 'Browser-created question?', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Answer editor', exact: true }).evaluate(element => element === document.activeElement), true);
   await page.getByText('Revision 1', { exact: true }).waitFor();
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Created in the browser');
   await page.setViewportSize({ width: 390, height: 844 });

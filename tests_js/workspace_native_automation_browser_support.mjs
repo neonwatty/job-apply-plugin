@@ -6,7 +6,6 @@ export async function nativeAutomationBrowser(page, root) {
   await page.getByRole('button',{name:'Automation',exact:true}).click();
   const workspace=page.locator('.automation-workspace');
   await workspace.getByRole('heading',{name:'Automation',exact:true}).waitFor();
-  await workspace.getByText('Guided mode',{exact:true}).waitFor();
   await workspace.getByRole('heading',{name:'Application automation',exact:true}).waitFor();
   await workspace.getByText('Guided · granular confirmation remains active',{exact:true}).waitFor();
   await workspace.getByText(/Every mode stops at final review/).waitFor();
@@ -40,7 +39,6 @@ export async function nativeAutomationBrowser(page, root) {
   await page.getByRole('button',{name:'Accounts & Sign-in',exact:true}).click();
   const accountsWorkspace=page.locator('.accounts-workspace');
   await accountsWorkspace.getByRole('heading',{name:'Accounts & Sign-in',exact:true}).waitFor();
-  await accountsWorkspace.getByText('Browser sessions not observed',{exact:true}).waitFor();
   await accountsWorkspace.getByText('Sign-in is yours to complete',{exact:true}).waitFor();
   assert.equal(await accountsWorkspace.getByLabel('Workday credential strategy').count(),0);
   assert.equal(await accountsWorkspace.getByLabel(/Allow protected Workday preparation/).count(),0);
@@ -86,8 +84,7 @@ export async function nativeAutomationBrowser(page, root) {
   const persisted=JSON.parse(await readFile(join(root,'employer-accounts.json'),'utf8')).accounts;
   assert.equal(Object.values(persisted).every(account=>account.signupEmailOverride===null),true);
   assert.equal(Object.values(persisted).find(account=>account.adapterId==='mygreenhouse').providerId,null);
-  await accountsWorkspace.getByText('Account not required',{exact:true}).waitFor();
-  await accountsWorkspace.getByText('Not needed',{exact:true}).waitFor();
+  await accountsWorkspace.getByText('Direct Greenhouse applications do not require an account.',{exact:true}).waitFor();
   await accountsWorkspace.getByRole('listitem').filter({hasText:'MyGreenhouse'}).getByRole('button',{name:'Remove saved account'}).click();
   await accountsWorkspace.getByRole('listitem').filter({hasText:'MyGreenhouse'}).waitFor({state:'detached'});
   assert.equal(Object.keys(JSON.parse(await readFile(join(root,'employer-accounts.json'),'utf8')).accounts).length,1);

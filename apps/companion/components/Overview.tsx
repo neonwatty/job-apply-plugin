@@ -13,8 +13,6 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     const [data, setData] = useState<OverviewData | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
-    const [copyNotice, setCopyNotice] = useState('');
-    const [fallback, setFallback] = useState('');
     const [applicationSetupComplete, setApplicationSetupComplete] = useState(false);
     const sequence = useRef(0);
     const pending = useRef<AbortController | null>(null);
@@ -57,23 +55,13 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     const guidanceCopy = Array.isArray(guidance) && typeof guidance[1] === 'string'
         ? guidance[1] : 'Choose a section to get started.';
     const nativeDestinations = ['facts','resumes','attention','answers','automation','settings','trash'];
-    async function copyInvocation(value:string,label:string) {
-        try {
-            await navigator.clipboard.writeText(value);
-            setFallback('');
-            setCopyNotice(`${label} invocation copied.`);
-        } catch {
-            setFallback(value);
-            setCopyNotice('Clipboard unavailable. Select and copy the invocation below.');
-        }
-    }
     const action = target === 'jobs' ? <button className="button primary" onClick={openJobs}>Open Jobs</button>
         : openWorkspace && nativeDestinations.includes(target)
             ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'settings'|'trash')}>Open {destinations[target]}</button>
             : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>;
     return <div className="overview-workspace">
         <section className="overview-hero">
-            <div><p className="eyebrow">Overview</p><h1>Your next move, at a glance.</h1><p>See what needs work, check your setup, and pick up where you left off.</p></div>
+            <div><p className="eyebrow">Overview</p><h1>Your next move, at a glance.</h1></div>
             <button className="button secondary" aria-label="Refresh overview" onClick={() => void refresh()}>Refresh</button>
         </section>
         {loading && <p role="status">{data ? 'Refreshing overview…' : 'Loading overview…'}</p>}
@@ -98,21 +86,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
                             {openWorkspace?<button className="text-action" onClick={() => openWorkspace('settings')}>Edit Settings</button>
                                 :<a href={link('settings')}>Edit Settings</a>}</li>
                     </ul>
-                    <p className="overview-counts">{data.counts.jobs} jobs · {data.counts.readyJobs} ready · {data.counts.attentionJobs} need attention</p>
-                </article>
-                <article className="handoff-card">
-                    <p className="eyebrow">When a job is ready</p><h2>Continue in your agent</h2>
-                    <p>Copy a command to start the application in Codex or Claude Code.</p>
-                    <div className="invocation"><span>Codex</span><code>$job-apply:job-apply</code><button className="button secondary" onClick={() => void copyInvocation('$job-apply:job-apply','Codex')}>Copy Codex invocation</button></div>
-                    <div className="invocation"><span>Claude Code</span><code>/job-apply:job-apply</code><button className="button secondary" onClick={() => void copyInvocation('/job-apply:job-apply','Claude Code')}>Copy Claude invocation</button></div>
-                    {copyNotice&&<p className="copy-notice" role="status">{copyNotice}</p>}
-                    {fallback&&<label className="clipboard-fallback">Invocation to copy<input readOnly value={fallback} onFocus={event => event.currentTarget.select()} /></label>}
-                    <p className="safety-note">The agent stops for final review. Only you may submit on the third-party site.</p>
-                </article>
-                <article className="recovery-card">
-                    <p className="eyebrow">Recovery</p><h2>Pick up where you left off</h2>
-                    <p>Your local records survive a restart. Drafts stay available after a conflict; interrupted applications appear in Needs Attention, and Trash holds recoverable records.</p>
-                    {openWorkspace&&<div className="button-row"><button className="button secondary" onClick={() => openWorkspace('attention')}>Review attention queue</button><button className="button secondary" onClick={() => openWorkspace('trash')}>Open Trash</button></div>}
+                    {data.counts.attentionJobs > 0 && openWorkspace && <button className="text-action" onClick={() => openWorkspace('attention')}>Review {data.counts.attentionJobs} {data.counts.attentionJobs === 1 ? 'job' : 'jobs'} needing attention</button>}
                 </article>
             </section>
         </>}

@@ -75,7 +75,7 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
     assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
     await page.getByRole('button',{name:'Needs Attention',exact:true}).click();
-    await page.getByText('No jobs need attention.',{exact:true}).waitFor();
+    await page.getByText('Nothing needs your attention.',{exact:true}).waitFor();
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
@@ -85,8 +85,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const stored = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8'));
     const job = Object.values(stored.jobs)[0];
     assert.equal(job.role, 'Native fixture role');
-    await page.getByLabel('No active application run', { exact: true }).waitFor();
-    await page.getByText('Those inputs stay locked for the whole run.', { exact: false }).waitFor();
+    assert.equal(await page.getByLabel('No active application run', { exact: true }).count(), 0);
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     await page.locator('dialog [name="notes"]').fill('Browser draft');
     const cli = join(buildRoot, 'runtime/cli/native-jobs.js');
@@ -159,8 +158,8 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     const applicationRun = page.getByLabel('Active application run', { exact: true });
     await applicationRun.getByText('Locked inputs', { exact: true }).waitFor();
-    await applicationRun.getByText('1 job in queue', { exact: false }).waitFor();
-    await applicationRun.getByText('Ask the Job Apply agent to update the queue', { exact: false }).waitFor();
+    await applicationRun.getByText('1 job in this run.', { exact: false }).waitFor();
+    await applicationRun.getByText('confirmed facts stay locked until the run ends', { exact: false }).waitFor();
     await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
     await page.setViewportSize({width:390,height:844});
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');

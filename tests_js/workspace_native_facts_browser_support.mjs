@@ -7,7 +7,7 @@ const execute=promisify(execFile);
 export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   await page.getByRole('button',{name:'Close job details'}).click();
   await page.getByRole('button',{name:'Facts',exact:true}).click();
-  await page.getByText('No profile facts yet.',{exact:false}).waitFor();
+  await page.getByText('No facts saved yet.',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('Fact name',{exact:true}).count(),0,'new-fact form stays collapsed until requested');
   await page.getByRole('button',{name:'Add a fact',exact:true}).click();
   await page.getByLabel('Fact name',{exact:true}).fill('custom');

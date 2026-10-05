@@ -120,8 +120,15 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   const result = await cli('resume-extraction-request-complete', ['--id', legacyRequest.requestId,
     '--expected-request-revision', '1', '--expected-profile-revision', String(profile.metadata.revision)],
   { firstName: 'Extracted name', employer: { title: 'Engineer' }, extractedCity: 'Remote' });
+  // The request and proposal lists can straddle completion during a refresh.
+  await page.route('**/api/resume-proposals', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: '{"proposals":[]}',
+  }));
   await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Extracted proposals', exact: true }).count(), 0);
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Proposal review', exact: true }).evaluate(element => element === document.activeElement), true);
+  await page.unroute('**/api/resume-proposals');
   try { await page.getByLabel('Decision for /firstName', { exact: true }).selectOption('keep_current', { timeout: 5000 }); }
   catch (error) { throw Error(error.message + '\n' + await page.locator('body').innerText()); }
   await page.getByLabel('Decision for /employer/title', { exact: true }).selectOption('use_extracted');

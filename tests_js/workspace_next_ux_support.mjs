@@ -54,13 +54,13 @@ export async function nextSetupAndLoading(page, url) {
   });
   await page.getByRole('button', { name: 'Jobs', exact: true }).click();
   await page.getByText('Loading jobs…', { exact: true }).waitFor();
-  assert.equal(await page.getByText('No jobs yet.', { exact: false }).count(), 0);
+  assert.equal(await page.getByText('No jobs saved yet.', { exact: true }).count(), 0);
   release();
   await page.getByText(/Jobs could not be loaded/).waitFor();
-  assert.equal(await page.getByText('No jobs yet.', { exact: false }).count(), 0);
+  assert.equal(await page.getByText('No jobs saved yet.', { exact: true }).count(), 0);
   await page.unroute('**/api/state');
   await page.getByRole('button', { name: 'Retry loading jobs' }).click();
-  await page.getByText('No jobs yet. Capture a job to get started.', { exact: true }).waitFor();
+  await page.getByText('No jobs saved yet.', { exact: true }).waitFor();
   assert.equal(await page.getByLabel('Pipeline summary', { exact: true }).count(), 0,
     'an empty pipeline does not repeat three zero-value metrics');
 }
@@ -149,5 +149,5 @@ export async function nextLateRead(page) {
   release();
   await page.getByRole('button', { name: 'Jobs', exact: true }).click();
   await page.getByRole('button', { name: /Next synthetic role/ }).waitFor();
-  assert.equal(await page.getByText('No jobs yet.', { exact: false }).count(), 0);
+  assert.equal(await page.getByText('No jobs saved yet.', { exact: true }).count(), 0);
 }

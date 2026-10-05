@@ -106,10 +106,9 @@ test("application-run guidance matches run-level resume confirmation", async () 
     readFile(join(REPO_ROOT, "apps", "companion", "components", "Jobs.tsx"), "utf8"),
     readFile(join(REPO_ROOT, "apps", "companion", "components", "ResumeFacts.tsx"), "utf8"),
   ]);
-  assert.match(jobs, /aria-label="No active application run"/);
-  assert.match(jobs, /Those inputs stay locked for the whole run/);
-  assert.match(jobs, /You confirmed this resume and fact set in chat for the whole run/);
-  assert.match(jobs, /Ask the Job Apply agent to update the queue or complete the run before switching inputs/);
+  assert.doesNotMatch(jobs, /aria-label="No active application run"/);
+  assert.match(jobs, /aria-label="Active application run"/);
+  assert.match(jobs, /confirmed facts stay locked until the run ends/);
   assert.match(resumeFacts, /when starting an application run/);
   assert.doesNotMatch(resumeFacts, /for each job/);
 });
