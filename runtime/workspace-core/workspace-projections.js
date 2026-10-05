@@ -79,6 +79,9 @@ function consentOnly(session) {
         && label(blockers[0], 'code') === 'consent-required';
 }
 function siteConsentConflict(session) {
+    const checklist = (get(session, 'handoffChecklist') ?? []);
+    if (checklist.some(item => string(item) !== 'consent_choice'))
+        return false;
     const blockers = (get(session, 'blockers') ?? []);
     return blockers.some(item => label(item, 'type') === 'owner_review'
         && label(item, 'code') === 'site-required-opt-in-conflict');
