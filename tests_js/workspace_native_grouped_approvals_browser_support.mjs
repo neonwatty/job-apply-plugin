@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -46,7 +47,7 @@ export async function nativeGroupedApprovalsBrowser(page, root, fixture, buildRo
     '--expected-session-revision', String(activity.session.revision)];
   const payload = { decisions: [{ reference: session.pendingFields[0].reference, answerKey: key,
     currentUse: true, remember: false, policyMode: 'strict', useAuthority: 'accepted_record', allowedSensitiveFieldClasses: [] }] };
-  await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('button', { name: /Grouped fixture role/ }).click();
   const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });

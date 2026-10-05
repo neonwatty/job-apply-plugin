@@ -41,6 +41,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [fallback, setFallback] = useState<{requestId:string;value:string}|null>(null);
+  const [focusReviewVersion, setFocusReviewVersion] = useState(0);
   const generation = useRef(0), listGeneration = useRef(0), handoffGeneration = useRef(0);
   const request = useRef<AbortController | null>(null), listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -48,6 +49,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   const managed = resumes.filter(item => string(get(item, 'storageKind')) === 'managed' && get(item, 'deletedAt') === null);
   const selectedResume = managed.find(item => string(get(item, 'id')) === resumeId);
   useEffect(() => { dirtyChanged(dirty || writing); return () => dirtyChanged(false); }, [dirty, writing, dirtyChanged]);
+  useEffect(() => { if (focusReviewVersion) heading.current?.focus(); }, [focusReviewVersion]);
   useEffect(() => () => {
     generation.current++;
     listGeneration.current++;
@@ -102,7 +104,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
         setLatest(next);
         setNotice('Latest comparisons loaded. Your decisions are retained until you choose how to continue.');
       } else loadProposal(next);
-      heading.current?.focus();
+      setFocusReviewVersion(value => value + 1);
     } catch (failure) {
       if (version === generation.current && !controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load proposal');
     } finally { if (version === generation.current) setBusy(false); }
@@ -194,29 +196,23 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   }
   const staleReasons = base ? get(base, 'staleReasons') : null;
   const stale = Array.isArray(staleReasons) && staleReasons.length > 0;
-  const activeRequests = requests.filter(item => string(get(item, 'status')) === 'requested').length;
-  const pendingProposals = proposals.filter(item => string(get(item, 'status')) === 'pending').length;
   return <section className="extractions-workspace" aria-labelledby="extractions-workspace-title">
     <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes</p><h1 id="extractions-workspace-title">Extract facts</h1><p>Request facts from a saved resume. Missing facts can be added automatically; review conflicts before replacing existing facts.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh extraction status</button></div></header>
-    <div className="extraction-metrics" aria-label="Extraction summary">
-      <div><strong>{managed.length}</strong><span>Managed resumes</span></div><div><strong>{activeRequests}</strong><span>Active requests</span></div><div><strong>{pendingProposals}</strong><span>Proposals to review</span></div>
-    </div>
     <section className="workspace-panel extraction-request-panel" aria-labelledby="extraction-request-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div><span className="extraction-step">Step 1 of 3</span></div>
-      <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice || 'Choose a managed resume to prepare an extraction request.'}</p>
+      <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div></div>
+      <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice}</p>
       {fallback && <label className="clipboard-fallback">Agent handoff to copy<input readOnly value={fallback.value} onFocus={event => event.currentTarget.select()} /></label>}
       {error && <p className="error" role="alert">{error}</p>}
-      <form className="extraction-request-form" onSubmit={event => { event.preventDefault(); if (selectedResume) void mutateRequest(selectedResume); }}>
+      {managed.length > 0 && <form className="extraction-request-form" onSubmit={event => { event.preventDefault(); if (selectedResume) void mutateRequest(selectedResume); }}>
         <label>Resume to extract<select value={resumeId} disabled={busy || loading} onChange={event => setResumeId(event.target.value)}>
           <option value="">Choose a managed resume</option>{managed.map(item => <option key={string(get(item, 'id'))!} value={string(get(item, 'id'))!}>{string(get(item, 'label')) || 'Untitled resume'}</option>)}
         </select></label>
         <button className="primary" disabled={busy || loading || !selectedResume || requests.some(item => string(get(item, 'resumeId')) === resumeId && string(get(item, 'status')) === 'requested')}>Request extraction</button>
-      </form>
-      {loaded && !managed.length && <div className="workspace-empty extraction-empty"><strong>No managed resumes are available.</strong><span>Import or adopt a resume in Resumes before requesting extraction.</span></div>}
+      </form>}
+      {loaded && !managed.length && <div className="workspace-empty extraction-empty"><strong>Import a resume to extract facts.</strong>{openResumes&&<button className="text-action" onClick={openResumes}>Open Resumes</button>}</div>}
     </section>
-    <div className="extraction-queues">
-    <section className="workspace-panel extraction-queue-panel" aria-labelledby="extraction-requests-heading"><div className="extraction-panel-heading"><div><p className="eyebrow">Agent work</p><h2 id="extraction-requests-heading">Extraction requests</h2></div><span>Step 2 of 3</span></div>
-    {loaded && !requests.length && <div className="workspace-empty extraction-empty"><strong>No extraction requests yet.</strong><span>New requests will appear here while an agent processes them.</span></div>}
+    {(requests.length > 0 || proposals.length > 0) && <div className="extraction-queues">
+    {requests.length > 0 && <section className="workspace-panel extraction-queue-panel" aria-labelledby="extraction-requests-heading"><div className="extraction-panel-heading"><h2 id="extraction-requests-heading">Extraction requests</h2></div>
     <ul className="extraction-list">{requests.map(item => {
       const id = string(get(item, 'requestId'))!, status = string(get(item, 'status'));
       const resume = resumes.find(value => string(get(value, 'id')) === string(get(item, 'resumeId')));
@@ -228,9 +224,8 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
         {string(get(item, 'proposalId')) && <button className="primary" disabled={busy} onClick={() => void selectProposal(string(get(item, 'proposalId'))!)}>Review extraction result</button>}</div>
       </li>;
     })}</ul>
-    </section>
-    <section className="workspace-panel extraction-queue-panel" aria-labelledby="extracted-proposals-heading"><div className="extraction-panel-heading"><div><p className="eyebrow">Review queue</p><h2 id="extracted-proposals-heading">Extracted proposals</h2></div><span>Step 3 of 3</span></div>
-    {loaded && !proposals.length && <div className="workspace-empty extraction-empty"><strong>No extracted proposals yet.</strong><span>Completed agent requests will create reviewable proposals here.</span></div>}
+    </section>}
+    {proposals.length > 0 && <section className="workspace-panel extraction-queue-panel" aria-labelledby="extracted-proposals-heading"><div className="extraction-panel-heading"><h2 id="extracted-proposals-heading">Extracted proposals</h2></div>
     <ul className="extraction-list proposal-list">{proposals.map(item => {
       const id = string(get(item, 'id'))!;
       const resume = resumes.find(value => string(get(value, 'id')) === string(get(item, 'resumeId')));
@@ -238,8 +233,8 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
         <span><strong>{resume ? string(get(resume, 'label')) || 'Untitled resume' : 'Unavailable resume'}</strong><small>{string(get(item, 'status'))}</small></span><span>{serialize(get(item, 'pendingCount'))} decisions remaining</span><b aria-hidden="true">→</b>
       </button></li>;
     })}</ul>
-    </section></div>
-    <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposal review</h2></div>{base && <span className="extraction-step">{pendingPaths(base).length} decisions remaining</span>}</div>
+    </section>}</div>}
+    {(base || proposals.length > 0) && <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposal review</h2></div>{base && <span className="extraction-step">{pendingPaths(base).length} decisions remaining</span>}</div>
     {base ? <div className="proposal-review-body">
       <div className="proposal-summary-native"><div><small>Status</small><strong>{string(get(base, 'status'))}</strong></div><div><small>Auto-filled</small><strong>{serialize(get(base, 'autoFilledCount'))} missing facts</strong></div></div>
       <p>Review existing conflicts below. Unselected paths remain pending.</p>
@@ -271,6 +266,6 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
         <div className="proposal-review-actions"><button className="primary" disabled={busy || Boolean(latest) || stale || !dirty || string(get(base, 'status')) !== 'pending'}>Save review decisions</button></div>
       </form>}
     </div> : <div className="workspace-empty proposal-review-empty"><strong>Select an extraction result to review.</strong><span>Current facts stay unchanged until you explicitly save review decisions.</span></div>}
-    </section>
+    </section>}
   </section>;
 }

@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import { nativeReactTrashBrowser } from './workspace_react_trash_native_browser_support.mjs';
 import { jobTrashBrowser } from './workspace_native_job_trash_browser_support.mjs';
 import { taskCliBrowser } from './workspace_native_task_cli_browser_support.mjs';
@@ -71,12 +72,12 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.goto(startup.url);
     await page.getByText(/Synthetic native workspace/).waitFor();
     await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
     assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
-    await page.getByRole('button',{name:'Needs Attention',exact:true}).click();
-    await page.getByText('No jobs need attention.',{exact:true}).waitFor();
-    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await clickCompanionNav(page, 'Needs Attention');
+    await page.getByText('Nothing needs your attention.',{exact:true}).waitFor();
+    await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
     await page.locator('dialog [name="role"]').fill('Native fixture role');
@@ -85,8 +86,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const stored = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8'));
     const job = Object.values(stored.jobs)[0];
     assert.equal(job.role, 'Native fixture role');
-    await page.getByLabel('No active application run', { exact: true }).waitFor();
-    await page.getByText('Those inputs stay locked for the whole run.', { exact: false }).waitFor();
+    assert.equal(await page.getByLabel('No active application run', { exact: true }).count(), 0);
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     await page.locator('dialog [name="notes"]').fill('Browser draft');
     const cli = join(buildRoot, 'runtime/cli/native-jobs.js');
@@ -104,14 +104,14 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.reload();
     await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+    await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'CLI writer');
     const facts = await nativeFactsBrowser(page, root, fixture, buildRoot);
     const titleDiscovery = await nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot);
-    await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+    await clickCompanionNav(page, 'Resumes');
     await page.getByRole('button', { name: 'Import resume', exact: true }).click();
     await page.getByLabel('Label', { exact: true }).fill('Browser resume');
     await page.getByLabel('Tags, separated by commas').fill('browser, primary');
@@ -155,12 +155,12 @@ export async function nativeJobsBrowser(buildRoot) {
     await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
       'job-transition', '--id', job.id, '--status', 'needs_info',
       '--expected-revision', String(queuedJob.revision)], { env: { PATH: '' } });
-    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     const applicationRun = page.getByLabel('Active application run', { exact: true });
     await applicationRun.getByText('Locked inputs', { exact: true }).waitFor();
-    await applicationRun.getByText('1 job in queue', { exact: false }).waitFor();
-    await applicationRun.getByText('Ask the Job Apply agent to update the queue', { exact: false }).waitFor();
+    await applicationRun.getByText('1 job in this run.', { exact: false }).waitFor();
+    await applicationRun.getByText('confirmed facts stay locked until the run ends', { exact: false }).waitFor();
     await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
     await page.setViewportSize({width:390,height:844});
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
@@ -171,7 +171,7 @@ export async function nativeJobsBrowser(buildRoot) {
     }});
     // task-select above is the canonical transition to Ready. Exercise the
     // copy-only application handoff only after that durable state is visible.
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await claimsBrowser(page, { jobId: job.id, claimRequests });
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     const transitions = await jobTransitionsBrowser(page, {

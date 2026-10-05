@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import { reactTrashBrowser } from './workspace_react_trash_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
@@ -103,14 +104,18 @@ async function productionBrowser(root) {
     }));
     await page.goto(startup.url, { waitUntil: 'networkidle' });
     await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Overview', exact: true }).click();
+    await clickCompanionNav(page, 'Overview');
     await nextSetupAndLoading(page, startup.url);
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await clickCompanionNav(page, 'Settings');
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+    await clickCompanionNav(page, 'Trash');
+    await page.getByRole('heading', { name: 'Trash', exact: true }).waitFor();
+    await clickCompanionNav(page, 'Settings');
+    await page.getByText('Advanced agent model defaults', { exact: true }).click();
     await page.getByRole('heading', { name: 'Find jobs', exact: true }).waitFor();
     await page.getByRole('heading', { name: 'Fill an application', exact: true }).waitFor();
     await page.getByLabel('Claude Code job search worker model').waitFor();
     await page.getByLabel('Claude Code application filling worker model').waitFor();
-    await page.getByText('Job Title Discovery and resume fact extraction currently run in the active task and use its model.').waitFor();
     await page.getByLabel('Preferred Codex browser').selectOption('chrome');
     await page.getByLabel('If that browser is unavailable').selectOption('other_supported');
     await page.getByLabel('Page transitions').selectOption('guided');
@@ -131,7 +136,8 @@ async function productionBrowser(root) {
         application: 'gpt-6-sol', applicationReasoningEffort: 'medium' },
     });
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await clickCompanionNav(page, 'Settings');
+    await page.getByText('Advanced agent model defaults', { exact: true }).click();
     assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'chrome');
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
     assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');
@@ -179,12 +185,12 @@ async function productionBrowser(root) {
     releaseSetupRefresh();
     await page.getByText('Saved application setup loaded.', { exact: true }).waitFor();
     await page.unroute('**/api/profile');
-    await page.getByRole('button', { name: 'Facts', exact: true }).click();
+    await clickCompanionNav(page, 'Facts');
     await page.getByRole('button', { name: 'Add a fact', exact: true }).click();
     await page.getByLabel('Fact name').fill('agentModelPreferences');
     assert.equal(await page.getByRole('button', { name: 'Add fact', exact: true }).isDisabled(), true);
     await page.getByText('Change application and worker settings in Settings.').waitFor();
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/next-smoke');
     await page.locator('dialog [name="role"]').fill('Next synthetic role');
@@ -211,7 +217,7 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Save job', exact: true }).click();
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: /Next synthetic role/ }).click();
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Preserved React draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'Other writer');

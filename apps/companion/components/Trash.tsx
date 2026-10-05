@@ -105,24 +105,18 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation, countCha
             <div className="workspace-hero-actions"><button id="trash-refresh" className="secondary" disabled={loading || busy || selection !== null} onClick={() => { void refresh(); }}>Refresh Trash</button></div>
         </header>
         {limited && <p className="notice">Some lifecycle actions are not available in this workspace. Only supported actions are enabled.</p>}
-        {snapshot && <div className="trash-metrics" aria-label="Trash totals">
-            <div><strong>{snapshot.counts.job}</strong><span>Jobs</span></div>
-            <div><strong>{snapshot.counts.resume}</strong><span>Resumes</span></div>
-            <div><strong>{snapshot.counts.answer}</strong><span>Answers</span></div>
-        </div>}
         <section className="workspace-panel trash-panel" aria-labelledby="trash-list-heading">
             <div className="workspace-panel-heading"><div><p className="eyebrow">Recoverable records</p><h2 id="trash-list-heading">Jobs, resumes, and answers</h2></div>
-                <label className="trash-filter">Record type<select value={filter} disabled={busy || selection !== null} onChange={event => setFilter(event.target.value as TrashType | '')}>
+                {(snapshot?.total || filter) && <label className="trash-filter">Record type<select value={filter} disabled={busy || selection !== null} onChange={event => setFilter(event.target.value as TrashType | '')}>
                     <option value="">All types</option><option value="job">Jobs</option><option value="resume">Resumes</option><option value="answer">Answers</option>
-                </select></label>
+                </select></label>}
             </div>
             {notice && <p className="workspace-status trash-notice" role="status">{notice}</p>}
             {error && <p role="alert" className="error">{error}</p>}
             {loading && <p className="workspace-status" role="status">Loading Trash…</p>}
             {snapshot && <>
-                <p className="trash-count-summary">{snapshot.counts.job} jobs · {snapshot.counts.resume} resumes · {snapshot.counts.answer} answers{stale ? ' (outdated)' : ''}</p>
-                {!stale && <p className="workspace-status" role="status">{items.length ? `${items.length} trashed records in this view.` : filter ? 'No trashed records of this type.' : 'Trash is empty.'}</p>}
-                {!stale && !items.length && <div className="workspace-empty trash-empty"><span className="trash-empty-mark" aria-hidden="true">↺</span><strong>{filter ? 'No records of this type' : 'Trash is empty'}</strong><span>{filter ? 'Choose another record type to review the rest of Trash.' : 'Records moved to Trash remain recoverable until you explicitly delete them.'}</span></div>}
+                {stale && <p className="trash-count-summary">This list may be outdated. Refresh Trash before acting.</p>}
+                {!stale && !items.length && <div className="workspace-empty trash-empty"><span className="trash-empty-mark" aria-hidden="true">↺</span><strong>{filter ? 'No records of this type' : 'Trash is empty'}</strong></div>}
                 <ul className="trash-list" aria-label="Trashed records">
                     {items.map(item => <li key={JSON.stringify([item.type, item.id])}>
                         <article className="trash-card">

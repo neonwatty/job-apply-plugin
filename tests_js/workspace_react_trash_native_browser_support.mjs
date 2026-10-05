@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
@@ -23,7 +24,7 @@ export async function nativeReactTrashBrowser(page, root, fixture, buildRoot) {
         return JSON.parse(result.stdout);
     }
     const workspace = page.locator('.trash-workspace');
-    const navigation = page.getByRole('navigation', { name: 'Workspace sections' });
+
     const refresh = page.getByRole('button', { name: 'Refresh Trash', exact: true });
     const filter = workspace.getByLabel('Record type');
     const modal = page.getByRole('dialog');
@@ -84,7 +85,7 @@ export async function nativeReactTrashBrowser(page, root, fixture, buildRoot) {
             assert.equal(trashed.revision, record.revision + 1);
             record.revision = trashed.revision;
         }
-        await navigation.getByRole('button', { name: 'Trash', exact: true }).click();
+        await clickCompanionNav(page, 'Trash');
         await idle();
         await reload();
         assert.doesNotMatch(await workspace.innerText(), /PRIVATE-NATIVE-TRASH/);

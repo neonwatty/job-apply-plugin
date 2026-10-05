@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
@@ -172,7 +173,7 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await panel.getByRole('button', { name: 'Add title manually' }).click();
   await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).fill('Staff Forward Deployed Engineer');
   page.once('dialog', dialog => dialog.dismiss());
-  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await clickCompanionNav(page, 'Overview');
   await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).waitFor();
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), unchanged);
   await panel.getByRole('button', { name: 'Cancel discovery' }).click();
@@ -186,7 +187,7 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
     '--expected-revision', String(currentRevision.revision), '--source', 'user'], { env: { PATH: '' } });
   const legacy = JSON.parse(await readFile(profilePath, 'utf8'));
   await page.reload();
-  await page.getByRole('button', { name: 'Facts', exact: true }).click();
+  await clickCompanionNav(page, 'Facts');
   await panel.getByText('Saved preferences have an unsupported shape. Resolve them before saving target titles.').waitFor();
   await panel.getByRole('button', { name: 'Edit target titles' }).click();
   assert.equal(await panel.getByRole('button', { name: 'Confirm and save exact titles' }).isDisabled(), true);
@@ -200,7 +201,7 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
     '--native-lock', fixture.receipt.artifact, 'profile-patch', '--input', externalPatch,
     '--expected-revision', String(legacyRevision.revision), '--source', 'user'], { env: { PATH: '' } });
   await page.reload();
-  await page.getByRole('button', { name: 'Facts', exact: true }).click();
+  await clickCompanionNav(page, 'Facts');
   await panel.getByText('Saved now: No target titles yet.').waitFor();
   await panel.getByRole('button', { name: 'Edit target titles' }).click();
   await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
@@ -215,7 +216,7 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await page.route('**/api/profile', failProfileLoads);
   try {
     await page.reload();
-    await page.getByRole('button', { name: 'Facts', exact: true }).click();
+    await clickCompanionNav(page, 'Facts');
     await panel.getByText('Saved target titles are unavailable.').waitFor();
     profileUnavailable = false;
     await panel.getByRole('button', { name: 'Retry loading target titles' }).click();

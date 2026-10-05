@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
@@ -36,7 +37,7 @@ export async function nativeAnswerLifecycleBrowser(page, root, fixture, buildRoo
   }
   const answer = await cli('answer-put', [], {key, question, state:'confirmed', value:savedValue});
   await page.reload();
-  await page.getByRole('button', {name:'Answers', exact:true}).click();
+  await clickCompanionNav(page, 'Answers');
   const search = page.getByLabel('Find answers', {exact:true});
   const searchButton = page.getByRole('button', {name:'Search answers', exact:true});
   const card = page.getByRole('button', {name:question, exact:true});
@@ -71,7 +72,7 @@ export async function nativeAnswerLifecycleBrowser(page, root, fixture, buildRoo
   // Return the draft to its original value before leaving the editor.
   await value.fill(savedValue);
   await page.reload();
-  await page.getByRole('button', {name:'Answers', exact:true}).click();
+  await clickCompanionNav(page, 'Answers');
   await search.fill(question);
   await searchButton.click();
   await card.click();
@@ -89,7 +90,7 @@ export async function nativeAnswerLifecycleBrowser(page, root, fixture, buildRoo
   assert.equal(Object.hasOwn(JSON.parse(afterDelete).answers, key), false);
   assert.equal((await api('/api/trash')).items.some(item => item.type === 'answer' && item.id === key), false);
   await page.reload();
-  await page.getByRole('button', {name:'Answers', exact:true}).click();
+  await clickCompanionNav(page, 'Answers');
   await search.fill(question);
   await searchButton.click();
   await page.getByText('No matching answers.', {exact:true}).waitFor();

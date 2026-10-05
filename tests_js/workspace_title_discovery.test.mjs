@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { execFile } from 'node:child_process';
@@ -42,7 +43,7 @@ test('Companion title discovery reviews, cancels, saves and retries conflicts ag
     const errors = [];
     page.on('pageerror', failure => errors.push(failure.message));
     await page.goto(startup.url);
-    await page.getByRole('button', { name: 'Facts', exact: true }).click();
+    await clickCompanionNav(page, 'Facts');
     await page.locator('#title-discovery').getByText('Saved now: No target titles yet.').waitFor();
     assert.deepEqual(await nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot),
       { cancel: true, unavailable: true, emptyRetry: true, keyboardFocus: true, delayedSave: true,

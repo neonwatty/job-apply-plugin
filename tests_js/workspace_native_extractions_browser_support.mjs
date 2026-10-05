@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -17,9 +18,8 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   let profile = await document('profile');
   await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)], { employer: ['Existing employer'] });
   assert.equal(await page.locator('nav').getByRole('button', { name: 'Resume extraction', exact: true }).count(), 0);
-  await page.locator('nav .nav-count').first().waitFor();
-  assert.ok(await page.locator('nav .nav-count').count() >= 1);
-  await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+  await page.locator('#workspace-navigation').waitFor({ state: 'attached' });
+  await clickCompanionNav(page, 'Resumes');
   await page.locator('.resume-card').first().waitFor();
   assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
   assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
@@ -28,7 +28,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal(await page.title(), 'Resume extraction · Job Apply Workspace');
   await page.waitForFunction(() => document.activeElement?.id === 'workspace-content');
   assert.equal(await page.locator('#workspace-content').evaluate(node => node === document.activeElement), true);
-  assert.equal(await page.locator('nav').getByRole('button', { name: 'Resumes', exact: true }).getAttribute('aria-current'), 'page');
+  assert.equal(await page.locator('#workspace-navigation button[aria-label="Resumes"]').getAttribute('aria-current'), 'page');
   await page.getByLabel('Resume to extract').selectOption(resume.id);
   // Import and replacement request scoped extraction by default. Verify the
   // queued request, then clear it for this legacy proposal walkthrough.
@@ -56,7 +56,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     await page.getByRole('button', { name: 'Request extraction', exact: true }).click();
     await writeEntered;
     page.on('dialog', dismissWrite);
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     assert.equal(typeof writePrompt, 'string', 'An unacknowledged extraction request must guard navigation');
     await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
   } finally {
@@ -107,7 +107,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   // application lifecycle so later copy assertions exercise the real clipboard.
   await page.reload();
   await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+  await clickCompanionNav(page, 'Resumes');
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
   // Legacy proposal review remains readable, but the UI now requests scoped
@@ -120,8 +120,15 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   const result = await cli('resume-extraction-request-complete', ['--id', legacyRequest.requestId,
     '--expected-request-revision', '1', '--expected-profile-revision', String(profile.metadata.revision)],
   { firstName: 'Extracted name', employer: { title: 'Engineer' }, extractedCity: 'Remote' });
+  // The request and proposal lists can straddle completion during a refresh.
+  await page.route('**/api/resume-proposals', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: '{"proposals":[]}',
+  }));
   await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Extracted proposals', exact: true }).count(), 0);
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Proposal review', exact: true }).evaluate(element => element === document.activeElement), true);
+  await page.unroute('**/api/resume-proposals');
   try { await page.getByLabel('Decision for /firstName', { exact: true }).selectOption('keep_current', { timeout: 5000 }); }
   catch (error) { throw Error(error.message + '\n' + await page.locator('body').innerText()); }
   await page.getByLabel('Decision for /employer/title', { exact: true }).selectOption('use_extracted');
@@ -148,14 +155,14 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     await page.getByText('Review decisions saved.', { exact: true }).waitFor();
     await page.getByRole('alert').filter({ hasText: /decisions were saved.*could not be refreshed/i }).waitFor();
     page.on('dialog', dismissDialog);
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     assert.deepEqual(dialogs, [], 'Saved review decisions must allow navigation after a failed detail refresh');
     await page.getByRole('heading', { name: 'Jobs', exact: true, level: 1 }).waitFor();
   } finally {
     page.off('dialog', dismissDialog);
     await page.unroute(detailPath);
   }
-  await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+  await clickCompanionNav(page, 'Resumes');
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
   await page.getByText('This proposal is complete. No further review is needed.', { exact: true }).waitFor();

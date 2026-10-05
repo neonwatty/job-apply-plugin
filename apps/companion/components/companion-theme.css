@@ -1,0 +1,119 @@
+/* Light Spruce & Apricot: neutral reading surfaces with restrained color. */
+:root {
+  color-scheme:light;
+  --ink:#19372b;
+  --muted:#586b5e;
+  --line:#dbe2d9;
+  --green:#1d503b;
+  --green-2:#143e2e;
+  --mint:#ecf3ec;
+  --paper:#f8f8f4;
+  --panel:#fff;
+  --amber:#b95831;
+  --apricot:#b95831;
+  --apricot-soft:#fae7d8;
+  --cream:#fffdf8;
+  --shadow:0 6px 24px rgba(25,55,43,.045);
+}
+
+body { background:var(--paper) }
+button,.button { border-radius:8px }
+:focus-visible { outline-color:#297454 }
+
+.topbar {
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.97);
+  box-shadow:none;
+}
+.brand-mark { border-radius:9px }
+.connection { border-color:var(--line);background:white;color:var(--muted) }
+.connection.online .connection-dot { background:#33aa77 }
+.workspace-nav .nav-link[aria-current=page],
+.nav-menu-toggle[data-active=true] { background:var(--mint);color:var(--ink) }
+.nav-popover { border-color:var(--line);background:var(--panel) }
+.nav-popover .nav-link:hover:not(:disabled),
+.workspace-nav>.nav-link:hover:not(:disabled),
+.nav-menu-toggle:hover:not(:disabled) { background:var(--mint) }
+
+.eyebrow { color:#367c5a }
+.primary,.button.primary { border-color:var(--green);background:var(--green);color:white }
+.primary:hover:not(:disabled),.button.primary:hover:not(:disabled) { background:var(--green-2) }
+.secondary,.button.secondary { border-color:var(--line);background:var(--panel) }
+.secondary:hover:not(:disabled),.button.secondary:hover:not(:disabled) { background:var(--cream) }
+.text-action { color:#176849 }
+
+.overview-grid article,.workspace-panel,.editor-panel,.answer-support-panel {
+  border-color:var(--line);
+  border-radius:14px;
+  background:var(--panel);
+  box-shadow:var(--shadow);
+}
+.next-step-card {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:300px;
+  border-top:4px solid var(--green)!important;
+  background:var(--cream)!important;
+  color:var(--ink);
+}
+.next-step-card::before,.next-step-card::after {
+  position:absolute;
+  z-index:-1;
+  border-radius:50%;
+  content:"";
+  pointer-events:none;
+}
+.next-step-card::before {
+  top:-62px;
+  right:-36px;
+  width:165px;
+  height:165px;
+  background:#f4c7a6;
+}
+.next-step-card::after {
+  top:116px;
+  right:16px;
+  width:70px;
+  height:70px;
+  background:#e7efe6;
+}
+.next-step-card .eyebrow { color:#367c5a }
+.next-step-card p:not(.eyebrow) { max-width:32rem;color:var(--ink) }
+.next-step-card h2 { max-width:29rem }
+.next-step-card .primary,
+.next-step-card .button.primary {
+  border-color:var(--green);
+  background:var(--green);
+  color:white;
+}
+.next-step-card .primary:hover:not(:disabled),
+.next-step-card .button.primary:hover:not(:disabled) { background:var(--green-2) }
+.setup-card { background:white }
+.setup-checklist li span { color:var(--ink) }
+
+.fixture-notice { border-color:#d6e6d8;background:#f1f7f1;color:var(--ink) }
+.facts-organizer { border-color:var(--line);background:var(--cream) }
+.fact-card,.resume-card,.answer-support-list>li,.extraction-list>li,
+.proposal-summary-native>div,.extraction-decision,.automation-account,
+.automation-add-realm,.check-row { background:var(--cream) }
+.resume-card:hover:not(:disabled),.attention-card:hover:not(:disabled),
+.jobs-panel .job-card:hover:not(:disabled),.answer-list-native>li:hover { background:#f8f9f5 }
+.attention-card { border-color:var(--line);background:white;box-shadow:none }
+.settings-boundaries,.account-callout { background:#f3f6f1 }
+.application-state-card { border-color:var(--line);background:#f3f6f1 }
+.automation-status-strip>span,.automation-advanced { background:white }
+
+.job-priority { color:#9d4b2c!important }
+.status-pill.status-needs_info,.status-pill.status-awaiting_review,
+.resume-facts-meta strong { background:var(--apricot-soft);color:#8c4328!important }
+.notice,.answer-consent,.replacement-confirmation {
+  border-color:#ebc5a8;
+  background:#fff2e7;
+}
+
+@media(max-width:760px) {
+  .next-step-card { min-height:280px }
+  .next-step-card::before { top:-82px;right:-47px }
+  .next-step-card::after { display:none }
+}

@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // The browser may advertise an agent handoff, but it must never acquire or
@@ -54,8 +55,8 @@ export async function claimsBrowser(page, { jobId, claimRequests = [] }) {
 
         await page.reload();
         await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-        assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
-        await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+        assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+        await clickCompanionNav(page, 'Jobs');
         const reloadedPanel = page.getByRole('region', { name: 'Ready-job handoff', exact: true });
         await reloadedPanel.getByRole('button', { name: 'Copy Claude invocation', exact: true }).click();
         assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '/job-apply:job-apply');

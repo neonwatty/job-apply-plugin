@@ -81,7 +81,7 @@ export function AnswerCleanup({ client, revision, disabled = false, onMerged, on
   const pairs = result?.revision === revision && result.client === client ? result.preview.pairs : null;
   return <section className="answer-support-panel" aria-label="Cleanup preview">
     <div className="answer-support-heading"><div><p className="eyebrow">Library hygiene</p><h2>Cleanup preview</h2></div><button className="secondary" type="button" disabled={loading || approving} onClick={() => void preview()}>Preview cleanup</button></div>
-    <p>Find possible duplicate answers. Previewing changes nothing. Review and approve each merge separately.</p>
+    <p>Find possible duplicate answers to review.</p>
     {loading && <p role="status">Checking for possible duplicates…</p>}
     {approving && <p role="status">Merging the selected answers…</p>}
     {success && <p role="status">{success}</p>}

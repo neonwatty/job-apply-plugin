@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import { nativeAnswerLifecycleBrowser } from './workspace_native_lifecycle_answers_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -22,7 +23,7 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     await cli('answer-put', '{"key":"browser-answer","question":"Preferred work location?","state":"confirmed","value":"Remote","scope":{"exact":9007199254740993,"decimal":1.0}}');
     await cli('answer-put', '{"key":"private-answer","question":"Private remembered answer?","state":"sensitive","value":"synthetic-private-value"}', ['--remember-sensitive']);
     const pending = await cli('answer-observe', '{"question":"Suggested answer?","value":"Suggested value"}');
-    await page.getByRole('button', { name: 'Answers', exact: true }).click();
+    await clickCompanionNav(page, 'Answers');
     await page.getByRole('button', { name: 'Preferred work location?', exact: true }).click();
     await page.getByLabel('Answer value', { exact: true }).fill('My answer draft');
     await cli('answer-update', '{"source":"concurrent-client"}', ['--key', 'browser-answer', '--expected-revision', '1']);
@@ -65,7 +66,7 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     assert.equal((await stored(pending.key)).reviewStatus, 'accepted');
 
     await page.reload();
-    await page.getByRole('button', { name: 'Answers', exact: true }).click();
+    await clickCompanionNav(page, 'Answers');
     await page.getByRole('button', { name: 'Preferred work location?', exact: true }).click();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'My answer draft');
     await page.setViewportSize({ width: 390, height: 844 });

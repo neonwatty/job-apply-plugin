@@ -20,16 +20,16 @@ export function NeedsAttention({client,openJob}:{client:Client;openJob:(id:strin
       <div className="workspace-panel-heading">
         <div><p className="eyebrow">Canonical queue</p><h2>Jobs requiring action</h2></div>
         <div className="attention-controls">
-          {data && <strong className="queue-count">{visible.length} {visible.length===1?'job':'jobs'}</strong>}
-          <label>Filter by reason <select value={reason} onChange={event=>setReason(event.target.value)}>
+          {data && data.items.length>0 && <strong className="queue-count">{visible.length} {visible.length===1?'job':'jobs'}</strong>}
+          {data && data.items.length>0 && <label>Filter by reason <select value={reason} onChange={event=>setReason(event.target.value)}>
             <option value="">All reasons</option>{Object.entries(attentionReasons).map(([code,label])=><option key={code} value={code}>{label}</option>)}
-          </select></label>
+          </select></label>}
         </div>
       </div>
       {loading && <p className="workspace-status" role="status">{data?'Refreshing attention…':'Loading attention…'}</p>}
       {error && <p role="alert" className="error">{error} {data && 'Showing the last successful snapshot; it may be stale.'}</p>}
       {data && <><p className="visually-hidden" role="status">{data.items.length} jobs need attention. {visible.length} shown.</p>
-        {data.items.length===0 ? <div className="workspace-empty attention-empty"><span className="empty-check" aria-hidden="true">✓</span><strong>Nothing needs your attention.</strong><span>No jobs need attention.</span></div>
+        {data.items.length===0 ? <div className="workspace-empty attention-empty"><span className="empty-check" aria-hidden="true">✓</span><strong>Nothing needs your attention.</strong></div>
           : visible.length===0 ? <div className="workspace-empty"><strong>No jobs match this reason filter.</strong><button className="text-action" type="button" onClick={()=>setReason('')}>Clear filter</button></div> :
           <ul className="attention-list">{visible.map(item=>{
             const blockers=item.session.blockers.map(blocker=>humanize(blocker.code));

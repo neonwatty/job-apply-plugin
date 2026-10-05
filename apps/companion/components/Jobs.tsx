@@ -149,8 +149,6 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const allJobs = data?.jobs ?? [];
     const visible = new Set(filterJobs(allJobs, query, status));
     const jobs = allJobs.filter(job => visible.has(job));
-    const readyJobs = allJobs.filter(job => job.status === 'ready').length;
-    const attentionJobs = allJobs.filter(job => job.status === 'needs_info').length;
     const run = data?.applicationRun ?? null;
     const runQueue = new Set(run?.queueVersions.at(-1)?.jobIds ?? []);
     const runResume = data?.resumes.find(resume => resume.id === run?.selection.resumeId);
@@ -166,31 +164,21 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                 <button className="primary" data-job-create disabled={busy || transitionBusy} onClick={() => open(null)}>New job</button>
             </div>
         </header>
-        {allJobs.length > 0 && <div className="pipeline-metrics" aria-label="Pipeline summary">
-            <div><strong>{allJobs.length}</strong><span>Active jobs</span></div>
-            <div><strong>{readyJobs}</strong><span>Ready for agent</span></div>
-            <div><strong>{attentionJobs}</strong><span>Need information</span></div>
-        </div>}
         {run ? <div className="workspace-panel application-run-panel" aria-label="Active application run">
             <div><p className="eyebrow">Locked inputs</p><h2>{runResume?.label ?? run.selection.resumeId}</h2></div>
-            <p><strong>{runQueue.size}</strong> {runQueue.size === 1 ? 'job' : 'jobs'} in queue · queue revision {run.queueVersions.at(-1)?.revision} · confirmed facts revision {run.selection.factRevision}</p>
-            <p>You confirmed this resume and fact set in chat for the whole run. Jobs marked “In active run” are in the current queue. Ask the Job Apply agent to update the queue or complete the run before switching inputs.</p>
-        </div> : allJobs.length > 0 && <div className="workspace-panel application-run-panel" aria-label="No active application run">
-            <div><p className="eyebrow">Application run</p><h2>Not started</h2></div>
-            <p>Saved jobs can stay here until you are ready to apply.</p>
-            <p>Ask the Job Apply agent to review the proposed queue with you and confirm one resume and fact revision. Those inputs stay locked for the whole run.</p>
-        </div>}
+            <p>{runQueue.size} {runQueue.size === 1 ? 'job' : 'jobs'} in this run. This resume and its confirmed facts stay locked until the run ends.</p>
+        </div> : null}
         <div className="workspace-panel jobs-panel">
             <div className="workspace-panel-heading">
-                <div><p className="eyebrow">Pipeline</p><h2>Jobs</h2></div>
-                <div className="filters">
+                <div><p className="eyebrow">Pipeline</p><h2>Saved jobs</h2></div>
+                {allJobs.length > 0 && <div className="filters">
                     <label>Search jobs<input value={query} onChange={e => setQuery(e.target.value)} /></label>
                     <label>Status<select value={status} onChange={e => setStatus(e.target.value)}>
                         <option value="">All statuses</option>
                         {['saved', 'needs_info', 'ready', 'in_progress', 'awaiting_review', 'applied', 'closed'].map(value =>
                             <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
                     </select></label>
-                </div>
+                </div>}
             </div>
             <p className="workspace-status" role="status">{loading ? (data ? 'Refreshing jobs…' : 'Loading jobs…') : notice}</p>
             {loadError && <p role="alert" className="error">
@@ -217,10 +205,10 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             </div>
             {data && !loading && !loadError && !jobs.length && <div className="workspace-empty">
                 {allJobs.length ? <><strong>No jobs match these filters.</strong><button className="text-action" onClick={() => { setQuery(''); setStatus(''); }}>Clear filters</button></>
-                    : <><strong>No jobs yet. Capture a job to get started.</strong><span>Your saved opportunities will appear here.</span><button className="text-action" onClick={() => open(null)}>Create your first job</button></>}
+                    : <strong>No jobs saved yet.</strong>}
             </div>}
         </div>
-        {claimsEnabled && <Claims jobs={allJobs} />}
+        {claimsEnabled && allJobs.some(job => job.status === 'ready') && <Claims jobs={allJobs} />}
         {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} save={() => void save()}

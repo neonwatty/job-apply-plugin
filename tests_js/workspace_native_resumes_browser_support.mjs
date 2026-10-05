@@ -1,3 +1,4 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -72,7 +73,7 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     assert.equal(prompts, 1);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Unsaved import');
-    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await clickCompanionNav(page, 'Jobs');
     assert.equal(prompts, 2);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Unsaved import');
     page.off('dialog', dismiss);

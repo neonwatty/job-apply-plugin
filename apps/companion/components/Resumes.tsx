@@ -172,21 +172,14 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             if (alive.current) setContentBusy(false);
         }
     }
-    const managed = records.filter(record => record.storageKind === 'managed').length;
-    const defaultResume = records.find(record => record.default);
     return <section className="resumes-workspace" aria-labelledby="resumes-workspace-title">
         <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="resumes-workspace-title">Resumes</h1><p>Manage the resume files available to your application agents.</p></div><div className="workspace-hero-actions">
             <button className="secondary" disabled={busy} onClick={() => void refresh()}>Refresh</button>
             {openExtractions&&<button className="secondary" disabled={busy} onClick={openExtractions}>Resume extraction</button>}
             <button className="primary" disabled={busy} onClick={() => open(null)}>Import resume</button>
         </div></header>
-        <div className="resume-metrics" aria-label="Resume library summary">
-            <div><strong>{records.length}</strong><span>Active resumes</span></div>
-            <div><strong>{managed}</strong><span>Managed locally</span></div>
-            <div><strong>{defaultResume?.label ?? 'None'}</strong><span>Application default</span></div>
-        </div>
         <div className="workspace-panel resumes-panel" aria-labelledby="resume-library-heading">
-            <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="resume-library-heading">Resumes</h2></div><strong className="resume-count">{records.length} {records.length === 1 ? 'document' : 'documents'}</strong></div>
+            <div className="workspace-panel-heading"><div><p className="eyebrow">Your documents</p><h2 id="resume-library-heading">Saved resumes</h2></div></div>
             <p className="workspace-status" role="status">{loading ? 'Loading resumes…' : notice}</p>
             {!editor && error && <p role="alert" className="error">{error}</p>}
             <ul className="resume-list">
@@ -199,7 +192,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
                     <span className="visually-hidden">revision {record.revision}</span>
                 </button></li>)}
             </ul>
-            {!loading && !error && !records.length && <div className="workspace-empty resume-empty"><span className="resume-empty-mark" aria-hidden="true">DOC</span><strong>No resumes yet.</strong><span>Import one to use it with applications.</span><button className="text-action" type="button" onClick={() => open(null)}>Import your first resume</button></div>}
+            {!loading && !error && !records.length && <div className="workspace-empty resume-empty"><span className="resume-empty-mark" aria-hidden="true">DOC</span><strong>No resumes saved yet.</strong></div>}
         </div>
         {editor && <section className="workspace-panel resume-editor-panel" aria-labelledby="resume-editor-title">
             <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical resume</p><h2 id="resume-editor-title">{editor.base ? editor.base.label : 'Import resume'}</h2></div>{editor.base && <span className="facts-revision">Revision {editor.base.revision}</span>}</div>
