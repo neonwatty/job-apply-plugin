@@ -1,5 +1,4 @@
 import { PythonObject } from '../../../src/contracts/python-object';
-import { veteranAnswerValues } from '../../../src/contracts/workspace/answers';
 import { copy, get, has, int, keys, object, parse, serialize, set, string, text } from '../../../src/contracts/workspace/values';
 import type { Document, Value } from '../../../src/contracts/workspace/values';
 export type { Document };
@@ -23,6 +22,12 @@ export function answerDraft(record: Document): Document {
   for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent', 'answerIntent']) if (has(record, key)) set(result, key, get(record, key));
   return result;
 }
+const veteranAnswerValues: Record<string,string> = {
+  not_a_veteran: 'I am not a veteran',
+  veteran_not_protected: 'I am a veteran, just not a protected veteran',
+  protected_veteran: 'I am a protected veteran',
+  decline_to_identify: 'I do not wish to self-identify',
+};
 export function selectVeteranStatus(draft: Document, status: string): Document {
   const value = veteranAnswerValues[status];
   const intent = get(draft, 'answerIntent');

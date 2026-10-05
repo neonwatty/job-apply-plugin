@@ -1,7 +1,6 @@
 import { FactValue } from './FactValue';
 import { selectVeteranStatus } from './answer-model';
 import { PythonObject } from '../../../src/contracts/python-object';
-import { veteranAnswerValues } from '../../../src/contracts/workspace/answers';
 import { copy, get, has, object, parse, set, string, text } from '../../../src/contracts/workspace/values';
 import type { Document, Value } from '../../../src/contracts/workspace/values';
 
@@ -60,7 +59,10 @@ export function AnswerFields({ draft, change, remember, creating = false, struct
     </select></label>}
     {retainedValue && veteranIntent ? <label>Veteran status<select aria-label="Veteran status" value={string(get(veteranIntent, 'status')) ?? ''}
       onChange={event => change(selectVeteranStatus(draft, event.target.value))}>
-      {Object.entries(veteranAnswerValues).map(([status, value]) => <option key={status} value={status}>{value}</option>)}
+      <option value="not_a_veteran">Not a veteran</option>
+      <option value="veteran_not_protected">Veteran, not protected</option>
+      <option value="protected_veteran">Protected veteran</option>
+      <option value="decline_to_identify">Decline to identify</option>
     </select></label> : retainedValue ? <>
       <FactValue label="Answer value" value={get(draft, 'value')} change={value => update('value', value)} />
       <label>Answer value type<select aria-label="Answer value type" value={valueType(get(draft, 'value'))} onChange={event => {

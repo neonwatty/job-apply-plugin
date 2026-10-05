@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 import { parse, serialize, object, get, set, text, copy, has } from '../runtime/contracts/workspace/values.js';
+import { veteranAnswerValues } from '../runtime/contracts/workspace/answers.js';
 
 const source = await readFile(new URL('../apps/companion/components/answer-model.ts', import.meta.url), 'utf8');
 const emitted = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText
   .replaceAll('../../../src/contracts/python-object', new URL('../runtime/contracts/python-object.js', import.meta.url).href)
-  .replaceAll('../../../src/contracts/workspace/answers', new URL('../runtime/contracts/workspace/answers.js', import.meta.url).href)
   .replaceAll('../../../src/contracts/workspace/values', new URL('../runtime/contracts/workspace/values.js', import.meta.url).href);
 const model = await import(`data:text/javascript;base64,${Buffer.from(emitted).toString('base64')}`);
 const record = raw => object(parse(raw), 'answer');
@@ -109,4 +109,9 @@ test('Companion veteran selection updates the value and structured status togeth
     answerIntent: { kind: 'veteran_status', status: 'veteran_not_protected' },
   });
   assert.throws(() => model.selectVeteranStatus(draft, 'unknown'), /Invalid veteran status/);
+  for (const [status, value] of Object.entries(veteranAnswerValues)) {
+    const selected = model.selectVeteranStatus(model.answerDraft(base), status);
+    assert.equal(JSON.parse(serialize(get(selected, 'value'))), value);
+    assert.equal(JSON.parse(serialize(get(get(selected, 'answerIntent'), 'status'))), status);
+  }
 });
