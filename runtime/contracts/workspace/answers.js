@@ -91,12 +91,15 @@ export function validateAnswer(key, value) {
         throw new JobsError('answer record sensitivity is unsupported');
     if (!/^[a-z][a-z0-9_]{0,63}$/.test(string(fallback(record, 'fieldClass', text('general'))) ?? ''))
         throw new JobsError('answer record field class is invalid');
-    if (consentIntent(record) !== null && (string(get(record, 'state')) !== 'sensitive'
+    const consent = consentIntent(record);
+    if (consent !== null && (string(get(record, 'state')) !== 'sensitive'
         || string(get(record, 'sensitivity')) !== 'high')) {
         throw new JobsError('consent defaults must be sensitive with high sensitivity');
     }
     const intent = answerIntent(record);
     if (intent !== null) {
+        if (consent !== null)
+            throw new JobsError('structured answer cannot also be a consent default');
         const scope = object(fallback(record, 'scope', emptyObject()), 'answer record scope');
         if (string(get(record, 'state')) !== 'sensitive' || string(get(record, 'sensitivity')) !== 'high'
             || string(get(record, 'fieldClass')) !== 'veteran_status'

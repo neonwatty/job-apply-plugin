@@ -90,7 +90,7 @@ export function AnswerFields({ draft, change, remember, creating = false, struct
     <label>Source<input value={string(get(draft, 'source')) ?? ''} onChange={event => update('source', text(event.target.value))} /></label>
     <fieldset disabled={veteranLocked}><FactValue label="Applies to" value={has(draft, 'scope') ? get(draft, 'scope') : parse('{}')} change={value => update('scope', value)} /></fieldset>
     <label>Answer category<input disabled={veteranLocked} value={string(get(draft, 'fieldClass')) ?? 'general'} pattern="[a-z][a-z0-9_]{0,63}" onChange={event => update('fieldClass', text(event.target.value))} /></label>
-    <label>Reusable consent decision<select aria-label="Reusable consent decision" value={intent ? 'consent' : 'ordinary'} onChange={event => {
+    <label>Reusable consent decision<select aria-label="Reusable consent decision" disabled={veteranLocked} value={intent ? 'consent' : 'ordinary'} onChange={event => {
       if (event.target.value === 'consent') {
         const next = copy(draft);
         set(next, 'consentIntent', object(parse('{"kind":"opt_in","purpose":""}'), 'consent intent'));

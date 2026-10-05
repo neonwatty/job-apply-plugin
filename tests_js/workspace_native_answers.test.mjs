@@ -70,6 +70,8 @@ test('veteran intent requires a precise sensitive answer and stays out of incide
   assert.equal(plain(await service.find('Veteran Status', fromJSON({ country: 'US' }))).answerIntent, undefined);
   assert.equal(plain(await service.query()).items[0].answerIntent, undefined);
   assert.deepEqual(plain(await service.get('veteran', true)).answerIntent, intent);
+  await assert.rejects(service.update('veteran', fromJSON({ consentIntent: { kind: 'opt_in', purpose: 'recruiting_sms' } }), 2n), /cannot also be a consent default/);
+  assert.equal(plain(await service.query({ consentOnly: true })).total, 0);
   await assert.rejects(service.update('veteran', fromJSON({ value: 'I am a veteran, just not a protected veteran' }), 2n, true), /inconsistent/);
   await assert.rejects(service.update('veteran', fromJSON({ answerIntent: { kind: 'veteran_status', status: 'unknown' } }), 2n), /answer intent is invalid/);
   await assert.rejects(service.put(fromJSON({ key: 'other', question: 'Veteran?', state: 'sensitive',

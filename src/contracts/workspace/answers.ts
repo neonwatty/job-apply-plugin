@@ -84,12 +84,14 @@ export function validateAnswer(key: string, value: Value): Document {
   if (!answerReviews.has(string(fallback(record, 'reviewStatus', text('accepted')))!)) throw new JobsError('answer record review status is unsupported');
   if (!answerSensitivities.has(string(fallback(record, 'sensitivity', text('none')))!)) throw new JobsError('answer record sensitivity is unsupported');
   if (!/^[a-z][a-z0-9_]{0,63}$/.test(string(fallback(record, 'fieldClass', text('general'))) ?? '')) throw new JobsError('answer record field class is invalid');
-  if (consentIntent(record) !== null && (string(get(record, 'state')) !== 'sensitive'
+  const consent = consentIntent(record);
+  if (consent !== null && (string(get(record, 'state')) !== 'sensitive'
     || string(get(record, 'sensitivity')) !== 'high')) {
     throw new JobsError('consent defaults must be sensitive with high sensitivity');
   }
   const intent = answerIntent(record);
   if (intent !== null) {
+    if (consent !== null) throw new JobsError('structured answer cannot also be a consent default');
     const scope = object(fallback(record, 'scope', emptyObject()), 'answer record scope');
     if (string(get(record, 'state')) !== 'sensitive' || string(get(record, 'sensitivity')) !== 'high'
       || string(get(record, 'fieldClass')) !== 'veteran_status'
