@@ -212,7 +212,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
       {loaded && !managed.length && <div className="workspace-empty extraction-empty"><strong>Import a resume to extract facts.</strong>{openResumes&&<button className="text-action" onClick={openResumes}>Open Resumes</button>}</div>}
     </section>
     {(requests.length > 0 || proposals.length > 0) && <div className="extraction-queues">
-    {requests.length > 0 && <section className="workspace-panel extraction-queue-panel" aria-labelledby="extraction-requests-heading"><div className="extraction-panel-heading"><div><p className="eyebrow">In progress</p><h2 id="extraction-requests-heading">Extraction requests</h2></div></div>
+    {requests.length > 0 && <section className="workspace-panel extraction-queue-panel" aria-labelledby="extraction-requests-heading"><div className="extraction-panel-heading"><h2 id="extraction-requests-heading">Extraction requests</h2></div>
     <ul className="extraction-list">{requests.map(item => {
       const id = string(get(item, 'requestId'))!, status = string(get(item, 'status'));
       const resume = resumes.find(value => string(get(value, 'id')) === string(get(item, 'resumeId')));
@@ -225,7 +225,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
       </li>;
     })}</ul>
     </section>}
-    {proposals.length > 0 && <section className="workspace-panel extraction-queue-panel" aria-labelledby="extracted-proposals-heading"><div className="extraction-panel-heading"><div><p className="eyebrow">Ready to review</p><h2 id="extracted-proposals-heading">Extracted proposals</h2></div></div>
+    {proposals.length > 0 && <section className="workspace-panel extraction-queue-panel" aria-labelledby="extracted-proposals-heading"><div className="extraction-panel-heading"><h2 id="extracted-proposals-heading">Extracted proposals</h2></div>
     <ul className="extraction-list proposal-list">{proposals.map(item => {
       const id = string(get(item, 'id'))!;
       const resume = resumes.find(value => string(get(value, 'id')) === string(get(item, 'resumeId')));
