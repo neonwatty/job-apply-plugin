@@ -18,6 +18,7 @@ import './resume-facts.css';
 import './title-discovery.css';
 import './companion-polish.css';
 import './companion-nav.css';
+import './companion-theme.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
