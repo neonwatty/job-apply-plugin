@@ -1,6 +1,6 @@
 'use client';
 import { useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
 import { Overview } from './Overview';
@@ -184,6 +184,8 @@ export default function Companion() {
     const [shellCounts,setShellCounts]=useState<{attention?:number;trash?:number}>({});
     const content=useRef<HTMLElement|null>(null);
     const focusAfterNavigation=useRef(false);
+    const activeTransition=useRef<ViewTransition|null>(null);
+    const navigationGeneration=useRef(0);
     useEffect(() => {
         let active=true;
         const controller=new AbortController();
@@ -229,13 +231,37 @@ export default function Companion() {
         requestAnimationFrame(()=>content.current?.focus({preventScroll:true}));
     },[tab]);
     function navigate(next: WorkspaceTab): boolean {
-        if(next===tab)
+        if(next===tab) {
+            if(activeTransition.current) {
+                ++navigationGeneration.current;
+                activeTransition.current.skipTransition();
+            }
             return true;
+        }
         if(dirty&&!confirm('Discard unsaved changes?'))
             return false;
-        setDirty(false);
-        focusAfterNavigation.current=true;
-        setTab(next);
+        const generation=++navigationGeneration.current;
+        const change=()=>{
+            if(generation!==navigationGeneration.current)return;
+            setDirty(false);
+            focusAfterNavigation.current=true;
+            setTab(next);
+        };
+        activeTransition.current?.skipTransition();
+        window.scrollTo(0,0);
+        if(!document.startViewTransition||window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            change();
+            return true;
+        }
+        document.documentElement.classList.add('workspace-transitioning');
+        const transition=document.startViewTransition(()=>flushSync(change));
+        activeTransition.current=transition;
+        const finish=()=>{
+            if(activeTransition.current!==transition)return;
+            activeTransition.current=null;
+            document.documentElement.classList.remove('workspace-transitioning');
+        };
+        void transition.finished.then(finish,finish);
         return true;
     }
     const legacyHref=`/legacy/#${new URLSearchParams({
