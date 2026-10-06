@@ -1,5 +1,5 @@
 'use client';
-import { useCallback,useEffect,useMemo,useRef,useState } from 'react';
+import { useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
@@ -39,10 +39,28 @@ type Props = {
 function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, legacyHref, dirty }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<Menu|null>(null);
+  const [activeRect, setActiveRect] = useState<{ x:number;y:number;width:number;height:number }|null>(null);
+  const [indicatorReady, setIndicatorReady] = useState(false);
   const nav = useRef<HTMLElement|null>(null);
   const mobileToggle = useRef<HTMLButtonElement|null>(null);
   const materialsToggle = useRef<HTMLButtonElement|null>(null);
   const moreToggle = useRef<HTMLButtonElement|null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const container = nav.current;
+      const active = container?.querySelector<HTMLElement>('[data-nav-active="true"]');
+      if (!container || !active) return;
+      const bounds = container.getBoundingClientRect();
+      const item = active.getBoundingClientRect();
+      setActiveRect({ x:item.left-bounds.left+container.scrollLeft, y:item.top-bounds.top,
+        width:item.width, height:item.height });
+    };
+    measure();
+    const frame = requestAnimationFrame(() => setIndicatorReady(true));
+    window.addEventListener('resize', measure);
+    return () => { cancelAnimationFrame(frame);window.removeEventListener('resize', measure); };
+  }, [tab, nativeWorkspace, attentionCount]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -107,11 +125,13 @@ function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, l
   };
   const link = (target: WorkspaceTab, label: string, active = tab === target, count?: number) =>
     <button className="nav-link" type="button" aria-label={label} aria-current={active ? 'page' : undefined}
+      data-nav-active={active && ['overview','jobs','attention'].includes(target) ? 'true' : undefined}
       onClick={() => go(target)}>{label}{count !== undefined && count > 0 && <span className="nav-count" aria-hidden="true">{count}</span>}</button>;
   const menu = (id: Menu, label: string, active: boolean, toggle: typeof materialsToggle, items: React.ReactNode) =>
     <div className="nav-menu">
       <button ref={toggle} className="nav-link nav-menu-toggle" type="button"
-        data-active={active || undefined} aria-expanded={openMenu === id} aria-controls={`${id}-nav-menu`}
+        data-active={active || undefined} data-nav-active={active ? 'true' : undefined}
+        aria-expanded={openMenu === id} aria-controls={`${id}-nav-menu`}
         onClick={() => setOpenMenu(current => current === id ? null : id)}>{label}<span className="nav-chevron" aria-hidden="true" /></button>
       <div id={`${id}-nav-menu`} className="nav-popover" hidden={openMenu !== id}>{items}</div>
     </div>;
@@ -127,6 +147,9 @@ function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, l
     </button>
     <nav ref={nav} id="workspace-navigation" className={`workspace-nav${mobileOpen ? ' is-open' : ''}`}
       aria-label="Workspace sections">
+      {activeRect && <span className="nav-active-indicator" data-ready={indicatorReady || undefined}
+        style={{width:activeRect.width,height:activeRect.height,transform:`translate3d(${activeRect.x}px,${activeRect.y}px,0)`}}
+        aria-hidden="true" />}
       {link('overview', 'Overview')}
       {link('jobs', 'Jobs')}
       {nativeWorkspace && link('attention', 'Needs Attention', tab === 'attention', attentionCount)}
@@ -258,11 +281,11 @@ export default function Companion() {
             <p>
                 {boot.guidance}
             </p>
-        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged} onMutation={refreshShellCounts} countChanged={trashCountChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='accounts'?<Automation mode="accounts" client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
+        </section>:boot?.status==='ready'&&client? <div className="workspace-page" key={tab}>{tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged} onMutation={refreshShellCounts} countChanged={trashCountChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='accounts'?<Automation mode="accounts" client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
             openWorkspace={nativeWorkspace ? navigate : undefined}
-            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged} openExtractions={()=>navigate('extractions')}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged} openResumes={()=>navigate('resumes')}/>:tab==='answers'||tab==='consents'?<Answers key={tab} client={client} dirtyChanged={dirtyChanged} consentOnly={tab==='consents'}/>:tab==='settings'?<ApplicationSettings client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeWorkspace} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} workspaceChanged={refreshShellCounts} />):!error&&<p>Loading workspace…
+            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged} openExtractions={()=>navigate('extractions')}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged} openResumes={()=>navigate('resumes')}/>:tab==='answers'||tab==='consents'?<Answers key={tab} client={client} dirtyChanged={dirtyChanged} consentOnly={tab==='consents'}/>:tab==='settings'?<ApplicationSettings client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeWorkspace} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} workspaceChanged={refreshShellCounts} />}</div>:!error&&<p>Loading workspace…
             </p>}
         </main>
     </>;
