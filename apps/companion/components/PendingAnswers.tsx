@@ -93,8 +93,8 @@ export function PendingAnswers({ client, revision, disabled, onBusyChanged, onRe
         <ul className="pending-question-list">{job.pendingInformation.map((field, index) => <li key={`${field.reference}-${index}`}>
           <p>{field.question || 'Information requested'}</p>
           {!field.resolutionEligible && <p>This question needs further review before it can be resolved.</p>}
-          <div className="button-row">{field.answerKey && <button className="secondary" type="button" disabled={disabled || resolving} onClick={() => onOpenAnswer(field.answerKey!)}>Open saved answer</button>}
-          <button className="secondary" type="button" disabled={disabled || resolving || !field.resolutionEligible} onClick={() => void resolve(job, field)}>Resolve question</button></div>
+          <div className="button-row">{field.answerKey && <button className="secondary" type="button" disabled={disabled || loading || resolving} onClick={() => onOpenAnswer(field.answerKey!)}>Open saved answer</button>}
+          <button className="secondary" type="button" disabled={disabled || loading || resolving || !field.resolutionEligible} onClick={() => void resolve(job, field)}>Resolve question</button></div>
         </li>)}</ul>
       </li>)}</ul>
     </>}

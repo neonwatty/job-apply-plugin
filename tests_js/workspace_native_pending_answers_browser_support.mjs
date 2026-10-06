@@ -33,6 +33,17 @@ export async function nativePendingAnswersBrowser(page, root, cli) {
   const sensitive = panel.getByRole('listitem').filter({ has: page.getByText('Sensitive pending confirmation?', { exact: true }) }).last();
   assert.equal(await sensitive.getByRole('button', { name: 'Resolve question', exact: true }).isDisabled(), true);
   assert.doesNotMatch(await panel.innerText(), /PRIVATE-PENDING-BROWSER/);
+  let releaseRefresh, refreshEntered;
+  const refreshGate = new Promise(resolve => { releaseRefresh = resolve; });
+  const refreshStart = new Promise(resolve => { refreshEntered = resolve; });
+  await page.route('**/api/pending-answers', async route => { refreshEntered(); await refreshGate; await route.continue(); });
+  await refresh.click();
+  await refreshStart;
+  assert.equal(await eligible.getByRole('button', { name: 'Open saved answer', exact: true }).isDisabled(), true);
+  assert.equal(await eligible.getByRole('button', { name: 'Resolve question', exact: true }).isDisabled(), true);
+  releaseRefresh();
+  await panel.getByRole('status').getByText('Refreshing pending questions…', { exact: true }).waitFor({ state: 'hidden' });
+  await page.unroute('**/api/pending-answers');
   await eligible.getByRole('button', { name: 'Open saved answer', exact: true }).click();
   await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
   await page.getByText('Advanced details', { exact: true }).click();

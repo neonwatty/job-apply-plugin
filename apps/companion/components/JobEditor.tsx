@@ -81,7 +81,8 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
                 {editing && editor.dirty.size > 0 && <button type="button" disabled={busy} onClick={reapply}>Reapply my draft</button>}</div>
         </section>}
         {selection && <p className="notice">{String(selection.jobRevision) === String(editor.selected?.revision)
-            ? 'Application inputs confirmed' : 'Application inputs need reconfirmation'} · {selectedResume?.label ?? String(selection.resumeId)}</p>}
+            ? `Application inputs selected · ${selectedResume?.label ?? String(selection.resumeId)}. Checked again before applying.`
+            : `Application inputs need reconfirmation · ${selectedResume?.label ?? String(selection.resumeId)}.`}</p>}
         {!editing && editor.selected ? <>
             <div className="job-drawer-summary">
                 <span className={`status-pill status-${editor.selected.status}`}>{editor.selected.status.replaceAll('_',' ')}</span>
