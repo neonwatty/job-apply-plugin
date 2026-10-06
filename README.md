@@ -133,7 +133,7 @@ The examples below use Codex syntax. In Claude Code, replace the leading `$` wit
    ~/Documents/resume.pdf
    ```
 
-4. Review and confirm the facts extracted for that specific resume in Companion
+4. Review and confirm the facts extracted for that specific resume in Companion. When the draft is ready, open the optional local Companion with `$job-apply:job-workspace` in Codex or `/job-apply:job-workspace` in Claude Code. It is bundled with the plugin and starts only when requested; you can defer opening it until fact review.
 
 ### Applying to Jobs
 
