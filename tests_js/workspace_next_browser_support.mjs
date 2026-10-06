@@ -210,7 +210,7 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Edit job', exact: true }).click();
     await page.locator('dialog [name="notes"]').fill('Preserved React draft');
     const refreshed = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
-    await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent === 'Refresh').click());
+    await page.evaluate(() => [...document.querySelectorAll('.workspace-page:not([hidden]) .jobs-workspace button')].find(button => button.textContent === 'Refresh').click());
     await refreshed;
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Preserved React draft');
     const state = await (await fetch(origin + '/api/state', { headers })).json();

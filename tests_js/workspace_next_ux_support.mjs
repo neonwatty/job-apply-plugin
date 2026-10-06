@@ -40,6 +40,7 @@ export async function nextSetupAndLoading(page, url) {
   await page.route('**/api/boot', async route => { await bootGate; await route.continue(); });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await clickCompanionNav(page, 'Facts');
+  await page.locator('#workspace-navigation button[aria-label="Facts"][aria-current="page"]').waitFor({ state: 'attached' });
   bootRelease();
   await page.waitForLoadState('networkidle');
   assert.equal(await page.locator('#workspace-navigation button[aria-label="Facts"]').getAttribute('aria-current'), 'page');
@@ -77,6 +78,13 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await page.getByLabel('Search jobs', { exact: true }).fill('does-not-match-any-job');
   await page.getByText('No jobs match these filters.', { exact: false }).waitFor();
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await page.getByLabel('Search jobs', { exact: true }).fill('Next synthetic');
+  await clickCompanionNav(page, 'Overview');
+  await page.locator('#workspace-navigation button[aria-label="Overview"][aria-current="page"]').waitFor({ state: 'attached' });
+  await clickCompanionNav(page, 'Jobs');
+  await page.locator('#workspace-navigation button[aria-label="Jobs"][aria-current="page"]').waitFor({ state: 'attached' });
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
+    'returning to Jobs keeps its loaded list and filter');
   const card = page.getByRole('button', { name: /Next synthetic role/ });
   await card.click();
   await capture(page, 'job-details-desktop.png');
@@ -89,7 +97,7 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   assert.equal(await dialog.isVisible(), true, 'clicking inside drawer padding keeps the job open');
   await dialog.locator('[name="notes"]').fill('Draft survives failed refresh');
   await page.route('**/api/state', route => route.fulfill({ status: 503, json: { error: { message: 'Offline fixture' } } }));
-  await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());
+  await page.evaluate(() => [...document.querySelectorAll('.workspace-page:not([hidden]) .jobs-workspace button')].find(button => button.textContent.trim() === 'Refresh').click());
   await page.getByText(/Showing previously loaded jobs/).waitFor();
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Draft survives failed refresh');
   await page.unroute('**/api/state');
@@ -130,7 +138,7 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await dialog.locator('[name="notes"]').fill('Preserve missing-record draft');
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');
   await page.route('**/api/state', route => route.fulfill({ json: { ...state, jobs: [] } }));
-  await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());
+  await page.evaluate(() => [...document.querySelectorAll('.workspace-page:not([hidden]) .jobs-workspace button')].find(button => button.textContent.trim() === 'Refresh').click());
   await dialog.getByText('This job is no longer available', { exact: true }).waitFor();
   assert.equal(await dialog.getByRole('button', { name: 'Save job', exact: true }).isDisabled(), true);
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');

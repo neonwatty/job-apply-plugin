@@ -173,7 +173,7 @@ export async function nativeJobsBrowser(buildRoot) {
       'job-transition', '--id', job.id, '--status', 'needs_info',
       '--expected-revision', String(queuedJob.revision)], { env: { PATH: '' } });
     await clickCompanionNav(page, 'Jobs');
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await page.locator('.workspace-page:not([hidden]) .jobs-workspace').getByRole('button', { name: 'Refresh', exact: true }).click();
     const applicationRun = page.getByLabel('Active application run', { exact: true });
     await applicationRun.getByText('Locked inputs', { exact: true }).waitFor();
     await applicationRun.getByText('1 job in this run.', { exact: false }).waitFor();

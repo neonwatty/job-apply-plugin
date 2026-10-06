@@ -8,8 +8,9 @@ import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
 import { JobTransitions } from './JobTransitions';
 
-export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged }: {
+export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged }: {
     client: Client;
+    active?: boolean;
     claimsEnabled?: boolean;
     requestedJobId?: string | null;
     jobOpened?: () => void;
@@ -32,6 +33,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const mutation = useRef<AbortController | null>(null);
     const generation = useRef(0);
     const listGeneration = useRef(0);
+    const wasActive = useRef(active);
 
     async function refresh() {
         refreshRequest.current?.abort();
@@ -66,6 +68,14 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             mutation.current?.abort();
         };
     }, [client]);
+    useEffect(() => {
+        if (!active) {
+            refreshRequest.current?.abort();
+            listGeneration.current++;
+            setLoading(false);
+        } else if (!wasActive.current) void refresh();
+        wasActive.current = active;
+    }, [active]);
     useEffect(() => {
         dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy);
         return () => dirtyChanged(false);
