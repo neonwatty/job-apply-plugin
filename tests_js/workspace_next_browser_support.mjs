@@ -24,6 +24,14 @@ export async function nextBrowser() {
     const compatibility = await productionBrowser(repository);
     return { ...compatibility, nativeJobs: await nativeJobsBrowser(repository) };
   }
+  const isolated = await isolatedCompanionRoot(repository);
+  try {
+    const compatibility = await productionBrowser(isolated.root);
+    return { ...compatibility, nativeJobs: await nativeJobsBrowser(isolated.root) };
+  } finally { await isolated.cleanup(); }
+}
+
+export async function isolatedCompanionRoot(source = sourceRepository) {
   // Hook snapshots share node_modules for unit checks. Next standalone tracing
   // needs dependencies physically inside its build root, including workspace
   // links. Build from copied current source with its own locked installation.
@@ -31,16 +39,18 @@ export async function nextBrowser() {
   try {
     for (const path of ['apps', 'src', 'runtime', 'scripts', 'workspace', 'native', 'qa',
       'package.json', 'package-lock.json']) {
-      await cp(join(repository, path), join(root, path), { recursive: true,
+      await cp(join(source, path), join(root, path), { recursive: true,
         filter: path => !/(?:^|\/)(?:node_modules|\.next|__pycache__)(?:\/|$)/.test(path)
           && !/(?:^|\/)qa\/runs(?:\/|$)/.test(path)
           && !/\.(?:pyc|tsbuildinfo)$/.test(path) });
     }
     await execute('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'],
       { cwd: root, timeout: 30000, maxBuffer: 2 * 1024 * 1024 });
-    const compatibility = await productionBrowser(root);
-    return { ...compatibility, nativeJobs: await nativeJobsBrowser(root) };
-  } finally { await rm(root, { recursive: true, force: true }); }
+    return { root, cleanup: () => rm(root, { recursive: true, force: true }) };
+  } catch (error) {
+    await rm(root, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 async function productionBrowser(root) {
