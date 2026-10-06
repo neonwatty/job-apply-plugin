@@ -25,6 +25,8 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     const pending = await cli('answer-observe', '{"question":"Suggested answer?","value":"Suggested value"}');
     await clickCompanionNav(page, 'Answers');
     await page.getByRole('button', { name: 'Preferred work location?', exact: true }).click();
+    await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
+    await page.getByText('Advanced details', { exact: true }).click();
     await page.getByLabel('Answer value', { exact: true }).fill('My answer draft');
     await cli('answer-update', '{"source":"concurrent-client"}', ['--key', 'browser-answer', '--expected-revision', '1']);
     await page.getByRole('button', { name: 'Save answer', exact: true }).click();
@@ -41,6 +43,8 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     assert.match(bytes, /"decimal":\s*1\.0/);
 
     await page.getByRole('button', { name: 'Private remembered answer?', exact: true }).click();
+    await page.locator('dialog.answer-detail-drawer .detail-drawer-summary').getByText('General', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
     await page.getByRole('button', { name: 'Replace hidden answer', exact: true }).waitFor();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).count(), 0);
     assert.equal(await page.getByRole('button', { name: 'Replace hidden answer', exact: true }).isDisabled(), true);
@@ -61,6 +65,7 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     await page.getByLabel('Review status', { exact: true }).selectOption('pending');
     await page.getByRole('button', { name: 'Search answers', exact: true }).click();
     await page.getByRole('button', { name: 'Suggested answer?', exact: true }).click();
+    await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
     await page.getByRole('button', { name: 'Accept answer', exact: true }).click();
     await page.getByText('Answer saved.', { exact: true }).waitFor();
     assert.equal((await stored(pending.key)).reviewStatus, 'accepted');
@@ -68,9 +73,11 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     await page.reload();
     await clickCompanionNav(page, 'Answers');
     await page.getByRole('button', { name: 'Preferred work location?', exact: true }).click();
+    await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'My answer draft');
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
     const creation = await nativeAnswerCreationBrowser(page, root);
     const cleanup = await nativeAnswerCleanupBrowser(page, root, cli);
     const pendingQuestions = await nativePendingAnswersBrowser(page, root, cli);

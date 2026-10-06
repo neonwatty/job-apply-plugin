@@ -24,12 +24,13 @@ function reapplyModels(before:ProfileSnapshot,draft:AgentModelPreferences,latest
   return result;
 }
 
-export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
+export function ApplicationSettings({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyChanged:(dirty:boolean)=>void;refreshKey?:number}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<ApplicationPreferences|null>(null);
   const [models,setModels]=useState<AgentModelPreferences|null>(null);
   const [complete,setComplete]=useState(false),[latest,setLatest]=useState<ProfileSnapshot|null>(null);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const alive=useRef(false),request=useRef<AbortController|null>(null),generation=useRef(0),dirtyRef=useRef(false);
+  const previousRefreshKey=useRef(refreshKey);
   const dirty=Boolean(base&&draft&&models&&(!equal(readApplicationPreferences(base.profile).preferences,draft)
     ||!equalModels(readAgentModelPreferences(base.profile),models)));
   const canSave=!complete||dirty;
@@ -50,6 +51,7 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
     finally{if(alive.current&&version===generation.current)setLoading(false);}
   }
   useEffect(()=>{alive.current=true;void refresh(true);return()=>{alive.current=false;generation.current++;request.current?.abort();};},[client]);
+  useEffect(()=>{if(previousRefreshKey.current===refreshKey)return;previousRefreshKey.current=refreshKey;void refresh();},[refreshKey]);
   async function save() {
     if(!base||!draft||!models||!canSave||invalidModel||invalidEffort)return;request.current?.abort();const controller=new AbortController();request.current=controller;const version=++generation.current;
     setBusy(true);setError('');setNotice('');
@@ -63,7 +65,7 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
     } finally{if(alive.current&&version===generation.current)setBusy(false);}
   }
   return <section className="settings-workspace" aria-labelledby="settings-workspace-title">
-    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Controls</p><h1 id="settings-workspace-title">Settings</h1><p>Set defaults for Codex and Claude Code. You can choose differently for an individual task.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={busy||loading} onClick={()=>void refresh()}>Refresh setup</button></div></header>
+    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Controls</p><h1 id="settings-workspace-title">Settings</h1><p>Choose defaults for new tasks.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={busy||loading} onClick={()=>void refresh()}>Refresh setup</button></div></header>
     <p className="workspace-status" role="status">{loading?'Loading setup…':notice}</p>
     {error&&<p className="error" role="alert">{error} <button disabled={busy||loading} onClick={()=>void refresh()}>Retry loading setup</button></p>}
     {latest&&base&&draft&&models&&<aside className="notice facts-conflict" role="alert"><p><strong>Setup changed elsewhere.</strong> Your choices are retained.</p><button disabled={busy} onClick={()=>{setDraft(reapplyPreferences(base,draft,latest));setModels(reapplyModels(base,models,latest));setBase(latest);setComplete(readApplicationPreferences(latest.profile).complete);setLatest(null);setError('');setNotice('Only your changed choices were reapplied to the latest revision. Review before saving.');}}>Reapply my setup choices</button><button disabled={busy} onClick={()=>{const parsed=readApplicationPreferences(latest.profile);setBase(latest);setDraft(parsed.preferences);setModels(readAgentModelPreferences(latest.profile));setComplete(parsed.complete);setLatest(null);setError('');setNotice('Saved setup loaded.');}}>Load saved setup</button></aside>}
@@ -86,7 +88,7 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
       {invalidModel&&<p role="alert" className="error">Open Advanced agent model defaults and use a model ID with letters, numbers, . _ : / + or -.</p>}
       {invalidEffort&&<p role="alert" className="error">Open Advanced agent model defaults and choose Host default, Low, Medium, or High for Codex reasoning effort.</p>}
       <div className="settings-boundaries"><strong>Always manual</strong><p>Login, passwords, CAPTCHA, MFA, sensitive-answer approval, legal consent, and the final Submit or Send action are never enabled by these preferences.</p></div>
-      <div className="button-row"><button className="primary" type="submit" disabled={!canSave||Boolean(latest)||invalidModel||invalidEffort}>Save setup</button><button className="secondary" type="button" disabled={!dirty} onClick={()=>{const parsed=readApplicationPreferences(base.profile);setDraft(parsed.preferences);setModels(readAgentModelPreferences(base.profile));setComplete(parsed.complete);setLatest(null);setError('');setNotice('Unsaved setup changes discarded.');}}>Discard changes</button></div>
+      <div className="button-row settings-actions"><button className="primary" type="submit" disabled={!canSave||Boolean(latest)||invalidModel||invalidEffort}>Save setup</button><button className="secondary" type="button" disabled={!dirty} onClick={()=>{const parsed=readApplicationPreferences(base.profile);setDraft(parsed.preferences);setModels(readAgentModelPreferences(base.profile));setComplete(parsed.complete);setLatest(null);setError('');setNotice('Unsaved setup changes discarded.');}}>Discard changes</button></div>
     </fieldset></form>}
   </section>;
 }

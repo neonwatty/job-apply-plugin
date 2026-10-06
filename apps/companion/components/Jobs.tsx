@@ -8,13 +8,15 @@ import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
 import { JobTransitions } from './JobTransitions';
 
-export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged }: {
+export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
     client: Client;
+    active?: boolean;
     claimsEnabled?: boolean;
     requestedJobId?: string | null;
     jobOpened?: () => void;
     openAnswers?: () => void;
     workspaceChanged?: () => void | Promise<void>;
+    refreshKey?: number;
     dirtyChanged: (dirty: boolean) => void;
 }) {
     const [data, setData] = useState<WorkspaceState | null>(null);
@@ -32,6 +34,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const mutation = useRef<AbortController | null>(null);
     const generation = useRef(0);
     const listGeneration = useRef(0);
+    const previousRefreshKey = useRef(refreshKey);
 
     async function refresh() {
         refreshRequest.current?.abort();
@@ -66,6 +69,18 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             mutation.current?.abort();
         };
     }, [client]);
+    useEffect(() => {
+        if (!active) {
+            refreshRequest.current?.abort();
+            listGeneration.current++;
+            setLoading(false);
+        }
+    }, [active]);
+    useEffect(() => {
+        if (previousRefreshKey.current === refreshKey) return;
+        previousRefreshKey.current = refreshKey;
+        void refresh();
+    }, [refreshKey]);
     useEffect(() => {
         dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy);
         return () => dirtyChanged(false);
@@ -211,7 +226,8 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         {claimsEnabled && allJobs.some(job => job.status === 'ready') && <Claims jobs={allJobs} />}
         {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
-            close={close} save={() => void save()}
+            close={close} reset={() => { setEditor(current => current?.selected
+                ? { ...openEditor(current.latest ?? current.selected), missing: current.missing } : null); setError(''); }} save={() => void save()}
             refresh={() => {
                 const version = generation.current;
                 void refresh().then(success => {

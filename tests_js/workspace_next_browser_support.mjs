@@ -207,9 +207,10 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Save job', exact: true }).click();
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: /Next synthetic role/ }).click();
+    await page.getByRole('button', { name: 'Edit job', exact: true }).click();
     await page.locator('dialog [name="notes"]').fill('Preserved React draft');
     const refreshed = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
-    await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent === 'Refresh').click());
+    await page.evaluate(() => [...document.querySelectorAll('.workspace-page:not([hidden]) .jobs-workspace button')].find(button => button.textContent === 'Refresh').click());
     await refreshed;
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Preserved React draft');
     const state = await (await fetch(origin + '/api/state', { headers })).json();
@@ -229,9 +230,11 @@ async function productionBrowser(root) {
     await page.reload({ waitUntil: 'networkidle' });
     await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: /Next synthetic role/ }).click();
+    await page.getByRole('button', { name: 'Edit job', exact: true }).click();
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Preserved React draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'Other writer');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('button', { name: 'Cancel editing', exact: true }).click();
+    await page.getByRole('button', { name: 'Close job details', exact: true }).click();
     await nextDraftAndRecovery(page, origin, headers);
     await nextLateRead(page);
     const trash = await reactTrashBrowser(page, { origin, headers });

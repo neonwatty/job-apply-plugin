@@ -8,13 +8,14 @@ import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './fa
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
 const settingsNames=['applicationPreferences','agentModelPreferences'];
 const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>!settingsNames.includes(name)&&name.toLowerCase().includes(query.toLowerCase()));
-export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
+export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyChanged:(dirty:boolean)=>void;refreshKey?:number}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<Document|null>(null);
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[key,setKey]=useState('firstName'),[kind,setKind]=useState('text');
   const [invalid,setInvalid]=useState(false),[editorVersion,setEditorVersion]=useState(0);
   const [query,setQuery]=useState(''),[groupDirty,setGroupDirty]=useState(false),[titleDirty,setTitleDirty]=useState(false),[addOpen,setAddOpen]=useState(false);
   const alive=useRef(false), generation=useRef(0), request=useRef<AbortController|null>(null);
+  const previousRefreshKey=useRef(refreshKey);
   const form=useRef<HTMLFormElement|null>(null);
   useEffect(()=>{setInvalid(form.current?!form.current.checkValidity():false);},[draft,editorVersion]);
   const state=useRef({base,draft});
@@ -35,6 +36,7 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
     finally{if(alive.current&&version===generation.current)setLoading(false);}
   }
   useEffect(()=>{alive.current=true;void refresh();return()=>{alive.current=false;generation.current++;request.current?.abort();};},[client]);
+  useEffect(()=>{if(previousRefreshKey.current===refreshKey)return;previousRefreshKey.current=refreshKey;void refresh();},[refreshKey]);
   async function save() {
     if(!base||!draft||!dirty)return;
     request.current?.abort();const controller=new AbortController();request.current=controller;const version=++generation.current;

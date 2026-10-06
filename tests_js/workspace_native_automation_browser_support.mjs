@@ -8,11 +8,18 @@ export async function nativeAutomationBrowser(page, root) {
   const workspace=page.locator('.automation-workspace');
   await workspace.getByRole('heading',{name:'Automation',exact:true}).waitFor();
   await workspace.getByRole('heading',{name:'Application automation',exact:true}).waitFor();
-  await workspace.getByText('Guided · granular confirmation remains active',{exact:true}).waitFor();
-  await workspace.getByText(/Every mode stops at final review/).waitFor();
+  await workspace.getByText('Guided mode · confirm each step',{exact:true}).waitFor();
+  await workspace.getByText(/Every mode stops at your final review and submission/).waitFor();
   assert.equal(await workspace.getByLabel(/Enable companion automation controls/).isVisible(),false);
   assert.equal(await workspace.getByLabel('Exact employer portal URL',{exact:true}).isVisible(),false);
-  await workspace.getByText('No queued jobs are available. Start an application run and prepare its jobs first.').waitFor();
+  await workspace.getByText('No application run is active.',{exact:true}).waitFor();
+  await page.route('**/api/state', route => route.fulfill({ status: 503, json: { error: { message: 'Synthetic state failure' } } }));
+  await workspace.getByRole('button',{name:'Refresh',exact:true}).click();
+  await workspace.locator('.application-automation-panel').getByRole('alert').waitFor();
+  assert.equal(await workspace.getByText('No application run is active.',{exact:true}).count(),0);
+  await page.unroute('**/api/state');
+  await workspace.getByRole('button',{name:'Refresh',exact:true}).click();
+  await workspace.getByText('No application run is active.',{exact:true}).waitFor();
   const refreshedJob={id:'refreshed-job',url:'https://example.invalid/refreshed',status:'ready',revision:1,
     role:'Refreshed role',company:'Synthetic employer'};
   await page.route('**/api/state',async route=>{

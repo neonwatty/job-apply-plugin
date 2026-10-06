@@ -13,7 +13,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
     return response.json();
   }
 
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  const modal = page.locator('dialog.job-drawer');
   const status = modal.getByRole('region', { name: 'Job status', exact: true });
   const close = modal.getByRole('button', { name: 'Close job details', exact: true });
   async function open() {
@@ -41,10 +41,12 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await open();
   assert.equal((await readJob()).status, 'ready');
   assert.equal(await status.getByRole('button', { name: 'Close job', exact: true }).isDisabled(), true);
-  const originalNotes = await modal.locator('[name="notes"]').inputValue();
+  const originalNotes = (await readJob()).notes ?? '';
+  await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   await modal.locator('[name="notes"]').fill(`${originalNotes} unsaved transition draft`);
-  assert.equal(await status.getByRole('button', { name: 'Mark saved', exact: true }).isDisabled(), true);
-  await modal.locator('[name="notes"]').fill(originalNotes);
+  assert.equal(await status.getByRole('button', { name: 'Mark saved', exact: true }).count(), 0);
+  page.once('dialog', dialog => dialog.accept());
+  await modal.getByRole('button', { name: 'Cancel editing', exact: true }).click();
   await status.getByLabel('Closing outcome').selectOption('withdrawn');
   let requests = 0;
   const count = request => { if (request.url().endsWith(`/api/jobs/${jobId}/transition`)) requests++; };

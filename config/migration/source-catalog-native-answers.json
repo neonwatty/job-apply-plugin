@@ -47,6 +47,11 @@
       "classification": "unreviewed"
     },
     {
+      "path": "apps/companion/components/DetailDrawer.tsx",
+      "sha256": "d30718b8721bb646282d83d2d78a6e4642fc6da50efb747c7c4b721a9f36b940",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/answer-fields.tsx",
       "sha256": "0ad9066961f3fec5bacdb2c081b336d40b3da8a9f14f00bef816c44e0bb74074",
       "classification": "unreviewed"

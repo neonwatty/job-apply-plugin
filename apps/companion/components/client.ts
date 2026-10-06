@@ -5,7 +5,7 @@ export class ApiError extends Error {
         super(message);
     }
 }
-export function createClient(token: string) {
+export function createClient(token: string, onMutation?: () => void) {
     async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal, raw = false): Promise<unknown> {
         const deadline = AbortSignal.timeout(30_000);
         const response = await fetch(path, {
@@ -27,6 +27,8 @@ export function createClient(token: string) {
             const error = object(payload) && object(payload.error) ? payload.error : {};
             throw new ApiError(response.status, typeof error.code === 'string' ? error.code : 'request_error', typeof error.message === 'string' ? error.message : `Workspace request failed (${response.status})`);
         }
+        // Answer search and reveal use POST without changing the Store.
+        if (method !== 'GET' && path !== '/api/answers/query' && !path.endsWith('/reveal')) onMutation?.();
         return payload;
     }
     async function encoded(file: File): Promise<string> {

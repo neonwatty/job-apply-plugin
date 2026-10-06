@@ -27,9 +27,10 @@ export async function nativeAnswerCreationBrowser(page, root) {
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
   assert.equal((await answers()).find(record => record.question === 'Browser-created question?').value, 'Created in the browser');
   page.once('dialog', dialog => dialog.dismiss());
-  await clickCompanionNav(page, 'Jobs');
+  await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Jobs')?.click());
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
   await page.getByLabel('Question', { exact: true }).fill('Private browser-created question?');
+  await page.getByText('Advanced details', { exact: true }).click();
   await page.getByLabel(/^Sensitivity$/i).selectOption('personal');
   await page.getByRole('button', { name: 'Create answer', exact: true }).click();
   await page.getByRole('alert').filter({ hasText: /remember consent/ }).waitFor();
@@ -49,10 +50,12 @@ export async function nativeAnswerCreationBrowser(page, root) {
   await page.reload();
   await clickCompanionNav(page, 'Answers');
   await page.getByRole('button', { name: 'Browser-created question?', exact: true }).click();
-  assert.equal(await page.getByRole('heading', { name: 'Answer editor', exact: true }).evaluate(element => element === document.activeElement), true);
+  assert.equal(await page.getByRole('heading', { name: 'Browser-created question?', exact: true }).evaluate(element => element === document.activeElement), true);
   await page.getByText('Revision 1', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Created in the browser');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
   return { creation: true, duplicateRetainsDraft: true, dirtyNavigation: true, sensitiveConsent: true, discard: true, reload: true, narrow: true };
 }

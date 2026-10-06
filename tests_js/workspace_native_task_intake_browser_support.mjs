@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // The caller owns a synthetic Store and invokes intake through the native CLI.
 export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }) {
 
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  const modal = page.locator('dialog.job-drawer');
   const role = 'Native single-task capture role';
   const url = 'https://example.invalid/native-task-capture?private=fixture';
   const payload = { url, role, company: 'Task company', description: 'Private fixture description' };
@@ -36,6 +36,7 @@ export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await page.getByRole('button', { name: new RegExp(role) }).click();
+    await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Task company');
     await modal.locator('[name="company"]').fill('Human task company');
     await modal.getByRole('button', { name: 'Save job', exact: true }).click();
@@ -63,6 +64,7 @@ export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }
     await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: new RegExp(role) }).click();
+    await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human task company');
     assert.equal(await modal.locator('[name="role"]').inputValue(), role);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

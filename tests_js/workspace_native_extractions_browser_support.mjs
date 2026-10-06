@@ -24,7 +24,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
   assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
-  await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
   assert.equal(await page.title(), 'Resume extraction · Job Apply Workspace');
   await page.waitForFunction(() => document.activeElement?.id === 'workspace-content');
   assert.equal(await page.locator('#workspace-content').evaluate(node => node === document.activeElement), true);
@@ -58,7 +58,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     page.on('dialog', dismissWrite);
     await clickCompanionNav(page, 'Jobs');
     assert.equal(typeof writePrompt, 'string', 'An unacknowledged extraction request must guard navigation');
-    await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
   } finally {
     page.off('dialog', dismissWrite);
     releaseWrite();
@@ -96,7 +96,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await copyHandoff.click();
   await cli('resume-extraction-request-cancel', ['--id', requested.requestId,
     '--expected-revision', String(requested.revision)]);
-  await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await copyHandoff.waitFor({ state: 'hidden' });
   await fallback.waitFor({ state: 'hidden' });
   await page.evaluate(() => globalThis.rejectSyntheticClipboardWrite());
@@ -109,12 +109,12 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
   await clickCompanionNav(page, 'Resumes');
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
-  await page.getByRole('heading', { name: 'Extract facts', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
   // Legacy proposal review remains readable, but the UI now requests scoped
   // extraction. Create one legacy request privately to exercise that path.
   const legacyRequest = await cli('resume-extraction-request-create', ['--resume-id', resume.id,
     '--expected-resume-revision', String(resume.revision)]);
-  await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
   profile = await document('profile');
   const result = await cli('resume-extraction-request-complete', ['--id', legacyRequest.requestId,
@@ -124,10 +124,10 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.route('**/api/resume-proposals', route => route.fulfill({
     status: 200, contentType: 'application/json', body: '{"proposals":[]}',
   }));
-  await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   assert.equal(await page.getByRole('heading', { name: 'Extracted proposals', exact: true }).count(), 0);
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
-  assert.equal(await page.getByRole('heading', { name: 'Proposal review', exact: true }).evaluate(element => element === document.activeElement), true);
+  assert.equal(await page.getByRole('heading', { name: 'Proposed facts', exact: true }).evaluate(element => element === document.activeElement), true);
   await page.unroute('**/api/resume-proposals');
   try { await page.getByLabel('Decision for /firstName', { exact: true }).selectOption('keep_current', { timeout: 5000 }); }
   catch (error) { throw Error(error.message + '\n' + await page.locator('body').innerText()); }

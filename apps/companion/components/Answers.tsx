@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { AnswerFields } from './answer-fields';
 import { AnswerCleanup } from './AnswerCleanup';
 import { PendingAnswers } from './PendingAnswers';
+import { DetailDrawer } from './DetailDrawer';
 import { string, get, has, int, object, parse, serialize } from '../../../src/contracts/workspace/values';
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
-export function Answers({ client, dirtyChanged, consentOnly = false }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean }) {
+export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey = 0 }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean; refreshKey?:number }) {
   const [pendingBusy, setPendingBusy] = useState(false);
   const [mergeBusy, setMergeBusy] = useState(false);
   const [cleanupRevision, setCleanupRevision] = useState(0);
@@ -17,6 +18,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('accepted');
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [base, setBase] = useState<Document | null>(null);
   const [draft, setDraft] = useState<Document | null>(null);
   const [latest, setLatest] = useState<Document | null>(null);
@@ -34,6 +36,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
   const listGeneration = useRef(0);
   const listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const previousRefreshKey = useRef(refreshKey);
   const dirty = creating || invalid || base !== null && draft !== null && serialize(draft) !== serialize(answerDraft(base));
   useEffect(() => { dirtyChanged(dirty || busy || mergeBusy || pendingBusy); return () => dirtyChanged(false); }, [dirty, busy, mergeBusy, pendingBusy, dirtyChanged]);
   useEffect(() => () => { generation.current++; listGeneration.current++; request.current?.abort(); listRequest.current?.abort(); }, []);
@@ -64,6 +67,11 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     } finally { if (version === listGeneration.current) setLoading(false); }
   }
   useEffect(() => { void refreshList(); }, [client, consentOnly]);
+  useEffect(() => {
+    if (previousRefreshKey.current === refreshKey) return;
+    previousRefreshKey.current = refreshKey;
+    void refreshList();
+  }, [refreshKey]);
   async function select(key: string, refresh = false, reveal = false) {
     if (pendingBusy || mergeBusy || busy) return;
     if (!refresh && dirty && !confirm('Discard your unsaved answer changes?')) return;
@@ -84,6 +92,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
         setNotice('Latest answer loaded. Your draft is retained.');
       } else {
         setCreating(false);
+        setEditing(reveal);
         setBase(next);
         setDraft(answerDraft(next));
         setInvalid(false);
@@ -102,6 +111,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     request.current?.abort();
     generation.current++;
     setCreating(true);
+    setEditing(true);
     setBase(null);
     setDraft(newAnswerDraft(consentOnly));
     setLatest(null);
@@ -121,6 +131,32 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     setError('');
     setNotice('New answer discarded.');
   }
+  function closeEditor() {
+    if (busy || pendingBusy || mergeBusy) return;
+    if (dirty && !confirm('Discard your unsaved answer changes?')) return;
+    setCreating(false);
+    setEditing(false);
+    setBase(null);
+    setDraft(null);
+    setLatest(null);
+    setRemember(false);
+    setInvalid(false);
+    setError('');
+  }
+  function cancelEdit() {
+    if (creating) { cancelNew(); return; }
+    if (dirty && !confirm('Discard your unsaved answer changes?')) return;
+    if (base) {
+      const saved = latest ?? base;
+      setBase(saved);
+      setDraft(answerDraft(saved));
+    }
+    setRemember(false);
+    setInvalid(false);
+    setLatest(null);
+    setEditing(false);
+    setError('');
+  }
   async function save(action = '') {
     if (pendingBusy || mergeBusy || busy) return;
     if ((!base && !creating) || !draft || invalid || !editorForm.current?.reportValidity()) return;
@@ -138,10 +174,11 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     try {
       const raw = await client.answerRequest(creating ? '/api/answers' : answerPath(key!) + (action ? `/${action}` : ''), creating || action ? 'POST' : 'PATCH', body, controller.signal);
       if (version !== generation.current) return;
-      const next = answerSnapshot(raw);
+      answerSnapshot(raw);
       setCreating(false);
-      setBase(next);
-      setDraft(answerDraft(next));
+      setEditing(false);
+      setBase(null);
+      setDraft(null);
         setInvalid(false);
         setEditorVersion(value => value + 1);
       setLatest(null);
@@ -187,8 +224,8 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
           <button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy}>Search {label.toLowerCase()}</button>
         </form>
       </div>
-      <p className="workspace-status" role="status">{loading ? 'Loading answers…' : notice || (loaded && items.length > 0 ? `${items.length} ${items.length === 1 ? 'answer' : 'answers'} shown.` : '')}</p>
-      {error && <p className="error" role="alert">{error}</p>}
+      <p className="workspace-status" role="status">{loading ? 'Loading answers…' : !base && !creating ? notice : ''}</p>
+      {!base && !creating && error && <p className="error" role="alert">{error}</p>}
       {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : `No ${label.toLowerCase()} to show.`}</strong></div>}
       <ul className="answer-list-native">{items.map(item => {
         const key = string(get(item, 'key'))!;
@@ -206,10 +243,15 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
         </li>;
       })}</ul>
     </section>
-    {(base || creating) && <section className="workspace-panel answer-editor-panel" aria-labelledby="answer-editor-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical answer</p><h2 id="answer-editor-heading" ref={heading} tabIndex={-1}>{creating ? 'New answer' : 'Answer editor'}</h2></div>{base && <span className="facts-revision">Revision {int(get(base, 'revision'))!.toString()}</span>}</div>
+    {(base || creating) && <DetailDrawer titleId="answer-editor-heading" close={closeEditor} className="answer-detail-drawer">
+      <header className="detail-drawer-header"><div><p className="eyebrow">{consentOnly ? 'Consent default' : 'Answer'}</p>
+        <h2 id="answer-editor-heading" ref={heading} tabIndex={-1} data-drawer-heading>{creating ? `New ${consentOnly ? 'consent default' : 'answer'}` : string(get(base!, 'question')) || 'Answer details'}</h2></div>
+        <button className="job-drawer-close" type="button" disabled={busy || pendingBusy || mergeBusy} onClick={closeEditor} aria-label="Close answer details">×</button></header>
+      {notice && <p role="status" className="notice">{notice}</p>}
+      {error && <p role="alert" className="error">{error}</p>}
+      {base && <p className="facts-revision">Revision {int(get(base, 'revision'))!.toString()}</p>}
     {draft && (base || creating) ? <div className="answer-editor-body">
-      {creating && <p>Create an accepted answer. Choose its state and scope, and give consent before storing a sensitive value.</p>}
+      {creating && <p>Save an answer for future review. Sensitive values require consent.</p>}
       {base && <><div className="button-row answer-editor-tools"><button className="secondary" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(string(get(base, 'key'))!, true)}>Refresh selected answer</button>
       {get(base, 'valueRedacted') === true && <button className="secondary" disabled={pendingBusy || mergeBusy || busy || dirty} onClick={() => void select(string(get(base, 'key'))!, false, true)}>Reveal sensitive value</button>}</div>
       {latest && <aside className="notice" role="alert"><p>Your draft is retained. Review the latest revision before saving.</p>
@@ -232,22 +274,31 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
           setEditorVersion(value => value + 1);
         }}>Load saved answer</button>
       </aside>}</>}
+      {!editing && base ? <>
+        <div className="detail-drawer-summary"><dl>
+          <div><dt>Status</dt><dd>{string(get(base, 'reviewStatus')) ?? 'Unknown'}</dd></div>
+          <div><dt>Value</dt><dd>{get(base, 'valueRedacted') === true ? 'Sensitive value hidden' : get(base, 'hasValue') === true ? 'Value retained' : 'No retained value'}</dd></div>
+          <div><dt>Scope</dt><dd>{get(base, 'scope') && object(get(base, 'scope'), 'scope').size ? 'Saved for the selected scope' : 'General'}</dd></div>
+          {get(base, 'consentIntent') && <div><dt>Purpose</dt><dd>{string(get(object(get(base, 'consentIntent'), 'intent'), 'purpose')) ?? 'Not set'}</dd></div>}
+        </dl></div>
+        <div className="detail-drawer-actions"><button className="primary" type="button" disabled={busy || Boolean(latest)} onClick={() => setEditing(true)}>Edit {consentOnly ? 'default' : 'answer'}</button></div>
+      </> :
       <form className="answer-editor-form" ref={editorForm} onChange={event => setInvalid(!event.currentTarget.checkValidity())} onSubmit={event => { event.preventDefault(); void save(); }}>
         <fieldset disabled={pendingBusy || mergeBusy || busy}>
           <legend className="visually-hidden">{creating ? 'Create answer' : 'Edit answer'}</legend>
           <AnswerFields key={editorVersion} draft={draft} change={setDraft} remember={remember} creating={creating}
             structuredHidden={base !== null && get(base, 'hasAnswerIntent') === true && !has(draft, 'answerIntent')} />
           <label className="answer-consent"><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /><span>I consent to remembering the sensitive value in this {creating ? 'new answer' : 'edit'}.</span></label>
-          <div className="answer-editor-actions"><button className="primary" disabled={!dirty || Boolean(latest) || invalid}>{creating ? 'Create answer' : 'Save answer'}</button>
-          {creating && <button className="secondary" type="button" onClick={cancelNew}>Discard new answer</button>}
+          <div className="answer-editor-actions detail-drawer-actions"><button className="primary" disabled={!dirty || Boolean(latest) || invalid}>{creating ? 'Create answer' : 'Save answer'}</button>
+          <button className="secondary" type="button" onClick={cancelEdit}>{creating ? 'Discard new answer' : 'Cancel editing'}</button>
           {base && string(get(base, 'reviewStatus')) === 'pending' && <>
             <button className="secondary" type="button" disabled={Boolean(latest) || invalid} onClick={() => void save('accept')}>Accept answer</button>
             <button className="secondary" type="button" disabled={Boolean(latest) || invalid} onClick={() => void save('decline')}>Decline answer</button>
           </>}</div>
         </fieldset>
-      </form>
+      </form>}
     </div> : null}
-    </section>}
+    </DetailDrawer>}
     {!consentOnly && <div className="answer-support-grid">
       <AnswerCleanup client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setMergeBusy} onMerged={() => { setBase(null); setDraft(null); setLatest(null); setRemember(false); setInvalid(false); setCreating(false); setNotice('Answers merged.'); setCleanupRevision(value => value + 1); void refreshList(); }} />
       <PendingAnswers client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setPendingBusy} onOpenAnswer={key => { void select(key); }} onResolved={() => {

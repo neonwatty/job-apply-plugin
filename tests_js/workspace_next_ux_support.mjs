@@ -7,12 +7,20 @@ async function capture(page, name) {
   const directory = process.env.JOB_APPLY_UX_SCREENSHOT_DIR;
   if (!directory) return;
   await mkdir(directory, { recursive: true });
-  await page.screenshot({ path: join(directory, name), fullPage: true });
+  await page.screenshot({ path: join(directory, name), fullPage: true, animations: 'disabled' });
 }
 
 export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await capture(page, 'mobile-menu.png');
+  assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).getAttribute('aria-expanded'), 'false');
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.evaluate(() => scrollTo(0, 0));
   await clickCompanionNav(page, 'Answers');
   assert.equal(await page.evaluate(() => scrollY), 0,
@@ -32,6 +40,7 @@ export async function nextSetupAndLoading(page, url) {
   await page.route('**/api/boot', async route => { await bootGate; await route.continue(); });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await clickCompanionNav(page, 'Facts');
+  await page.locator('#workspace-navigation button[aria-label="Facts"][aria-current="page"]').waitFor({ state: 'attached' });
   bootRelease();
   await page.waitForLoadState('networkidle');
   assert.equal(await page.locator('#workspace-navigation button[aria-label="Facts"]').getAttribute('aria-current'), 'page');
@@ -69,14 +78,43 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await page.getByLabel('Search jobs', { exact: true }).fill('does-not-match-any-job');
   await page.getByText('No jobs match these filters.', { exact: false }).waitFor();
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await page.getByLabel('Search jobs', { exact: true }).fill('Next synthetic');
+  await clickCompanionNav(page, 'Overview');
+  await page.locator('#workspace-navigation button[aria-label="Overview"][aria-current="page"]').waitFor({ state: 'attached' });
+  await clickCompanionNav(page, 'Jobs');
+  await page.locator('#workspace-navigation button[aria-label="Jobs"][aria-current="page"]').waitFor({ state: 'attached' });
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
+    'returning to Jobs keeps its loaded list and filter');
+  await clickCompanionNav(page, 'Overview');
+  const recentJobs = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
+  await clickCompanionNav(page, 'Jobs');
+  await recentJobs;
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
+    'Jobs checks for external changes on return without resetting its filter');
+  await page.evaluate(() => {
+    window.__originalDateNow = Date.now;
+    Date.now = () => window.__originalDateNow() + 31_000;
+  });
+  await clickCompanionNav(page, 'Overview');
+  const refreshedJobs = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
+  await clickCompanionNav(page, 'Jobs');
+  await refreshedJobs;
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
+    'a data refresh after the old eviction interval retains the Jobs filter');
+  await page.evaluate(() => { Date.now = window.__originalDateNow; delete window.__originalDateNow; });
   const card = page.getByRole('button', { name: /Next synthetic role/ });
   await card.click();
-  const dialog = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  await capture(page, 'job-details-desktop.png');
+  await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+  const dialog = page.locator('dialog.job-drawer');
   await dialog.waitFor();
-  assert.equal(await page.locator('[name="url"]').evaluate(node => node === document.activeElement), true);
+  await page.waitForFunction(() => document.activeElement?.getAttribute('name') === 'url');
+  const drawerBounds = await dialog.boundingBox();
+  await page.mouse.click(drawerBounds.x + 8, drawerBounds.y + drawerBounds.height - 8);
+  assert.equal(await dialog.isVisible(), true, 'clicking inside drawer padding keeps the job open');
   await dialog.locator('[name="notes"]').fill('Draft survives failed refresh');
   await page.route('**/api/state', route => route.fulfill({ status: 503, json: { error: { message: 'Offline fixture' } } }));
-  await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());
+  await page.evaluate(() => [...document.querySelectorAll('.workspace-page:not([hidden]) .jobs-workspace button')].find(button => button.textContent.trim() === 'Refresh').click());
   await page.getByText(/Showing previously loaded jobs/).waitFor();
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Draft survives failed refresh');
   await page.unroute('**/api/state');
@@ -104,22 +142,26 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   assert.equal(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth), true);
   await capture(page, 'job-editor-narrow.png');
   page.once('dialog', prompt => prompt.accept());
-  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Cancel editing', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close job details', exact: true }).click();
   await dialog.waitFor({ state: 'hidden' });
   assert.equal(await card.evaluate(node => node === document.activeElement), true);
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // A vanished record must not leave an apparently saveable stale draft.
   await card.click();
+  await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+  await page.waitForFunction(() => document.activeElement?.getAttribute('name') === 'url');
   await dialog.locator('[name="notes"]').fill('Preserve missing-record draft');
+  assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');
   await page.route('**/api/state', route => route.fulfill({ json: { ...state, jobs: [] } }));
-  await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());
+  await page.evaluate(() => [...document.querySelectorAll('.workspace-page:not([hidden]) .jobs-workspace button')].find(button => button.textContent.trim() === 'Refresh').click());
   await dialog.getByText('This job is no longer available', { exact: true }).waitFor();
   assert.equal(await dialog.getByRole('button', { name: 'Save job', exact: true }).isDisabled(), true);
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');
   await page.unroute('**/api/state');
   page.once('dialog', prompt => prompt.accept());
-  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close job details', exact: true }).click();
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.waitFor();
 }
@@ -131,14 +173,15 @@ export async function nextLateRead(page) {
   await page.route('**/api/state', async route => {
     started();
     await gate;
-    // This response belongs to an unmounted Jobs view and must be ignored.
+    // This response belongs to a hidden Jobs view and must be ignored.
     await route.fulfill({ json: { jobs: [], resumes: [] } }).catch(() => {});
   });
   const cancelled = page.waitForEvent('requestfailed', {
     predicate: request => new URL(request.url()).pathname === '/api/state',
   });
   await page.getByRole('button', { name: /Next synthetic role/ }).click();
-  await page.getByRole('dialog', { name: 'Edit job', exact: true }).getByRole('button', { name: 'Save job', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+  await page.locator('dialog.job-drawer').getByRole('button', { name: 'Save job', exact: true }).click();
   await intercepted;
   await page.waitForFunction(() => document.querySelector('[data-job-create]')?.disabled === false);
   assert.equal(await page.getByRole('button', { name: 'New job', exact: true }).isDisabled(), false,
