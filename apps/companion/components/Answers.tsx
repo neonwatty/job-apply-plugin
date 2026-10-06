@@ -4,7 +4,7 @@ import { AnswerFields } from './answer-fields';
 import { AnswerCleanup } from './AnswerCleanup';
 import { PendingAnswers } from './PendingAnswers';
 import { DetailDrawer } from './DetailDrawer';
-import { string, get, int, object, parse, serialize } from '../../../src/contracts/workspace/values';
+import { string, get, has, int, object, parse, serialize } from '../../../src/contracts/workspace/values';
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
@@ -280,7 +280,8 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
       <form className="answer-editor-form" ref={editorForm} onChange={event => setInvalid(!event.currentTarget.checkValidity())} onSubmit={event => { event.preventDefault(); void save(); }}>
         <fieldset disabled={pendingBusy || mergeBusy || busy}>
           <legend className="visually-hidden">{creating ? 'Create answer' : 'Edit answer'}</legend>
-          <AnswerFields key={editorVersion} draft={draft} change={setDraft} remember={remember} creating={creating} />
+          <AnswerFields key={editorVersion} draft={draft} change={setDraft} remember={remember} creating={creating}
+            structuredHidden={base !== null && get(base, 'hasAnswerIntent') === true && !has(draft, 'answerIntent')} />
           <label className="answer-consent"><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /><span>I consent to remembering the sensitive value in this {creating ? 'new answer' : 'edit'}.</span></label>
           <div className="answer-editor-actions detail-drawer-actions"><button className="primary" disabled={!dirty || Boolean(latest) || invalid}>{creating ? 'Create answer' : 'Save answer'}</button>
           <button className="secondary" type="button" onClick={cancelEdit}>{creating ? 'Discard new answer' : 'Cancel editing'}</button>

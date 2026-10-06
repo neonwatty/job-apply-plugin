@@ -26,4 +26,17 @@ employer as a narrower scope when the answer is employer-specific. Do not label
 these questions `employment_history`; that would prevent reuse of the saved
 prior-employment answer.
 
+For a U.S. veteran-status menu, use the accepted answer's structured
+`answerIntent.status` when present. Map `not_a_veteran` only to an option that
+explicitly says the applicant is not a veteran; map
+`veteran_not_protected` only to an option that explicitly says the applicant
+is a veteran but not protected; map `protected_veteran` only to an explicitly
+protected-veteran option; and map `decline_to_identify` only to a decline or
+prefer-not-to-answer option. Read the live option text and verify the selected
+state. If the record has no structured intent, a phrase such as “not a
+protected veteran” is insufficient to choose between veteran and non-veteran
+options: ask the owner once, save the precise answer with permission, then
+resume. A matched question alias is evidence about the question, not proof
+that an option has the same meaning.
+
 ---

@@ -1,5 +1,5 @@
 import { PythonObject } from '../../../src/contracts/python-object';
-import { copy, get, has, int, keys, object, parse, serialize, set, text } from '../../../src/contracts/workspace/values';
+import { copy, get, has, int, keys, object, parse, serialize, set, string, text } from '../../../src/contracts/workspace/values';
 import type { Document, Value } from '../../../src/contracts/workspace/values';
 export type { Document };
 export interface AnswerClient {
@@ -19,7 +19,24 @@ export function answerSnapshot(raw: string): Document {
 }
 export function answerDraft(record: Document): Document {
   const result = new PythonObject<Value>();
-  for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent']) if (has(record, key)) set(result, key, get(record, key));
+  for (const key of ['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent', 'answerIntent']) if (has(record, key)) set(result, key, get(record, key));
+  return result;
+}
+const veteranAnswerValues: Record<string,string> = {
+  not_a_veteran: 'I am not a veteran',
+  veteran_not_protected: 'I am a veteran, just not a protected veteran',
+  protected_veteran: 'I am a protected veteran',
+  decline_to_identify: 'I do not wish to self-identify',
+};
+export function selectVeteranStatus(draft: Document, status: string): Document {
+  const value = veteranAnswerValues[status];
+  const intent = get(draft, 'answerIntent');
+  if (value === undefined || !(intent instanceof PythonObject) || string(get(intent, 'kind')) !== 'veteran_status') {
+    throw Error('Invalid veteran status selection');
+  }
+  const result = copy(draft);
+  set(result, 'answerIntent', set(copy(intent), 'status', text(status)));
+  set(result, 'value', text(value));
   return result;
 }
 export function answerPatch(base: Document, draft: Document): Document {

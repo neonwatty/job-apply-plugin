@@ -1,10 +1,10 @@
 import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { isolatedCompanionRoot } from './workspace_next_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { realpath } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
@@ -12,20 +12,23 @@ import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
 import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 import { nativeTitleDiscoveryBrowser } from './workspace_native_title_discovery_browser_support.mjs';
 const execute = promisify(execFile);
-const repository = dirname(fileURLToPath(import.meta.url));
-const buildRoot = dirname(repository);
 
 test('Companion title discovery reviews, cancels, saves and retries conflicts against the Store', { timeout: 180000 }, async () => {
-  await execute('npm', ['run', 'companion:build'], { cwd: buildRoot, timeout: 90000,
-    env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, maxBuffer: 2 * 1024 * 1024 });
-  const fixture = await nativeFixture();
-  const root = join(await realpath(fixture.root), 'titles');
-  await initializeJobsFixture(root);
-  const launcher = await spawnOwnedCompanion(buildRoot, root,
-    ['--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact],
-    { leaseArtifact: fixture.receipt.artifact });
+  let isolated;
+  let fixture;
+  let launcher;
   let browser;
   try {
+    isolated = await isolatedCompanionRoot();
+    const buildRoot = isolated.root;
+    await execute('npm', ['run', 'companion:build'], { cwd: buildRoot, timeout: 90000,
+      env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, maxBuffer: 2 * 1024 * 1024 });
+    fixture = await nativeFixture();
+    const root = join(await realpath(fixture.root), 'titles');
+    await initializeJobsFixture(root);
+    launcher = await spawnOwnedCompanion(buildRoot, root,
+      ['--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact],
+      { leaseArtifact: fixture.receipt.artifact });
     const startup = await new Promise((resolve, reject) => {
       let output = '';
       const timer = setTimeout(() => reject(Error('Companion startup timed out')), 30000);
@@ -52,7 +55,8 @@ test('Companion title discovery reviews, cancels, saves and retries conflicts ag
     assert.deepEqual(errors, []);
   } finally {
     await browser?.close();
-    await launcher.stop();
-    await fixture.cleanup();
+    await launcher?.stop();
+    await fixture?.cleanup();
+    await isolated?.cleanup();
   }
 });

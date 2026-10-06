@@ -1,4 +1,4 @@
-import { answerKey, answerNames, answerRevision, answerView, consentIntent, fallback, normalizeAnswerQuestion, sameAnswerScope, validateAnswer, validateAnswers } from './answers.js';
+import { answerIntent, answerKey, answerNames, answerRevision, answerView, consentIntent, fallback, normalizeAnswerQuestion, sameAnswerScope, validateAnswer, validateAnswers } from './answers.js';
 import { emptyObject } from './jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from './values.js';
 import type { Document, Value } from './values.js';
@@ -62,6 +62,10 @@ export function applyAnswerMerge(document: Document, operation: Document): Docum
   const winnerIntent = consentIntent(winner), sourceIntent = consentIntent(source);
   if (sourceIntent !== null && (winnerIntent === null || !same(winnerIntent, sourceIntent))) {
     throw new JobsError('answer merge would discard or change a consent default');
+  }
+  const winnerAnswerIntent = answerIntent(winner), sourceAnswerIntent = answerIntent(source);
+  if (sourceAnswerIntent !== null && (winnerAnswerIntent === null || !same(winnerAnswerIntent, sourceAnswerIntent))) {
+    throw new JobsError('answer merge would discard or change a structured answer');
   }
   const winnerQuestion = normalizeAnswerQuestion(nonblank(get(winner, 'question')) ?? winnerKey);
   const aliases: string[] = [];

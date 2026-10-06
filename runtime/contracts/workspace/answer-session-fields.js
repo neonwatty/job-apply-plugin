@@ -68,7 +68,7 @@ export const readinessCodes = [
 ];
 export const agentCodes = [
     'login-required', 'captcha-required', 'mfa-required', 'email-verification-required',
-    'consent-required', 'account-creation-required', 'unsupported-control', 'owner-input-required', 'browser-state-uncertain',
+    'consent-required', 'site-required-opt-in-conflict', 'account-creation-required', 'unsupported-control', 'owner-input-required', 'browser-state-uncertain',
 ];
 export function validateBlockers(value) {
     requireCondition(Array.isArray(value), 'session blockers must be a list');

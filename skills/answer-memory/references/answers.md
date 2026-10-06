@@ -93,3 +93,23 @@ an existing sensitive answer is an exact-revision metadata edit that preserves
 its value, key, scope, and retention marker. The audit command suggests
 possible classifications but never modifies records. Candidate lookup returns
 redacted metadata only and grants no current-use or browser authority.
+
+For a confirmed U.S. veteran-status answer, one accepted sensitive record may
+carry `answerIntent: {"kind":"veteran_status","status":"not_a_veteran"}`.
+Set its `fieldClass` to `veteran_status` and scope to `{"country":"US"}`.
+The Store requires the matching canonical value:
+
+| Status | Saved value |
+| --- | --- |
+| `not_a_veteran` | `I am not a veteran` |
+| `veteran_not_protected` | `I am a veteran, just not a protected veteran` |
+| `protected_veteran` | `I am a protected veteran` |
+| `decline_to_identify` | `I do not wish to self-identify` |
+
+Record an intent only after the owner has stated the
+precise status; “not a protected veteran” alone cannot distinguish a veteran
+without protected status from someone who is not a veteran. Keep variant
+question wording in aliases or merge a reviewed observation into the canonical
+record rather than saving conflicting answers. A metadata-only intent edit
+preserves existing sensitive retention consent; changing its value still needs
+fresh field-specific remember consent.
