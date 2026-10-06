@@ -24,7 +24,7 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   await attention.getByText('No jobs match this reason filter.',{exact:true}).waitFor();
   await attention.getByLabel('Filter by reason').selectOption('');
   await attention.getByRole('button', {name:`Open job ${jobId}`,exact:true}).click();
-  const modal = page.getByRole('dialog', {name:'Edit job',exact:true});
+  const modal = page.locator('dialog.job-drawer');
   await modal.waitFor();
   const activity = modal.getByRole('region',{name:'Job activity',exact:true});
   await activity.getByText(/Status: needs info/i).waitFor();
@@ -36,6 +36,7 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   await page.unroute('**/api/jobs/*/activity');
   await activity.getByRole('button',{name:'Refresh activity',exact:true}).click();
   await activity.getByText(/last successful snapshot for this job/).waitFor({state:'hidden'});
+  await modal.getByRole('button',{name:'Edit job',exact:true}).click();
   await modal.locator('[name="notes"]').fill('Projection navigation draft');
   page.once('dialog',dialog=>dialog.dismiss());
   await modal.getByRole('button',{name:'Close job details',exact:true}).click();

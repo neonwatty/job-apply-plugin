@@ -45,13 +45,14 @@ export async function nativeAnswerLifecycleBrowser(page, root, fixture, buildRoo
   await search.fill(question);
   await searchButton.click();
   await card.click();
+  await page.getByRole('button', {name:'Edit answer', exact:true}).click();
   assert.equal(await value.inputValue(), savedValue);
   await value.fill('Unsaved lifecycle answer draft');
   const trashed = await cli('answer-trash', args(key, answer.revision));
   assert.equal(trashed.revision, answer.revision + 1);
   assert.equal(typeof trashed.deletedAt, 'string');
   assert.equal(await value.inputValue(), 'Unsaved lifecycle answer draft');
-  await searchButton.click();
+  await searchButton.evaluate(button => button.click());
   await card.waitFor({state:'hidden'});
   assert.equal(await value.inputValue(), 'Unsaved lifecycle answer draft');
   const beforeList = await readFile(join(root, 'answers.json'), 'utf8');
@@ -76,6 +77,7 @@ export async function nativeAnswerLifecycleBrowser(page, root, fixture, buildRoo
   await search.fill(question);
   await searchButton.click();
   await card.click();
+  await page.getByRole('button', {name:'Edit answer', exact:true}).click();
   assert.equal(await value.inputValue(), savedValue);
   const again = await api(route(key, 'trash'), {expectedRevision:restored.revision});
   const cliRestored = await cli('answer-restore', args(key, again.revision));

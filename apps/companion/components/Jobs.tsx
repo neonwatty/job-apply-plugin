@@ -211,7 +211,8 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         {claimsEnabled && allJobs.some(job => job.status === 'ready') && <Claims jobs={allJobs} />}
         {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
-            close={close} save={() => void save()}
+            close={close} reset={() => { setEditor(current => current?.selected
+                ? { ...openEditor(current.latest ?? current.selected), missing: current.missing } : null); setError(''); }} save={() => void save()}
             refresh={() => {
                 const version = generation.current;
                 void refresh().then(success => {

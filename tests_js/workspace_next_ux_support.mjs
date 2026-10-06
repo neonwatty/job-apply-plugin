@@ -71,9 +71,10 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   const card = page.getByRole('button', { name: /Next synthetic role/ });
   await card.click();
-  const dialog = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+  const dialog = page.locator('dialog.job-drawer');
   await dialog.waitFor();
-  assert.equal(await page.locator('[name="url"]').evaluate(node => node === document.activeElement), true);
+  await page.waitForFunction(() => document.activeElement?.getAttribute('name') === 'url');
   await dialog.locator('[name="notes"]').fill('Draft survives failed refresh');
   await page.route('**/api/state', route => route.fulfill({ status: 503, json: { error: { message: 'Offline fixture' } } }));
   await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());
@@ -104,14 +105,18 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   assert.equal(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth), true);
   await capture(page, 'job-editor-narrow.png');
   page.once('dialog', prompt => prompt.accept());
-  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Cancel editing', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close job details', exact: true }).click();
   await dialog.waitFor({ state: 'hidden' });
   assert.equal(await card.evaluate(node => node === document.activeElement), true);
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // A vanished record must not leave an apparently saveable stale draft.
   await card.click();
+  await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+  await page.waitForFunction(() => document.activeElement?.getAttribute('name') === 'url');
   await dialog.locator('[name="notes"]').fill('Preserve missing-record draft');
+  assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');
   await page.route('**/api/state', route => route.fulfill({ json: { ...state, jobs: [] } }));
   await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());
   await dialog.getByText('This job is no longer available', { exact: true }).waitFor();
@@ -119,7 +124,7 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');
   await page.unroute('**/api/state');
   page.once('dialog', prompt => prompt.accept());
-  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close job details', exact: true }).click();
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.waitFor();
 }
@@ -138,7 +143,8 @@ export async function nextLateRead(page) {
     predicate: request => new URL(request.url()).pathname === '/api/state',
   });
   await page.getByRole('button', { name: /Next synthetic role/ }).click();
-  await page.getByRole('dialog', { name: 'Edit job', exact: true }).getByRole('button', { name: 'Save job', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+  await page.locator('dialog.job-drawer').getByRole('button', { name: 'Save job', exact: true }).click();
   await intercepted;
   await page.waitForFunction(() => document.querySelector('[data-job-create]')?.disabled === false);
   assert.equal(await page.getByRole('button', { name: 'New job', exact: true }).isDisabled(), false,

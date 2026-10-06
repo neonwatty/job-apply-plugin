@@ -86,7 +86,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
     if (busyNow.current) return;
     setOpen(false); setPacket(null); setPacketText(''); setCriteria(''); setFallback(''); setConflict(false); setCanonicalChange(null); setReviewedChange(false); setError('');
     if (snapshot) setChoices(choicesFor(snapshot));
-    setNotice('Discovery canceled. No titles were saved.');
+    setNotice('Title changes discarded.');
     requestAnimationFrame(() => openButton.current?.focus());
   }
   function acceptPacket() {
@@ -157,28 +157,16 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   const invalidPreferences = Boolean(snapshot && !writablePreferences(snapshot));
   return <section className="workspace-panel title-discovery" id="title-discovery" aria-labelledby="title-discovery-title">
     <div className="workspace-panel-heading"><div><p className="eyebrow">Search preferences</p><h2 id="title-discovery-title">Target titles</h2></div>
-      {!open && <button ref={openButton} className="secondary" type="button" onClick={begin} disabled={!snapshot}>Discover related titles</button>}</div>
-    <p>These titles guide Job Search. Edit them here or review suggestions from your agent.</p>
+      {!open && <button ref={openButton} className="secondary" type="button" onClick={begin} disabled={!snapshot}>Edit titles</button>}</div>
+    <p>Titles used by Job Search.</p>
     {!snapshot && <p role="status">{loading ? 'Loading saved target titles…' : 'Saved target titles are unavailable.'}</p>}
     {!snapshot && !loading && <button className="secondary" type="button" onClick={() => setReload(value => value + 1)}>Retry loading target titles</button>}
     {snapshot && <p>Saved now: {current.length ? current.join(' · ') : 'No target titles yet.'}</p>}
     {invalidPreferences && <p className="error" role="alert">Saved preferences have an unsupported shape. Resolve them before saving target titles.</p>}
     {notice && <p role="status">{notice}</p>}
     {error && <p className="error" role="alert">{error}</p>}
-    {!open && snapshot && <button className="secondary" type="button" onClick={begin}>Edit target titles</button>}
     {open && snapshot && <div className="title-discovery-review">
-      <h3 tabIndex={-1} ref={heading}>Discover and review target titles</h3>
-      <label>Role interests, constraints, exclusions, or seed titles to share with the skill
-        <textarea value={criteria} onChange={event => setCriteria(event.target.value)} rows={3} placeholder="For example: adjacent engineering leadership roles; no director titles" /></label>
-      <p>Research runs in your agent. Bring the result here to review and save titles.</p>
-      <div className="title-discovery-actions"><button type="button" className="secondary" onClick={() => void copyInvocation('Codex')}>Copy Codex invocation</button><button type="button" className="secondary" onClick={() => void copyInvocation('Claude Code')}>Copy Claude Code invocation</button></div>
-      {fallback && <label>Invocation to copy<textarea readOnly value={fallback} onFocus={event => event.currentTarget.select()} rows={5} /></label>}
-      <label>Title discovery JSON result packet<textarea value={packetText} onChange={event => { setPacketText(event.target.value); setPacket(null); setReviewedChange(false); setChoices(choicesFor(snapshot)); }} rows={5} /></label>
-      <button type="button" className="secondary" disabled={!packetText.trim() || busy} onClick={acceptPacket}>Review packet</button>
-      {packet && <div className="title-discovery-source" role="status"><strong>Research source: {packet.source.status.replace('_', ' ')}</strong><p>{packet.source.detail}</p>
-        {packet.source.status === 'empty' && <p>The inspected results yielded no useful title evidence. Try different search criteria or add titles manually.</p>}
-        {!['observed', 'empty'].includes(packet.source.status) && <p>No browser evidence was available. Retry research in the agent when access is available; manual titles can still be reviewed here.</p>}
-      </div>}
+      <h3 tabIndex={-1} ref={heading}>Review target titles</h3>
       <fieldset disabled={busy}><legend>Choose exact target titles</legend>
         {choices.map(choice => <div className="title-discovery-choice" key={choice.id}>
           <label><input type="checkbox" checked={choice.selected} onChange={event => updateChoice(choice.id, { selected: event.target.checked })} />{choice.existing ? 'Saved title' : 'Suggested title'}{choice.category ? ` · ${choice.category}` : ''}</label>
@@ -189,6 +177,19 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
         </div>)}
         <button type="button" className="secondary" onClick={() => { setReviewedChange(false); setChoices(value => [...value, { id: `manual-${crypto.randomUUID()}`, title: '', selected: true, existing: false }]); }}>Add title manually</button>
       </fieldset>
+      <details className="title-discovery-agent"><summary>Import researched suggestions</summary>
+        <p>Research runs in your agent. Review its suggestions here before saving.</p>
+        <label>Role interests, constraints, exclusions, or seed titles to share with the skill
+          <textarea value={criteria} onChange={event => setCriteria(event.target.value)} rows={3} placeholder="For example: adjacent engineering leadership roles; no director titles" /></label>
+        <div className="title-discovery-actions"><button type="button" className="secondary" onClick={() => void copyInvocation('Codex')}>Copy Codex invocation</button><button type="button" className="secondary" onClick={() => void copyInvocation('Claude Code')}>Copy Claude Code invocation</button></div>
+        {fallback && <label>Request to copy<textarea readOnly value={fallback} onFocus={event => event.currentTarget.select()} rows={5} /></label>}
+        <label>Title discovery JSON result packet<textarea value={packetText} onChange={event => { setPacketText(event.target.value); setPacket(null); setReviewedChange(false); setChoices(choicesFor(snapshot)); }} rows={5} /></label>
+        <button type="button" className="secondary" disabled={!packetText.trim() || busy} onClick={acceptPacket}>Review packet</button>
+        {packet && <div className="title-discovery-source" role="status"><strong>Research source: {packet.source.status.replace('_', ' ')}</strong><p>{packet.source.detail}</p>
+          {packet.source.status === 'empty' && <p>The inspected results yielded no useful title evidence. Try different search criteria or add titles manually.</p>}
+          {!['observed', 'empty'].includes(packet.source.status) && <p>No browser evidence was available. Retry research in the agent when access is available; manual titles can still be reviewed here.</p>}
+        </div>}
+      </details>
       <div className="title-discovery-preview"><h4>Exact save preview</h4><p>Only preferences.targetTitles will change at profile revision {String(snapshot.revision)}.</p>{preview.length ? <ol>{preview.map(title => <li key={titleKey(title)}>{title}</li>)}</ol> : <p>No titles selected. Confirming will clear saved target titles.</p>}</div>
       {canonicalChange && <aside className="notice" role="alert"><strong>Saved target titles changed elsewhere.</strong>
         <p>Previously saved: {canonicalChange.before.length ? canonicalChange.before.join(' · ') : 'none'}.</p>
@@ -197,7 +198,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
         <button type="button" className="secondary" disabled={busy} onClick={() => setReviewedChange(true)}>I reviewed the changed titles and exact preview</button>
       </aside>}
       {conflict && <button type="button" className="secondary" disabled={busy} onClick={() => void refreshForConflict()}>Reload saved titles for review</button>}
-      <div className="title-discovery-actions"><button type="button" className="primary" disabled={busy || conflict || invalidPreferences || Boolean(canonicalChange && !reviewedChange) || choices.some(choice => choice.selected && (!choice.title.trim() || choice.title.length > 200))} onClick={() => void save()}>Confirm and save exact titles</button><button type="button" className="secondary" disabled={busy} onClick={cancel}>Cancel discovery</button></div>
+      <div className="title-discovery-actions"><button type="button" className="primary" disabled={busy || conflict || invalidPreferences || Boolean(canonicalChange && !reviewedChange) || choices.some(choice => choice.selected && (!choice.title.trim() || choice.title.length > 200))} onClick={() => void save()}>Save titles</button><button type="button" className="secondary" disabled={busy} onClick={cancel}>Cancel</button></div>
     </div>}
   </section>;
 }

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // The caller owns an isolated native fixture; every upsert uses the native CLI.
 export async function jobUpsertBrowser(page, { upsert, readDocument }) {
 
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  const modal = page.locator('dialog.job-drawer');
   const role = 'Native batch capture role';
   const url = 'https://example.invalid/native-batch-capture';
   const payload = { jobs: [{ url, role, company: 'Batch company' }] };
@@ -31,6 +31,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     const id = committed.decisions[0].id;
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await page.getByRole('button', { name: new RegExp(role) }).click();
+    await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Batch company');
     await modal.locator('[name="company"]').fill('Human-reviewed company');
     await modal.getByRole('button', { name: 'Save job', exact: true }).click();
@@ -64,6 +65,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
     await page.getByRole('button', { name: new RegExp(role) }).click();
+    await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human-reviewed company');
     assert.equal(await modal.locator('[name="role"]').inputValue(), role);
     assert.equal(JSON.parse(await readDocument()).jobs[id].ats, 'Fixture ATS');

@@ -21,7 +21,7 @@ export function ExtractionReview({ proposal, choices, confirmed, disabled, chang
     {pendingPaths(proposal).map(pointer => {
       const existing = object(get(current, pointer), 'current fact');
       const scope = replacementScope(proposal, pointer);
-      return <fieldset className="extraction-decision" key={pointer}><legend>{pointer}</legend>
+      return <fieldset className="extraction-decision" data-selected={Boolean(choices[pointer])} key={pointer}><legend>{pointer}</legend>
         <div className="extraction-comparison"><div><small>Current fact</small>{get(existing, 'exists') === true ? <ValueDisplay value={get(existing, 'value')} /> : <p>Not set</p>}</div>
         <div><small>Extracted fact</small><ValueDisplay value={candidateValue(proposal, pointer)} /></div></div>
         <label>Decision for {pointer}<select aria-label={`Decision for ${pointer}`} value={choices[pointer] ?? ''} onChange={event => change(pointer, event.target.value as Decision | '')}>

@@ -34,10 +34,12 @@ export async function nativePendingAnswersBrowser(page, root, cli) {
   assert.equal(await sensitive.getByRole('button', { name: 'Resolve question', exact: true }).isDisabled(), true);
   assert.doesNotMatch(await panel.innerText(), /PRIVATE-PENDING-BROWSER/);
   await eligible.getByRole('button', { name: 'Open saved answer', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
+  await page.getByText('Advanced details', { exact: true }).click();
   await page.getByLabel('Answer value', { exact: true }).waitFor();
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'PRIVATE-PENDING-BROWSER');
   await page.getByLabel('Source', { exact: true }).fill('unsaved pending guard');
-  assert.equal(await eligible.getByRole('button', { name: 'Resolve question', exact: true }).isDisabled(), true);
+  assert.equal(await page.locator('dialog.detail-drawer').isVisible(), true);
   await page.getByRole('button', { name: 'Save answer', exact: true }).click();
   await page.getByText('Answer saved.', { exact: true }).waitFor();
   await panel.getByText('Pending browser location?', { exact: true }).waitFor({ state: 'hidden' });
@@ -54,8 +56,8 @@ export async function nativePendingAnswersBrowser(page, root, cli) {
   page.once('dialog', dialog => dialog.accept());
   await eligible.getByRole('button', { name: 'Resolve question', exact: true }).click();
   await start;
-  await page.locator('fieldset[disabled]').waitFor();
-  assert.equal(await page.getByLabel('Question', { exact: true }).isDisabled(), true);
+  await panel.getByRole('status').getByText('Rechecking the saved answer…', { exact: true }).waitFor();
+  assert.equal(await eligible.getByRole('button', { name: 'Resolve question', exact: true }).count(), 0);
   release();
   await page.getByText('Pending question resolved. Refresh pending questions to check remaining information.', { exact: true }).waitFor();
   await page.unroute('**/resolve-pending-answer');

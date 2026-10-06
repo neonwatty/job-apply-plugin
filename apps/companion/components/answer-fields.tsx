@@ -39,7 +39,6 @@ export function AnswerFields({ draft, change, remember, creating = false }: {
   };
   return <>
     <label>Question<input required={creating} value={string(get(draft, 'question')) ?? ''} onChange={event => update('question', text(event.target.value))} /></label>
-    <FactValue label="Other ways to ask" value={has(draft, 'aliases') ? get(draft, 'aliases') : []} change={value => update('aliases', value)} />
     {intent && <label>Saved decision<select aria-label="Saved consent decision" value={consentChoice(get(draft, 'value'), retainedValue)} onChange={event => {
       const choice = event.target.value;
       if (choice === 'agree') update('value', text('Yes'));
@@ -74,9 +73,6 @@ export function AnswerFields({ draft, change, remember, creating = false }: {
       <option value="confirmed">Confirmed</option><option value="inferred">Suggested</option>
       <option value="missing">Missing</option><option value="sensitive">Sensitive</option>
     </select></label>
-    <label>Source<input value={string(get(draft, 'source')) ?? ''} onChange={event => update('source', text(event.target.value))} /></label>
-    <FactValue label="Applies to" value={has(draft, 'scope') ? get(draft, 'scope') : parse('{}')} change={value => update('scope', value)} />
-    <label>Answer category<input value={string(get(draft, 'fieldClass')) ?? 'general'} pattern="[a-z][a-z0-9_]{0,63}" onChange={event => update('fieldClass', text(event.target.value))} /></label>
     <label>Reusable consent decision<select aria-label="Reusable consent decision" value={intent ? 'consent' : 'ordinary'} onChange={event => {
       if (event.target.value === 'consent') {
         const next = copy(draft);
@@ -94,8 +90,14 @@ export function AnswerFields({ draft, change, remember, creating = false }: {
       <label>Purpose ID<input required pattern="[a-z][a-z0-9_]{0,63}" value={string(get(intent, 'purpose')) ?? ''} onChange={event => updateIntent('purpose', text(event.target.value))} /></label>
       <p>A saved choice identifies a purpose. The agent must still review the live notice and get current-form approval before acting.</p>
     </>}
-    <label>Sensitivity<select aria-label="Sensitivity" disabled={Boolean(intent)} value={string(get(draft, 'sensitivity')) ?? 'none'} onChange={event => update('sensitivity', text(event.target.value))}>
-      <option value="none">None</option><option value="personal">Personal</option><option value="high">High</option>
-    </select></label>
+    <label>Answer category<input value={string(get(draft, 'fieldClass')) ?? 'general'} pattern="[a-z][a-z0-9_]{0,63}" onChange={event => update('fieldClass', text(event.target.value))} /></label>
+    <details className="answer-advanced"><summary>Advanced details</summary>
+      <FactValue label="Other ways to ask" value={has(draft, 'aliases') ? get(draft, 'aliases') : []} change={value => update('aliases', value)} />
+      <label>Source<input value={string(get(draft, 'source')) ?? ''} onChange={event => update('source', text(event.target.value))} /></label>
+      <FactValue label="Applies to" value={has(draft, 'scope') ? get(draft, 'scope') : parse('{}')} change={value => update('scope', value)} />
+      <label>Sensitivity<select aria-label="Sensitivity" disabled={Boolean(intent)} value={string(get(draft, 'sensitivity')) ?? 'none'} onChange={event => update('sensitivity', text(event.target.value))}>
+        <option value="none">None</option><option value="personal">Personal</option><option value="high">High</option>
+      </select></label>
+    </details>
   </>;
 }

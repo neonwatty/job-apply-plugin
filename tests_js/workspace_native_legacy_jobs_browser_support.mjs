@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // All report mutations and CLI calls are scoped to the caller's synthetic HOME.
 export async function legacyJobsBrowser(page, { legacy, writeReport, readDocument }) {
 
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  const modal = page.locator('dialog.job-drawer');
   const role = 'Native legacy report role';
   const originalUrl = 'https://example.invalid/native-legacy-original';
   const report = url => `# Synthetic legacy report\n### 1. ${role} — Legacy company\n- **URL**: ${url}\n`;
@@ -27,6 +27,7 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   const id = committed.decisions[0].id;
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('button', { name: new RegExp(role) }).click();
+  await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   assert.equal(await modal.locator('[name="company"]').inputValue(), 'Legacy company');
   await modal.locator('[name="company"]').fill('Human legacy company');
   await modal.getByRole('button', { name: 'Save job', exact: true }).click();
@@ -61,6 +62,7 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   // Refresh retains old cards while loading. Open only the acknowledged CLI revision.
   await page.getByRole('button', { name: new RegExp(role) })
     .filter({hasText: new RegExp(`revision ${updated.revision}$`)}).click();
+  await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human legacy company');
   assert.equal(await modal.locator('[name="url"]').inputValue(), updated.url);
   await modal.locator('[name="url"]').fill('https://example.invalid/human-legacy-url');

@@ -50,7 +50,7 @@ export async function nativeGroupedApprovalsBrowser(page, root, fixture, buildRo
   await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('button', { name: /Grouped fixture role/ }).click();
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  const modal = page.locator('dialog.job-drawer');
   const panel = modal.getByRole('region', { name: 'Job activity', exact: true });
   await panel.getByText('1 pending items · 0 current session approvals', { exact: true }).waitFor();
   const before = await snapshot(root);

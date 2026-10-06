@@ -51,8 +51,8 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByRole('button', { name: new RegExp(role) }).click();
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
-  assert.equal(await modal.locator('[name="company"]').inputValue(), 'Task wrapper company');
+  const modal = page.locator('dialog.job-drawer');
+  assert.equal(await modal.locator('.job-drawer-summary dd').first().innerText(), 'Task wrapper company');
   const panel = modal.getByRole('region', { name: 'Job activity', exact: true });
   await panel.getByText(/Status: saved/i).waitFor();
   const initialActivity = await cli('activity', ['--id', id]);
@@ -92,7 +92,7 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('button', { name: new RegExp(role) })
     .filter({ hasText: new RegExp(`revision ${selected.job.revision}$`) }).click();
   await panel.getByText(/Status: ready/i).waitFor();
-  assert.equal(await modal.locator('[name="company"]').inputValue(), 'Task wrapper company');
+  assert.equal(await modal.locator('.job-drawer-summary dd').first().innerText(), 'Task wrapper company');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
   return { intakeVisible: true, envelopes: true, ownerConfirmationRequired: true,

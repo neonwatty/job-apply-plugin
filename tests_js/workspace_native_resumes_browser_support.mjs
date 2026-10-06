@@ -28,6 +28,7 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
     await popup.close();
 
     // Starting a mutation intentionally cancels an in-flight content read without surfacing an abort error.
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
     await page.getByLabel('Label', { exact: true }).fill('Preview cancellation draft');
     await page.route(`**/api/resumes/${id}/content`, async route => {
         await new Promise(resolve => setTimeout(resolve, 1_000));
@@ -36,7 +37,7 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
     const cancelledPopupPromise = page.waitForEvent('popup');
     await preview.click();
     const cancelledPopup = await cancelledPopupPromise;
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume details saved', { exact: true }).waitFor();
     await page.waitForTimeout(1_100);
     const visibleAlerts = (await page.locator('[role="alert"]').allInnerTexts()).filter(text => text.trim());
@@ -45,26 +46,28 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
 
     // A clean refresh adopts canonical values; it must not turn stale fields into an editable draft.
     await externalPatch({ label: 'Concurrent label' });
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh resume', exact: true }).click();
     await page.getByRole('heading', { name: 'Concurrent label', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Concurrent label');
-    assert.equal(await page.getByRole('button', { name: 'Save', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Save resume', exact: true }).isDisabled(), true);
 
     // A dirty refresh keeps the original revision until the owner explicitly reapplies changed fields.
     await page.getByLabel('Label', { exact: true }).fill('My resume draft');
     await externalPatch({ tags: ['concurrent-tag'] });
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh resume', exact: true }).click();
     await page.getByText('This resume changed elsewhere. Your draft is preserved.', { exact: true }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Save', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Save resume', exact: true }).isDisabled(), true);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'My resume draft');
     await page.getByRole('button', { name: 'Reapply my draft', exact: true }).click();
     assert.equal(await page.getByLabel('Tags, separated by commas').inputValue(), 'concurrent-tag');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume details saved', { exact: true }).waitFor();
     assert.equal((await stored()).label, 'My resume draft');
     assert.deepEqual((await stored()).tags, ['concurrent-tag']);
 
     // Metadata entered before choosing a file is a real import draft.
+    await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
     await page.getByRole('button', { name: 'Import resume', exact: true }).click();
     await page.getByLabel('Label', { exact: true }).fill('Unsaved import');
     let prompts = 0;
@@ -73,7 +76,7 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     assert.equal(prompts, 1);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Unsaved import');
-    await clickCompanionNav(page, 'Jobs');
+    await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Jobs')?.click());
     assert.equal(prompts, 2);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Unsaved import');
     page.off('dialog', dismiss);

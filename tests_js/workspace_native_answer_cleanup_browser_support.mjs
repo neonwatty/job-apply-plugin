@@ -21,6 +21,9 @@ export async function nativeAnswerCleanupBrowser(page, root, cli) {
   await page.unroute('**/api/answers/cleanup-preview');
   await page.getByRole('button', { name: 'Preview cleanup', exact: true }).click();
   await panel.getByText('Does the applicant have permission to work in this jurisdiction?', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Browser-created question?', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
+  await page.getByText('Advanced details', { exact: true }).click();
   await page.getByLabel('Source', { exact: true }).fill('cleanup-preview-invalidation');
   await page.getByRole('button', { name: 'Save answer', exact: true }).click();
   await page.getByText('Answer saved.', { exact: true }).waitFor();
@@ -33,12 +36,15 @@ export async function nativeAnswerCleanupBrowser(page, root, cli) {
   page.once('dialog', dialog => dialog.dismiss());
   await panel.getByRole('button', { name: 'Approve merge', exact: true }).click();
   assert.equal(await readFile(join(root, 'answers.json'), 'utf8'), premerge);
+  await page.getByRole('button', { name: 'Browser-created question?', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
+  await page.getByText('Advanced details', { exact: true }).click();
   await page.getByLabel('Source', { exact: true }).fill('unsaved merge guard');
-  assert.equal(await panel.getByRole('button', { name: 'Approve merge', exact: true }).isDisabled(), true);
+  assert.equal(await page.locator('dialog.detail-drawer').isVisible(), true);
   await page.getByLabel('Source', { exact: true }).fill('cleanup-preview-invalidation');
+  await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
   await page.getByLabel('Review status', { exact: true }).selectOption('pending');
   await page.getByRole('button', { name: 'Search answers', exact: true }).click();
-  await page.getByRole('button', { name: 'Is employment authorization available in the country?', exact: true }).click();
   let releaseApproval, signalApproval;
   const approvalGate = new Promise(resolve => { releaseApproval = resolve; });
   const approvalEntered = new Promise(resolve => { signalApproval = resolve; });
@@ -46,8 +52,8 @@ export async function nativeAnswerCleanupBrowser(page, root, cli) {
   page.once('dialog', dialog => dialog.accept());
   await panel.getByRole('button', { name: 'Approve merge', exact: true }).click();
   await approvalEntered;
-  await page.locator('fieldset[disabled]').waitFor();
-  assert.equal(await page.getByLabel('Question', { exact: true }).isDisabled(), true);
+  await panel.getByRole('status').getByText('Merging the selected answers…', { exact: true }).waitFor();
+  assert.equal(await panel.getByRole('button', { name: 'Approve merge', exact: true }).count(), 0);
   releaseApproval();
   await page.getByText('Answers merged.', { exact: true }).waitFor();
   await page.unroute('**/api/answers/cleanup-approve');

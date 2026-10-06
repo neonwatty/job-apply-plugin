@@ -1,5 +1,6 @@
 'use client';
 import { useCallback,useEffect,useMemo,useRef,useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
 import { Overview } from './Overview';
@@ -19,6 +20,7 @@ import './title-discovery.css';
 import './companion-polish.css';
 import './companion-nav.css';
 import './companion-theme.css';
+import './companion-interactions.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
@@ -47,14 +49,39 @@ function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, l
     setOpenMenu(null);
   }, [tab]);
   useEffect(() => {
+    if (!mobileOpen) return;
+    const priorOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    nav.current?.querySelector<HTMLElement>('.nav-link')?.focus();
+    const media = window.matchMedia('(max-width: 1020px)');
+    const onResize = () => { if (!media.matches) setMobileOpen(false); };
+    media.addEventListener('change', onResize);
+    return () => {
+      document.body.style.overflow = priorOverflow;
+      media.removeEventListener('change', onResize);
+    };
+  }, [mobileOpen]);
+  useEffect(() => {
     if (!mobileOpen && !openMenu) return;
     const onPointerDown = (event: PointerEvent) => {
+      if ((event.target as Element).closest?.('.mobile-nav-backdrop')) return;
       if (!nav.current?.contains(event.target as Node) && !mobileToggle.current?.contains(event.target as Node)) {
+        if (mobileOpen) mobileToggle.current?.focus();
         setMobileOpen(false);
         setOpenMenu(null);
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab' && mobileOpen && nav.current) {
+        const links = [...nav.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')]
+          .filter(link => link.getClientRects().length > 0);
+        if (links.length) {
+          const first = links[0]!, last = links[links.length - 1]!;
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+        return;
+      }
       if (event.key !== 'Escape') return;
       if (openMenu) {
         (openMenu === 'materials' ? materialsToggle : moreToggle).current?.focus();
@@ -73,10 +100,10 @@ function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, l
   }, [mobileOpen, openMenu]);
 
   const go = (next: WorkspaceTab) => {
-    if (navigate(next)) {
-      setOpenMenu(null);
-      setMobileOpen(false);
-    }
+    const changed = navigate(next);
+    setOpenMenu(null);
+    setMobileOpen(false);
+    if (!changed && mobileOpen) mobileToggle.current?.focus();
   };
   const link = (target: WorkspaceTab, label: string, active = tab === target, count?: number) =>
     <button className="nav-link" type="button" aria-label={label} aria-current={active ? 'page' : undefined}
@@ -92,6 +119,8 @@ function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, l
   const moreActive = ['automation', 'accounts', 'settings', 'trash'].includes(tab);
 
   return <>
+    {mobileOpen && createPortal(<button className="mobile-nav-backdrop" type="button" tabIndex={-1}
+      aria-label="Close workspace menu" onClick={() => { setMobileOpen(false); mobileToggle.current?.focus(); }} />, document.body)}
     <button ref={mobileToggle} className="mobile-nav-toggle" type="button" aria-expanded={mobileOpen}
       aria-controls="workspace-navigation" onClick={() => { setMobileOpen(value => !value); setOpenMenu(null); }}>
       <span className="mobile-nav-icon" aria-hidden="true" />Menu

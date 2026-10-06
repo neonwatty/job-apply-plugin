@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiError, type Client } from './client';
 import { object, type ResumeRecord } from './contracts';
 import { ResumeFacts } from './ResumeFacts';
+import { DetailDrawer } from './DetailDrawer';
 
 const accept = '.pdf,.docx,.txt';
 const tags = (value: string) => value.split(',').map(item => item.trim()).filter(Boolean);
@@ -22,6 +23,7 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
 
 export function Resumes({ client, dirtyChanged, openExtractions }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void }) {
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
+    const [editing, setEditing] = useState(false);
     const [factStatus, setFactStatus] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
     const [contentBusy, setContentBusy] = useState(false);
@@ -71,6 +73,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     function open(record: ResumeRecord | null) {
         if (busy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
         setEditor(openEditor(record));
+        setEditing(!record);
         setExtractByDefault(true);
         if (fileInput.current) fileInput.current.value = '';
         setError(''); setNotice('');
@@ -78,6 +81,13 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     function close() {
         if (busy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
         setEditor(null); setError('');
+    }
+    function cancelEdit() {
+        if (!editor?.base) { close(); return; }
+        if (dirty && !confirm('Discard unsaved resume changes?')) return;
+        setEditor({ ...openEditor(editor.latest ?? editor.base), missing: editor.missing });
+        setEditing(false);
+        setError('');
     }
     function reapply() {
         setEditor(current => {
@@ -111,6 +121,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
                 }
             }
             setEditor(openEditor(saved));
+            setEditing(false);
             if (fileInput.current) fileInput.current.value = '';
             setNotice(message + queueNotice);
             await refresh();
@@ -194,9 +205,10 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             </ul>
             {!loading && !error && !records.length && <div className="workspace-empty resume-empty"><span className="resume-empty-mark" aria-hidden="true">DOC</span><strong>No resumes saved yet.</strong></div>}
         </div>
-        {editor && <section className="workspace-panel resume-editor-panel" aria-labelledby="resume-editor-title">
-            <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical resume</p><h2 id="resume-editor-title">{editor.base ? editor.base.label : 'Import resume'}</h2></div>{editor.base && <span className="facts-revision">Revision {editor.base.revision}</span>}</div>
-            <p className="resume-editor-intro">{editor.base ? 'Update the document label and tags, or choose a file to replace the managed copy.' : 'Add a PDF, DOCX, or UTF-8 text resume to the canonical local library.'}</p>
+        {editor && <DetailDrawer titleId="resume-editor-title" close={close} className="resume-detail-drawer">
+            <header className="detail-drawer-header"><div><p className="eyebrow">Resume</p><h2 id="resume-editor-title" tabIndex={-1} data-drawer-heading>{editor.base ? editor.base.label : 'Import resume'}</h2></div>
+                <div className="button-row"><button className="secondary" type="button" disabled={busy || loading} onClick={() => void refresh()}>Refresh resume</button>
+                    <button className="job-drawer-close" type="button" disabled={busy} onClick={close} aria-label="Close resume details">×</button></div></header>
             {error && <p role="alert" className="error">{error}</p>}
             {editor.missing && <p className="notice" role="alert">This resume is no longer available. Your draft is preserved; saving is disabled.</p>}
             {editor.latest && <div className="notice resume-conflict" role="alert">
@@ -204,22 +216,37 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
                 <button disabled={busy} onClick={reapply}>Reapply my draft</button>{' '}
                 <button disabled={busy} onClick={() => open(editor.latest)}>Use latest resume</button>
             </div>}
-            <div className="resume-editor-fields"><label>Label<input value={editor.label} onChange={event => setEditor({ ...editor, label: event.target.value })} disabled={busy} /></label>
-            <label>Tags, separated by commas<input value={editor.tagText} onChange={event => setEditor({ ...editor, tagText: event.target.value })} disabled={busy} /></label>
-            <label className="resume-file-field">{editor.base?.storageKind === 'managed' ? 'Replacement file' : editor.base ? 'File to adopt' : 'Resume file'}
-                <input ref={fileInput} type="file" accept={accept} onChange={event => setEditor({ ...editor, file: event.target.files?.[0] ?? null })} disabled={busy} />
-            </label></div>
-            {(!editor.base || editor.file) && <label><input type="checkbox" checked={extractByDefault}
-                onChange={event => setExtractByDefault(event.target.checked)} disabled={busy} /> Request fact extraction after saving</label>}
-            <div className="resume-editor-actions">{editor.base?.storageKind === 'managed' && <button className="secondary" disabled={busy || contentBusy} onClick={() => void openContent()}>
-                {editor.base.mediaType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'Download resume' : 'Preview resume'}
-            </button>}<button className="secondary" disabled={busy || contentBusy} onClick={close}>Cancel</button>
-                <button className="primary" disabled={busy || loading || factsDirty || Boolean(editor.latest) || editor.missing || !dirty && Boolean(editor.base)} onClick={() => void save()}>Save</button>{' '}
-                {editor.base && !editor.base.default && <button className="secondary" disabled={busy || loading || dirty || factsDirty || Boolean(editor.latest) || editor.missing}
-                    onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}
-            </div>
-        </section>}
-        {editor?.base?.storageKind === 'managed' && <ResumeFacts key={editor.base.id} client={client} resume={editor.base}
-            dirtyChanged={setFactsDirty} statusChanged={status => setFactStatus(current => ({ ...current, [editor.base!.id]: status }))} />}
+            {!editing && editor.base ? <>
+                <div className="detail-drawer-summary"><dl>
+                    <div><dt>File</dt><dd>{editor.base.mediaType ?? 'External file'}</dd></div>
+                    <div><dt>Storage</dt><dd>{editor.base.storageKind === 'managed' ? 'Managed locally' : 'External file'}</dd></div>
+                    <div><dt>Facts</dt><dd>{factStatus[editor.base.id] ?? 'No extracted facts'}</dd></div>
+                    <div><dt>Tags</dt><dd>{editor.base.tags.join(', ') || 'None'}</dd></div>
+                    <div><dt>Default</dt><dd>{editor.base.default ? 'Yes' : 'No'}</dd></div>
+                </dl></div>
+                <div className="detail-drawer-actions">
+                    {editor.base.storageKind === 'managed' && <button className="secondary" disabled={busy || contentBusy} onClick={() => void openContent()}>
+                        {editor.base.mediaType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'Download resume' : 'Preview resume'}</button>}
+                    {!editor.base.default && <button className="secondary" disabled={busy || loading || factsDirty || Boolean(editor.latest) || editor.missing}
+                        onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}
+                    <button className="primary" disabled={busy || editor.missing || Boolean(editor.latest)} onClick={() => setEditing(true)}>Edit resume</button>
+                </div>
+                {editor.base.storageKind === 'managed' && <ResumeFacts key={editor.base.id} client={client} resume={editor.base}
+                    dirtyChanged={setFactsDirty} statusChanged={status => setFactStatus(current => ({ ...current, [editor.base!.id]: status }))} />}
+            </> : <>
+                <p className="resume-editor-intro">{editor.base ? 'Update the label and tags, or replace the file.' : 'Add a PDF, DOCX, or text resume.'}</p>
+                <div className="resume-editor-fields"><label>Label<input value={editor.label} onChange={event => setEditor({ ...editor, label: event.target.value })} disabled={busy} /></label>
+                    <label>Tags, separated by commas<input value={editor.tagText} onChange={event => setEditor({ ...editor, tagText: event.target.value })} disabled={busy} /></label>
+                    <label className="resume-file-field">{editor.base?.storageKind === 'managed' ? 'Replacement file' : editor.base ? 'File to adopt' : 'Resume file'}
+                        <input ref={fileInput} type="file" accept={accept} onChange={event => setEditor({ ...editor, file: event.target.files?.[0] ?? null })} disabled={busy} /></label></div>
+                {(!editor.base || editor.file) && <label><input type="checkbox" checked={extractByDefault}
+                    onChange={event => setExtractByDefault(event.target.checked)} disabled={busy} /> Request fact extraction after saving</label>}
+                <div className="detail-drawer-actions">
+                    {editor.base?.storageKind === 'managed' && <button className="secondary" disabled={busy || contentBusy} onClick={() => void openContent()}>
+                        {editor.base.mediaType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'Download resume' : 'Preview resume'}</button>}
+                    <button className="secondary" disabled={busy || contentBusy} onClick={cancelEdit}>Cancel</button>
+                    <button className="primary" disabled={busy || loading || factsDirty || Boolean(editor.latest) || editor.missing || !dirty && Boolean(editor.base)} onClick={() => void save()}>Save resume</button></div>
+            </>}
+        </DetailDrawer>}
     </section>;
 }

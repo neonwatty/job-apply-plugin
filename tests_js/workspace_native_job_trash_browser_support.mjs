@@ -33,11 +33,12 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
     url: 'https://example.invalid/trash-browser?private=trash', notes: 'PRIVATE-TRASH-NOTES' });
   const args = revision => ['--id', job.id, '--expected-revision', String(revision)];
 
-  const modal = page.getByRole('dialog', { name: 'Edit job', exact: true });
+  const modal = page.locator('dialog.job-drawer');
   const card = page.getByRole('button', { name: new RegExp(role) });
   await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.click();
+  await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   const company = modal.locator('[name="company"]');
   await company.fill('Unsaved trash browser draft');
   const trashed = await cli('job-trash', args(job.revision));
@@ -66,6 +67,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   await page.reload();
   await clickCompanionNav(page, 'Jobs');
   await card.filter({ hasText: new RegExp(`revision ${restored.revision}$`) }).click();
+  await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   assert.equal(await company.inputValue(), job.company);
   assert.equal(await modal.locator('[name="notes"]').inputValue(), job.notes);
   await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
@@ -76,6 +78,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   assert.equal((await api('/api/trash')).items.some(value => value.type === 'job' && value.id === job.id), false);
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.filter({ hasText: new RegExp(`revision ${final.revision}$`) }).click();
+  await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   assert.equal(await company.inputValue(), job.company);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await modal.getByRole('button', { name: 'Close job details', exact: true }).click();

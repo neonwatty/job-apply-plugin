@@ -197,7 +197,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   const staleReasons = base ? get(base, 'staleReasons') : null;
   const stale = Array.isArray(staleReasons) && staleReasons.length > 0;
   return <section className="extractions-workspace" aria-labelledby="extractions-workspace-title">
-    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes</p><h1 id="extractions-workspace-title">Extract facts</h1><p>Request facts from a saved resume. Missing facts can be added automatically; review conflicts before replacing existing facts.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh extraction status</button></div></header>
+    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes</p><h1 id="extractions-workspace-title">Extraction review</h1><p>Review proposed facts before they replace saved information.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh</button></div></header>
     <section className="workspace-panel extraction-request-panel" aria-labelledby="extraction-request-heading">
       <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div></div>
       <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice}</p>
@@ -234,10 +234,10 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
       </button></li>;
     })}</ul>
     </section>}</div>}
-    {(base || proposals.length > 0) && <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposal review</h2></div>{base && <span className="extraction-step">{pendingPaths(base).length} decisions remaining</span>}</div>
+    {(base || proposals.length > 0) && <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposed facts</h2></div>{base && <span className="extraction-step">{Object.keys(choices).length} of {pendingPaths(base).length} choices selected</span>}</div>
     {base ? <div className="proposal-review-body">
       <div className="proposal-summary-native"><div><small>Status</small><strong>{string(get(base, 'status'))}</strong></div><div><small>Auto-filled</small><strong>{serialize(get(base, 'autoFilledCount'))} missing facts</strong></div></div>
-      <p>Review existing conflicts below. Unselected paths remain pending.</p>
+      <p>Compare each value and choose what to keep. Replacements need separate confirmation.</p>
       <button className="secondary" disabled={busy} onClick={() => void selectProposal(string(get(base, 'id'))!, true)}>Refresh selected proposal</button>
       {stale && <p className="error" role="alert">{staleReasons.map(value => reasonMessage(string(value) ?? '')).join(' ')} Request a new extraction before reviewing it.</p>}
       {latest && <aside className="notice" role="alert">
