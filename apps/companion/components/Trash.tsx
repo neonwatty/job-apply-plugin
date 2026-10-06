@@ -9,8 +9,9 @@ export interface TrashProps {
     dirtyChanged(value: boolean): void;
     onMutation?(): void | Promise<void>;
     countChanged?(total:number):void;
+    refreshKey?:number;
 }
-export function Trash({ client, capabilities, dirtyChanged, onMutation, countChanged }: TrashProps) {
+export function Trash({ client, capabilities, dirtyChanged, onMutation, countChanged, refreshKey=0 }: TrashProps) {
     const [snapshot, setSnapshot] = useState<TrashSnapshot | null>(null);
     const [filter, setFilter] = useState<TrashType | ''>('');
     const [selection, setSelection] = useState<{ item: TrashItem; action: TrashAction } | null>(null);
@@ -25,6 +26,7 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation, countCha
     const mounted = useRef(false);
     const wasBusy = useRef(false);
     const opener = useRef<HTMLElement | null>(null);
+    const previousRefreshKey = useRef(refreshKey);
     useEffect(() => {
         if (wasBusy.current && !busy) document.getElementById('trash-refresh')?.focus();
         wasBusy.current = busy;
@@ -60,6 +62,11 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation, countCha
         void refresh();
         return () => { mounted.current = false; ++generation.current; controller.current?.abort(); };
     }, [refresh]);
+    useEffect(() => {
+        if (previousRefreshKey.current === refreshKey) return;
+        previousRefreshKey.current = refreshKey;
+        void refresh();
+    }, [refreshKey]);
     useEffect(() => {
         dirtyChanged(selection !== null || busy);
         return () => dirtyChanged(false);

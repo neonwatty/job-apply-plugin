@@ -4,17 +4,19 @@ import type { Client } from './client';
 import type { OverviewData } from './contracts';
 import { readApplicationPreferences } from './application-preferences-model';
 
-export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
+export function Overview({ client, openJobs, legacyHref, openWorkspace, refreshKey = 0 }: {
     client: Client;
     openJobs: () => void;
     legacyHref: string;
     openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention' | 'answers' | 'automation' | 'settings' | 'trash') => void;
+    refreshKey?: number;
 }) {
     const [data, setData] = useState<OverviewData | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [applicationSetupComplete, setApplicationSetupComplete] = useState(false);
     const sequence = useRef(0);
+    const previousRefreshKey = useRef(refreshKey);
     const pending = useRef<AbortController | null>(null);
     async function refresh() {
         pending.current?.abort();
@@ -40,6 +42,11 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
         void refresh();
         return () => { sequence.current++; pending.current?.abort(); };
     }, [client]);
+    useEffect(() => {
+        if (previousRefreshKey.current === refreshKey) return;
+        previousRefreshKey.current = refreshKey;
+        void refresh();
+    }, [refreshKey]);
     const destinations: Record<string, string> = {
         facts: 'Facts', resumes: 'Resumes', attention: 'Needs Attention',
         answers: 'Answers', automation: 'Automation', settings: 'Settings', trash: 'Trash', overview: 'Overview',

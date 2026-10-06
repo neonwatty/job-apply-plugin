@@ -25,7 +25,7 @@ const extractionHandoff = (requestId: string): string =>
   `Use the Job Apply resume workflow to process extraction request ${requestId}.`;
 const fallbackNotice = 'Clipboard unavailable. Select and copy the agent handoff below.';
 
-export function Extractions({ client, dirtyChanged, openResumes }: { client: ExtractionClient; dirtyChanged: (dirty: boolean) => void; openResumes?:()=>void }) {
+export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 }: { client: ExtractionClient; dirtyChanged: (dirty: boolean) => void; openResumes?:()=>void; refreshKey?:number }) {
   const [resumes, setResumes] = useState<Document[]>([]);
   const [requests, setRequests] = useState<Document[]>([]);
   const [proposals, setProposals] = useState<Document[]>([]);
@@ -43,6 +43,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   const [fallback, setFallback] = useState<{requestId:string;value:string}|null>(null);
   const [focusReviewVersion, setFocusReviewVersion] = useState(0);
   const generation = useRef(0), listGeneration = useRef(0), handoffGeneration = useRef(0);
+  const previousRefreshKey = useRef(refreshKey);
   const request = useRef<AbortController | null>(null), listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const dirty = Object.keys(choices).length > 0;
@@ -82,6 +83,11 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     } finally { if (version === listGeneration.current) setLoading(false); }
   }
   useEffect(() => { void refreshLists(); }, [client]);
+  useEffect(() => {
+    if (previousRefreshKey.current === refreshKey) return;
+    previousRefreshKey.current = refreshKey;
+    void refreshLists();
+  }, [refreshKey]);
   function loadProposal(next: Document) {
     setBase(next);
     setLatest(null);

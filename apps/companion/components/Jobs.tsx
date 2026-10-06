@@ -8,7 +8,7 @@ import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
 import { JobTransitions } from './JobTransitions';
 
-export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged }: {
+export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
     client: Client;
     active?: boolean;
     claimsEnabled?: boolean;
@@ -16,6 +16,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     jobOpened?: () => void;
     openAnswers?: () => void;
     workspaceChanged?: () => void | Promise<void>;
+    refreshKey?: number;
     dirtyChanged: (dirty: boolean) => void;
 }) {
     const [data, setData] = useState<WorkspaceState | null>(null);
@@ -33,7 +34,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const mutation = useRef<AbortController | null>(null);
     const generation = useRef(0);
     const listGeneration = useRef(0);
-    const wasActive = useRef(active);
+    const previousRefreshKey = useRef(refreshKey);
 
     async function refresh() {
         refreshRequest.current?.abort();
@@ -73,9 +74,13 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
             refreshRequest.current?.abort();
             listGeneration.current++;
             setLoading(false);
-        } else if (!wasActive.current) void refresh();
-        wasActive.current = active;
+        }
     }, [active]);
+    useEffect(() => {
+        if (previousRefreshKey.current === refreshKey) return;
+        previousRefreshKey.current = refreshKey;
+        void refresh();
+    }, [refreshKey]);
     useEffect(() => {
         dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy);
         return () => dirtyChanged(false);

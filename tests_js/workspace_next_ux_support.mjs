@@ -85,6 +85,23 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await page.locator('#workspace-navigation button[aria-label="Jobs"][aria-current="page"]').waitFor({ state: 'attached' });
   assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
     'returning to Jobs keeps its loaded list and filter');
+  await clickCompanionNav(page, 'Overview');
+  const recentJobs = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
+  await clickCompanionNav(page, 'Jobs');
+  await recentJobs;
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
+    'Jobs checks for external changes on return without resetting its filter');
+  await page.evaluate(() => {
+    window.__originalDateNow = Date.now;
+    Date.now = () => window.__originalDateNow() + 31_000;
+  });
+  await clickCompanionNav(page, 'Overview');
+  const refreshedJobs = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
+  await clickCompanionNav(page, 'Jobs');
+  await refreshedJobs;
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
+    'a data refresh after the old eviction interval retains the Jobs filter');
+  await page.evaluate(() => { Date.now = window.__originalDateNow; delete window.__originalDateNow; });
   const card = page.getByRole('button', { name: /Next synthetic role/ });
   await card.click();
   await capture(page, 'job-details-desktop.png');
@@ -156,7 +173,7 @@ export async function nextLateRead(page) {
   await page.route('**/api/state', async route => {
     started();
     await gate;
-    // This response belongs to an unmounted Jobs view and must be ignored.
+    // This response belongs to a hidden Jobs view and must be ignored.
     await route.fulfill({ json: { jobs: [], resumes: [] } }).catch(() => {});
   });
   const cancelled = page.waitForEvent('requestfailed', {

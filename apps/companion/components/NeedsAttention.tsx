@@ -3,8 +3,8 @@ import { useState } from 'react';
 import type { Client } from './client';
 import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, handoffChecklistLabels, type AttentionReason } from './projection-model';
 import { humanize, useProjection } from './projection-view';
-export function NeedsAttention({client,openJob}:{client:Client;openJob:(id:string)=>void}) {
-  const {data,loading,error,refresh}=useProjection(client,'/api/attention',attentionProjection);
+export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;openJob:(id:string)=>void;refreshKey?:number}) {
+  const {data,loading,error,refresh}=useProjection(client,'/api/attention',attentionProjection,refreshKey);
   const [reason,setReason]=useState('');
   const visible=filterAttention(data?.items ?? [],reason);
   return <section className="attention-workspace" aria-label="Needs Attention">

@@ -40,7 +40,7 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
     await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume details saved', { exact: true }).waitFor();
     await page.waitForTimeout(1_100);
-    const visibleAlerts = (await page.locator('[role="alert"]').allInnerTexts()).filter(text => text.trim());
+    const visibleAlerts = (await page.locator('.workspace-page:not([hidden]) [role="alert"]').allInnerTexts()).filter(text => text.trim());
     assert.deepEqual(visibleAlerts, [], 'intentional preview cancellation stays silent');
     await cancelledPopup.close();
 

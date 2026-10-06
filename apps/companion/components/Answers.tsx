@@ -8,7 +8,7 @@ import { string, get, has, int, object, parse, serialize } from '../../../src/co
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
-export function Answers({ client, dirtyChanged, consentOnly = false }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean }) {
+export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey = 0 }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean; refreshKey?:number }) {
   const [pendingBusy, setPendingBusy] = useState(false);
   const [mergeBusy, setMergeBusy] = useState(false);
   const [cleanupRevision, setCleanupRevision] = useState(0);
@@ -36,6 +36,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
   const listGeneration = useRef(0);
   const listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const previousRefreshKey = useRef(refreshKey);
   const dirty = creating || invalid || base !== null && draft !== null && serialize(draft) !== serialize(answerDraft(base));
   useEffect(() => { dirtyChanged(dirty || busy || mergeBusy || pendingBusy); return () => dirtyChanged(false); }, [dirty, busy, mergeBusy, pendingBusy, dirtyChanged]);
   useEffect(() => () => { generation.current++; listGeneration.current++; request.current?.abort(); listRequest.current?.abort(); }, []);
@@ -66,6 +67,11 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
     } finally { if (version === listGeneration.current) setLoading(false); }
   }
   useEffect(() => { void refreshList(); }, [client, consentOnly]);
+  useEffect(() => {
+    if (previousRefreshKey.current === refreshKey) return;
+    previousRefreshKey.current = refreshKey;
+    void refreshList();
+  }, [refreshKey]);
   async function select(key: string, refresh = false, reveal = false) {
     if (pendingBusy || mergeBusy || busy) return;
     if (!refresh && dirty && !confirm('Discard your unsaved answer changes?')) return;

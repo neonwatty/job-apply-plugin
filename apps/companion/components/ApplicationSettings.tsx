@@ -24,12 +24,13 @@ function reapplyModels(before:ProfileSnapshot,draft:AgentModelPreferences,latest
   return result;
 }
 
-export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
+export function ApplicationSettings({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyChanged:(dirty:boolean)=>void;refreshKey?:number}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<ApplicationPreferences|null>(null);
   const [models,setModels]=useState<AgentModelPreferences|null>(null);
   const [complete,setComplete]=useState(false),[latest,setLatest]=useState<ProfileSnapshot|null>(null);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const alive=useRef(false),request=useRef<AbortController|null>(null),generation=useRef(0),dirtyRef=useRef(false);
+  const previousRefreshKey=useRef(refreshKey);
   const dirty=Boolean(base&&draft&&models&&(!equal(readApplicationPreferences(base.profile).preferences,draft)
     ||!equalModels(readAgentModelPreferences(base.profile),models)));
   const canSave=!complete||dirty;
@@ -50,6 +51,7 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
     finally{if(alive.current&&version===generation.current)setLoading(false);}
   }
   useEffect(()=>{alive.current=true;void refresh(true);return()=>{alive.current=false;generation.current++;request.current?.abort();};},[client]);
+  useEffect(()=>{if(previousRefreshKey.current===refreshKey)return;previousRefreshKey.current=refreshKey;void refresh();},[refreshKey]);
   async function save() {
     if(!base||!draft||!models||!canSave||invalidModel||invalidEffort)return;request.current?.abort();const controller=new AbortController();request.current=controller;const version=++generation.current;
     setBusy(true);setError('');setNotice('');

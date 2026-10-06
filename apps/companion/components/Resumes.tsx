@@ -21,7 +21,7 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
     editor.label !== (editor.base?.label ?? '') || editor.tagText !== (editor.base?.tags.join(', ') ?? '') || editor.file
 ));
 
-export function Resumes({ client, dirtyChanged, openExtractions }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void }) {
+export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void; refreshKey?:number }) {
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
     const [editing, setEditing] = useState(false);
     const [factStatus, setFactStatus] = useState<Record<string, string>>({});
@@ -36,6 +36,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     const [extractByDefault, setExtractByDefault] = useState(true);
     const [error, setError] = useState(''), [notice, setNotice] = useState('');
     const alive = useRef(true), request = useRef<AbortController | null>(null), mutation = useRef<AbortController | null>(null);
+    const previousRefreshKey = useRef(refreshKey);
     const contentRequest = useRef<AbortController | null>(null);
     const fileInput = useRef<HTMLInputElement | null>(null);
     const dirty = isDirty(editor);
@@ -74,6 +75,11 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         void refresh();
         return () => { alive.current = false; request.current?.abort(); mutation.current?.abort(); contentRequest.current?.abort(); };
     }, [client]);
+    useEffect(() => {
+        if (previousRefreshKey.current === refreshKey) return;
+        previousRefreshKey.current = refreshKey;
+        void refresh();
+    }, [refreshKey]);
     useEffect(() => { dirtyChanged(dirty || busy || factsDirty || factsBusy); return () => dirtyChanged(false); }, [dirty, busy, factsDirty, factsBusy, dirtyChanged]);
     function open(record: ResumeRecord | null) {
         if (busy || factsBusy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;

@@ -26,8 +26,13 @@ import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
 type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'consents'|'extractions'|'attention'|'accounts'|'automation'|'settings'|'trash';
 const workspaceTabs: WorkspaceTab[] = ['overview','jobs','facts','resumes','answers','consents','extractions','attention','accounts','automation','settings','trash'];
-type CachedTab = { tab: WorkspaceTab; key: number; lastUsed: number };
-const tabCacheMs = 30_000;
+// Keep screens for the session; only their saved data has a refresh interval.
+// Jobs and attention can change through agent or CLI work while this tab is hidden.
+const refreshAfter: Record<WorkspaceTab,number> = {
+    overview:15_000,jobs:0,attention:0,trash:30_000,
+    facts:60_000,resumes:60_000,extractions:60_000,answers:60_000,consents:60_000,
+    accounts:60_000,automation:60_000,settings:120_000
+};
 type Menu = 'materials'|'more';
 type Props = {
   tab: WorkspaceTab;
@@ -181,7 +186,8 @@ export default function Companion() {
     const [error,setError]=useState('');
     const [token,setToken]=useState('');
     const [tab,setTab]=useState<WorkspaceTab>('overview');
-    const [cachedTabs,setCachedTabs]=useState<CachedTab[]>([{tab:'overview',key:0,lastUsed:Date.now()}]);
+    const [visitedTabs,setVisitedTabs]=useState<WorkspaceTab[]>(['overview']);
+    const [refreshKeys,setRefreshKeys]=useState<Partial<Record<WorkspaceTab,number>>>({});
     const [requestedJob,setRequestedJob]=useState<string|null>(null);
     const [dirty,setDirty]=useState(false);
     const [attempt,setAttempt]=useState(0);
@@ -189,9 +195,22 @@ export default function Companion() {
     const content=useRef<HTMLElement|null>(null);
     const focusAfterNavigation=useRef(false);
     const activeTab=useRef<WorkspaceTab>('overview');
-    const nextCacheKey=useRef(0);
-    const invalidateCachedTabs=useCallback(() => {
-        setCachedTabs(current=>current.filter(page=>page.tab===activeTab.current));
+    const visited=useRef(new Set<WorkspaceTab>(['overview']));
+    const scrollPositions=useRef(new Map<WorkspaceTab,number>());
+    const mutationVersion=useRef(0);
+    const lastChecked=useRef(new Map<WorkspaceTab,{at:number;version:number}>([['overview',{at:Date.now(),version:0}]]));
+    const dirtyRef=useRef(false);
+    dirtyRef.current=dirty;
+    const markStoreChanged=useCallback(() => {
+        const version=++mutationVersion.current;
+        lastChecked.current.set(activeTab.current,{at:Date.now(),version});
+    },[]);
+    const refreshIfNeeded=useCallback((view:WorkspaceTab) => {
+        if(!visited.current.has(view))return;
+        const now=Date.now(), prior=lastChecked.current.get(view);
+        if(prior?.version===mutationVersion.current&&now-prior.at<refreshAfter[view])return;
+        lastChecked.current.set(view,{at:now,version:mutationVersion.current});
+        setRefreshKeys(current=>({...current,[view]:(current[view]??0)+1}));
     },[]);
     const dirtyChangedByTab=useMemo(() => Object.fromEntries(workspaceTabs.map(page=>[
         page,(value:boolean)=>{if(activeTab.current===page)setDirty(value);}
@@ -207,7 +226,7 @@ export default function Companion() {
             setError('Open the authenticated URL from your workspace launcher.');
             return;
         }
-        const client=createClient(token,invalidateCachedTabs);
+        const client=createClient(token,markStoreChanged);
         setClient(client);
         void client.boot(controller.signal).then(value => {
             if(active) {
@@ -239,24 +258,37 @@ export default function Companion() {
         focusAfterNavigation.current=false;
         requestAnimationFrame(()=>content.current?.focus({preventScroll:true}));
     },[tab]);
+    useLayoutEffect(()=>{window.scrollTo(0,scrollPositions.current.get(tab)??0);},[tab]);
+    useEffect(()=>{
+        const check=()=>{if(document.visibilityState==='visible'&&!dirtyRef.current)refreshIfNeeded(activeTab.current);};
+        window.addEventListener('focus',check);
+        window.addEventListener('online',check);
+        document.addEventListener('visibilitychange',check);
+        return ()=>{
+            window.removeEventListener('focus',check);
+            window.removeEventListener('online',check);
+            document.removeEventListener('visibilitychange',check);
+        };
+    },[refreshIfNeeded]);
     function navigate(next: WorkspaceTab): boolean {
         if(next===tab)return true;
         if(dirty&&!confirm('Discard unsaved changes?'))
             return false;
-        const now=Date.now();
-        const key=++nextCacheKey.current;
-        setCachedTabs(current=>{
-            const previous=current.find(page=>page.tab===next&&now-page.lastUsed<tabCacheMs);
-            const retained=current.filter(page=>page.tab!==next&&(page.tab!==tab||!dirty)
-                &&(page.tab===tab||now-page.lastUsed<tabCacheMs))
-                .map(page=>page.tab===tab?{...page,lastUsed:now}:page).slice(-2);
-            return [...retained,previous?{...previous,lastUsed:now}:{tab:next,key,lastUsed:now}];
+        scrollPositions.current.set(tab,window.scrollY);
+        if(dirty){visited.current.delete(tab);lastChecked.current.delete(tab);}
+        if(visited.current.has(next))refreshIfNeeded(next);
+        else {
+            visited.current.add(next);
+            lastChecked.current.set(next,{at:Date.now(),version:mutationVersion.current});
+        }
+        setVisitedTabs(current=>{
+            const retained=dirty?current.filter(view=>view!==tab):current;
+            return retained.includes(next)?retained:[...retained,next];
         });
         activeTab.current=next;
         setDirty(false);
         focusAfterNavigation.current=true;
         setTab(next);
-        window.scrollTo(0,0);
         return true;
     }
     const legacyHref=`/legacy/#${new URLSearchParams({
@@ -277,20 +309,24 @@ export default function Companion() {
         const markDirty=dirtyChangedByTab[view];
         switch(view) {
             case 'trash': return <Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={markDirty}
-                onMutation={() => { invalidateCachedTabs(); return refreshShellCounts(); }} countChanged={trashCountChanged}/>;
-            case 'automation': return <Automation client={client} dirtyChanged={markDirty}/>;
-            case 'accounts': return <Automation mode="accounts" client={client} dirtyChanged={markDirty}/>;
+                refreshKey={refreshKeys[view]??0} onMutation={() => { markStoreChanged(); return refreshShellCounts(); }} countChanged={trashCountChanged}/>;
+            case 'automation': return <Automation client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
+            case 'accounts': return <Automation mode="accounts" client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'overview': return <Overview client={client} openJobs={() => navigate('jobs')}
-                openWorkspace={nativeWorkspace ? navigate : undefined} legacyHref={legacyHref}/>;
-            case 'attention': return <NeedsAttention client={client} openJob={id => { if(navigate('jobs'))setRequestedJob(id); }}/>;
-            case 'facts': return <Facts client={client} dirtyChanged={markDirty}/>;
-            case 'resumes': return <Resumes client={client} dirtyChanged={markDirty} openExtractions={()=>navigate('extractions')}/>;
-            case 'extractions': return <Extractions client={client} dirtyChanged={markDirty} openResumes={()=>navigate('resumes')}/>;
+                openWorkspace={nativeWorkspace ? navigate : undefined} legacyHref={legacyHref} refreshKey={refreshKeys[view]??0}/>;
+            case 'attention': return <NeedsAttention client={client} refreshKey={refreshKeys[view]??0}
+                openJob={id => { if(navigate('jobs'))setRequestedJob(id); }}/>;
+            case 'facts': return <Facts client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
+            case 'resumes': return <Resumes client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
+                openExtractions={()=>navigate('extractions')}/>;
+            case 'extractions': return <Extractions client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
+                openResumes={()=>navigate('resumes')}/>;
             case 'answers':
-            case 'consents': return <Answers client={client} dirtyChanged={markDirty} consentOnly={view==='consents'}/>;
-            case 'settings': return <ApplicationSettings client={client} dirtyChanged={markDirty}/>;
+            case 'consents': return <Answers client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
+                consentOnly={view==='consents'}/>;
+            case 'settings': return <ApplicationSettings client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'jobs': return <Jobs client={client} dirtyChanged={markDirty} active={view===tab} claimsEnabled={nativeWorkspace}
-                requestedJobId={view===tab?requestedJob:null} jobOpened={jobOpened} openAnswers={() => navigate('answers')}
+                refreshKey={refreshKeys[view]??0} requestedJobId={view===tab?requestedJob:null} jobOpened={jobOpened} openAnswers={() => navigate('answers')}
                 workspaceChanged={refreshShellCounts}/>;
         }
     }
@@ -324,8 +360,8 @@ export default function Companion() {
             <p>
                 {boot.guidance}
             </p>
-        </section>:boot?.status==='ready'&&client? cachedTabs.map(page=><div className="workspace-page" key={page.key}
-            hidden={page.tab!==tab} inert={page.tab!==tab} aria-hidden={page.tab!==tab}>{renderPage(page.tab)}</div>):!error&&<p>Loading workspace…
+        </section>:boot?.status==='ready'&&client? visitedTabs.map(view=><div className="workspace-page" key={view}
+            hidden={view!==tab} inert={view!==tab} aria-hidden={view!==tab}>{renderPage(view)}</div>):!error&&<p>Loading workspace…
             </p>}
         </main>
     </>;
