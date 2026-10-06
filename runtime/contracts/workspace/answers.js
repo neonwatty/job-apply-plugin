@@ -5,7 +5,7 @@ import { copy, get, has, int, integer, keys, object, same, serialize, set, strin
 export const answerStates = new Set(['confirmed', 'inferred', 'missing', 'sensitive']);
 export const answerReviews = new Set(['accepted', 'pending', 'declined']);
 export const answerSensitivities = new Set(['none', 'personal', 'high']);
-export const answerPatchFields = new Set(['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent']);
+export const answerPatchFields = new Set(['question', 'aliases', 'value', 'state', 'source', 'scope', 'fieldClass', 'sensitivity', 'consentIntent', 'answerIntent']);
 export const fallback = (record, key, value) => has(record, key) ? get(record, key) : value;
 export const answerRevision = (record) => int(fallback(record, 'revision', integer(1n)));
 export const sensitiveAnswer = (record) => string(get(record, 'state')) === 'sensitive' || string(fallback(record, 'sensitivity', text('none'))) !== 'none';
@@ -25,6 +25,25 @@ export function consentIntent(record) {
     if (value === null)
         return null;
     return validateConsentIntent(value);
+}
+const veteranStatuses = new Set(['not_a_veteran', 'veteran_not_protected', 'protected_veteran', 'decline_to_identify']);
+export const veteranAnswerValues = {
+    not_a_veteran: 'I am not a veteran',
+    veteran_not_protected: 'I am a veteran, just not a protected veteran',
+    protected_veteran: 'I am a protected veteran',
+    decline_to_identify: 'I do not wish to self-identify',
+};
+export function validateAnswerIntent(value) {
+    const intent = object(value, 'answer intent');
+    if (intent.size !== 2 || string(get(intent, 'kind')) !== 'veteran_status'
+        || !veteranStatuses.has(string(get(intent, 'status')))) {
+        throw new JobsError('answer intent is invalid');
+    }
+    return intent;
+}
+export function answerIntent(record) {
+    const value = get(record, 'answerIntent');
+    return value === null ? null : validateAnswerIntent(value);
 }
 const whitespace = /[\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/u;
 export function normalizeAnswerQuestion(question) {
@@ -72,9 +91,22 @@ export function validateAnswer(key, value) {
         throw new JobsError('answer record sensitivity is unsupported');
     if (!/^[a-z][a-z0-9_]{0,63}$/.test(string(fallback(record, 'fieldClass', text('general'))) ?? ''))
         throw new JobsError('answer record field class is invalid');
-    if (consentIntent(record) !== null && (string(get(record, 'state')) !== 'sensitive'
+    const consent = consentIntent(record);
+    if (consent !== null && (string(get(record, 'state')) !== 'sensitive'
         || string(get(record, 'sensitivity')) !== 'high')) {
         throw new JobsError('consent defaults must be sensitive with high sensitivity');
+    }
+    const intent = answerIntent(record);
+    if (intent !== null) {
+        if (consent !== null)
+            throw new JobsError('structured answer cannot also be a consent default');
+        const scope = object(fallback(record, 'scope', emptyObject()), 'answer record scope');
+        if (string(get(record, 'state')) !== 'sensitive' || string(get(record, 'sensitivity')) !== 'high'
+            || string(get(record, 'fieldClass')) !== 'veteran_status'
+            || string(get(scope, 'country')) !== 'US'
+            || string(get(record, 'value')) !== veteranAnswerValues[string(get(intent, 'status'))]) {
+            throw new JobsError('structured veteran answer is inconsistent');
+        }
     }
     if (get(record, 'question') !== null && string(get(record, 'question')) === null)
         throw new JobsError('answer record question must be a string');

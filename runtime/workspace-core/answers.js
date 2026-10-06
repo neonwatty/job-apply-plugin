@@ -1,4 +1,4 @@
-import { answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
+import { answerIntent, answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, consentIntent, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers, validateConsentIntent } from '../contracts/workspace/answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { semanticLookup } from './answer-match.js';
@@ -6,8 +6,10 @@ import { previewAnswerCleanup } from './answer-cleanup.js';
 export function answerProjection(record, references, detail = false, reveal = false) {
     const view = answerView(record), result = emptyObject();
     for (const key of keys(view))
-        if (key !== 'value')
+        if (key !== 'value' && (key !== 'answerIntent' || reveal))
             set(result, key, get(view, key));
+    if (answerIntent(view) !== null)
+        set(result, 'hasAnswerIntent', true);
     set(result, 'hasValue', get(view, 'value') !== null);
     set(result, 'valueRedacted', sensitiveAnswer(view) && get(view, 'value') !== null);
     const count = references.get(string(get(view, 'key'))) ?? { sessions: 0n, history: 0n };
@@ -217,6 +219,8 @@ export class AnswersService {
             set(updated, 'fieldClass', fallback(incoming, 'fieldClass', current ? fallback(current, 'fieldClass', text('general')) : text('general')));
             if (has(incoming, 'consentIntent'))
                 set(updated, 'consentIntent', get(incoming, 'consentIntent'));
+            if (has(incoming, 'answerIntent'))
+                set(updated, 'answerIntent', get(incoming, 'answerIntent'));
             set(updated, 'sensitivity', fallback(incoming, 'sensitivity', text(string(get(updated, 'state')) === 'sensitive' ? 'high' : 'none')));
             set(updated, 'reviewStatus', current ? fallback(current, 'reviewStatus', text('accepted')) : text(requestedReview));
             set(updated, 'createdAt', current ? get(current, 'createdAt') ?? now : now);

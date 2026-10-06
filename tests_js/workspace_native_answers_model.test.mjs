@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 import { parse, serialize, object, get, set, text, copy, has } from '../runtime/contracts/workspace/values.js';
+import { veteranAnswerValues } from '../runtime/contracts/workspace/answers.js';
 
 const source = await readFile(new URL('../apps/companion/components/answer-model.ts', import.meta.url), 'utf8');
 const emitted = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText
@@ -92,4 +93,25 @@ test('consent draft starts sensitive and metadata-only edits do not replace hidd
     { consentIntent: { kind: 'opt_in', purpose: 'recruiting_messages' } });
   set(draft, 'consentIntent', null);
   assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch, { consentIntent: null });
+});
+test('revealed structured answer intent survives unrelated Companion edits', () => {
+  const base = record('{"key":"veteran","revision":3,"question":"Veteran Status","state":"sensitive","sensitivity":"high","scope":{"country":"US"},"value":"I am not a veteran","answerIntent":{"kind":"veteran_status","status":"not_a_veteran"}}');
+  const draft = model.answerDraft(base);
+  set(draft, 'aliases', parse('["Military status"]'));
+  assert.deepEqual(JSON.parse(model.answerMutation(base, draft, false)).patch, { aliases: ['Military status'] });
+  assert.deepEqual(JSON.parse(serialize(get(draft, 'answerIntent'))), { kind: 'veteran_status', status: 'not_a_veteran' });
+});
+test('Companion veteran selection updates the value and structured status together', () => {
+  const base = record('{"key":"veteran","revision":3,"question":"Veteran Status","state":"sensitive","sensitivity":"high","scope":{"country":"US"},"value":"I am not a veteran","answerIntent":{"kind":"veteran_status","status":"not_a_veteran"}}');
+  const draft = model.selectVeteranStatus(model.answerDraft(base), 'veteran_not_protected');
+  assert.deepEqual(JSON.parse(model.answerMutation(base, draft, true)).patch, {
+    value: 'I am a veteran, just not a protected veteran',
+    answerIntent: { kind: 'veteran_status', status: 'veteran_not_protected' },
+  });
+  assert.throws(() => model.selectVeteranStatus(draft, 'unknown'), /Invalid veteran status/);
+  for (const [status, value] of Object.entries(veteranAnswerValues)) {
+    const selected = model.selectVeteranStatus(model.answerDraft(base), status);
+    assert.equal(JSON.parse(serialize(get(selected, 'value'))), value);
+    assert.equal(JSON.parse(serialize(get(get(selected, 'answerIntent'), 'status'))), status);
+  }
 });

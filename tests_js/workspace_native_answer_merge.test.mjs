@@ -118,6 +118,16 @@ test('merging cannot discard or change a source consent intent', () => {
   assert.deepEqual(native(allowed).result.consentIntent, intent);
 });
 
+test('merging cannot discard or change a source veteran status', () => {
+  const intent = { kind: 'veteran_status', status: 'not_a_veteran' };
+  const sensitive = { state: 'sensitive', value: 'I am not a veteran', sensitivity: 'high', fieldClass: 'veteran_status',
+    scope: { country: 'US' }, rememberedWithConsentAt: at };
+  const mismatched = fixture(sensitive, { ...sensitive, answerIntent: intent });
+  assert.match(native(mismatched).error, /discard or change a structured answer/);
+  const allowed = fixture({ ...sensitive, answerIntent: intent }, { ...sensitive, answerIntent: intent });
+  assert.deepEqual(native(allowed).result.answerIntent, intent);
+});
+
 test('answer merge preserves numeric scope equality while separating booleans and exact large revisions', () => {
   const input = fixture({ scope: { nested: [1] } }, { scope: { nested: [1] } });
   const documentText = JSON.stringify(input.document).replace('"nested":[1]', '"nested":[1.0]');

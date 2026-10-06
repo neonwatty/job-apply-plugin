@@ -70,6 +70,12 @@ questions. If a page calls consent voluntary but validation requires its sole
 affirmative checkbox, preserve the draft and report that conflict; do not check
 the box merely to advance.
 
+When a saved decline applies and the site visibly rejects the unchecked
+control, hand off with the closed `site-required-opt-in-conflict` owner-review
+blocker and a `consent_choice` checklist item. Do not leave the saved decline
+as a missing answer; the blocker describes a site constraint, not missing
+applicant information. The Companion then presents a site consent conflict.
+
 After approval, map the saved decision to the visible control:
 
 | Control | Expression of an affirmative decision |

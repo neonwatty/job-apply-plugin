@@ -12,6 +12,7 @@ const agentTypes = {
     'mfa-required': 'browser_handoff', 'email-verification-required': 'browser_handoff',
     'account-creation-required': 'browser_handoff', 'unsupported-control': 'browser_handoff',
     'browser-state-uncertain': 'browser_handoff', 'consent-required': 'owner_review',
+    'site-required-opt-in-conflict': 'owner_review',
     'owner-input-required': 'information',
 };
 const clone = (value) => parse(serialize(value));

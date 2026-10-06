@@ -4,6 +4,7 @@ export const attentionReasons = {
   expired_agent_attempt: 'Expired agent attempt', claimless_interrupted_attempt: 'Interrupted agent attempt',
   awaiting_human_review: 'Awaiting your review', browser_action_required: 'Browser action required', needs_information: 'Needs information',
   owner_confirmation_required: 'Confirmation needed', pending_live_reconfirmation: 'Live confirmation needed',
+  site_consent_conflict: 'Site consent conflict',
 } as const;
 export const handoffActionLabels: Record<string,string> = {
   resume_upload: 'Attach resume', passport_country: 'Answer passport country',
@@ -30,6 +31,7 @@ export const attentionGuidance: Record<AttentionReason, string> = {
   needs_information: 'Open Job details and resolve missing facts, resume, or answers. Run preflight, then mark the job Ready.',
   owner_confirmation_required: 'Confirm the requested action for the visible application form, then mark the job Ready to resume the attempt.',
   pending_live_reconfirmation: 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.',
+  site_consent_conflict: 'The site requires an opt-in that conflicts with a saved decline. Review the visible notice and draft; do not opt in merely to advance.',
 };
 function str(d: Document, key: string, fallback?: string): string {
   const value = get(d,key);
