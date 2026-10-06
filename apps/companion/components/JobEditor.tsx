@@ -1,4 +1,4 @@
-import { useEffect,useId,useRef,useState } from 'react';
+import { useEffect,useId,useLayoutEffect,useRef,useState } from 'react';
 import type { ReactNode } from 'react';
 import { object,textFields,type JobFields,type Resume } from './contracts';
 import type { Editor } from './job-editor-state';
@@ -21,6 +21,9 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
     const dialog = useRef<HTMLDialogElement>(null);
     const heading = useRef<HTMLHeadingElement>(null);
     const [editing,setEditing] = useState(!editor.selected);
+    useLayoutEffect(() => {
+        if (editing && editor.selected) dialog.current?.querySelector<HTMLInputElement>('[name="url"]')?.focus();
+    }, [editing]);
     useEffect(() => {
         const opener = document.activeElement;
         const modal = dialog.current;
@@ -53,7 +56,12 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
         : String(editor.selected?.role || editor.selected?.company || 'Job details');
     return <dialog ref={dialog} aria-labelledby={titleId} className="editor job-drawer"
         onCancel={event => { event.preventDefault(); close(); }}
-        onClick={event => { if (event.target === dialog.current) close(); }}>
+        onClick={event => {
+            if (event.target !== dialog.current) return;
+            const bounds = dialog.current.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX >= bounds.right
+                || event.clientY < bounds.top || event.clientY >= bounds.bottom) close();
+        }}>
         <header className="job-drawer-header">
             <div><p className="eyebrow">{editor.selected ? 'Saved job' : 'New job'}</p>
                 <h2 ref={heading} tabIndex={-1} id={titleId}>{title}</h2></div>
@@ -78,27 +86,27 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
             <div className="job-drawer-summary">
                 <span className={`status-pill status-${editor.selected.status}`}>{editor.selected.status.replaceAll('_',' ')}</span>
                 <dl>
-                    <div><dt>Company</dt><dd>{editor.fields.company || 'Not set'}</dd></div>
-                    <div><dt>Location</dt><dd>{editor.fields.location || editor.fields.workplaceType || 'Not set'}</dd></div>
+                    {editor.fields.company && <div><dt>Company</dt><dd>{editor.fields.company}</dd></div>}
+                    {(editor.fields.location || editor.fields.workplaceType) && <div><dt>Location</dt><dd>{editor.fields.location || editor.fields.workplaceType}</dd></div>}
                     {editor.fields.employmentType && <div><dt>Type</dt><dd>{editor.fields.employmentType}</dd></div>}
                     {editor.fields.compensation && <div><dt>Compensation</dt><dd>{editor.fields.compensation}</dd></div>}
-                    <div><dt>Priority</dt><dd>{editor.fields.priority ? `${editor.fields.priority} of 5` : 'Not set'}</dd></div>
+                    {editor.fields.priority > 0 && <div><dt>Priority</dt><dd>{editor.fields.priority} of 5</dd></div>}
                     {editor.fields.resumeId && <div><dt>Resume</dt><dd>{resumes.find(item => item.id === editor.fields.resumeId)?.label ?? editor.fields.resumeId}</dd></div>}
                 </dl>
                 {postingUrl && <a className="job-posting-link" href={postingUrl} target="_blank" rel="noopener noreferrer">Open job posting ↗</a>}
                 {editor.fields.notes && <section><h3>Notes</h3><p>{editor.fields.notes}</p></section>}
                 {editor.fields.description && <details><summary>Description</summary><p>{editor.fields.description}</p></details>}
             </div>
+            {children && <div className="job-drawer-secondary">{children}</div>}
             <div className="job-drawer-actions"><button type="button" disabled={busy} onClick={refresh}>Refresh latest values</button>
                 <button className="primary" type="button" disabled={busy || editor.missing || Boolean(editor.latest)}
-                    onClick={() => { setEditing(true); requestAnimationFrame(() => dialog.current?.querySelector<HTMLInputElement>('[name="url"]')?.focus()); }}>Edit job</button></div>
-            {children && <div className="job-drawer-secondary">{children}</div>}
+                    onClick={() => setEditing(true)}>Edit job</button></div>
         </> : <form className="job-drawer-form" onSubmit={event => { event.preventDefault(); save(); }}>
             {editor.selected && <button type="button" disabled={busy} onClick={refresh}>Refresh latest values</button>}
             <fieldset disabled={busy}>
                 <div className="form-grid">
                     {textFields.map(key => <label key={key}>
-                        {key === 'url' ? 'Job URL' : key.replace(/([A-Z])/g,' $1')}
+                        {key === 'url' ? 'Job URL' : key.replace(/([A-Z])/g,' $1').replace(/^./, letter => letter.toUpperCase())}
                         {key === 'notes' || key === 'description' ? <textarea name={key} value={editor.fields[key]}
                             onChange={event => change({ [key]: event.target.value })} />
                             : <input name={key} type={key === 'url' ? 'url' : 'text'} required={key === 'url'}

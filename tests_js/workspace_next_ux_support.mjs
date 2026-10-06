@@ -7,12 +7,20 @@ async function capture(page, name) {
   const directory = process.env.JOB_APPLY_UX_SCREENSHOT_DIR;
   if (!directory) return;
   await mkdir(directory, { recursive: true });
-  await page.screenshot({ path: join(directory, name), fullPage: true });
+  await page.screenshot({ path: join(directory, name), fullPage: true, animations: 'disabled' });
 }
 
 export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await capture(page, 'mobile-menu.png');
+  assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).getAttribute('aria-expanded'), 'false');
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.evaluate(() => scrollTo(0, 0));
   await clickCompanionNav(page, 'Answers');
   assert.equal(await page.evaluate(() => scrollY), 0,
@@ -71,10 +79,14 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   const card = page.getByRole('button', { name: /Next synthetic role/ });
   await card.click();
+  await capture(page, 'job-details-desktop.png');
   await page.getByRole('button', { name: 'Edit job', exact: true }).click();
   const dialog = page.locator('dialog.job-drawer');
   await dialog.waitFor();
   await page.waitForFunction(() => document.activeElement?.getAttribute('name') === 'url');
+  const drawerBounds = await dialog.boundingBox();
+  await page.mouse.click(drawerBounds.x + 8, drawerBounds.y + drawerBounds.height - 8);
+  assert.equal(await dialog.isVisible(), true, 'clicking inside drawer padding keeps the job open');
   await dialog.locator('[name="notes"]').fill('Draft survives failed refresh');
   await page.route('**/api/state', route => route.fulfill({ status: 503, json: { error: { message: 'Offline fixture' } } }));
   await page.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Refresh').click());

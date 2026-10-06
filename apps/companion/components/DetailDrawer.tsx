@@ -24,7 +24,12 @@ export function DetailDrawer({ titleId,close,children,className='' }: {
     }, []);
     return <dialog ref={dialog} aria-labelledby={titleId} className={`detail-drawer ${className}`}
         onCancel={event => { event.preventDefault(); close(); }}
-        onClick={event => { if (event.target === dialog.current) close(); }}>
+        onClick={event => {
+            if (event.target !== dialog.current) return;
+            const bounds = dialog.current.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX >= bounds.right
+                || event.clientY < bounds.top || event.clientY >= bounds.bottom) close();
+        }}>
         {children}
     </dialog>;
 }

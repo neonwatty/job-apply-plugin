@@ -272,7 +272,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false }: { client:
         <div className="detail-drawer-summary"><dl>
           <div><dt>Status</dt><dd>{string(get(base, 'reviewStatus')) ?? 'Unknown'}</dd></div>
           <div><dt>Value</dt><dd>{get(base, 'valueRedacted') === true ? 'Sensitive value hidden' : get(base, 'hasValue') === true ? 'Value retained' : 'No retained value'}</dd></div>
-          <div><dt>Scope</dt><dd>{get(base, 'scope') ? 'Saved for the selected scope' : 'General'}</dd></div>
+          <div><dt>Scope</dt><dd>{get(base, 'scope') && object(get(base, 'scope'), 'scope').size ? 'Saved for the selected scope' : 'General'}</dd></div>
           {get(base, 'consentIntent') && <div><dt>Purpose</dt><dd>{string(get(object(get(base, 'consentIntent'), 'intent'), 'purpose')) ?? 'Not set'}</dd></div>}
         </dl></div>
         <div className="detail-drawer-actions"><button className="primary" type="button" disabled={busy || Boolean(latest)} onClick={() => setEditing(true)}>Edit {consentOnly ? 'default' : 'answer'}</button></div>

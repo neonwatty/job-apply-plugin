@@ -150,6 +150,18 @@ export async function nativeJobsBrowser(buildRoot) {
     const confirmed = JSON.parse((await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
       'resume-facts-confirm', '--resume-id', browserResume.id, '--expected-fact-revision', String(draft.revision),
       '--expected-content-revision', currentResume.contentRevision], { env: { PATH: '' } })).stdout);
+    await clickCompanionNav(page, 'Resumes');
+    await page.getByRole('button', { name: /My resume draft/ }).click();
+    const resumeFacts = page.getByRole('region', { name: 'Facts for My resume draft' });
+    await resumeFacts.getByRole('textbox', { name: 'Name', exact: true }).fill('Unsaved fact draft');
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    assert.equal(await resumeFacts.getByRole('textbox', { name: 'Name', exact: true }).inputValue(), 'Unsaved fact draft');
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    await page.getByLabel('Label', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
     const runInput = join(fixture.root, 'browser-application-run.json');
     await writeFile(runInput, JSON.stringify({ jobIds: [job.id] }), { mode: 0o600 });
     await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,

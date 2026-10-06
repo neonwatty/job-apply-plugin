@@ -43,6 +43,7 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     assert.match(bytes, /"decimal":\s*1\.0/);
 
     await page.getByRole('button', { name: 'Private remembered answer?', exact: true }).click();
+    await page.locator('dialog.answer-detail-drawer .detail-drawer-summary').getByText('General', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
     await page.getByRole('button', { name: 'Replace hidden answer', exact: true }).waitFor();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).count(), 0);

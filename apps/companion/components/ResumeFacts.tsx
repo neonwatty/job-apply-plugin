@@ -12,12 +12,12 @@ function copy(facts: Record<string, unknown>) { return JSON.parse(JSON.stringify
 
 /** Facts are loaded only for the resume the owner has opened. */
 export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { client: Client; resume: ResumeRecord;
-  dirtyChanged: (dirty: boolean) => void; statusChanged: (status: string) => void }) {
+  dirtyChanged: (dirty: boolean, busy: boolean) => void; statusChanged: (status: string) => void }) {
   const [version, setVersion] = useState<FactVersion | null>(null);
   const [draft, setDraft] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const dirty = version !== null && draft !== null && JSON.stringify(draft) !== JSON.stringify(version.facts);
-  useEffect(() => { dirtyChanged(dirty || busy); return () => dirtyChanged(false); }, [dirty, busy, dirtyChanged]);
+  useEffect(() => { dirtyChanged(dirty, busy); return () => dirtyChanged(false, false); }, [dirty, busy, dirtyChanged]);
   const path = `/api/resume-facts/${encodeURIComponent(resume.id)}`;
   function publishStatus(next: FactVersion | null) {
     statusChanged(next === null ? 'No extracted facts' : next.current === false ? 'Stale facts'
