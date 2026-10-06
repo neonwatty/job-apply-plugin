@@ -59,7 +59,7 @@
     },
     {
       "path": "browser-native-answers-surfaces.json",
-      "sha256": "78b0da7541ea8313da77a80f845ce161605f38075490f73dc5bcef3a7fe06e3d"
+      "sha256": "f5ddcaa594b1ccd2236a4cc6f7327986ba7486091eefd88fcd13682ae3da8615"
     },
     {
       "path": "browser-native-automation-surfaces.json",
@@ -415,7 +415,7 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "46f95155415736c33feac520857f51f7ffe5ef9fa58c1b61ab0fd7ce46cb98e6"
+      "sha256": "fc2f9e4d091cbadd754731e1349ab3c92445a95044dd6988423c3135d0c2eb93"
     },
     {
       "path": "source-catalog-native-automation-ux.json",

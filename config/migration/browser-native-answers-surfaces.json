@@ -468,13 +468,21 @@
       "kind": "browser",
       "export": "DetailDrawer",
       "node": "UIF",
-      "sources": ["apps/companion/components/DetailDrawer.tsx"],
+      "sources": [
+        "apps/companion/components/DetailDrawer.tsx"
+      ],
       "effects": "unclassified",
       "scenarios": {
-        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
-        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
-        "concurrency": "unverified", "interruption": "unverified",
-        "recovery": "unverified", "platform": "unverified"
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
       }
     }
   ]
