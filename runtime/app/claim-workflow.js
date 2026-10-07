@@ -7,6 +7,7 @@ import { TaskProtocolError, receiptLimit } from '../contracts/workspace/workflow
 import { runDurableOperation } from '../harness/run.js';
 import { executeWorkflowTool } from '../harness/tool-gateway.js';
 import { attemptIdentity, attemptProfile, attemptRegistry, claimEvent, safeExit } from '../workflows/applications/attempt.js';
+import { claimSessionInput } from '../workflows/applications/attempt-session.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 const fingerprint = (value) => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
 /** Lives in the broker. No bearer enters the task ledger, response, or host proposal. */
@@ -83,7 +84,7 @@ export class ClaimWorkflow {
                     await executeWorkflowTool({ kind: 'callTool', operationId: event.operationId, taskId: task.taskId,
                         expectedRevision: current?.revision ?? task.revision, actionId: tool, arguments: event }, { taskId: task.taskId, revision: current?.revision ?? task.revision, workflow: attemptIdentity, canLeave: false,
                         allowedActions: [{ kind: 'callTool', id: tool, toolId: tool }], complete: false, terminal: false, childDepth: 0 }, this.registry, access, new Map([[tool, async () => {
-                                value = await domain.execute(event.kind, event.jobId, BigInt(event.jobRevision), capability?.token ?? null, event.session === undefined ? undefined : object(fromJSON(event.session), 'session'), event.status);
+                                value = await domain.execute(event.kind, event.jobId, BigInt(event.jobRevision), capability?.token ?? null, event.session === undefined ? undefined : claimSessionInput(event.session), event.status);
                             }]]));
                     if (!safeExit(event))
                         this.registry.resolve(attemptIdentity, this.access());

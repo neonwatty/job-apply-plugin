@@ -13,6 +13,7 @@ import type { ClaimsService } from '../workspace-core/claims.js';
 import { runDurableOperation } from '../harness/run.js';
 import { executeWorkflowTool } from '../harness/tool-gateway.js';
 import { attemptIdentity, attemptProfile, attemptRegistry, claimEvent, safeExit } from '../workflows/applications/attempt.js';
+import { claimSessionInput } from '../workflows/applications/attempt-session.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 const fingerprint = (value: unknown): string => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
 interface Capability {taskId:string; jobId:string; token:Value}
@@ -82,7 +83,7 @@ export class ClaimWorkflow {
             allowedActions:[{kind:'callTool',id:tool,toolId:tool}],complete:false,terminal:false,childDepth:0},
           this.registry, access, new Map([[tool, async () => {
             value = await domain.execute(event.kind,event.jobId,BigInt(event.jobRevision),capability?.token ?? null,
-              event.session === undefined ? undefined : object(fromJSON(event.session), 'session'),event.status);
+              event.session === undefined ? undefined : claimSessionInput(event.session),event.status);
           }]]));
           if (!safeExit(event)) this.registry.resolve(attemptIdentity, this.access());
           const output = object(value, 'claim result');

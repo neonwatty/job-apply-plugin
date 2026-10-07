@@ -4,7 +4,7 @@ import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { setup,read,write,snapshot,readyPacket,host,event,acquire,pending } from './workspace_durable_claims_support.mjs';
 async function unchanged(state,run,pattern) {
   const before=await snapshot(state.root);
-  await assert.rejects(run,pattern);assert.deepEqual(await snapshot(state.root),before);
+  await assert.rejects(async()=>run(),pattern);assert.deepEqual(await snapshot(state.root),before);
 }
 test('durable claim workflow preserves the broker capability and canonical lifecycle',async t=>{
   const fixture=await nativeFixture();
@@ -86,6 +86,30 @@ test('durable claim workflow preserves the broker capability and canonical lifec
       await unchanged(state,()=>workflow.execute(restart),/user_event_required/);
       const again=await workflow.execute(restart,restart);assert.equal(again.receipt.task.subject.jobRevision,'5');
       assert.equal((await read(state.root,'jobs.json')).jobs.job.status,'in_progress');
+      await workflow.close();
+    });
+    await t.test('nested session and readiness revisions preserve exact integers beyond the JSON safe range',async()=>{
+      const state=await setup(fixture,'claim-exact-revisions'),{workflow}=host(state);
+      await state.claims.select('job',1n,true);
+      const jobs=await read(state.root,'jobs.json');jobs.jobs.job.revision=Number.MAX_SAFE_INTEGER;
+      await write(state.root,'jobs.json',jobs);
+      const request=event('acquire',null,{jobRevision:String(Number.MAX_SAFE_INTEGER)});
+      const task=(await workflow.execute(request,request)).receipt.task;
+      assert.equal(task.subject.jobRevision,'9007199254740992');
+      await unchanged(state,()=>workflow.execute(event('progress',task,{session:{status:'active',attemptRevision:9007199254740992}})),/invalid_proposal/);
+      const progress=await workflow.execute(event('progress',task,{session:{status:'active',attemptRevision:task.subject.jobRevision}}));
+      const packet=readyPacket(task.subject.jobRevision),observation='9007199254740995';
+      packet.expectedObservationRevision=observation;packet.formManifest.observationRevision=observation;
+      packet.observation.observationRevision=observation;
+      for(const control of packet.observation.controls) control.observationRevision=observation;
+      const session={status:'review',attemptRevision:task.subject.jobRevision,readinessInput:packet,handoffChecklist:[],
+        browserHandoff:{state:'ready_for_owner',reasonCode:'final-review-required',revision:'1'}};
+      const review=event('handoff',progress.receipt.task,{status:'awaiting_review',session});
+      const stale=structuredClone(review);stale.session.readinessInput.attemptRevision='9007199254740991';
+      await unchanged(state,()=>workflow.execute(stale),/not bound to the current attempt/);
+      const done=await workflow.execute(review);
+      assert.equal(done.receipt.outcome,'awaiting_review');
+      assert.equal(done.receipt.task.subject.jobRevision,'9007199254740993');
       await workflow.close();
     });
     await t.test('revocation during staging aborts before journal writes',async()=>{
