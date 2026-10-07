@@ -1,6 +1,6 @@
 # Agent workflow experiment
 
-Status: proposed implementation plan; worktree and local integration branch created. No runtime or prompt changes implemented.
+Status: implementation authorized on 2026-10-07. See the [implementation ledger](agent-workflow-progress.md) for completed work and outstanding gates.
 
 Prepared 2026-10-07 from remote `staging` at `f95b4947453ad6c6abc9cc0e81c3e443706d4714`, verified against the remote on that date.
 
@@ -26,7 +26,7 @@ Use separate child worktrees only when needed to keep a PR diff isolated. They m
 
 Record the integration commit, test receipt, and remaining limitation for every slice below. Bring staging changes into the integration branch at deliberate checkpoints; retest after reconciliation. Avoid rebasing a shared integration branch after PRs depend on it. A final promotion PR targets `staging` only after the acceptance gates pass and the experimental result is reviewed. Plugin publication and use of the owner's real Store are separate from this experiment.
 
-Current setup: integration branch exists locally; no remote branch, PR, commit of this plan, release, or installed-plugin change has been made by this planning task.
+The planning snapshot initially created a local integration branch and uncommitted documents. Implementation branch and publication status are recorded in the implementation ledger. The first implementation PR includes the plan together with the contracts; its integration base is the unchanged staging snapshot.
 
 ## Architectural decision
 
@@ -152,7 +152,7 @@ Keep skill entry point names and package discovery paths. State exactly which ru
 
 ## Implementation slices and PRs
 
-Each slice gets a PR against the experimental integration branch. The owner updates this ledger with exact commits and evidence. All rows are currently planned.
+Each slice gets a PR against the experimental integration branch. Record exact commits and evidence in the [implementation ledger](agent-workflow-progress.md); the rows below define the planned scope and exit criteria.
 
 | Slice | Changes and principal files | Required exit evidence |
 | --- | --- | --- |
