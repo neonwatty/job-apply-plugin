@@ -1,17 +1,37 @@
+import { validateWorkflowCommit, projectWorkflowCommit } from '../contracts/workspace/workflow-journal.js';
 import { validateCoordinator } from '../contracts/workspace/claims.js';
 import { validateAnswerHistory, validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
 import { validateJobsDocument, safeId } from '../contracts/workspace/jobs.js';
 import { fromJSON, get, has, int, integer, keys, object, parse, serialize, set, string, JobsError } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateApplicationAuthorityDocument } from '../contracts/workspace/application-authority.js';
-export const claimOperationKinds = new Set(['acquire', 'review_restart', 'recover', 'handoff']);
+export const claimOperationKinds = new Set(['acquire', 'review_restart', 'recover', 'handoff', 'workflow_progress']);
 export function validateClaimJournal(journal) {
     if (journal.size !== 2 || int(get(journal, 'schemaVersion')) !== 1n || !has(journal, 'operation'))
         throw new JobsError('invalid coordinator journal');
     const operation = object(get(journal, 'operation'), 'coordinator journal operation');
     const kind = string(get(operation, 'kind'));
+    if (has(operation, 'workflow'))
+        validateWorkflowCommit(operation);
+    if (kind === 'workflow_progress') {
+        const fields = ['kind', 'jobId', 'at', 'expectedRevision', 'session', 'resultClaim', 'workflow'];
+        if (operation.size !== fields.length || keys(operation).some(key => !fields.includes(key)))
+            throw new JobsError('invalid workflow progress journal');
+        const id = safeId(string(get(operation, 'jobId')));
+        const session = validateAnswerSession(get(operation, 'session'));
+        const coordinator = object(fromJSON({ schemaVersion: 1, claim: null }), 'coordinator');
+        set(coordinator, 'claim', get(operation, 'resultClaim'));
+        validateCoordinator(coordinator);
+        if (!has(operation, 'workflow') || !string(get(operation, 'at'))
+            || int(get(operation, 'expectedRevision')) === null || int(get(operation, 'expectedRevision')) < 1n
+            || string(get(session, 'applicationId')) !== id || string(get(session, 'status')) !== 'active'
+            || get(coordinator, 'claim') === null || string(get(object(get(coordinator, 'claim'), 'claim'), 'jobId')) !== id) {
+            throw new JobsError('invalid workflow progress journal');
+        }
+        return operation;
+    }
     const hasAuthority = has(operation, 'applicationAuthority');
-    const fields = ['kind', 'operationId', 'jobId', 'at', 'historyEvent', 'resultClaim', ...(hasAuthority ? ['applicationAuthority'] : []),
+    const fields = ['kind', 'operationId', 'jobId', 'at', 'historyEvent', 'resultClaim', ...(has(operation, 'workflow') ? ['workflow'] : []), ...(hasAuthority ? ['applicationAuthority'] : []),
         ...(kind === 'recover' ? [] : ['sourceStatus', 'targetStatus', 'expectedRevision']), ...(kind === 'handoff' ? ['session'] : [])];
     if (!claimOperationKinds.has(kind) || operation.size !== fields.length || keys(operation).some(key => !fields.includes(key)))
         throw new JobsError('coordinator journal operation is invalid');
@@ -50,8 +70,15 @@ export function validateClaimJournal(journal) {
     return operation;
 }
 function project(operation, jobs) {
-    if (!has(operation, 'targetStatus'))
+    if (!has(operation, 'targetStatus')) {
+        if (string(get(operation, 'kind')) === 'workflow_progress') {
+            const job = object(get(object(get(jobs, 'jobs'), 'jobs'), string(get(operation, 'jobId'))), 'job');
+            if (get(job, 'deletedAt') !== null || string(get(job, 'status')) !== 'in_progress'
+                || int(get(job, 'revision')) !== int(get(operation, 'expectedRevision')))
+                throw new JobsError('workflow progress job changed');
+        }
         return null;
+    }
     const next = validateJobsDocument(object(parse(serialize(jobs)), 'jobs'));
     const id = string(get(operation, 'jobId')), current = get(object(get(next, 'jobs'), 'jobs'), id);
     if (current === null || get(object(current, 'job'), 'deletedAt') !== null)
@@ -73,6 +100,14 @@ function project(operation, jobs) {
         throw new JobsError('coordinator journal cannot be reconciled');
     return null;
 }
+function projected(operation, jobs) {
+    const domain = project(operation, jobs);
+    const next = domain ?? object(parse(serialize(jobs)), 'jobs');
+    const changed = projectWorkflowCommit(operation, next);
+    if (changed)
+        set(object(get(next, 'metadata'), 'metadata'), 'updatedAt', get(operation, 'at'));
+    return domain || changed ? validateJobsDocument(next) : null;
+}
 export class NativeClaimJournal {
     write;
     history;
@@ -83,17 +118,19 @@ export class NativeClaimJournal {
         this.checkpoint = checkpoint;
     }
     async recover(journal, jobs) {
-        const operation = validateClaimJournal(journal), next = project(operation, jobs);
-        const event = object(get(operation, 'historyEvent'), 'history event');
+        const operation = validateClaimJournal(journal), next = projected(operation, jobs);
+        const event = has(operation, 'historyEvent') ? object(get(operation, 'historyEvent'), 'history event') : null;
         // Validate every destination and collision before the first document write.
-        await this.history.isIdempotent(event);
+        if (event)
+            await this.history.isIdempotent(event);
         if (next)
             await this.write('jobs', next);
         if (has(operation, 'session'))
             await this.write(`sessions/${string(get(operation, 'jobId'))}`, object(get(operation, 'session'), 'session'));
         if (has(operation, 'applicationAuthority'))
             await this.write('application-authority', validateApplicationAuthorityDocument(get(operation, 'applicationAuthority')));
-        await this.history.append(event);
+        if (event)
+            await this.history.append(event);
         await this.checkpoint('history');
         const coordinator = object(fromJSON({ schemaVersion: 1, claim: null }), 'coordinator');
         set(coordinator, 'claim', get(operation, 'resultClaim'));
@@ -104,8 +141,9 @@ export class NativeClaimJournal {
         const journal = object(fromJSON({ schemaVersion: 1, operation: null }), 'journal');
         set(journal, 'operation', operation);
         validateClaimJournal(journal);
-        project(operation, jobs);
-        await this.history.isIdempotent(object(get(operation, 'historyEvent'), 'history event'));
+        projected(operation, jobs);
+        if (has(operation, 'historyEvent'))
+            await this.history.isIdempotent(object(get(operation, 'historyEvent'), 'history event'));
         await this.write('coordinator-journal', journal);
         await this.recover(journal, jobs);
     }

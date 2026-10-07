@@ -2,7 +2,7 @@ import { fromJSON, serialize } from './values.js';
 import type { Value } from './values.js';
 
 export type TaskStatus = 'active' | 'waiting' | 'finished' | 'cancelled';
-export type TaskOutcome = 'started' | 'question_pending' | 'job_ready' | 'cancelled' | 'declined';
+export type TaskOutcome = 'started' | 'question_pending' | 'job_ready' | 'cancelled' | 'declined' | 'claim_acquired' | 'claim_recovered' | 'progress_saved' | 'needs_info' | 'awaiting_review';
 export interface WorkflowTask {
   taskId: string;
   workflow: { id: string; version: number };
@@ -24,14 +24,14 @@ export interface WorkflowLedger {
 }
 export class TaskProtocolError extends Error {
   constructor(readonly code: 'invalid_task_state' | 'operation_conflict' | 'task_conflict' | 'stale_revision'
-    | 'history_full' | 'handoff_required' | 'user_event_required' | 'action_unavailable') {
+    | 'history_full' | 'handoff_required' | 'user_event_required' | 'action_unavailable' | 'broker_unavailable') {
     super(code); this.name = 'TaskProtocolError';
   }
 }
 export const workflowMetadataKey = 'agentWorkflows';
 export const taskLimit = 64, receiptLimit = 256;
 const statuses = ['active', 'waiting', 'finished', 'cancelled'];
-const outcomes = ['started', 'question_pending', 'job_ready', 'cancelled', 'declined'];
+const outcomes = ['started', 'question_pending', 'job_ready', 'cancelled', 'declined', 'claim_acquired', 'claim_recovered', 'progress_saved', 'needs_info', 'awaiting_review'];
 function check(value: unknown): asserts value { if (!value) throw new TaskProtocolError('invalid_task_state'); }
 function record(value: unknown, fields?: string[]): Record<string, unknown> {
   check(value !== null && typeof value === 'object' && !Array.isArray(value));

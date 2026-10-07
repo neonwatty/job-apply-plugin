@@ -10,7 +10,7 @@ export class TaskProtocolError extends Error {
 export const workflowMetadataKey = 'agentWorkflows';
 export const taskLimit = 64, receiptLimit = 256;
 const statuses = ['active', 'waiting', 'finished', 'cancelled'];
-const outcomes = ['started', 'question_pending', 'job_ready', 'cancelled', 'declined'];
+const outcomes = ['started', 'question_pending', 'job_ready', 'cancelled', 'declined', 'claim_acquired', 'claim_recovered', 'progress_saved', 'needs_info', 'awaiting_review'];
 function check(value) { if (!value)
     throw new TaskProtocolError('invalid_task_state'); }
 function record(value, fields) {
