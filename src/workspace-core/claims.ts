@@ -1,13 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { claimExpired, claimHeartbeatSeconds, claimLeaseSeconds, heartbeatClaim, makeClaim, publicClaim, requireClaim, requireJobUnclaimed } from '../contracts/workspace/claims.js';
-import { buildClaimSession, validateClaimHandoff } from '../contracts/workspace/claim-session.js';
-import { validateReviewRestartEvidence } from '../contracts/workspace/review-restart.js';
+import { claimHeartbeatSeconds, claimLeaseSeconds, heartbeatClaim, makeClaim, publicClaim, requireClaim, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { safeId, validateJob } from '../contracts/workspace/jobs.js';
-import { strip } from '../contracts/workspace/job-url.js';
+import { requireClaimOwner, requireSelectionIntent, requireRestartConfirmation, requireJobRevision, requireHandoffTarget } from '../contracts/workspace/application-intents.js';
 import { copy, fromJSON, get, has, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import type { NativeResumeFiles } from '../store/native-resume-files.js';
-import { preflightJobRecord } from './job-preflight.js';
+import { activeApplicationJob, inspectSelection, inspectAcquisition, inspectReviewRestart, inspectRecovery, inspectProgress, inspectHandoff } from '../contracts/workspace/application-policy.js';
 import { consumeAutofillAuthority } from '../contracts/workspace/application-authority.js';
 
 export interface ClaimTransaction {
@@ -23,15 +21,6 @@ export interface ClaimRepository {
   claimTransaction<T>(operation:(transaction:ClaimTransaction)=>Promise<T>):Promise<T>;
 }
 const doc = (value: unknown): Document => object(fromJSON(value),'claim result');
-function activeJob(jobs:Document,id:string,error='job does not exist'):Document {
-  const value = get(object(get(jobs,'jobs'),'jobs'),id);
-  if (value === null || get(object(value,'job'),'deletedAt') !== null) throw new JobsError(error);
-  return object(value,'job');
-}
-function owner(value:Value):void {
-  const label = string(value);
-  if (label === null || !strip(label)) throw new JobsError('owner label must be a non-empty string');
-}
 function transitioned(job:Document,target:string,at:string):Document {
   const result = copy(job);
   set(result,'status',text(target));set(result,'closedOutcome',null);
@@ -67,7 +56,7 @@ export class ClaimsService {
     safeId(id);safeId(resumeId);
     if (!confirmed) throw new JobsError('resume and facts require owner confirmation in chat');
     return this.repository.claimTransaction(async tx => {
-      const job = activeJob(tx.jobs,id);
+      const job = activeApplicationJob(tx,id);
       if (int(get(job,'revision')) !== expectedJob) throw new JobsError('job revision conflict');
       if (!['saved','needs_info','ready'].includes(string(get(job,'status'))!)) throw new JobsError('job cannot change its input selection');
       requireJobUnclaimed(tx.coordinator,id);
@@ -101,14 +90,9 @@ export class ClaimsService {
   }
   select(id:string,expectedRevision:bigint,confirmed:boolean):Promise<Value> {
     safeId(id);
-    if (confirmed !== true) throw new JobsError('task selection requires owner confirmation');
-    if (typeof expectedRevision !== 'bigint') throw new JobsError('task selection requires an exact revision');
+    requireSelectionIntent(confirmed,expectedRevision);
     return this.repository.claimTransaction(async tx => {
-      const job = activeJob(tx.jobs,id,'task selection job is unavailable');
-      if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('task selection revision conflict');
-      requireJobUnclaimed(tx.coordinator,id);
-      if (!['saved','needs_info','ready'].includes(string(get(job,'status'))!)) throw new JobsError('task selection job is unavailable');
-      if (get(await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs),'ready') !== true) throw new JobsError('task selection preflight failed');
+      const job = await inspectSelection(tx,id,expectedRevision);
       if (string(get(job,'status')) === 'ready') return set(doc({action:'noop'}),'job',projectJob(job));
       const updated = transitioned(job,'ready',this.now());
       set(object(get(tx.jobs,'jobs'),'jobs'),id,updated);
@@ -118,15 +102,9 @@ export class ClaimsService {
     });
   }
   acquire(id:string,ownerLabel:Value,expectedRevision:bigint):Promise<Value> {
-    safeId(id);owner(ownerLabel);
+    safeId(id);requireClaimOwner(ownerLabel);
     return this.repository.claimTransaction(async tx => {
-      const current = get(tx.coordinator,'claim');
-      if (current !== null) throw new JobsError(claimExpired(object(current,'claim'),this.now()) ? 'expired claim requires explicit same-job recovery' : 'another live job claim already exists');
-      const job = activeJob(tx.jobs,id);
-      if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
-      if (string(get(job,'status')) !== 'ready') throw new JobsError('only a ready job can be acquired');
-      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs);
-      if (get(preflight,'ready') !== true) throw new JobsError('job is not ready');
+      const {job,preflight} = await inspectAcquisition(tx,id,expectedRevision,this.now);
       const now = this.now(), {claim,token} = makeClaim(id,ownerLabel,now);
       const resume = copy(object(get(object(get(tx.resumes,'resumes'),'resumes'),string(get(preflight,'resumeId'))!),'resume'));
       set(resume,'path',string(get(resume,'storageKind')) === 'managed' ? text(tx.files.path(resume)) : get(resume,'path'));
@@ -137,21 +115,12 @@ export class ClaimsService {
   }
   restart(id:string,ownerLabel:Value,expectedRevision:bigint,ownerConfirmedNotSubmitted:boolean):Promise<Value> {
     safeId(id);
-    if (ownerConfirmedNotSubmitted !== true) throw new JobsError('review restart requires explicit owner confirmation that the application was not submitted');
-    owner(ownerLabel);
-    if (typeof expectedRevision !== 'bigint' || expectedRevision < 1n) throw new JobsError('job revision is invalid');
+    requireRestartConfirmation(ownerConfirmedNotSubmitted);
+    requireClaimOwner(ownerLabel);
+    requireJobRevision(expectedRevision);
     return this.repository.claimTransaction(async tx => {
-      const current = get(tx.coordinator,'claim');
-      if (current !== null) throw new JobsError(claimExpired(object(current,'claim'),this.now()) ? 'expired claim requires explicit same-job recovery' : 'another live job claim already exists');
-      const job = activeJob(tx.jobs,id);
-      if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
-      if (string(get(job,'status')) !== 'awaiting_review') throw new JobsError('review restart requires an awaiting_review job');
-      const session = tx.sessions.find(item => string(get(item,'applicationId')) === id) ?? null;
-      const event = validateReviewRestartEvidence(job,session,tx.history);
-      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs);
-      const rawResume = get(object(get(tx.resumes,'resumes'),'resumes'),string(get(preflight,'resumeId')) ?? '');
-      if (get(preflight,'ready') !== true || rawResume === null || string(get(object(rawResume,'resume'),'storageKind')) !== 'managed') throw new JobsError('job is not ready with a current managed resume');
-      const resume = copy(object(rawResume,'resume'));
+      const {job,resume:rawResume,event} = await inspectReviewRestart(tx,id,expectedRevision,this.now);
+      const resume = copy(rawResume);
       set(resume,'path',text(tx.files.path(resume)));
       const now = this.now(), {claim,token} = makeClaim(id,ownerLabel,now);
       // The prior review remains immutable evidence; new progress belongs to the new revision.
@@ -169,14 +138,9 @@ export class ClaimsService {
     });
   }
   recover(id:string,ownerLabel:Value):Promise<Value> {
-    safeId(id);owner(ownerLabel);
+    safeId(id);requireClaimOwner(ownerLabel);
     return this.repository.claimTransaction(async tx => {
-      const old = get(tx.coordinator,'claim');
-      if (old === null || string(get(object(old,'claim'),'jobId')) !== id) throw new JobsError('explicit recovery must name the expired claimed job');
-      const raw = get(object(get(tx.jobs,'jobs'),'jobs'),id);
-      if (raw === null || string(get(object(raw,'job'),'status')) !== 'in_progress') throw new JobsError('expired claim job is not in progress');
-      if (!claimExpired(object(old,'claim'),this.now())) throw new JobsError('live claim cannot be recovered');
-      const job = object(raw,'job'), now = this.now(), {claim,token} = makeClaim(id,ownerLabel,now);
+      const job = inspectRecovery(tx,id,this.now), now = this.now(), {claim,token} = makeClaim(id,ownerLabel,now);
       await tx.commit(operation('recover',job,now,'claim-recovered','in_progress',claim));
       const result = doc({token});set(result,'job',job);
       return set(result,'claim',publicClaim(claim,this.now()));
@@ -184,26 +148,15 @@ export class ClaimsService {
   }
   progress(id:string,token:Value,incoming:Document):Promise<Value> {
     return this.repository.claimTransaction(async tx => {
-      requireClaim(tx.coordinator,tx.jobs,id,token,this.now());
-      if (get(await preflightJobRecord(activeJob(tx.jobs,id),tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs),'ready') !== true)
-        throw new JobsError('confirmed application inputs changed');
-      const session = this.session(tx,activeJob(tx.jobs,id),incoming);
-      if (string(get(session,'status')) !== 'active') throw new JobsError('claim progress session must remain active');
+      const session = await inspectProgress(tx,id,token,incoming,this.now);
       await tx.saveSession(session);
       return session;
     });
   }
   handoff(id:string,token:Value,status:string,incoming:Document,expectedRevision:bigint):Promise<Value> {
-    if (!['needs_info','awaiting_review'].includes(status)) throw new JobsError('claimed handoff status is unsupported');
+    requireHandoffTarget(status);
     return this.repository.claimTransaction(async tx => {
-      requireClaim(tx.coordinator,tx.jobs,id,token,this.now());
-      const job = activeJob(tx.jobs,id);
-      if (status === 'awaiting_review'
-        && get(await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs),'ready') !== true)
-        throw new JobsError('confirmed application inputs changed');
-      if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
-      const now = this.now(), session = this.session(tx,job,incoming,now);
-      validateClaimHandoff(session,incoming,status,get(job,'revision'));
+      const {job,session,at:now} = await inspectHandoff(tx,id,token,status,incoming,expectedRevision,this.now);
       const op = operation('handoff',job,now,status === 'needs_info' ? 'job-blocked' : 'reviewed',status,null);
       if (status === 'awaiting_review') {
         const authority = consumeAutofillAuthority(tx.authority, id, now);
@@ -212,10 +165,5 @@ export class ClaimsService {
       set(op,'session',session);await tx.commit(op);
       const result = doc({claim:null});set(result,'job',transitioned(job,status,now));return set(result,'session',session);
     });
-  }
-  private session(tx:ClaimTransaction,job:Document,incoming:Document,now=this.now()):Document {
-    const id = string(get(job,'id'))!;
-    return buildClaimSession(id,incoming,{now,attemptRevision:get(job,'revision'),ats:get(job,'ats'),
-      existing:tx.sessions.find(session => string(get(session,'applicationId')) === id) ?? null, answers:tx.answers});
   }
 }
