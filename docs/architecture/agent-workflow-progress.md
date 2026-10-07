@@ -6,7 +6,7 @@ Integration branch: `codex/experimental-agent-workflows`, rooted at staging `f95
 
 ## Slice 1: typed workflow and proposal contracts
 
-Implementation is present; review, broad validation, and PR publication are pending.
+Implementation and initial independent review are complete; the explicit safe-exit policy is under follow-up review. Broad validation and PR publication are pending.
 
 | File | Implemented responsibility |
 | --- | --- |
@@ -23,7 +23,7 @@ The six TypeScript modules have generated `runtime/harness/` counterparts. No in
 
 The new protocol uses decimal strings for exact revisions. It accepts bounded JSON-shaped proposal data and takes workflow context exclusively from the caller's canonical projection. Registrations and schema parsers are trusted program code. Parsers may decode arguments into internal types, and schema exceptions are replaced by fixed error codes. A successful validation does not grant execution authority, attest user approval, persist a pause, or prove browser state.
 
-Focused verification: runtime compilation passed (242 modules); all ten contract tests passed. The plan commit passed all eleven commit-hook suites. Broad source/runtime/release gates and independent review remain pending at this checkpoint.
+Focused verification: initial runtime compilation passed (242 modules) and all ten original contract tests passed. Both the plan and contracts commits passed all eleven commit-hook suites. Native review and five independent roles completed; the native exit-after-revocation candidate was independently rejected because that policy was not yet specified. We then explicitly defined safe exit after revocation in the plan and contract and added a regression scenario; continuation and destination capability checks remain required. Follow-up verification is pending at this checkpoint.
 
 ## Next slices
 

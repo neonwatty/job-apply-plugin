@@ -65,7 +65,7 @@ export interface ActiveTask {
   readonly taskId: string;
   readonly revision: string;
   readonly workflow: WorkflowIdentity;
-  /** False while a safe handoff or claim release is still required. */
+  /** Code permits exit after safe handoff/claim release, even if old profile access is revoked. */
   readonly canLeave: boolean;
 }
 

@@ -148,6 +148,22 @@ test('routing respects safe handoff and validates user events without applying t
   assert.equal(active.revision, '9007199254740993');
 });
 
+test('revocation blocks continuation but allows safe cancellation or an authorized task switch', () => {
+  const { registry } = setup();
+  const revoked = { enabled: ['job-apply', 'resume'], authorized: ['resume'] };
+  const context = { activeTask: { ...active, canLeave: true }, clarificationIds: ['choose-job'] };
+  assert.equal(validateRoute(route('cancel'), context, registry, revoked).kind, 'cancel');
+  const change = route('change', { workflow: { id: 'resumes.extract', version: 1 } });
+  assert.equal(validateRoute(change, context, registry, revoked).workflow.id, 'resumes.extract');
+  assert.equal(validateRoute(route('clarify'), context, registry, revoked).kind, 'clarify');
+  rejects(() => validateRoute(route(), context, registry, revoked), 'profile_unavailable');
+  rejects(() => validateRoute(route('change'), context, registry, revoked), 'profile_unavailable');
+  for (const proposal of [route('cancel'), change]) {
+    rejects(() => validateRoute(proposal, { ...context, activeTask: active }, registry, revoked), 'handoff_required');
+    rejects(() => validateRoute({ ...proposal, expectedRevision: '1' }, context, registry, revoked), 'stale_revision');
+  }
+});
+
 test('proposal snapshots reject non-JSON values, accessors, oversized and cyclic payloads', () => {
   const source = action();
   const parsed = parseActionProposal(source);

@@ -119,7 +119,7 @@ Dependency direction: transport/composition -> app/harness -> workflow/domain in
 
 A workflow exposes `id`, `version`, `requiredProfiles`, `routeDescription`, validated start input and user events, `allowedActions(state)`, `transition(state,event)`, and terminal/completion classification. Use typed internal DTOs with codecs at the existing `Document`/`Value` boundary; preserve integer, Unicode, JSON, CLI and persisted-byte contracts.
 
-A route proposal can continue, change, cancel, start a new task, or clarify. Code validates it against active claims and current revisions. Changing tasks while filling must first preserve a recoverable handoff and release the claim through existing services. A router cannot silently complete a run, adopt an expired claim, or reinterpret cancellation as deletion.
+A route proposal can continue, change, cancel, start a new task, or clarify. Code validates it against active claims and current revisions. Changing tasks while filling must first preserve a recoverable handoff and release the claim through existing services. Once code marks a task safe to leave, revoked profile access must not prevent cancellation; changing tasks checks the destination's current capabilities. Continuing still requires the current workflow's capabilities. A router cannot silently complete a run, adopt an expired claim, or reinterpret cancellation as deletion.
 
 An action proposal is one of `callTool`, `invokeWorkflow`, `askUser`, or `finish`. The action ID must resolve to a registered handler and appear in the workflow's current allowed set. The handler rechecks preconditions under the transaction that performs the mutation; a prior allowed-actions response is not authorization for a later stale write.
 

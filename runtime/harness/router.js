@@ -5,8 +5,8 @@ export function validateRoute(raw, context, registry, access) {
     const proposal = parseRouteProposal(raw), active = context.activeTask;
     requireCondition(proposal.taskId === (active?.taskId ?? null), 'task_conflict');
     requireCondition(proposal.expectedRevision === (active?.revision ?? null), 'stale_revision');
-    if (active)
-        registry.resolve(active.workflow, access);
+    // Exiting a safely handed-off task does not use its revoked capabilities.
+    // Continue checks the current workflow; change checks the destination below.
     switch (proposal.kind) {
         case 'newTask':
         case 'change': {
