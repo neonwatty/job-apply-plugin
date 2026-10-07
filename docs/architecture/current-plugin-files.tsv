@@ -1,0 +1,381 @@
+path	layer	emitted_counterpart
+.claude-plugin/marketplace.json	Claude package metadata	-
+.claude-plugin/plugin.json	Claude package metadata	-
+.codex-plugin/plugin.json	Codex package metadata	-
+apps/companion/.gitignore	Companion UI, launchers and server	-
+apps/companion/app/layout.tsx	Companion UI, launchers and server	-
+apps/companion/app/page.tsx	Companion UI, launchers and server	-
+apps/companion/command.mjs	Companion UI, launchers and server	-
+apps/companion/components/AnswerCleanup.tsx	Companion UI, launchers and server	-
+apps/companion/components/Answers.tsx	Companion UI, launchers and server	-
+apps/companion/components/ApplicationAutomation.tsx	Companion UI, launchers and server	-
+apps/companion/components/ApplicationSettings.tsx	Companion UI, launchers and server	-
+apps/companion/components/Automation.tsx	Companion UI, launchers and server	-
+apps/companion/components/AutomationRealm.tsx	Companion UI, launchers and server	-
+apps/companion/components/Claims.tsx	Companion UI, launchers and server	-
+apps/companion/components/Companion.tsx	Companion UI, launchers and server	-
+apps/companion/components/DetailDrawer.tsx	Companion UI, launchers and server	-
+apps/companion/components/Extractions.tsx	Companion UI, launchers and server	-
+apps/companion/components/FactGroups.tsx	Companion UI, launchers and server	-
+apps/companion/components/FactValue.tsx	Companion UI, launchers and server	-
+apps/companion/components/Facts.tsx	Companion UI, launchers and server	-
+apps/companion/components/JobActivity.tsx	Companion UI, launchers and server	-
+apps/companion/components/JobEditor.tsx	Companion UI, launchers and server	-
+apps/companion/components/JobTransitions.tsx	Companion UI, launchers and server	-
+apps/companion/components/Jobs.tsx	Companion UI, launchers and server	-
+apps/companion/components/NeedsAttention.tsx	Companion UI, launchers and server	-
+apps/companion/components/Overview.tsx	Companion UI, launchers and server	-
+apps/companion/components/PendingAnswers.tsx	Companion UI, launchers and server	-
+apps/companion/components/ResumeFacts.tsx	Companion UI, launchers and server	-
+apps/companion/components/Resumes.tsx	Companion UI, launchers and server	-
+apps/companion/components/TitleDiscovery.tsx	Companion UI, launchers and server	-
+apps/companion/components/Trash.tsx	Companion UI, launchers and server	-
+apps/companion/components/TrashConfirmation.tsx	Companion UI, launchers and server	-
+apps/companion/components/TrustedFill.tsx	Companion UI, launchers and server	-
+apps/companion/components/agent-model-preferences-model.ts	Companion UI, launchers and server	-
+apps/companion/components/answer-cleanup-model.ts	Companion UI, launchers and server	-
+apps/companion/components/answer-fields.tsx	Companion UI, launchers and server	-
+apps/companion/components/answer-model.ts	Companion UI, launchers and server	-
+apps/companion/components/application-preferences-model.ts	Companion UI, launchers and server	-
+apps/companion/components/automation-model.ts	Companion UI, launchers and server	-
+apps/companion/components/automation.css	Companion UI, launchers and server	-
+apps/companion/components/client.ts	Companion UI, launchers and server	-
+apps/companion/components/companion-interactions.css	Companion UI, launchers and server	-
+apps/companion/components/companion-nav.css	Companion UI, launchers and server	-
+apps/companion/components/companion-polish.css	Companion UI, launchers and server	-
+apps/companion/components/companion-theme.css	Companion UI, launchers and server	-
+apps/companion/components/companion.css	Companion UI, launchers and server	-
+apps/companion/components/contracts.ts	Companion UI, launchers and server	-
+apps/companion/components/extraction-model.ts	Companion UI, launchers and server	-
+apps/companion/components/extraction-review.tsx	Companion UI, launchers and server	-
+apps/companion/components/facts-model.ts	Companion UI, launchers and server	-
+apps/companion/components/job-editor-state.ts	Companion UI, launchers and server	-
+apps/companion/components/job-transition-model.ts	Companion UI, launchers and server	-
+apps/companion/components/pending-answer-model.ts	Companion UI, launchers and server	-
+apps/companion/components/projection-model.ts	Companion UI, launchers and server	-
+apps/companion/components/projection-view.ts	Companion UI, launchers and server	-
+apps/companion/components/resume-fact-editor.tsx	Companion UI, launchers and server	-
+apps/companion/components/resume-facts.css	Companion UI, launchers and server	-
+apps/companion/components/title-discovery-model.ts	Companion UI, launchers and server	-
+apps/companion/components/title-discovery.css	Companion UI, launchers and server	-
+apps/companion/components/trash-client.ts	Companion UI, launchers and server	-
+apps/companion/components/trash-model.ts	Companion UI, launchers and server	-
+apps/companion/components/trash.css	Companion UI, launchers and server	-
+apps/companion/ensure-standalone.mjs	Companion UI, launchers and server	-
+apps/companion/launch.mjs	Companion UI, launchers and server	-
+apps/companion/next-env.d.ts	Companion UI, launchers and server	-
+apps/companion/next.config.ts	Companion UI, launchers and server	-
+apps/companion/package-standalone.mjs	Companion UI, launchers and server	-
+apps/companion/package.json	Companion UI, launchers and server	-
+apps/companion/proxy.ts	Companion UI, launchers and server	-
+apps/companion/readiness-packet.mjs	Companion UI, launchers and server	-
+apps/companion/repeat-review-request.ts	Companion UI, launchers and server	-
+apps/companion/resume-upload-guard.mjs	Companion UI, launchers and server	-
+apps/companion/server/assets.ts	Companion UI, launchers and server	-
+apps/companion/server/config.ts	Companion UI, launchers and server	-
+apps/companion/server/forward.ts	Companion UI, launchers and server	-
+apps/companion/server/routes.ts	Companion UI, launchers and server	-
+apps/companion/supervise.mjs	Companion UI, launchers and server	-
+apps/companion/tsconfig.json	Companion UI, launchers and server	-
+apps/companion/writer-route.mjs	Companion UI, launchers and server	-
+skills/account-setup/SKILL.md	Host skill and guidance	-
+skills/account-setup/references/supported-flows.md	Host skill and guidance	-
+skills/answer-memory/SKILL.md	Host skill and guidance	-
+skills/answer-memory/references/agent-model-preferences.md	Host skill and guidance	-
+skills/answer-memory/references/answers.md	Host skill and guidance	-
+skills/answer-memory/references/jobs-history.md	Host skill and guidance	-
+skills/answer-memory/references/policy.md	Host skill and guidance	-
+skills/answer-memory/references/profile.md	Host skill and guidance	-
+skills/answer-memory/references/qa-replay.md	Host skill and guidance	-
+skills/answer-memory/references/resumes.md	Host skill and guidance	-
+skills/answer-memory/references/storage-contract.md	Host skill and guidance	-
+skills/answer-memory/references/workflow-map.md	Host skill and guidance	-
+skills/application-setup/SKILL.md	Host skill and guidance	-
+skills/application-setup/references/setup-questions.md	Host skill and guidance	-
+skills/job-apply/SKILL.md	Host skill and guidance	-
+skills/job-apply/references/account-canaries.md	Host skill and guidance	-
+skills/job-apply/references/account-readiness.md	Host skill and guidance	-
+skills/job-apply/references/application-automation.md	Host skill and guidance	-
+skills/job-apply/references/application.md	Host skill and guidance	-
+skills/job-apply/references/ashby.md	Host skill and guidance	-
+skills/job-apply/references/browser.md	Host skill and guidance	-
+skills/job-apply/references/consent-intents.md	Host skill and guidance	-
+skills/job-apply/references/extraction.md	Host skill and guidance	-
+skills/job-apply/references/field-mapping.md	Host skill and guidance	-
+skills/job-apply/references/greenhouse.md	Host skill and guidance	-
+skills/job-apply/references/intake.md	Host skill and guidance	-
+skills/job-apply/references/lever.md	Host skill and guidance	-
+skills/job-apply/references/linkedin-easy-apply.md	Host skill and guidance	-
+skills/job-apply/references/profile-setup.md	Host skill and guidance	-
+skills/job-apply/references/readiness.md	Host skill and guidance	-
+skills/job-apply/references/recovery.md	Host skill and guidance	-
+skills/job-apply/references/rippling.md	Host skill and guidance	-
+skills/job-apply/references/workday.md	Host skill and guidance	-
+skills/job-apply/references/worker-delegation.md	Host skill and guidance	-
+skills/job-preferences/SKILL.md	Host skill and guidance	-
+skills/job-search/SKILL.md	Host skill and guidance	-
+skills/job-search/references/model-defaults.md	Host skill and guidance	-
+skills/job-search/references/queue.md	Host skill and guidance	-
+skills/job-search/references/sources.md	Host skill and guidance	-
+skills/job-search/references/worker-results.md	Host skill and guidance	-
+skills/job-title-discovery/SKILL.md	Host skill and guidance	-
+skills/job-title-discovery/references/discovery-workflow.md	Host skill and guidance	-
+skills/job-title-discovery/references/result-format.md	Host skill and guidance	-
+skills/job-workspace/SKILL.md	Host skill and guidance	-
+skills/job-workspace/references/workspace.md	Host skill and guidance	-
+skills/saved-jobs/SKILL.md	Host skill and guidance	-
+src/cli/attempt-authority.ts	CLI, server and attempt transport	runtime/cli/attempt-authority.js
+src/cli/attempt-broker.ts	CLI, server and attempt transport	runtime/cli/attempt-broker.js
+src/cli/attempt-protocol.ts	CLI, server and attempt transport	runtime/cli/attempt-protocol.js
+src/cli/native-account-operation.ts	CLI, server and attempt transport	runtime/cli/native-account-operation.js
+src/cli/native-answer-lifecycle.ts	CLI, server and attempt transport	runtime/cli/native-answer-lifecycle.js
+src/cli/native-answers.ts	CLI, server and attempt transport	runtime/cli/native-answers.js
+src/cli/native-attempt.ts	CLI, server and attempt transport	runtime/cli/native-attempt.js
+src/cli/native-authority.ts	CLI, server and attempt transport	runtime/cli/native-authority.js
+src/cli/native-automation-commands.ts	CLI, server and attempt transport	runtime/cli/native-automation-commands.js
+src/cli/native-claims.ts	CLI, server and attempt transport	runtime/cli/native-claims.js
+src/cli/native-extractions.ts	CLI, server and attempt transport	runtime/cli/native-extractions.js
+src/cli/native-final-action-policy.ts	CLI, server and attempt transport	runtime/cli/native-final-action-policy.js
+src/cli/native-grouped-approvals.ts	CLI, server and attempt transport	runtime/cli/native-grouped-approvals.js
+src/cli/native-job-transitions.ts	CLI, server and attempt transport	runtime/cli/native-job-transitions.js
+src/cli/native-job-upsert.ts	CLI, server and attempt transport	runtime/cli/native-job-upsert.js
+src/cli/native-jobs-server.ts	CLI, server and attempt transport	runtime/cli/native-jobs-server.js
+src/cli/native-jobs.ts	CLI, server and attempt transport	runtime/cli/native-jobs.js
+src/cli/native-legacy-jobs.ts	CLI, server and attempt transport	runtime/cli/native-legacy-jobs.js
+src/cli/native-pending-answers.ts	CLI, server and attempt transport	runtime/cli/native-pending-answers.js
+src/cli/native-profile.ts	CLI, server and attempt transport	runtime/cli/native-profile.js
+src/cli/native-projections.ts	CLI, server and attempt transport	runtime/cli/native-projections.js
+src/cli/native-qa-replay.ts	CLI, server and attempt transport	runtime/cli/native-qa-replay.js
+src/cli/native-resume-lifecycle.ts	CLI, server and attempt transport	runtime/cli/native-resume-lifecycle.js
+src/cli/native-store-bootstrap-lock.ts	CLI, server and attempt transport	runtime/cli/native-store-bootstrap-lock.js
+src/cli/native-store-bootstrap.ts	CLI, server and attempt transport	runtime/cli/native-store-bootstrap.js
+src/cli/native-store-state.ts	CLI, server and attempt transport	runtime/cli/native-store-state.js
+src/cli/native-task-intake.ts	CLI, server and attempt transport	runtime/cli/native-task-intake.js
+src/cli/native-task.ts	CLI, server and attempt transport	runtime/cli/native-task.js
+src/cli/native-trash.ts	CLI, server and attempt transport	runtime/cli/native-trash.js
+src/cli/task-command.ts	CLI, server and attempt transport	runtime/cli/task-command.js
+src/cli/task-protocol.ts	CLI, server and attempt transport	runtime/cli/task-protocol.js
+src/cli/task-runner.ts	CLI, server and attempt transport	runtime/cli/task-runner.js
+src/contracts/filesystem-error.ts	Validation and compatibility codecs	runtime/contracts/filesystem-error.js
+src/contracts/jsonl-json.ts	Validation and compatibility codecs	runtime/contracts/jsonl-json.js
+src/contracts/persisted-json-core.ts	Validation and compatibility codecs	runtime/contracts/persisted-json-core.js
+src/contracts/persisted-json.ts	Validation and compatibility codecs	runtime/contracts/persisted-json.js
+src/contracts/persistence-exception.ts	Validation and compatibility codecs	runtime/contracts/persistence-exception.js
+src/contracts/point-filesystem.ts	Validation and compatibility codecs	runtime/contracts/point-filesystem.js
+src/contracts/posix-path-bytes.ts	Validation and compatibility codecs	runtime/contracts/posix-path-bytes.js
+src/contracts/posix-path.ts	Validation and compatibility codecs	runtime/contracts/posix-path.js
+src/contracts/python-byte-errors.ts	Validation and compatibility codecs	runtime/contracts/python-byte-errors.js
+src/contracts/python-json-bytes.ts	Validation and compatibility codecs	runtime/contracts/python-json-bytes.js
+src/contracts/python-object-legacy.ts	Validation and compatibility codecs	runtime/contracts/python-object-legacy.js
+src/contracts/python-object.ts	Validation and compatibility codecs	runtime/contracts/python-object.js
+src/contracts/python-text.ts	Validation and compatibility codecs	runtime/contracts/python-text.js
+src/contracts/python-utf16-decode.ts	Validation and compatibility codecs	runtime/contracts/python-utf16-decode.js
+src/contracts/python-utf32-decode.ts	Validation and compatibility codecs	runtime/contracts/python-utf32-decode.js
+src/contracts/python-utf8-decode.ts	Validation and compatibility codecs	runtime/contracts/python-utf8-decode.js
+src/contracts/raw-json/float-scope.ts	Validation and compatibility codecs	runtime/contracts/raw-json/float-scope.js
+src/contracts/raw-json/json-serialization-core.ts	Validation and compatibility codecs	runtime/contracts/raw-json/json-serialization-core.js
+src/contracts/raw-json/numeric-atom.ts	Validation and compatibility codecs	runtime/contracts/raw-json/numeric-atom.js
+src/contracts/raw-json/parser.ts	Validation and compatibility codecs	runtime/contracts/raw-json/parser.js
+src/contracts/raw-json/point-parser-core.ts	Validation and compatibility codecs	runtime/contracts/raw-json/point-parser-core.js
+src/contracts/raw-json/point-parser.ts	Validation and compatibility codecs	runtime/contracts/raw-json/point-parser.js
+src/contracts/raw-json/point-serializer.ts	Validation and compatibility codecs	runtime/contracts/raw-json/point-serializer.js
+src/contracts/raw-json/point-text-codec.ts	Validation and compatibility codecs	runtime/contracts/raw-json/point-text-codec.js
+src/contracts/raw-json/point-value.ts	Validation and compatibility codecs	runtime/contracts/raw-json/point-value.js
+src/contracts/raw-json/serializer.ts	Validation and compatibility codecs	runtime/contracts/raw-json/serializer.js
+src/contracts/raw-json/value.ts	Validation and compatibility codecs	runtime/contracts/raw-json/value.js
+src/contracts/stat-time.ts	Validation and compatibility codecs	runtime/contracts/stat-time.js
+src/contracts/workspace/account-canary.ts	Validation and compatibility codecs	runtime/contracts/workspace/account-canary.js
+src/contracts/workspace/account-operation.ts	Validation and compatibility codecs	runtime/contracts/workspace/account-operation.js
+src/contracts/workspace/account-realm.ts	Validation and compatibility codecs	runtime/contracts/workspace/account-realm.js
+src/contracts/workspace/accounts.ts	Validation and compatibility codecs	runtime/contracts/workspace/accounts.js
+src/contracts/workspace/answer-key.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-key.js
+src/contracts/workspace/answer-match-cleanup.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-cleanup.js
+src/contracts/workspace/answer-match-features.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-features.js
+src/contracts/workspace/answer-match-reuse.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-reuse.js
+src/contracts/workspace/answer-match-scoring.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-scoring.js
+src/contracts/workspace/answer-match-unicode-alnum-astral.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-unicode-alnum-astral.js
+src/contracts/workspace/answer-match-unicode-alnum-bmp.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-unicode-alnum-bmp.js
+src/contracts/workspace/answer-match-unicode-assigned-astral.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-unicode-assigned-astral.js
+src/contracts/workspace/answer-match-unicode-assigned-bmp.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-unicode-assigned-bmp.js
+src/contracts/workspace/answer-match-unicode.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-unicode.js
+src/contracts/workspace/answer-match-vocabulary.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-match-vocabulary.js
+src/contracts/workspace/answer-merge.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-merge.js
+src/contracts/workspace/answer-resolution.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-resolution.js
+src/contracts/workspace/answer-session-fields.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-session-fields.js
+src/contracts/workspace/answer-session-validation.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-session-validation.js
+src/contracts/workspace/answer-sessions.ts	Validation and compatibility codecs	runtime/contracts/workspace/answer-sessions.js
+src/contracts/workspace/answers.ts	Validation and compatibility codecs	runtime/contracts/workspace/answers.js
+src/contracts/workspace/application-authority.ts	Validation and compatibility codecs	runtime/contracts/workspace/application-authority.js
+src/contracts/workspace/application-runs.ts	Validation and compatibility codecs	runtime/contracts/workspace/application-runs.js
+src/contracts/workspace/automation.ts	Validation and compatibility codecs	runtime/contracts/workspace/automation.js
+src/contracts/workspace/canonical-json.ts	Validation and compatibility codecs	runtime/contracts/workspace/canonical-json.js
+src/contracts/workspace/casefold.ts	Validation and compatibility codecs	runtime/contracts/workspace/casefold.js
+src/contracts/workspace/claim-session-pending.ts	Validation and compatibility codecs	runtime/contracts/workspace/claim-session-pending.js
+src/contracts/workspace/claim-session-readiness.ts	Validation and compatibility codecs	runtime/contracts/workspace/claim-session-readiness.js
+src/contracts/workspace/claim-session.ts	Validation and compatibility codecs	runtime/contracts/workspace/claim-session.js
+src/contracts/workspace/claim-time.ts	Validation and compatibility codecs	runtime/contracts/workspace/claim-time.js
+src/contracts/workspace/claims.ts	Validation and compatibility codecs	runtime/contracts/workspace/claims.js
+src/contracts/workspace/email-only-account.ts	Validation and compatibility codecs	runtime/contracts/workspace/email-only-account.js
+src/contracts/workspace/extraction-pointers.ts	Validation and compatibility codecs	runtime/contracts/workspace/extraction-pointers.js
+src/contracts/workspace/extraction-proposals.ts	Validation and compatibility codecs	runtime/contracts/workspace/extraction-proposals.js
+src/contracts/workspace/extraction-requests.ts	Validation and compatibility codecs	runtime/contracts/workspace/extraction-requests.js
+src/contracts/workspace/fact-groups.ts	Validation and compatibility codecs	runtime/contracts/workspace/fact-groups.js
+src/contracts/workspace/handoff-checklist.ts	Validation and compatibility codecs	runtime/contracts/workspace/handoff-checklist.js
+src/contracts/workspace/job-input-selection.ts	Validation and compatibility codecs	runtime/contracts/workspace/job-input-selection.js
+src/contracts/workspace/job-url.ts	Validation and compatibility codecs	runtime/contracts/workspace/job-url.js
+src/contracts/workspace/jobs.ts	Validation and compatibility codecs	runtime/contracts/workspace/jobs.js
+src/contracts/workspace/legacy-job-report.ts	Validation and compatibility codecs	runtime/contracts/workspace/legacy-job-report.js
+src/contracts/workspace/profile.ts	Validation and compatibility codecs	runtime/contracts/workspace/profile.js
+src/contracts/workspace/resume-content.ts	Validation and compatibility codecs	runtime/contracts/workspace/resume-content.js
+src/contracts/workspace/resume-facts.ts	Validation and compatibility codecs	runtime/contracts/workspace/resume-facts.js
+src/contracts/workspace/resume-reference.ts	Validation and compatibility codecs	runtime/contracts/workspace/resume-reference.js
+src/contracts/workspace/review-restart.ts	Validation and compatibility codecs	runtime/contracts/workspace/review-restart.js
+src/contracts/workspace/synthetic-account.ts	Validation and compatibility codecs	runtime/contracts/workspace/synthetic-account.js
+src/contracts/workspace/trusted-fill-native.ts	Validation and compatibility codecs	runtime/contracts/workspace/trusted-fill-native.js
+src/contracts/workspace/trusted-fill.ts	Validation and compatibility codecs	runtime/contracts/workspace/trusted-fill.js
+src/contracts/workspace/values.ts	Validation and compatibility codecs	runtime/contracts/workspace/values.js
+src/final-action-policy/authorization.ts	Dedicated final-action policy	runtime/final-action-policy/authorization.js
+src/final-action-policy/campaigns.ts	Dedicated final-action policy	runtime/final-action-policy/campaigns.js
+src/final-action-policy/model.ts	Dedicated final-action policy	runtime/final-action-policy/model.js
+src/final-action-policy/outcomes.ts	Dedicated final-action policy	runtime/final-action-policy/outcomes.js
+src/final-action-policy/repository.ts	Dedicated final-action policy	runtime/final-action-policy/repository.js
+src/final-action-policy/service.ts	Dedicated final-action policy	runtime/final-action-policy/service.js
+src/foundation.ts	Runtime foundation	runtime/foundation.js
+src/native/macos/account-flow-adapter.ts	Native platform integration	runtime/native/macos/account-flow-adapter.js
+src/native/macos/build.ts	Native platform integration	runtime/native/macos/build.js
+src/native/macos/canary-authority.ts	Native platform integration	runtime/native/macos/canary-authority.js
+src/native/macos/identity.ts	Native platform integration	runtime/native/macos/identity.js
+src/native/macos/oracle-canary-session.ts	Native platform integration	runtime/native/macos/oracle-canary-session.js
+src/package/artifact-paths.ts	Installed artifact support	runtime/package/artifact-paths.js
+src/package/data-copy-io.ts	Installed artifact support	runtime/package/data-copy-io.js
+src/package/data-copy.ts	Installed artifact support	runtime/package/data-copy.js
+src/package/installed-artifacts.ts	Installed artifact support	runtime/package/installed-artifacts.js
+src/package/native-lock-artifact.ts	Installed artifact support	runtime/package/native-lock-artifact.js
+src/package/posix-timestamps.ts	Installed artifact support	runtime/package/posix-timestamps.js
+src/qa-replay/auto-submit.ts	Replay lifecycle and oracle	runtime/qa-replay/auto-submit.js
+src/qa-replay/contracts.ts	Replay lifecycle and oracle	runtime/qa-replay/contracts.js
+src/qa-replay/coordinator.ts	Replay lifecycle and oracle	runtime/qa-replay/coordinator.js
+src/qa-replay/oracle.ts	Replay lifecycle and oracle	runtime/qa-replay/oracle.js
+src/qa-replay/server.ts	Replay lifecycle and oracle	runtime/qa-replay/server.js
+src/store/atomic-write-json.ts	Persistence, locks and journals	runtime/store/atomic-write-json.js
+src/store/exclusive-file-lock.ts	Persistence, locks and journals	runtime/store/exclusive-file-lock.js
+src/store/jsonl-history-io.ts	Persistence, locks and journals	runtime/store/jsonl-history-io.js
+src/store/jsonl-history.ts	Persistence, locks and journals	runtime/store/jsonl-history.js
+src/store/legacy-job-discovery.ts	Persistence, locks and journals	runtime/store/legacy-job-discovery.js
+src/store/managed-resume-native.ts	Persistence, locks and journals	runtime/store/managed-resume-native.js
+src/store/managed-resume-observation.ts	Persistence, locks and journals	runtime/store/managed-resume-observation.js
+src/store/managed-resume-path.ts	Persistence, locks and journals	runtime/store/managed-resume-path.js
+src/store/native-answer-journal.ts	Persistence, locks and journals	runtime/store/native-answer-journal.js
+src/store/native-answer-resolution-journal.ts	Persistence, locks and journals	runtime/store/native-answer-resolution-journal.js
+src/store/native-application-authority.ts	Persistence, locks and journals	runtime/store/native-application-authority.js
+src/store/native-automation.ts	Persistence, locks and journals	runtime/store/native-automation.js
+src/store/native-claim-history.ts	Persistence, locks and journals	runtime/store/native-claim-history.js
+src/store/native-claim-journal.ts	Persistence, locks and journals	runtime/store/native-claim-journal.js
+src/store/native-extraction-journal.ts	Persistence, locks and journals	runtime/store/native-extraction-journal.js
+src/store/native-jobs-error.ts	Persistence, locks and journals	runtime/store/native-jobs-error.js
+src/store/native-jobs-fixture.ts	Persistence, locks and journals	runtime/store/native-jobs-fixture.js
+src/store/native-jobs.ts	Persistence, locks and journals	runtime/store/native-jobs.js
+src/store/native-pending-answer-state.ts	Persistence, locks and journals	runtime/store/native-pending-answer-state.js
+src/store/native-policy-tree.ts	Persistence, locks and journals	runtime/store/native-policy-tree.js
+src/store/native-resume-files.ts	Persistence, locks and journals	runtime/store/native-resume-files.js
+src/store/native-resume-summaries.ts	Persistence, locks and journals	runtime/store/native-resume-summaries.js
+src/store/native-root-validation.ts	Persistence, locks and journals	runtime/store/native-root-validation.js
+src/store/native-store-bootstrap.ts	Persistence, locks and journals	runtime/store/native-store-bootstrap.js
+src/store/native-store-clone.ts	Persistence, locks and journals	runtime/store/native-store-clone.js
+src/store/native-store-layout.ts	Persistence, locks and journals	runtime/store/native-store-layout.js
+src/store/native-store-state-repository.ts	Persistence, locks and journals	runtime/store/native-store-state-repository.js
+src/store/native-writer-switch.ts	Persistence, locks and journals	runtime/store/native-writer-switch.js
+src/store/point-persistence.ts	Persistence, locks and journals	runtime/store/point-persistence.js
+src/store/posix-directory.ts	Persistence, locks and journals	runtime/store/posix-directory.js
+src/store/posix-flock.ts	Persistence, locks and journals	runtime/store/posix-flock.js
+src/store/private-file-digest.ts	Persistence, locks and journals	runtime/store/private-file-digest.js
+src/store/private-filesystem.ts	Persistence, locks and journals	runtime/store/private-filesystem.js
+src/store/process-owned-writer.ts	Persistence, locks and journals	runtime/store/process-owned-writer.js
+src/store/read-file.ts	Persistence, locks and journals	runtime/store/read-file.js
+src/store/read-json-object.ts	Persistence, locks and journals	runtime/store/read-json-object.js
+src/store/resume-modified-at.ts	Persistence, locks and journals	runtime/store/resume-modified-at.js
+src/store/validation.ts	Persistence, locks and journals	runtime/store/validation.js
+src/workspace-core/account-operation-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/account-operation-http.js
+src/workspace-core/account-operation.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/account-operation.js
+src/workspace-core/accounts.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/accounts.js
+src/workspace-core/answer-cleanup.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answer-cleanup.js
+src/workspace-core/answer-lifecycle-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answer-lifecycle-http.js
+src/workspace-core/answer-lifecycle.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answer-lifecycle.js
+src/workspace-core/answer-match.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answer-match.js
+src/workspace-core/answer-merges.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answer-merges.js
+src/workspace-core/answers-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answers-http.js
+src/workspace-core/answers.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/answers.js
+src/workspace-core/application-authority.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/application-authority.js
+src/workspace-core/application-runs.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/application-runs.js
+src/workspace-core/automation-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/automation-http.js
+src/workspace-core/automation.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/automation.js
+src/workspace-core/claims-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/claims-http.js
+src/workspace-core/claims.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/claims.js
+src/workspace-core/email-only-account.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/email-only-account.js
+src/workspace-core/extraction-context.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/extraction-context.js
+src/workspace-core/extraction-proposal-state.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/extraction-proposal-state.js
+src/workspace-core/extraction-proposals.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/extraction-proposals.js
+src/workspace-core/extraction-requests.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/extraction-requests.js
+src/workspace-core/extraction.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/extraction.js
+src/workspace-core/extractions-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/extractions-http.js
+src/workspace-core/fact-groups.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/fact-groups.js
+src/workspace-core/grouped-approvals.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/grouped-approvals.js
+src/workspace-core/job-preflight.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/job-preflight.js
+src/workspace-core/job-provenance.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/job-provenance.js
+src/workspace-core/job-transitions-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/job-transitions-http.js
+src/workspace-core/job-transitions.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/job-transitions.js
+src/workspace-core/job-upsert-plan.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/job-upsert-plan.js
+src/workspace-core/job-upsert.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/job-upsert.js
+src/workspace-core/jobs-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/jobs-http.js
+src/workspace-core/jobs.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/jobs.js
+src/workspace-core/legacy-job-plan.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/legacy-job-plan.js
+src/workspace-core/legacy-jobs.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/legacy-jobs.js
+src/workspace-core/pending-answers-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/pending-answers-http.js
+src/workspace-core/pending-answers.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/pending-answers.js
+src/workspace-core/profile-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/profile-http.js
+src/workspace-core/profile-patch.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/profile-patch.js
+src/workspace-core/profile-preparedness.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/profile-preparedness.js
+src/workspace-core/profile.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/profile.js
+src/workspace-core/replay-transition.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/replay-transition.js
+src/workspace-core/resume-facts.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/resume-facts.js
+src/workspace-core/resume-lifecycle-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/resume-lifecycle-http.js
+src/workspace-core/resume-lifecycle.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/resume-lifecycle.js
+src/workspace-core/resumes-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/resumes-http.js
+src/workspace-core/resumes.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/resumes.js
+src/workspace-core/store-history.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/store-history.js
+src/workspace-core/store-sessions.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/store-sessions.js
+src/workspace-core/synthetic-account.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/synthetic-account.js
+src/workspace-core/task-intake.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/task-intake.js
+src/workspace-core/task-job-projection.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/task-job-projection.js
+src/workspace-core/trash-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/trash-http.js
+src/workspace-core/trash.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/trash.js
+src/workspace-core/trusted-fill-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/trusted-fill-http.js
+src/workspace-core/trusted-fill-native.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/trusted-fill-native.js
+src/workspace-core/trusted-fill.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/trusted-fill.js
+src/workspace-core/workspace-projections-http.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/workspace-projections-http.js
+src/workspace-core/workspace-projections.ts	Domain services, projections and HTTP adapters	runtime/workspace-core/workspace-projections.js
+src/workspace-ui/lib/activity-view.ts	Shared UI helpers	runtime/workspace-ui/lib/activity-view.js
+src/workspace-ui/lib/answer-view.ts	Shared UI helpers	runtime/workspace-ui/lib/answer-view.js
+src/workspace-ui/lib/automation-request.ts	Shared UI helpers	runtime/workspace-ui/lib/automation-request.js
+src/workspace-ui/lib/profile-view.ts	Shared UI helpers	runtime/workspace-ui/lib/profile-view.js
+src/workspace-ui/lib/resume-view.ts	Shared UI helpers	runtime/workspace-ui/lib/resume-view.js
+src/workspace-ui/lib/trash-view.ts	Shared UI helpers	runtime/workspace-ui/lib/trash-view.js
+workspace/app.js	Browser workspace surface	-
+workspace/bootstrap.js	Browser workspace surface	-
+workspace/features/activity.js	Browser workspace surface	-
+workspace/features/answers.js	Browser workspace surface	-
+workspace/features/automation.js	Browser workspace surface	-
+workspace/features/bindings.js	Browser workspace surface	-
+workspace/features/facts.js	Browser workspace surface	-
+workspace/features/jobs.js	Browser workspace surface	-
+workspace/features/navigation.js	Browser workspace surface	-
+workspace/features/overview.js	Browser workspace surface	-
+workspace/features/resumes.js	Browser workspace surface	-
+workspace/features/trash.js	Browser workspace surface	-
+workspace/index.html	Browser workspace surface	-
+workspace/lib/api.js	Browser workspace surface	-
+workspace/lib/dom.js	Browser workspace surface	-
+workspace/lib/helpers-bridge.js	Browser workspace surface	-
+workspace/lib/helpers.js	Browser workspace surface	-
+workspace/lib/state.js	Browser workspace surface	-
+workspace/styles.css	Browser workspace surface	-
