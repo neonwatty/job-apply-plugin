@@ -29,7 +29,7 @@ Final slice 1 verification: 242 emitted modules, eleven focused contract tests, 
 
 Implementation is on `codex/agent-workflows-02-application`, based on merged integration `3753b691`. See the [file map and contract](application-policy-slice.md). Existing command services and experimental workflow inspection now share the application guards. Preflight depends on a narrow observation port; claim/session/restart contracts remain canonical. No public prompt or command consumes the experimental context yet.
 
-Verification checkpoint: the seven policy tests pass, including the exhaustive direct status matrix. Native lifecycle checks, independent branch review and broad publication gates are in progress. Final immutable receipts and results will accompany the slice PR.
+Verification checkpoint: seven policy tests and 23 native/session/preflight tests pass, including the exhaustive direct status matrix and 97 Python differential session cases. All eleven commit-hook suites passed. Native and independent branch reviews completed; one independently validated documentation overstatement about adapter error classification was corrected. Broad publication gates and the documentation follow-up review are in progress. Final immutable receipts and results will accompany the slice PR.
 
 ## Next slices
 
