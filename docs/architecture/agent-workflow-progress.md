@@ -6,7 +6,7 @@ Integration branch: `codex/experimental-agent-workflows`, rooted at staging `f95
 
 ## Slice 1: typed workflow and proposal contracts
 
-Implementation and initial independent review are complete; the explicit safe-exit policy is under follow-up review. Broad validation and PR publication are pending.
+Merged in [PR #192](https://github.com/neonwatty/job-apply-plugin/pull/192) to the experimental integration branch at `3753b691`. Reviewed candidate: `def62a74e92f42bbe5d7f5ad9f4affeda6cd3030`.
 
 | File | Implemented responsibility |
 | --- | --- |
@@ -23,11 +23,17 @@ The six TypeScript modules have generated `runtime/harness/` counterparts. No in
 
 The new protocol uses decimal strings for exact revisions. It accepts bounded JSON-shaped proposal data and takes workflow context exclusively from the caller's canonical projection. Registrations and schema parsers are trusted program code. Parsers may decode arguments into internal types, and schema exceptions are replaced by fixed error codes. A successful validation does not grant execution authority, attest user approval, persist a pause, or prove browser state.
 
-Focused verification: initial runtime compilation passed (242 modules) and all ten original contract tests passed. Both the plan and contracts commits passed all eleven commit-hook suites. Native review and five independent roles completed; the native exit-after-revocation candidate was independently rejected because that policy was not yet specified. We then explicitly defined safe exit after revocation in the plan and contract and added a regression scenario; continuation and destination capability checks remain required. Follow-up verification is pending at this checkpoint.
+Final slice 1 verification: 242 emitted modules, eleven focused contract tests, all eleven commit-hook suites, native Codex review and five independent review roles passed. The explicit exit-after-revocation policy was reviewed again after its regression test. Clean staging baseline and candidate each passed 28 deep suites with the Windows suite skipped; this includes deterministic, installed Codex/Claude package and native platform checks. Both real pre-push hooks passed. Local evidence is in `.workflows/local/agent-workflow-experiment/validation-summary.json` and the referenced logs. No owner-browser or live model UX comparison was performed.
+
+## Slice 2: shared application policy
+
+Implementation is on `codex/agent-workflows-02-application`, based on merged integration `3753b691`. See the [file map and contract](application-policy-slice.md). Existing command services and experimental workflow inspection now share the application guards. Preflight depends on a narrow observation port; claim/session/restart contracts remain canonical. No public prompt or command consumes the experimental context yet.
+
+Verification checkpoint: the seven policy tests pass, including the exhaustive direct status matrix. Native lifecycle checks, independent branch review and broad publication gates are in progress. Final immutable receipts and results will accompany the slice PR.
 
 ## Next slices
 
-1. Extract application policy and generate canonical workflow context using existing claim/preflight/session guards.
+1. Finish slice 2 verification and review shared policy/context against the experimental integration base.
 2. Add Store-backed event/pause metadata and a gateway that rechecks the same guards inside mutation transactions.
 3. Connect host prompts and public workflow commands; compare behavior against staging fixtures.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
