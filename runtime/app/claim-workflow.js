@@ -103,12 +103,13 @@ export class ClaimWorkflow {
                             subject: { jobId: event.jobId, jobRevision: revision, inputRevision: scope } }, outcome };
                 },
             });
-            if (!result.replayed) {
-                if (acquired)
-                    this.#capability = acquired;
-                if (['handoff', 'cancel'].includes(event.kind))
-                    this.#capability = null;
-            }
+            if (!result.replayed && acquired)
+                this.#capability = acquired;
+            // A committed terminal operation may have lost its response. Retire only its own
+            // capability on replay; historical receipts must not clear a newer attempt.
+            if (['finished', 'cancelled'].includes(result.receipt.task.status)
+                && this.#capability?.taskId === result.receipt.task.taskId)
+                this.#capability = null;
             return result;
         });
     }

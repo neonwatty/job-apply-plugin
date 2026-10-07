@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { get } from '../runtime/contracts/workspace/values.js';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { setup,read,write,snapshot,readyPacket,host,event,acquire,pending } from './workspace_durable_claims_support.mjs';
 async function unchanged(state,run,pattern) {
@@ -150,6 +151,30 @@ test('durable claim workflow preserves the broker capability and canonical lifec
       const cancel=event('cancel',task);await workflow.execute(cancel,cancel);
       assert.deepEqual((await read(state.root,'sessions/job.json')).handoffChecklist,pending.handoffChecklist);
       await workflow.close();
+    });
+    await t.test('same-broker terminal replay retires only the completed capability after response loss',async()=>{
+      for(const kind of ['handoff','cancel']) {
+        const state=await setup(fixture,`claim-terminal-${kind}`);
+        let armed=false;
+        const {workflow,writes}=host(state,{after:async(path,value)=>{
+          if(armed && path.endsWith('/coordinator-journal.json') && get(value,'operation')!==null) {
+            armed=false;throw Error('post-publication failure');
+          }
+        }});
+        const task=await acquire(state,workflow),request=event(kind,task);
+        armed=true;await assert.rejects(workflow.execute(request,request),/post-publication failure/);
+        const replay=await workflow.execute(request,request);assert.equal(replay.replayed,true);
+        assert.equal((await read(state.root,'coordinator.json')).claim,null);
+        const count=writes.length;await workflow.heartbeat();assert.equal(writes.length,count);
+        await state.claims.select('job',4n,true);
+        const next=event('acquire',null,{operationId:'next',jobRevision:'5'});
+        await workflow.execute(next,next);
+        assert.equal((await workflow.execute(request,request)).replayed,true);
+        assert.equal((await workflow.inspect()).brokerAvailable,true,'Old terminal replay must retain the new task capability');
+        state.clock.now='2026-09-10T12:01:00Z';await workflow.heartbeat();
+        assert.equal((await read(state.root,'coordinator.json')).claim.heartbeatAt,state.clock.now);
+        await workflow.close();
+      }
     });
     await t.test('failed journal publication leaves no receipt or claim',async()=>{
       const state=await setup(fixture,'claim-fault');await state.claims.select('job',1n,true);
