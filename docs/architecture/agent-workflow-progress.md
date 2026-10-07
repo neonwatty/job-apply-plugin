@@ -29,13 +29,19 @@ Final slice 1 verification: 242 emitted modules, eleven focused contract tests, 
 
 Implementation is on `codex/agent-workflows-02-application`, based on merged integration `3753b691`. See the [file map and contract](application-policy-slice.md). Existing command services and experimental workflow inspection now share the application guards. Preflight depends on a narrow observation port; claim/session/restart contracts remain canonical. No public prompt or command consumes the experimental context yet.
 
-Verification checkpoint: seven policy tests and 23 native/session/preflight tests pass, including the exhaustive direct status matrix and 97 Python differential session cases. All eleven commit-hook suites passed. Native and independent branch reviews completed; one independently validated documentation overstatement about adapter error classification was corrected. Broad publication gates and the documentation follow-up review are in progress. Final immutable receipts and results will accompany the slice PR.
+Published as [PR #193](https://github.com/neonwatty/job-apply-plugin/pull/193), candidate `bbca17d951c05312d1e799ba53c7fd9106e86158`. Seven policy tests and 23 native/session/preflight tests passed, including the exhaustive direct status matrix and 97 Python differential session cases. Both commits passed eleven commit-hook suites. Native and five independent review roles completed; one validated documentation overstatement was corrected and re-reviewed. The deep gate passed 28 suites with Windows skipped, including installed release checks; the real pre-push hook passed its fresh native obligations. Evidence: `.workflows/local/agent-workflow-experiment/slice2-validation-summary.json`. PR #193 remains open at the start of slice 3a.
+
+## Slice 3a: durable preparation and atomic selection
+
+Implementation is on `codex/agent-workflows-03-durable`, stacked on slice 2. See the [durable protocol file map and contract](durable-preparation-slice.md). Optional Store metadata records one active task, scoped pending questions and replay receipts. Existing job selection and its receipt share one atomic `jobs.json` replacement. The experimental CLI requires an explicitly initialized fictional Store. The narrower scope separates single-document durability from the multi-document claim journal work in slice 3b.
+
+Seventeen focused protocol/CLI/crash tests pass. Review and broad gates are pending on the committed candidate. Claim acquisition, progress, recovery and handoff are deliberately unavailable through this gateway until slice 3b integrates the claim journal and broker.
 
 ## Next slices
 
-1. Finish slice 2 verification and review shared policy/context against the experimental integration base.
-2. Add Store-backed event/pause metadata and a gateway that rechecks the same guards inside mutation transactions.
+1. Complete slice 3a review and publication against slice 2.
+2. Integrate claim-bearing durable events with the existing journal, gateway and broker; test broker loss, pause/restart and cancellation.
 3. Connect host prompts and public workflow commands; compare behavior against staging fixtures.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
 
-There is no staging promotion, regular-plugin installation, live applicant Store mutation, or claim of improved application UX from slice 1 alone.
+There is no staging promotion, regular-plugin installation, live applicant Store mutation, or measured application UX improvement from these foundation slices alone.

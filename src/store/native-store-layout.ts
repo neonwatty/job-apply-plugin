@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
 
+export const workflowTemporaryPattern = /^\.workflow-jobs\.[a-z0-9_]{8}\.tmp$/;
+
 export const nativeAttemptPidName = '.job-apply-attempt.pid';
 export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
 export const nativeFixtureMarkerName = '.native-jobs-fixture';

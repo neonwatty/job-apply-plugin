@@ -1,3 +1,4 @@
+import { decodeWorkflowLedger, workflowMetadataKey } from './workflow-tasks.js';
 import { PythonText } from "../python-text.js";
 import { PythonObject } from "../python-object.js";
 import { get, has, int, string, object, keys, JobsError } from "./values.js";
@@ -79,6 +80,7 @@ export function validateJobsDocument(value: Value): Document {
   const jobs = object(get(document, "jobs"), "jobs.jobs");
   const metadata = object(get(document, "metadata"), "jobs.metadata");
   validateApplicationRuns(metadata);
+  if (has(metadata, workflowMetadataKey)) decodeWorkflowLedger(get(metadata, workflowMetadataKey));
   for (const [key, value] of jobs.entries()) validateJob(string(key)!, value);
   return document;
 }
