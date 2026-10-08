@@ -95,7 +95,7 @@ export async function runAttemptBroker(root, service, provider, options = {}, ap
     let resolveStopped;
     const stoppedPromise = new Promise(resolve => { resolveStopped = resolve; });
     const stop = () => { stopped = true; resolveStopped(); };
-    const authority = new AttemptAuthority(service, { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop }, application);
+    const authority = options.createAuthority?.(stop) ?? new AttemptAuthority(service, { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop }, application);
     const clients = new Set();
     let begin;
     let queue = new Promise(resolve => { begin = resolve; });

@@ -35,12 +35,16 @@ Published as [PR #193](https://github.com/neonwatty/job-apply-plugin/pull/193), 
 
 Implementation is on `codex/agent-workflows-03-durable`, stacked on slice 2. See the [durable protocol file map and contract](durable-preparation-slice.md). Optional Store metadata records one active task, scoped pending questions and replay receipts. Existing job selection and its receipt share one atomic `jobs.json` replacement. The experimental CLI requires an explicitly initialized fictional Store. The narrower scope separates single-document durability from the multi-document claim journal work in slice 3b.
 
-Seventeen focused protocol/CLI/crash tests pass. Review and broad gates are pending on the committed candidate. Claim acquisition, progress, recovery and handoff are deliberately unavailable through this gateway until slice 3b integrates the claim journal and broker.
+Published as [PR #194](https://github.com/neonwatty/job-apply-plugin/pull/194), candidate `6182ae835b9440c97ee335beada271796f3a4bca`. Seventeen focused tests, eleven commit-hook suites, 28 deep suites and fresh native pre-push obligations passed; Windows was skipped. Native review and five independent roles found no actionable issues. Evidence: `.workflows/local/agent-workflow-experiment/slice3-validation-summary.json`. Claim acquisition, progress, recovery and handoff are deliberately unavailable through this gateway until slice 3b integrates the claim journal and broker.
+
+## Slice 3b: durable claim lifecycle
+
+Implementation is on `codex/agent-workflows-04-claims`, stacked on PR #194. See the [claim workflow file map and protocol](durable-claim-slice.md). The existing claim journal now carries workflow receipts through recovery, including session-only progress. An experimental host adapter uses the existing broker transport; private claim tokens remain in broker memory. Cancellation performs a Needs Info handoff before ending the task. Focused verification and pre-publication gates are in progress.
 
 ## Next slices
 
-1. Complete slice 3a review and publication against slice 2.
-2. Integrate claim-bearing durable events with the existing journal, gateway and broker; test broker loss, pause/restart and cancellation.
+1. Complete slice 3b review and publication against slice 3a.
+2. Reconcile the stacked experimental PRs and their integration receipts.
 3. Connect host prompts and public workflow commands; compare behavior against staging fixtures.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
 

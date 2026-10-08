@@ -67,7 +67,17 @@ async function publishPid(root: string, processPath: string): Promise<void> {
     }
   }
 }
-interface BrokerOptions { idleMilliseconds?: number; heartbeatMilliseconds?: number }
+export interface BrokerAuthority {
+  acquire(request: Document): Promise<Document>;
+  dispatch(request: Document): Promise<{response:Document; complete:boolean}>;
+  close(): Promise<void>;
+}
+interface BrokerOptions {
+  idleMilliseconds?: number;
+  heartbeatMilliseconds?: number;
+  /** Trusted composition seam; the installed broker continues to use AttemptAuthority. */
+  createAuthority?: (onHeartbeatFailure: () => void) => BrokerAuthority;
+}
 export async function runAttemptBroker(root: string, service: ClaimsService, provider: PosixFlockProvider,
   options: BrokerOptions = {}, application?: ApplicationAuthorityService): Promise<void> {
   const path = await runtimePath(root), processPath = join(root, nativeAttemptPidName);
@@ -83,7 +93,7 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
   let resolveStopped!: () => void;
   const stoppedPromise = new Promise<void>(resolve => { resolveStopped = resolve; });
   const stop = () => { stopped = true; resolveStopped(); };
-  const authority = new AttemptAuthority(service,
+  const authority = options.createAuthority?.(stop) ?? new AttemptAuthority(service,
     { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop }, application);
   const clients = new Set<Socket>();
   let begin!: () => void;
