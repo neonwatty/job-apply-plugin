@@ -45,13 +45,19 @@ Published as [PR #195](https://github.com/neonwatty/job-apply-plugin/pull/195), 
 
 ## Slice 4a: installed host route and focused prompt reference
 
-Implementation is on `codex/agent-workflows-05-host`, stacked on PR #195. See the [host command file map and contract](host-workflow-slice.md). The public `workflow` surface composes the existing fixture-only preparation and claim protocols; the existing Job Apply skill gains an explicit experimental route. Code owns state and validates proposals, while host instructions describe invocation, user-event attestation and truthful outcome wording. Deterministic package-layout tests and pre-publication checks are in progress. Repeated model UX comparisons remain outstanding.
+Published as [PR #196](https://github.com/neonwatty/job-apply-plugin/pull/196), candidate `4551524d45fbe90ae52dd231cfe739a9b2a43bae`, stacked on PR #195. See the [host command file map and contract](host-workflow-slice.md). The public `workflow` surface composes the existing fixture-only preparation and claim protocols; the existing Job Apply skill gains an explicit experimental route. Code owns state and validates proposals, while host instructions describe invocation, user-event attestation and truthful outcome wording. Five focused checks (including three installed-layout tests), eleven commit-hook suites, 28 deep suites and fresh native pre-push obligations passed; Windows was skipped. Native review and five independent roles completed; a validated test-inventory contradiction was fixed and freshly validated. Evidence: `.workflows/local/agent-workflow-experiment/slice5-validation-summary.json`.
+
+## Slice 4b: paired model preparation trials
+
+Implementation is on `codex/agent-workflows-06-evals`, stacked on PR #196. The local comparison runner installs pinned baseline and candidate packages into disposable Codex homes, resumes the same host conversation across three turns and records independent Store outcomes. See the [runner and file map](../../evals/preparation/README.md). Product prompts and runtime remain at the tested slice 4a revision. This slice measures exact-job selection and repeated confirmation; the rest of the acceptance matrix remains outstanding.
+
+The [measured report](preparation-model-eval.md) covers three repetitions per arm (18 host turns). Both versions reached Ready without questions and preserved canonical bytes on repeated confirmation. The candidate had higher median latency and consumed its own newly created pending question in all three first turns. This is not a UX-improvement or promotion pass. An earlier batch with incorrect resumed sandbox settings was excluded and rerun; current harness settings are checked from persisted host context. Two validated capture/cleanup defects were fixed with regression tests. Publication gates are recorded in the slice 6 local receipt.
 
 ## Next slices
 
-1. Complete slice 4a verification and publication against slice 3b.
-2. Reconcile the stacked experimental PRs and their integration receipts.
-3. Evaluate the installed host route against staging fixtures; measure redundant questions, continuation and truthful outcomes before replacing ordinary prompts.
+1. Use the preparation comparison to simplify exact-intent selection and clarify the host user-event boundary before replacing ordinary prompts.
+2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
+3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
 
 There is no staging promotion, regular-plugin installation, live applicant Store mutation, or measured application UX improvement from these foundation slices alone.

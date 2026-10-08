@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "scenario": "exact-selection-confirmation-repeat",
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "4551524d45fbe90ae52dd231cfe739a9b2a43bae"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "executionComplete": true,
+  "comparisonAcceptance": "not_accepted_for_promotion",
+  "evidenceDirectory": ".workflows/local/preparation-eval-1791465485140",
+  "reportSha256": "2b5d1a680c33696a92ee6d6c21dac0b38219c931a35d6c9899aee4a63272fcff",
+  "reviewMethod": "Primary agent inspected all assistant messages, command traces, file-change items, workflow receipts and Store observations. Counts below combine trace-derived metrics and explicit transcript review; no model self-grade.",
+  "executedHarnessDigests": {
+    "run.mjs": "e861ad948b7bd620642828aee065c018f24cbeadfaa88bd60a4d8d963fc9d87c",
+    "support.mjs": "074c0ba917df25c64107a317ea17a0ebc188106797bbb4c1a35988f002ef9649",
+    "fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd"
+  },
+  "harnessProvenance": "Measured conversations used the recorded pre-hardening capture helper. No run timed out or hit capture bounds; no replacement character appears in retained evidence. Subsequent streaming-decoder and process-escalation fixes have focused regression tests; prompts, installations and session configuration were unchanged.",
+  "findings": {
+    "firstTurnReady": {
+      "baseline": 3,
+      "candidate": 3
+    },
+    "userQuestionCount": {
+      "baseline": 0,
+      "candidate": 0
+    },
+    "newPendingRequestConsumedWithoutLaterUserTurn": 3,
+    "canonicalChangesOnRepeatedConfirmation": 0,
+    "observedClaimsOrSessions": 0,
+    "observedBrowserOrFinalActions": 0,
+    "overstatedFilledReviewedSubmittedClaims": 0,
+    "staleOrRevokedAuthority": "not exercised",
+    "transportReplayOrContextLoss": "not exercised"
+  },
+  "runs": [
+    {
+      "trial": 1,
+      "arm": "baseline",
+      "userQuestions": 0,
+      "firstTurnReady": true,
+      "firstTurnConsumedNewPendingRequest": false,
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 23904,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": null,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 68357,
+          "outputTokens": 1363
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 10960,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 107796,
+          "outputTokens": 1773
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 9410,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 148268,
+          "outputTokens": 2103
+        }
+      ],
+      "totalElapsedMs": 44274,
+      "totalShellCalls": 6
+    },
+    {
+      "trial": 1,
+      "arm": "candidate",
+      "userQuestions": 0,
+      "firstTurnReady": true,
+      "firstTurnConsumedNewPendingRequest": true,
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 52760,
+          "shellCalls": 10,
+          "failedShellCalls": 2,
+          "otherToolItems": 4,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": null,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 257329,
+          "outputTokens": 4632
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 9996,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 306091,
+          "outputTokens": 5300
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 4087,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 330995,
+          "outputTokens": 5375
+        }
+      ],
+      "totalElapsedMs": 66843,
+      "totalShellCalls": 11
+    },
+    {
+      "trial": 2,
+      "arm": "candidate",
+      "userQuestions": 0,
+      "firstTurnReady": true,
+      "firstTurnConsumedNewPendingRequest": true,
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 35915,
+          "shellCalls": 7,
+          "failedShellCalls": 0,
+          "otherToolItems": 3,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": null,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 182378,
+          "outputTokens": 3483
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 5336,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 206022,
+          "outputTokens": 3588
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 4201,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 229807,
+          "outputTokens": 3632
+        }
+      ],
+      "totalElapsedMs": 45452,
+      "totalShellCalls": 7
+    },
+    {
+      "trial": 2,
+      "arm": "baseline",
+      "userQuestions": 0,
+      "firstTurnReady": true,
+      "firstTurnConsumedNewPendingRequest": false,
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 30497,
+          "shellCalls": 6,
+          "failedShellCalls": 2,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": null,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 87376,
+          "outputTokens": 1628
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 18448,
+          "shellCalls": 3,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 148805,
+          "outputTokens": 2390
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 15329,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 191411,
+          "outputTokens": 2737
+        }
+      ],
+      "totalElapsedMs": 64274,
+      "totalShellCalls": 10
+    },
+    {
+      "trial": 3,
+      "arm": "baseline",
+      "userQuestions": 0,
+      "firstTurnReady": true,
+      "firstTurnConsumedNewPendingRequest": false,
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 19113,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": null,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 68289,
+          "outputTokens": 1362
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 8768,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 107797,
+          "outputTokens": 1780
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 4109,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 0,
+          "inputTokens": 127870,
+          "outputTokens": 1855
+        }
+      ],
+      "totalElapsedMs": 31990,
+      "totalShellCalls": 5
+    },
+    {
+      "trial": 3,
+      "arm": "candidate",
+      "userQuestions": 0,
+      "firstTurnReady": true,
+      "firstTurnConsumedNewPendingRequest": true,
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 59099,
+          "shellCalls": 8,
+          "failedShellCalls": 0,
+          "otherToolItems": 4,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": null,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 257284,
+          "outputTokens": 3477
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 16553,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 303237,
+          "outputTokens": 4230
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 8046,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "otherToolItems": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "canonicalJsonUnchangedSincePrevious": true,
+          "noClaimOrSession": true,
+          "taskCount": 1,
+          "inputTokens": 326781,
+          "outputTokens": 4356
+        }
+      ],
+      "totalElapsedMs": 83698,
+      "totalShellCalls": 9
+    }
+  ]
+}
