@@ -34,5 +34,6 @@ Repeated confirmation in an intact host conversation is not transport replay, mo
 | `support.mjs` | Pinned-revision installation, isolated environment, bounded process execution, trace parsing |
 | `fixture.mjs` | Fictional canonical Store construction and independent observations |
 | `../../tests_js/test-runner-preparation-eval.test.mjs` | Trace completion/error contracts and process failure/deadline checks |
+| `../../tests_js/point_paths_domain_support.mjs` | Validate the exact new evaluation registrations before the unchanged historical matrix digest check |
 
 The use of JSONL tool traces and independent artifacts follows the approach in OpenAI's [skill evaluation guide](https://developers.openai.com/blog/eval-skills). Installed CLI help is the source for the particular invocation flags used here.

@@ -247,7 +247,18 @@ export function refuseDomain() {
   }
 }
 
+export function removeReviewedPreparationEvalMatrixAdditions(matrix) {
+  const inventory = 'evals/**/*.mjs';
+  const owner = { paths: ['evals/preparation/*.mjs'], suites: ['node-runner-fast'] };
+  assert.equal(matrix.inventory.include.filter(path => path === inventory).length, 1);
+  assert.deepEqual(matrix.ownership.filter(rule => rule.paths.includes(owner.paths[0])), [owner]);
+  matrix.inventory.include.splice(matrix.inventory.include.indexOf(inventory), 1);
+  matrix.ownership.splice(matrix.ownership.findIndex(rule => rule.paths.includes(owner.paths[0])), 1);
+}
+
 export function removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOwnership) {
+  // Validate only these reviewed additions; the historical matrix digest stays fixed.
+  removeReviewedPreparationEvalMatrixAdditions(matrix);
   assert.deepEqual(matrix.ownership.pop(), registrationOwnership);
   const coreWorkflowSuite = { id: 'core-workflow-audit', kind: 'command',
     command: ['npm', 'run', 'audit:core-workflows'], tiers: ['fast', 'full'] };

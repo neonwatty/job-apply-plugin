@@ -53,6 +53,8 @@ Implementation is on `codex/agent-workflows-06-evals`, stacked on PR #196. The l
 
 The [measured report](preparation-model-eval.md) covers three repetitions per arm (18 host turns). Both versions reached Ready without questions and preserved canonical bytes on repeated confirmation. The candidate had higher median latency and consumed its own newly created pending question in all three first turns. This is not a UX-improvement or promotion pass. An earlier batch with incorrect resumed sandbox settings was excluded and rerun; current harness settings are checked from persisted host context. Two validated capture/cleanup defects were fixed with regression tests. Publication gates are recorded in the slice 6 local receipt.
 
+The first deep run passed 27 suites, skipped Windows and failed the historical S05 matrix comparison. The clean base passed the same assertion. Its comparison now validates and removes only the two new evaluation registrations before checking the unchanged historical digest; adversarial tests reject missing, duplicate or altered registrations. The failed receipt is retained separately from the subsequent publication gate.
+
 ## Next slices
 
 1. Use the preparation comparison to simplify exact-intent selection and clarify the host user-event boundary before replacing ordinary prompts.

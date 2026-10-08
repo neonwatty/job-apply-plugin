@@ -1,8 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { agentArguments, execute, parseTrace, validateContext } from '../evals/preparation/support.mjs';
+import { removeReviewedPreparationEvalMatrixAdditions } from './point_paths_domain_support.mjs';
 
 const lines = (...events) => events.map(event => JSON.stringify(event)).join('\n');
+test('historical matrix comparison removes only the exact evaluation registration', () => {
+  const owner = { paths: ['evals/preparation/*.mjs'], suites: ['node-runner-fast'] };
+  const before = { inventory: { include: ['before', 'evals/**/*.mjs', 'after'] },
+    ownership: [{ paths: ['untouched'], suites: ['original'] }, owner] };
+  const matrix = structuredClone(before);
+  removeReviewedPreparationEvalMatrixAdditions(matrix);
+  assert.deepEqual(matrix, { inventory: { include: ['before', 'after'] },
+    ownership: [{ paths: ['untouched'], suites: ['original'] }] });
+  for (const mutate of [m => m.inventory.include.push('evals/**/*.mjs'),
+    m => m.inventory.include.splice(1, 1), m => m.ownership.push(owner),
+    m => m.ownership.pop(), m => m.ownership[1].suites.push('unreviewed'),
+    m => m.ownership[1].paths.push('unreviewed')]) {
+    const invalid = structuredClone(before);
+    mutate(invalid);
+    assert.throws(() => removeReviewedPreparationEvalMatrixAdditions(invalid));
+  }
+});
+
 test('model traces count completed shell calls once and retain prose for review', () => {
   const command = { id: 'c', type: 'command_execution', command: 'node command.mjs task snapshot', status: 'completed', exit_code: 0 };
   const receipt = parseTrace(lines(
