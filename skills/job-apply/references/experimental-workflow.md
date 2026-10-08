@@ -25,7 +25,7 @@ For an explicit choice of one saved job with an existing run and confirmed resum
 node "<plugin-root>/apps/companion/command.mjs" workflow prepare context --root /absolute/fixture-store --native-lock /absolute/flock.node --job-id fixture-job
 ```
 
-The response includes the active `task`/`context` and `selection` with `jobId`, `jobRevision`, `inputRevision`, canonical `status`, guarded `ready` and `allowedActions`. When `selection.ready` is true for the requested scope, report the saved selection. A stored Ready status alone does not establish current readiness. For an uncertain prior command response, retry its original payload first. If an active task exists, resume it before starting another operation.
+The response includes the active `task`/`context` and `selection` with `jobId`, `jobRevision`, `inputRevision`, canonical `status`, guarded `ready` and `allowedActions`. When `selection.ready` is true for the requested scope, report the saved selection. A stored Ready status alone does not establish current readiness. Already Ready selections expose no `select` action; new selection IDs in that state are rejected without writing. For an uncertain prior command response, retry its original payload first. If an active task exists, resume it before starting another operation.
 
 When the user has already chosen this exact job and `selection.allowedActions` includes `select`, copy the three selection references into a private input file and invoke `prepare select --input ...`:
 

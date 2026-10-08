@@ -117,6 +117,11 @@ test('installed exact selection needs one context and mutation and survives a fr
   const saved=await snapshot(state.root);
   assert.equal((await workflow('prepare','select',input)).result.replayed,true);
   assert.deepEqual(await snapshot(state.root),saved);
-  assert.equal((await workflow('prepare','context',undefined,['--job-id','job'])).result.selection.status,'ready');
+  const readyContext=(await workflow('prepare','context',undefined,['--job-id','job'])).result.selection;
+  assert.equal(readyContext.ready,true);
+  assert.deepEqual(readyContext.allowedActions,[]);
+  const repeated={operationId:'second-confirmation',jobId,jobRevision:readyContext.jobRevision,inputRevision:readyContext.inputRevision};
+  assert.equal((await workflow('prepare','select',repeated)).error,'action_unavailable');
+  assert.deepEqual(await snapshot(state.root),saved);
   assert.deepEqual(await readdir(home),[]);
 });

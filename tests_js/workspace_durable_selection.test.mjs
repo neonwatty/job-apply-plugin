@@ -39,6 +39,9 @@ test('explicit selection binds canonical inputs and atomically finishes with one
     assert.deepEqual(await fresh.workflow.select(input),{...result,replayed:true});
     assert.deepEqual(await snapshot(state.root),after);
     assert.equal((await fresh.workflow.inspect('job')).selection.ready,true);
+    assert.deepEqual((await fresh.workflow.inspect('job')).selection.allowedActions,[]);
+    const repeat=await request(fresh.workflow,'fresh-confirmation');
+    await rejectedUnchanged(state,()=>fresh.workflow.select(repeat),/action_unavailable/);
     await rejectedUnchanged(state,()=>fresh.workflow.select({...input,jobRevision:'2'}),/operation_conflict/);
     fresh.access.authorized=[];
     await rejectedUnchanged(state,()=>fresh.workflow.select(input),/profile_unavailable/);

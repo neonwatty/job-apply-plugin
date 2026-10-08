@@ -5,6 +5,7 @@ import type { PreparationDomain } from '../contracts/workspace/preparation-domai
 import { fromJSON, get, int, string, JobsError } from '../contracts/workspace/values.js';
 import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 import type { WorkflowTask } from '../contracts/workspace/workflow-tasks.js';
+import { WorkflowError } from '../harness/contracts.js';
 import type { ProfileAccess } from '../harness/contracts.js';
 import { runDurableOperation } from '../harness/run.js';
 import type { OperationResult } from '../harness/run.js';
@@ -36,8 +37,9 @@ export async function inspectExplicitSelection(domain: PreparationDomain, jobId:
     try { await inspectSelection(domain.snapshot, jobId, BigInt(jobRevision)); }
     catch (error) { if (!(error instanceof JobsError)) throw error; available = false; }
   }
+  const ready = available && string(get(job, 'status')) === 'ready';
   return { jobId, jobRevision, inputRevision: preparationScope(domain.snapshot, job), status: string(get(job, 'status')),
-    ready: available && string(get(job, 'status')) === 'ready', allowedActions: available ? ['select'] : [] };
+    ready, allowedActions: available && !ready ? ['select'] : [] };
 }
 
 /** An explicit selection request is one guarded transaction, with no synthetic question/reply.
@@ -54,6 +56,7 @@ export function selectExplicitJob(store: WorkflowTaskStore<PreparationDomain>, c
       if (int(get(job, 'revision'))!.toString() !== request.jobRevision
         || preparationScope(domain.snapshot, job) !== request.inputRevision) throw new TaskProtocolError('stale_revision');
       await inspectSelection(domain.snapshot, request.jobId, BigInt(request.jobRevision));
+      if (string(get(job, 'status')) === 'ready') throw new WorkflowError('action_unavailable');
       const task: WorkflowTask = { taskId: randomUUID(), workflow: preparationIdentity, revision: '1',
         subject: { jobId: request.jobId, jobRevision: request.jobRevision, inputRevision: request.inputRevision }, status: 'active', pending: null };
       await executeWorkflowTool({ kind: 'callTool', operationId: request.operationId, taskId: task.taskId,
