@@ -7,14 +7,14 @@ export const alternateResumeId = 'synthetic-alternate-resume';
 async function services(pluginRoot, fixture) {
   const load = path => import(pathToFileURL(join(pluginRoot, `runtime/${path}.js`)).href);
   const [{ NativeJobsRepository }, { loadPosixFlockProvider }, { ResumeService }, { ResumeFactsService },
-    { ApplicationRunsService }, policy, values] = await Promise.all([
+    { ApplicationRunsService }, { WorkspaceProjectionsService }, values] = await Promise.all([
     load('store/native-jobs'), load('store/posix-flock'), load('workspace-core/resumes'),
     load('workspace-core/resume-facts'), load('workspace-core/application-runs'),
-    load('contracts/workspace/application-policy'), load('contracts/workspace/values'),
+    load('workspace-core/workspace-projections'), load('contracts/workspace/values'),
   ]);
   const repository = new NativeJobsRepository(fixture.storeRoot, loadPosixFlockProvider(fixture.nativeLock));
   return { repository, resumes: new ResumeService(repository), facts: new ResumeFactsService(repository),
-    runs: new ApplicationRunsService(repository), policy, values };
+    runs: new ApplicationRunsService(repository), projections: new WorkspaceProjectionsService(repository), values };
 }
 
 export async function prepareContinuationFixture(pluginRoot, workspace, scenario) {
@@ -44,11 +44,8 @@ export async function introduceStaleFacts(pluginRoot, fixture) {
 
 export async function observeContinuation(pluginRoot, fixture) {
   const state = await observeFixture(fixture.storeRoot);
-  const { repository, runs, facts, policy, values: { get, serialize } } = await services(pluginRoot, fixture);
-  const ready = await repository.claimTransaction(async tx => {
-    const job = policy.activeApplicationJob(tx, fixture.jobId);
-    return get(await policy.applicationPreflight(tx, job), 'ready') === true;
-  });
+  const { runs, facts, projections, values: { get, serialize } } = await services(pluginRoot, fixture);
+  const ready = get(await projections.preflight(fixture.jobId), 'ready') === true;
   const activeRun = await runs.status();
   return { ...state, preflightReady: ready, activeRun: activeRun === null ? null : JSON.parse(serialize(activeRun)),
     factSummaries: JSON.parse(serialize(await facts.list())) };
