@@ -5,7 +5,7 @@ import { removeReviewedPreparationEvalMatrixAdditions } from './point_paths_doma
 
 const lines = (...events) => events.map(event => JSON.stringify(event)).join('\n');
 test('historical matrix comparison removes only the exact evaluation registration', () => {
-  const owner = { paths: ['evals/preparation/*.mjs'], suites: ['node-runner-fast'] };
+  const owner = { paths: ['evals/preparation/*.mjs', 'evals/attempt/*.mjs'], suites: ['node-runner-fast'] };
   const before = { inventory: { include: ['before', 'evals/**/*.mjs', 'after'] },
     ownership: [{ paths: ['untouched'], suites: ['original'] }, owner] };
   const matrix = structuredClone(before);
