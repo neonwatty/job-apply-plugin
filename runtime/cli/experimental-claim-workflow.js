@@ -11,7 +11,7 @@ import { attemptProfile } from '../workflows/applications/attempt.js';
 import { fromJSON, object, serialize } from '../contracts/workspace/values.js';
 import { boundedFile } from './experimental-files.js';
 import { runAttemptBroker, requestAttempt } from './attempt-broker.js';
-/** Explicit fixture-only server/client. No automatic broker launch or installed public route. */
+/** Explicit fixture-only server/client. The caller owns the foreground broker lifecycle. */
 export async function experimentalClaimWorkflow(args) {
     const [command, ...rest] = args;
     if (!['serve', 'context', 'event'].includes(command ?? ''))

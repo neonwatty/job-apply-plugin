@@ -14,7 +14,7 @@ import { parseRouteProposal } from '../harness/proposals.js';
 import { WorkflowError } from '../harness/contracts.js';
 import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 
-/** Isolated experiment entry point: no default Store, bootstrap, public-router or browser access. */
+/** Isolated preparation entry point: explicit fixture paths, no bootstrap or browser access. */
 export async function experimentalWorkflow(args: string[]): Promise<unknown> {
   const [command, ...rest] = args;
   if (!['context', 'route', 'action', 'reply'].includes(command ?? '')) throw new Error('invalid command');

@@ -39,13 +39,19 @@ Published as [PR #194](https://github.com/neonwatty/job-apply-plugin/pull/194), 
 
 ## Slice 3b: durable claim lifecycle
 
-Implementation is on `codex/agent-workflows-04-claims`, stacked on PR #194. See the [claim workflow file map and protocol](durable-claim-slice.md). The existing claim journal now carries workflow receipts through recovery, including session-only progress. An experimental host adapter uses the existing broker transport; private claim tokens remain in broker memory. Cancellation performs a Needs Info handoff before ending the task. Focused verification and pre-publication gates are in progress.
+Implementation is on `codex/agent-workflows-04-claims`, stacked on PR #194. See the [claim workflow file map and protocol](durable-claim-slice.md). The existing claim journal now carries workflow receipts through recovery, including session-only progress. An experimental host adapter uses the existing broker transport; private claim tokens remain in broker memory. Cancellation performs a Needs Info handoff before ending the task.
+
+Published as [PR #195](https://github.com/neonwatty/job-apply-plugin/pull/195), candidate `f541095294b4bdffb7027a2abb2dda90908ed5be`. Forty-three new claim tests, eleven commit-hook suites, 28 deep suites and fresh native pre-push obligations passed; Windows was skipped. Native and independent review found two validated issues (nested exact revisions and terminal replay capability retirement); both were fixed and freshly validated. Evidence: `.workflows/local/agent-workflow-experiment/slice4-validation-summary.json`.
+
+## Slice 4a: installed host route and focused prompt reference
+
+Implementation is on `codex/agent-workflows-05-host`, stacked on PR #195. See the [host command file map and contract](host-workflow-slice.md). The public `workflow` surface composes the existing fixture-only preparation and claim protocols; the existing Job Apply skill gains an explicit experimental route. Code owns state and validates proposals, while host instructions describe invocation, user-event attestation and truthful outcome wording. Deterministic package-layout tests and pre-publication checks are in progress. Repeated model UX comparisons remain outstanding.
 
 ## Next slices
 
-1. Complete slice 3b review and publication against slice 3a.
+1. Complete slice 4a verification and publication against slice 3b.
 2. Reconcile the stacked experimental PRs and their integration receipts.
-3. Connect host prompts and public workflow commands; compare behavior against staging fixtures.
+3. Evaluate the installed host route against staging fixtures; measure redundant questions, continuation and truthful outcomes before replacing ordinary prompts.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
 
 There is no staging promotion, regular-plugin installation, live applicant Store mutation, or measured application UX improvement from these foundation slices alone.
