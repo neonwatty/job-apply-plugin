@@ -4,6 +4,10 @@ import { inspectRunInputs, latestRunFacts } from '../contracts/workspace/applica
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
 import { preparationIdentity, preparationRegistry, selectionConfirmation } from '../workflows/applications/prepare.js';
 import { inspectExplicitSelection } from './preparation-selection.js';
+function unavailableResumeFile(error) {
+    return error instanceof JobsError && ['managed resume content is unavailable',
+        'resume file exceeds the 10 MiB limit', 'resume source changed during import'].includes(error.message);
+}
 /** Advisory metadata from one locked snapshot; contains no applicant facts, paths or authority. */
 export async function preparationGuidance(domain, task, currentAccess, requestedJobId) {
     const enabled = () => preparationRegistry().eligible(currentAccess()).some(item => item.id === preparationIdentity.id);
@@ -29,13 +33,25 @@ export async function preparationGuidance(domain, task, currentAccess, requested
                 nextOperation: task ? 'job_unavailable' : 'choose_job', blockers: task ? ['job_unavailable'] : [], jobs
             } };
     const selection = await inspectExplicitSelection(domain, jobId, task?.taskId ?? null, currentAccess());
-    const preflight = await applicationPreflight(snapshot, job);
-    const blockers = get(preflight, 'errors').map(value => string(value));
+    let preflightReady = false;
+    let blockers;
+    try {
+        const preflight = await applicationPreflight(snapshot, job);
+        preflightReady = get(preflight, 'ready') === true;
+        blockers = get(preflight, 'errors').map(value => string(value));
+    }
+    catch (error) {
+        if (!unavailableResumeFile(error))
+            throw error;
+        blockers = ['resume_file_unavailable'];
+        if (run === null)
+            blockers.push('application_run_missing');
+    }
     let nextOperation = selection.ready ? 'report_ready' : selection.allowedActions.includes('select') ? 'select' : 'resolve_blockers';
     let resumeChoices = [];
     const taskMatches = task?.subject.jobId === selection.jobId;
     const pendingCurrent = taskMatches && task?.pending && task.subject.jobRevision === selection.jobRevision
-        && task.subject.inputRevision === selection.inputRevision && get(preflight, 'ready') === true;
+        && task.subject.inputRevision === selection.inputRevision && preflightReady;
     if (task && !taskMatches) {
         nextOperation = 'continue_task';
         blockers.push('different_active_preparation');
@@ -67,8 +83,7 @@ export async function preparationGuidance(domain, task, currentAccess, requested
                         inputBlockers.push('resume_file_changed');
                     else if (error.message === 'confirmed resume facts are unavailable or stale')
                         inputBlockers.push('resume_facts_unconfirmed');
-                    else if (['managed resume content is unavailable', 'resume file exceeds the 10 MiB limit',
-                        'resume source changed during import'].includes(error.message))
+                    else if (unavailableResumeFile(error))
                         inputBlockers.push('resume_file_unavailable');
                     else
                         throw error;

@@ -157,3 +157,23 @@ test('unreadable alternate resume reports a file blocker while confirmed facts r
   assert.equal(choices.find(choice => choice.resumeId !== alternateResumeId).available, true);
   assert.deepEqual(await snapshot(fixture.storeRoot), before);
 });
+
+
+test('unreadable default resume keeps healthy alternate input guidance available', async t => {
+  const { fixture, workflow } = await setup(t, 'unresolved-resume');
+  await writeFile(join(fixture.storeRoot, 'resume-files', 'synthetic-preparation-resume.txt'), Buffer.alloc(10 * 1024 * 1024 + 1));
+  const before = await snapshot(fixture.storeRoot);
+  const { selection, guidance } = await workflow.inspect(fixture.jobId);
+  assert.equal(selection.ready, false);
+  assert.deepEqual(selection.allowedActions, []);
+  assert.equal(guidance.nextOperation, 'choose_resume_then_start_run');
+  assert.deepEqual(guidance.blockers, ['resume_file_unavailable', 'application_run_missing']);
+  const healthy = guidance.resumeChoices.find(choice => choice.resumeId === alternateResumeId);
+  assert.equal(healthy.available, true);
+  assert.equal(healthy.runStart.requiresExplicitInputConfirmation, true);
+  const unavailable = guidance.resumeChoices.find(choice => choice.resumeId !== alternateResumeId);
+  assert.equal(unavailable.factState, 'confirmed');
+  assert.deepEqual(unavailable.blockers, ['resume_file_unavailable']);
+  assert.equal(unavailable.runStart, null);
+  assert.deepEqual(await snapshot(fixture.storeRoot), before);
+});

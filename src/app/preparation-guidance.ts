@@ -9,6 +9,11 @@ import type { ProfileAccess } from '../harness/contracts.js';
 import { preparationIdentity, preparationRegistry, selectionConfirmation } from '../workflows/applications/prepare.js';
 import { inspectExplicitSelection } from './preparation-selection.js';
 
+function unavailableResumeFile(error: unknown): boolean {
+  return error instanceof JobsError && ['managed resume content is unavailable',
+    'resume file exceeds the 10 MiB limit', 'resume source changed during import'].includes(error.message);
+}
+
 /** Advisory metadata from one locked snapshot; contains no applicant facts, paths or authority. */
 export async function preparationGuidance(domain: PreparationDomain, task: WorkflowTask | null,
   currentAccess: () => ProfileAccess, requestedJobId?: string) {
@@ -31,13 +36,22 @@ export async function preparationGuidance(domain: PreparationDomain, task: Workf
   if (!job && requestedJobId === undefined) return { guidance: {
     nextOperation: task ? 'job_unavailable' : 'choose_job', blockers: task ? ['job_unavailable'] : [], jobs } };
   const selection = await inspectExplicitSelection(domain, jobId!, task?.taskId ?? null, currentAccess());
-  const preflight = await applicationPreflight(snapshot, job!);
-  const blockers = (get(preflight, 'errors') as Value[]).map(value => string(value)!);
+  let preflightReady = false;
+  let blockers: string[];
+  try {
+    const preflight = await applicationPreflight(snapshot, job!);
+    preflightReady = get(preflight, 'ready') === true;
+    blockers = (get(preflight, 'errors') as Value[]).map(value => string(value)!);
+  } catch (error) {
+    if (!unavailableResumeFile(error)) throw error;
+    blockers = ['resume_file_unavailable'];
+    if (run === null) blockers.push('application_run_missing');
+  }
   let nextOperation = selection.ready ? 'report_ready' : selection.allowedActions.includes('select') ? 'select' : 'resolve_blockers';
   let resumeChoices: Array<unknown> = [];
   const taskMatches = task?.subject.jobId === selection.jobId;
   const pendingCurrent = taskMatches && task?.pending && task.subject.jobRevision === selection.jobRevision
-    && task.subject.inputRevision === selection.inputRevision && get(preflight, 'ready') === true;
+    && task.subject.inputRevision === selection.inputRevision && preflightReady;
   if (task && !taskMatches) {
     nextOperation = 'continue_task';
     blockers.push('different_active_preparation');
@@ -59,8 +73,7 @@ export async function preparationGuidance(domain: PreparationDomain, task: Workf
           if (!(error instanceof JobsError)) throw error;
           if (error.message === 'resume file changed') inputBlockers.push('resume_file_changed');
           else if (error.message === 'confirmed resume facts are unavailable or stale') inputBlockers.push('resume_facts_unconfirmed');
-          else if (['managed resume content is unavailable', 'resume file exceeds the 10 MiB limit',
-            'resume source changed during import'].includes(error.message)) inputBlockers.push('resume_file_unavailable');
+          else if (unavailableResumeFile(error)) inputBlockers.push('resume_file_unavailable');
           else throw error;
         }
       } else inputBlockers.push('resume_facts_missing');
