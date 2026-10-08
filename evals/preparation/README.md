@@ -6,7 +6,7 @@ Run from the experimental worktree with an authenticated Codex CLI:
 node evals/preparation/run.mjs --trials 3 --model gpt-5.6-luna
 ```
 
-This uses model capacity. It refuses CI execution. The pinned baseline is staging `f95b4947453ad6c6abc9cc0e81c3e443706d4714`; the pinned candidate is the installed host slice `4551524d45fbe90ae52dd231cfe739a9b2a43bae`. Changing the current checkout does not change either tested plugin. Model and reasoning settings are identical across arms. Each repetition alternates which arm goes first.
+This uses model capacity. It refuses CI execution. The pinned baseline is staging `f95b4947453ad6c6abc9cc0e81c3e443706d4714`; the pinned candidate is the installed host slice `4551524d45fbe90ae52dd231cfe739a9b2a43bae`. Changing the current checkout does not change either tested plugin. For a later experimental slice, pass `--candidate <full-40-character-commit-SHA>`; the report records that exact revision and the baseline remains pinned. Model and reasoning settings are identical across arms. Each repetition alternates which arm goes first.
 
 ## Scenario and evidence
 

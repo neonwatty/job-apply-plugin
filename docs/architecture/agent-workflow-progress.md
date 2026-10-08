@@ -49,11 +49,17 @@ Published as [PR #196](https://github.com/neonwatty/job-apply-plugin/pull/196), 
 
 ## Slice 4b: paired model preparation trials
 
-Implementation is on `codex/agent-workflows-06-evals`, stacked on PR #196. The local comparison runner installs pinned baseline and candidate packages into disposable Codex homes, resumes the same host conversation across three turns and records independent Store outcomes. See the [runner and file map](../../evals/preparation/README.md). Product prompts and runtime remain at the tested slice 4a revision. This slice measures exact-job selection and repeated confirmation; the rest of the acceptance matrix remains outstanding.
+Published as [PR #197](https://github.com/neonwatty/job-apply-plugin/pull/197), candidate `2c84277c975681de401cce85d252bb6cefd0e2c2`, stacked on PR #196. The local comparison runner installs pinned baseline and candidate packages into disposable Codex homes, resumes the same host conversation across three turns and records independent Store outcomes. See the [runner and file map](../../evals/preparation/README.md). Product prompts and runtime remain at the tested slice 4a revision. This slice measures exact-job selection and repeated confirmation; the rest of the acceptance matrix remains outstanding.
 
 The [measured report](preparation-model-eval.md) covers three repetitions per arm (18 host turns). Both versions reached Ready without questions and preserved canonical bytes on repeated confirmation. The candidate had higher median latency and consumed its own newly created pending question in all three first turns. This is not a UX-improvement or promotion pass. An earlier batch with incorrect resumed sandbox settings was excluded and rerun; current harness settings are checked from persisted host context. Two validated capture/cleanup defects were fixed with regression tests. Publication gates are recorded in the slice 6 local receipt.
 
 The first deep run passed 27 suites, skipped Windows and failed the historical S05 matrix comparison. The clean base passed the same assertion. Its comparison now validates and removes only the two new evaluation registrations before checking the unchanged historical digest; adversarial tests reject missing, duplicate or altered registrations. The failed receipt is retained separately from the subsequent publication gate.
+
+Final slice 4b publication checks passed 28 deep suites with Windows skipped, plus fresh native pre-push obligations. Native and independent review resolved three validated findings. Evidence: `.workflows/local/agent-workflow-experiment/slice6-validation-summary.json`.
+
+## Slice 4c: direct explicit selection
+
+Implementation is on `codex/agent-workflows-07-selection`, stacked on PR #197. See the [file map and protocol](explicit-selection-slice.md). An exact choice can read one compact context and commit selection plus one finished-task receipt. The existing pending route remains for later decisions. Guarded readiness distinguishes current preflight from stored job status. This addresses the measured interaction overhead; model results and final gates are recorded separately when complete.
 
 ## Next slices
 

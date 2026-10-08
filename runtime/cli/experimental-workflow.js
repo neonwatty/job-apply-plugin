@@ -15,7 +15,7 @@ import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 /** Isolated preparation entry point: explicit fixture paths, no bootstrap or browser access. */
 export async function experimentalWorkflow(args) {
     const [command, ...rest] = args;
-    if (!['context', 'route', 'action', 'reply'].includes(command ?? ''))
+    if (!['context', 'select', 'route', 'action', 'reply'].includes(command ?? ''))
         throw new Error('invalid command');
     const options = new Map();
     let hostUserEvent = false;
@@ -25,7 +25,7 @@ export async function experimentalWorkflow(args) {
             hostUserEvent = true;
             continue;
         }
-        if (!['--root', '--native-lock', '--input'].includes(name) || options.has(name) || !rest[index + 1])
+        if (!['--root', '--native-lock', '--input', ...(command === 'context' ? ['--job-id'] : [])].includes(name) || options.has(name) || !rest[index + 1])
             throw new Error('invalid option');
         options.set(name, rest[++index]);
     }
@@ -43,8 +43,10 @@ export async function experimentalWorkflow(args) {
         enabled: [preparationProfile], authorized: [preparationProfile]
     }));
     if (command === 'context')
-        return workflow.inspect();
+        return workflow.inspect(options.get('--job-id'));
     const raw = JSON.parse(await boundedFile(options.get('--input'), 131072));
+    if (command === 'select')
+        return workflow.select(raw);
     if (command === 'action')
         return workflow.action(raw);
     let attestation;

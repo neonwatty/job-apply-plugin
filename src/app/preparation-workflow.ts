@@ -1,3 +1,4 @@
+import { inspectExplicitSelection, selectExplicitJob } from './preparation-selection.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
@@ -141,15 +142,20 @@ export class PreparationWorkflow {
     });
   }
 
-  async inspect(): Promise<unknown> {
+  async select(raw: unknown): Promise<OperationResult> {
+    return selectExplicitJob(this.store, this.currentAccess, raw);
+  }
+
+  async inspect(jobId?: string): Promise<unknown> {
     return this.store.transaction(async tx => {
       const task = tx.ledger.activeTaskId === null ? null : tx.ledger.tasks[tx.ledger.activeTaskId]!;
-      if (!task) return { task: null, context: null };
+      const selection = jobId === undefined ? {} : { selection: await inspectExplicitSelection(tx.domain, jobId, tx.ledger.activeTaskId, this.currentAccess()) };
+      if (!task) return { task: null, context: null, ...selection };
       sameWorkflow(task);
       const projection = await context(tx.domain, task), access = this.currentAccess();
       const enabled = this.registry.eligible(access).some(item => item.id === task.workflow.id && item.version === task.workflow.version);
       return { task: structuredClone(task), context: { ...projection, allowedActions: enabled ? projection.allowedActions : [] },
-        subject: subject(tx.domain, task) };
+        subject: subject(tx.domain, task), ...selection };
     });
   }
 }
