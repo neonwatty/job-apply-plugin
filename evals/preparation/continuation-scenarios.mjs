@@ -12,7 +12,7 @@ export function scenarioTurns(scenario, jobId) {
     ],
     'cancel-pending': [
       { request: `Prepare the exact saved job ${jobId} using the current run, but ask me to confirm before saving the selection. Do not mark it Ready yet.` },
-      { fresh: true, request: 'Cancel the pending job preparation and stop. Preserve the saved job, resume and facts; do not delete anything or start filling.' },
+      { fresh: true, request: 'Cancel the pending job preparation and stop. Preserve the existing application run unchanged, including its status and selected inputs. Preserve the saved job, resume and facts; do not delete anything or start filling.' },
     ],
   };
   if (!Object.hasOwn(turns, scenario)) throw Error('Unknown continuation scenario');

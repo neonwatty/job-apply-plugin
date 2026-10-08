@@ -13,7 +13,7 @@ The default candidate is PR #198 at `9f940d64bbd2c9aec657b6933b596b8de0387be4`; 
 | `fresh-context` | Select exact job | Start a new Codex session, retain Store | Resume saved preparation |
 | `stale-facts` | Select exact job | Canonical service appends an unconfirmed fact draft | Check current readiness without approving new facts |
 | `unresolved-resume` | Prepare job without choosing between two resumes | Same host session | Choose the second resume and its confirmed facts |
-| `cancel-pending` | Ask for confirmation before selection | Start a new Codex session, retain Store | Cancel preparation while preserving applicant data |
+| `cancel-pending` | Ask for confirmation before selection | Start a new Codex session, retain Store | Cancel pending selection while preserving applicant data and the existing run |
 
 Each scenario/repetition/arm has its own installed plugin, fictional Store and Codex home. Order alternates within pairs. Fresh-session turns do not receive earlier chat messages, task IDs or workflow receipts from the harness. They receive the same fixture location and new user request and must inspect canonical state. The harness verifies a changed session ID and a first-turn persisted host context. Same-session turns verify exact session identity and expected turn count.
 
@@ -39,6 +39,8 @@ This comparison does not exercise live application filling, browser interruption
 - `continuation-fixture.mjs`: canonical setup, intervention and independent observations.
 - `continuation-scenarios.mjs`: user requests and state-only grading.
 - `../../tests_js/test-runner-continuation-eval.test.mjs`: adversarial grade checks.
-- `../../tests_js/workspace_continuation_fixture.test.mjs`: real native fixture and fact-drift checks.
+- `../../tests_js/workspace_continuation_fixture.test.mjs`: real native fixture and fact-drift checks, including the archived pinned baseline package.
 
 The runner reuses the bounded process, trace and host-configuration helpers already tested by the [preparation comparison](README.md). No product runtime or prompt changes are implied by these scenario additions.
+
+The initial cancellation wording did not explicitly preserve the active run, while its grader required that. Those initial cancellation trials are diagnostic only: closing the run is not counted as a user-request failure. The current request explicitly preserves the existing run and both arms must be rerun with that wording. Other scenario requests and grades are unchanged.
