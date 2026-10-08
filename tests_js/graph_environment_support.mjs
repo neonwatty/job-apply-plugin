@@ -375,7 +375,8 @@ export async function checkLiveGraph() {
   const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
   const { digest, PYTHON_INVENTORY_SHA256 } = await import('../tools/local-checks/focused-contracts.mjs');
   const liveGraph = await discoverConsumerGraph(GRAPH_ROOT, await trackedPaths(GRAPH_ROOT));
-  assert.ok(!liveGraph.reasons.includes('Unreviewed skill document inventory'), 'live skill documents require review');
+  assert.equal(evaluateFocusedClosure(liveGraph, ['skills/job-apply/references/experimental-workflow.md']).bounded,
+    false, 'experimental prompts require broad validation');
   const { PYTHON_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
   const livePython = [...liveGraph.tracked].filter(PYTHON_SOURCE_PATH).sort();
   const pythonInventory = digest(JSON.stringify(livePython.map(file => ({ path: file, sha256: liveGraph.hashes.get(file) }))));
