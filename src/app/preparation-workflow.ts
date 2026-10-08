@@ -1,4 +1,5 @@
-import { inspectExplicitSelection, selectExplicitJob } from './preparation-selection.js';
+import { preparationGuidance } from './preparation-guidance.js';
+import { selectExplicitJob } from './preparation-selection.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
@@ -149,7 +150,8 @@ export class PreparationWorkflow {
   async inspect(jobId?: string): Promise<unknown> {
     return this.store.transaction(async tx => {
       const task = tx.ledger.activeTaskId === null ? null : tx.ledger.tasks[tx.ledger.activeTaskId]!;
-      const selection = jobId === undefined ? {} : { selection: await inspectExplicitSelection(tx.domain, jobId, tx.ledger.activeTaskId, this.currentAccess()) };
+      if (task) sameWorkflow(task);
+      const selection = await preparationGuidance(tx.domain, task, this.currentAccess, jobId);
       if (!task) return { task: null, context: null, ...selection };
       sameWorkflow(task);
       const projection = await context(tx.domain, task), access = this.currentAccess();

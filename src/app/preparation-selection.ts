@@ -16,6 +16,10 @@ import { preparationIdentity, preparationRegistry } from '../workflows/applicati
 import type { PreparationInput } from '../workflows/applications/prepare.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 
+export interface ExplicitSelection {
+  jobId: string; jobRevision: string; inputRevision: string; status: string | null;
+  ready: boolean; allowedActions: string[];
+}
 interface SelectionRequest extends PreparationInput { operationId: string; inputRevision: string }
 function selectionRequest(raw: unknown): SelectionRequest {
   const value = record(snapshot(raw), 'invalid_arguments');
@@ -28,7 +32,7 @@ function selectionRequest(raw: unknown): SelectionRequest {
 
 /** Compact canonical projection for an exact user-selected job. No mutation or authority grant. */
 export async function inspectExplicitSelection(domain: PreparationDomain, jobId: string,
-  activeTaskId: string | null, access: ProfileAccess): Promise<unknown> {
+  activeTaskId: string | null, access: ProfileAccess): Promise<ExplicitSelection> {
   identifier(jobId, 'invalid_arguments');
   const job = activeApplicationJob(domain.snapshot, jobId);
   const jobRevision = int(get(job, 'revision'))!.toString();

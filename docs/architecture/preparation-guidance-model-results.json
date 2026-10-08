@@ -1,0 +1,860 @@
+{
+  "schemaVersion": 1,
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "614a6484fae72344293ddd5045b69e5d65a19f8c"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "harnessRevision": "614a6484fae72344293ddd5045b69e5d65a19f8c",
+  "harnessSources": {
+    "continuation-run.mjs": "3b508ac589405e0ec66b326a19aa5e85eff0ba0501041e0d1c5a93f0294406d1",
+    "continuation-fixture.mjs": "5290e45dcbb052ce4a03bf23d56b317a137d7f044452b391b4d8e1a2481d0aec",
+    "continuation-scenarios.mjs": "8a0d84be64271f4a48cab9dd65f022087daa77fb7d200948123cfb21bbb51010",
+    "support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+    "fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd"
+  },
+  "repetitionsPerArmAndScenario": 3,
+  "source": {
+    "directory": ".workflows/local/continuation-eval-1791487130935",
+    "reportSha256": "9007c45edd9fa91de8b37327c801843dd5c70768f2e561dc29b03670c366b448",
+    "evidenceManifestSha256": "00d6dae035fb4b0d2e3053975d6c5d1292b08cf38f5a53053bbe54fbaa1452da",
+    "executedConversations": 24,
+    "executedTurns": 48,
+    "removedTemporaryRoots": 24
+  },
+  "runs": [
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        28735,
+        14163
+      ],
+      "shellCalls": [
+        5,
+        3
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        21318,
+        11808
+      ],
+      "shellCalls": [
+        4,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        21804,
+        11869
+      ],
+      "shellCalls": [
+        3,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        18543,
+        38948
+      ],
+      "shellCalls": [
+        3,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        1
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        22146,
+        16052
+      ],
+      "shellCalls": [
+        4,
+        4
+      ],
+      "failedShellCalls": [
+        1,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        21928,
+        17432
+      ],
+      "shellCalls": [
+        3,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        22067,
+        9651
+      ],
+      "shellCalls": [
+        5,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        23872,
+        9058
+      ],
+      "shellCalls": [
+        4,
+        1
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        24716,
+        9392
+      ],
+      "shellCalls": [
+        4,
+        1
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        16232,
+        8830
+      ],
+      "shellCalls": [
+        4,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        18370,
+        8052
+      ],
+      "shellCalls": [
+        6,
+        2
+      ],
+      "failedShellCalls": [
+        2,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        22684,
+        10027
+      ],
+      "shellCalls": [
+        4,
+        1
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        20373,
+        24923
+      ],
+      "shellCalls": [
+        7,
+        9
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        20020,
+        29152
+      ],
+      "shellCalls": [
+        3,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        12904,
+        26345
+      ],
+      "shellCalls": [
+        2,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        19579,
+        34739
+      ],
+      "shellCalls": [
+        7,
+        8
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        29306,
+        28431
+      ],
+      "shellCalls": [
+        7,
+        5
+      ],
+      "failedShellCalls": [
+        1,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        12322,
+        26302
+      ],
+      "shellCalls": [
+        2,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        23453,
+        17943
+      ],
+      "shellCalls": [
+        6,
+        3
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "correct_explicit_ready"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        26772,
+        24947
+      ],
+      "shellCalls": [
+        5,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        1
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "correct_explicit_ready"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        22480,
+        18216
+      ],
+      "shellCalls": [
+        5,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "correct_explicit_ready"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        16006,
+        31296
+      ],
+      "shellCalls": [
+        5,
+        10
+      ],
+      "failedShellCalls": [
+        0,
+        2
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "effect_not_explained"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        32367,
+        38909
+      ],
+      "shellCalls": [
+        10,
+        21
+      ],
+      "failedShellCalls": [
+        1,
+        1
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "effect_not_explained"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        25198,
+        20675
+      ],
+      "shellCalls": [
+        5,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "correct_explicit_ready"
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 0,
+      "conversationShellCalls": [
+        8,
+        9,
+        8
+      ],
+      "conversationLatencyMs": {
+        "median": 42898,
+        "min": 38198,
+        "max": 57491
+      }
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 0,
+      "conversationShellCalls": [
+        6,
+        5,
+        5
+      ],
+      "conversationLatencyMs": {
+        "median": 33673,
+        "min": 33126,
+        "max": 39360
+      }
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 0,
+      "questions": 0,
+      "conversationShellCalls": [
+        7,
+        6,
+        8
+      ],
+      "conversationLatencyMs": {
+        "median": 26422,
+        "min": 25062,
+        "max": 31718
+      }
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 0,
+      "conversationShellCalls": [
+        5,
+        5,
+        5
+      ],
+      "conversationLatencyMs": {
+        "median": 32930,
+        "min": 32711,
+        "max": 34108
+      }
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        16,
+        15,
+        12
+      ],
+      "conversationLatencyMs": {
+        "median": 54318,
+        "min": 45296,
+        "max": 57737
+      }
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        8,
+        7,
+        7
+      ],
+      "conversationLatencyMs": {
+        "median": 39249,
+        "min": 38624,
+        "max": 49172
+      }
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        9,
+        15,
+        31
+      ],
+      "conversationLatencyMs": {
+        "median": 47302,
+        "min": 41396,
+        "max": 71276
+      }
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        11,
+        9,
+        9
+      ],
+      "conversationLatencyMs": {
+        "median": 45873,
+        "min": 40696,
+        "max": 51719
+      }
+    }
+  ],
+  "limits": [
+    "Three repetitions per arm; descriptive results, not statistical proof or production acceptance.",
+    "All full transcripts reviewed; state preservation and truthful readiness are separate measures.",
+    "Failed shell counts omit tool rejections missing from completed trace items.",
+    "Installed archives include implementation and evaluation files; no observed candidate implementation inspection in this batch.",
+    "No live browser, applicant data, actual filling, trusted human event adapter or general recovery acceptance."
+  ]
+}

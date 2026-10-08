@@ -15,7 +15,7 @@ test('durable preparation stages canonical selection, scoped intent and value-fr
     await t.test('start, persisted pause, fresh-process reply, and all duplicate deliveries are byte-idempotent',async()=>{
       const state=await setup(fixture,'replay'), first=runtime(state);
       const before=await snapshot(state.root);
-      assert.deepEqual(await first.workflow.inspect(),{task:null,context:null});
+      assert.equal((await first.workflow.inspect()).task,null);
       assert.deepEqual(await snapshot(state.root),before);
       const started=await first.workflow.route(start()), asked=await first.workflow.action(ask(started.receipt.task));
       const bytes=await snapshot(state.root), restarted=runtime(state);
@@ -38,7 +38,7 @@ test('durable preparation stages canonical selection, scoped intent and value-fr
       const repeated=await restarted.workflow.route(event.proposal,event.attestation);
       assert.deepEqual(repeated,{receipt:result.receipt,replayed:true});
       assert.deepEqual(await snapshot(state.root),after);
-      assert.deepEqual(await restarted.workflow.inspect(),{task:null,context:null});
+      assert.equal((await restarted.workflow.inspect()).task,null);
       assert.doesNotMatch(JSON.stringify(jobs.metadata.agentWorkflows),/PRIVATE|token|path|name|questionText/);
       assert.deepEqual(restarted.writes,[join(state.root,'jobs.json')]);
     });

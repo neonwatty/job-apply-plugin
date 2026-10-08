@@ -1,3 +1,4 @@
+import { inspectRunInputs } from '../contracts/workspace/application-run-inputs.js';
 import { randomUUID } from 'node:crypto';
 import { activeApplicationRun, currentRunJobIds, validateApplicationRuns } from '../contracts/workspace/application-runs.js';
 import { safeId } from '../contracts/workspace/jobs.js';
@@ -42,20 +43,7 @@ export class ApplicationRunsService {
     return this.repository.claimTransaction(async tx => {
       if (activeApplicationRun(tx.jobs) !== null) throw new JobsError('an application run is already active');
       requireJobs(tx.jobs, ids);
-      const resumeValue = get(object(get(tx.resumes, 'resumes'), 'resumes'), resumeId);
-      if (resumeValue === null) throw new JobsError('resume does not exist');
-      const resume = object(resumeValue, 'resume');
-      if (get(resume, 'deletedAt') !== null || string(get(resume, 'storageKind')) !== 'managed'
-        || int(get(resume, 'revision')) !== expectedResume) throw new JobsError('resume revision conflict');
-      const observation = await tx.files.observation(resume);
-      if (!observation.exists || observation.digest !== string(get(resume, 'digest'))) throw new JobsError('resume file changed');
-      const setValue = tx.facts ? get(object(get(tx.facts, 'sets'), 'resume fact sets'), resumeId) : null;
-      const versions = setValue === null ? null : get(object(setValue, 'resume fact set'), 'versions');
-      const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1]!, 'resume facts') : null;
-      if (!latest || int(get(latest, 'revision')) !== expectedFacts || string(get(latest, 'state')) !== 'confirmed'
-        || string(get(latest, 'contentRevision')) !== string(get(resume, 'contentRevision'))) {
-        throw new JobsError('confirmed resume facts are unavailable or stale');
-      }
+      const { resume } = await inspectRunInputs(tx, resumeId, expectedResume, expectedFacts);
       const now = this.now(), runId = `run-${randomUUID()}`;
       const selection = doc({ resumeId, contentRevision: string(get(resume, 'contentRevision')), factRevision: null, confirmedAt: now });
       set(selection, 'factRevision', integer(expectedFacts));

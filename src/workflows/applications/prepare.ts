@@ -6,6 +6,10 @@ import type { WorkflowTask } from '../../contracts/workspace/workflow-tasks.js';
 export const preparationIdentity = Object.freeze({ id: 'application.prepare', version: 1 });
 export const preparationProfile = 'application_preparation';
 export const confirmationQuestion = 'confirm_job_selection';
+export const selectionConfirmation = Object.freeze({
+  questionId: confirmationQuestion, confirmOutcome: 'job_ready', declineOutcome: 'declined',
+  prompt: 'Confirm saving this job selection as Ready? Confirm marks the job Ready; decline cancels this pending preparation. Filling and submission will not start.',
+});
 export interface PreparationInput { jobId: string; jobRevision: string }
 export interface PreparationReply { requestId: string; jobRevision: string; decision: 'confirm' | 'decline' }
 export function preparationInput(raw: unknown): PreparationInput {

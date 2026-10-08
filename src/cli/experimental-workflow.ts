@@ -9,7 +9,7 @@ import { NativeJobsRepository } from '../store/native-jobs.js';
 import { NativeWorkflowTasks } from '../store/native-workflow-tasks.js';
 import { nativeFixtureMarker, nativeFixtureMarkerName } from '../store/native-store-layout.js';
 import { loadPosixFlockProvider } from '../store/posix-flock.js';
-import { preparationProfile, preparationReply } from '../workflows/applications/prepare.js';
+import { preparationProfile, preparationReply, selectionConfirmation } from '../workflows/applications/prepare.js';
 import { parseRouteProposal } from '../harness/proposals.js';
 import { WorkflowError } from '../harness/contracts.js';
 import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
@@ -38,7 +38,10 @@ export async function experimentalWorkflow(args: string[]): Promise<unknown> {
   if (command === 'context') return workflow.inspect(options.get('--job-id'));
   const raw: unknown = JSON.parse(await boundedFile(options.get('--input')!, 131072));
   if (command === 'select') return workflow.select(raw);
-  if (command === 'action') return workflow.action(raw);
+  if (command === 'action') {
+    const result = await workflow.action(raw);
+    return { ...result, confirmation: { ...selectionConfirmation, requestId: result.receipt.task.pending!.requestId } };
+  }
   let attestation: HostUserEvent | undefined;
   if (command === 'reply') {
     const proposal = parseRouteProposal(raw);
