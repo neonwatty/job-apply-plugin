@@ -56,7 +56,7 @@ The intervention appended a draft at fact revision 3, invalidating the run's con
 
 All candidates consumed code-returned resume revision **1** and confirmed fact revision **2**, started the explicitly authorized run, refreshed context, and selected using its current revision/scope. They did not guess revisions, fabricate a reply or inspect implementation source. The earlier candidate's missing-run failures were absent in these three repetitions.
 
-Baseline repetition 3 recovered from unsupported `resume-facts-list --resume-id` syntax. Baseline repetition 2 described a rejected deletion absent from completed command items and stderr; its cause cannot be established. Baseline repetition 1 copied four references into fixed `/tmp` files, which were separately verified and removed. Candidate repetition 1 omitted `--native-lock` on ordinary run-start; the public command succeeded through its default artifact resolution, while workflow calls used the supplied artifact.
+Baseline repetition 3 recovered from unsupported `resume-facts-list --resume-id` syntax. Baseline repetition 2 encountered a rejected `rm -f` proposal cleanup: stderr records the host policy requiring a safer approach. This rejection is absent from completed JSONL command items; a later file-change item removed the proposal. Baseline repetition 1 copied four references into fixed `/tmp` files, which were separately verified and removed. Candidate repetition 1 omitted `--native-lock` on ordinary run-start; the public command succeeded through its default artifact resolution, while workflow calls used the supplied artifact.
 
 ### Cancellation
 
