@@ -59,11 +59,11 @@ Final slice 4b publication checks passed 28 deep suites with Windows skipped, pl
 
 ## Slice 4c: direct explicit selection
 
-Implementation is on `codex/agent-workflows-07-selection`, stacked on PR #197. See the [file map and protocol](explicit-selection-slice.md). An exact choice can read one compact context and commit selection plus one finished-task receipt. The existing pending route remains for later decisions. Guarded readiness distinguishes current preflight from stored job status. This addresses the measured interaction overhead; model results and final gates are recorded separately when complete.
+Implementation is on `codex/agent-workflows-07-selection`, stacked on PR #197. See the [file map and protocol](explicit-selection-slice.md). An exact choice can read one compact context and commit selection plus one finished-task receipt. The existing pending route remains for later decisions. Guarded readiness distinguishes current preflight from stored job status. The [repeated comparison](explicit-selection-model-eval.md) selected correctly with one task/receipt per candidate and no repeated-confirmation writes after a code guard fixed the first iteration's redundant-task behavior. Median first-turn latency remained above baseline (31.8 s versus 24.7 s); no speed improvement or staging promotion is claimed. Final publication gates belong in the slice 7 receipt.
 
 ## Next slices
 
-1. Use the preparation comparison to simplify exact-intent selection and clarify the host user-event boundary before replacing ordinary prompts.
+1. Extend preparation trials to fresh-context continuation, stale input, unresolved choices and cancellation before replacing ordinary prompts.
 2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
 3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.

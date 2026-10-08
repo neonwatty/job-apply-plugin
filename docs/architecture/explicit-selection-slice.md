@@ -34,4 +34,4 @@ This slice removes an unnecessary pending question for an already explicit reque
 
 ## Verification
 
-Focused checks cover the direct path and existing pending/installed behavior. Publication requires the repository review, affected selections, installed release and exact-commit local gates. Model comparison uses three repetitions per arm with the same prompts and pinned baseline; measurements and their limits are recorded separately once complete.
+Focused checks cover the direct path and existing pending/installed behavior. Publication requires the repository review, affected selections, installed release and exact-commit local gates. The [completed model comparison](explicit-selection-model-eval.md) uses three repetitions per arm with the same prompts and pinned baseline. It records the failed first iteration, the Ready-state guard correction, and the final measurements and limits.
