@@ -97,3 +97,31 @@ test('installed attempt command owns broker signals, rejects unattested events a
   await assert.rejects(readFile(join(state.root, nativeAttemptPidName)), { code: 'ENOENT' });
   assert.equal((await workflow('attempt', 'context')).ok, false);
 });
+
+test('installed exact selection needs one context and mutation and survives a fresh command retry', {timeout:60000},async t=>{
+  const {workflow,state,home}=await installedHost(t);
+  const before=await snapshot(state.root);
+  const context=await workflow('prepare','context',undefined,['--job-id','job']);
+  assert.equal(context.ok,true);
+  assert.deepEqual(context.result.selection.allowedActions,['select']);
+  const {jobId,jobRevision,inputRevision}=context.result.selection;
+  const input={operationId:'explicit-choice',jobId,jobRevision,inputRevision};
+  assert.equal((await workflow('prepare','select',input,['--host-user-event'])).ok,false);
+  assert.equal((await workflow('prepare','select',{...input,state:'finished'})).ok,false);
+  assert.equal((await workflow('prepare','select',input,['--job-id','job'])).ok,false);
+  assert.deepEqual(await snapshot(state.root),before);
+  const result=await workflow('prepare','select',input);
+  assert.equal(result.result.receipt.outcome,'job_ready');
+  assert.equal(result.result.receipt.task.pending,null);
+  assert.equal(result.result.receipt.task.revision,'1');
+  const saved=await snapshot(state.root);
+  assert.equal((await workflow('prepare','select',input)).result.replayed,true);
+  assert.deepEqual(await snapshot(state.root),saved);
+  const readyContext=(await workflow('prepare','context',undefined,['--job-id','job'])).result.selection;
+  assert.equal(readyContext.ready,true);
+  assert.deepEqual(readyContext.allowedActions,[]);
+  const repeated={operationId:'second-confirmation',jobId,jobRevision:readyContext.jobRevision,inputRevision:readyContext.inputRevision};
+  assert.equal((await workflow('prepare','select',repeated)).error,'action_unavailable');
+  assert.deepEqual(await snapshot(state.root),saved);
+  assert.deepEqual(await readdir(home),[]);
+});

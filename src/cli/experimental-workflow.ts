@@ -17,13 +17,13 @@ import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 /** Isolated preparation entry point: explicit fixture paths, no bootstrap or browser access. */
 export async function experimentalWorkflow(args: string[]): Promise<unknown> {
   const [command, ...rest] = args;
-  if (!['context', 'route', 'action', 'reply'].includes(command ?? '')) throw new Error('invalid command');
+  if (!['context', 'select', 'route', 'action', 'reply'].includes(command ?? '')) throw new Error('invalid command');
   const options = new Map<string, string>();
   let hostUserEvent = false;
   for (let index = 0; index < rest.length; index++) {
     const name = rest[index]!;
     if (name === '--host-user-event' && command === 'reply' && !hostUserEvent) { hostUserEvent = true; continue; }
-    if (!['--root', '--native-lock', '--input'].includes(name) || options.has(name) || !rest[index + 1]) throw new Error('invalid option');
+    if (!['--root', '--native-lock', '--input', ...(command === 'context' ? ['--job-id'] : [])].includes(name) || options.has(name) || !rest[index + 1]) throw new Error('invalid option');
     options.set(name, rest[++index]!);
   }
   const root = options.get('--root'), nativeLock = options.get('--native-lock');
@@ -35,8 +35,9 @@ export async function experimentalWorkflow(args: string[]): Promise<unknown> {
     path === join(root, 'jobs.json') ? atomicWorkflowJobsWrite(path, value, options) : atomicWritePointJson(path, value, options));
   const workflow = new PreparationWorkflow(new NativeWorkflowTasks(repository), () => ({
     enabled: [preparationProfile], authorized: [preparationProfile] }));
-  if (command === 'context') return workflow.inspect();
+  if (command === 'context') return workflow.inspect(options.get('--job-id'));
   const raw: unknown = JSON.parse(await boundedFile(options.get('--input')!, 131072));
+  if (command === 'select') return workflow.select(raw);
   if (command === 'action') return workflow.action(raw);
   let attestation: HostUserEvent | undefined;
   if (command === 'reply') {

@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "scenario": "exact-selection-confirmation-repeat",
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "deb6b4e59040d9a991e5e2e1f5e526a890874a25"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "trials": 3,
+  "source": {
+    "directory": ".workflows/local/preparation-eval-1791472759067",
+    "reportSha256": "6f6c6d74d34a019bccd0a25798184fa76a4a3d1f1f604db420d9d17f61d2e8d1",
+    "executedHarnessRevision": "deb6b4e59040d9a991e5e2e1f5e526a890874a25",
+    "executedHarnessSha256": {
+      "run.mjs": "53ebd964a671de79131b26071c0962fcff97c4ea68ed09553e139cc9194fdbc7",
+      "support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+      "fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd"
+    }
+  },
+  "runs": [
+    {
+      "trial": 1,
+      "arm": "baseline",
+      "revision": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 52922,
+          "shellCalls": 5,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": null,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 49781,
+          "shellCalls": 3,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 10795,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "arm": "candidate",
+      "revision": "deb6b4e59040d9a991e5e2e1f5e526a890874a25",
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 39568,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": null,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 14453,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 9669,
+          "shellCalls": 0,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "arm": "candidate",
+      "revision": "deb6b4e59040d9a991e5e2e1f5e526a890874a25",
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 30550,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": null,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 11081,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 12737,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "arm": "baseline",
+      "revision": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 22369,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": null,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 19066,
+          "shellCalls": 3,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 10437,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "arm": "baseline",
+      "revision": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 24693,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": null,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 14389,
+          "shellCalls": 2,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 10683,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 0,
+          "receipts": 0,
+          "pending": 0
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "arm": "candidate",
+      "revision": "deb6b4e59040d9a991e5e2e1f5e526a890874a25",
+      "turns": [
+        {
+          "turn": 1,
+          "elapsedMs": 31754,
+          "shellCalls": 4,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": null,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        },
+        {
+          "turn": 2,
+          "elapsedMs": 14403,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        },
+        {
+          "turn": 3,
+          "elapsedMs": 11691,
+          "shellCalls": 1,
+          "failedShellCalls": 0,
+          "jobStatus": "ready",
+          "jobRevision": 2,
+          "claimPresent": false,
+          "sessions": 0,
+          "unchangedFromPrevious": true,
+          "tasks": 1,
+          "receipts": 1,
+          "pending": 0
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "baseline": {
+      "firstTurnMedianMs": 24693,
+      "conversationMedianMs": 51872,
+      "shellCalls": [
+        8,
+        8,
+        7
+      ],
+      "questions": 0,
+      "repeatedConfirmationWrites": 0
+    },
+    "candidate": {
+      "firstTurnMedianMs": 31754,
+      "conversationMedianMs": 57848,
+      "shellCalls": [
+        5,
+        6,
+        6
+      ],
+      "questions": 0,
+      "repeatedConfirmationWrites": 0
+    }
+  },
+  "earlierIteration": {
+    "candidate": "ddb361a36ccd9b63256eb55625b833080956116b",
+    "source": {
+      "directory": ".workflows/local/preparation-eval-1791472122339",
+      "reportSha256": "71307dcda5652e9dd0df12b1ea140999f17da6949e06306afb4c6752a1489b9d",
+      "executedHarnessRevision": "ddb361a36ccd9b63256eb55625b833080956116b",
+      "executedHarnessSha256": {
+        "run.mjs": "53ebd964a671de79131b26071c0962fcff97c4ea68ed09553e139cc9194fdbc7",
+        "support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+        "fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd"
+      }
+    },
+    "completeConversations": 6,
+    "finding": "Candidate 2 turn 3 used a new operation ID on a Ready job, recording a second task and receipt. Retained as a failed iteration, not included in final metrics.",
+    "resolution": "Ready now exposes no select action; a new selection ID in that state is rejected without writes. Exact delivery retries retain original receipts."
+  },
+  "manualReview": {
+    "completeTranscriptsReviewed": true,
+    "questions": 0,
+    "pendingQuestions": 0,
+    "falseFilledReviewedSubmittedClaims": 0,
+    "observedClaimSessionBrowserOrFinalActions": 0,
+    "notes": [
+      "Baseline 1 redundantly called fixture-scoped store init on the initialized Store.",
+      "Candidate 2 used a shell fallback while reading references; the required reference text was present in the captured output. Shell exit counts do not prove every subcommand succeeded.",
+      "Candidate 1 and baseline 1 final confirmations used no new tool call; intact-context repetition does not establish fresh-context recovery.",
+      "Native read-only branch review ran concurrently during the beginning of this batch; latency is descriptive and not a controlled performance benchmark."
+    ],
+    "cleanup": "All six temporary roots were absent after completion."
+  }
+}

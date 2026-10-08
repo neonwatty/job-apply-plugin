@@ -12,9 +12,11 @@ let trials = 3, model = 'gpt-5.6-luna';
 for (let index = 2; index < process.argv.length; index++) {
   if (process.argv[index] === '--trials') trials = Number(process.argv[++index]);
   else if (process.argv[index] === '--model') model = process.argv[++index];
-  else throw Error('Usage: node evals/preparation/run.mjs [--trials 1..10] [--model MODEL]');
+  else if (process.argv[index] === '--candidate') revisions.candidate = process.argv[++index];
+  else throw Error('Usage: node evals/preparation/run.mjs [--trials 1..10] [--model MODEL] [--candidate COMMIT_SHA]');
 }
 if (process.env.CI) throw Error('Authenticated model trials are local-only');
+if (typeof revisions.candidate !== 'string' || !/^[a-f0-9]{40}$/.test(revisions.candidate)) throw Error('Candidate must be a full commit SHA');
 if (!Number.isInteger(trials) || trials < 1 || trials > 10 || !model) throw Error('Invalid trial count or model');
 const version = await execute('codex', ['--version']);
 if (version.code !== 0) throw Error('Codex CLI unavailable');
