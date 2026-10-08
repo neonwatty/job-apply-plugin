@@ -33,7 +33,7 @@ test('installed workflow route rejects invalid scope before default Store activa
 
 test('installed host resumes the same pending question and consumes a scoped reply once', { timeout: 60000 }, async t => {
   const { workflow, state, home, invoke, common } = await installedHost(t);
-  assert.deepEqual((await workflow('prepare', 'context')).result, { task: null, context: null });
+  assert.equal((await workflow('prepare', 'context')).result.task, null);
   const started = await workflow('prepare', 'route', start());
   const context = await workflow('prepare', 'context');
   assert.equal(context.result.context.allowedActions[0].id, 'application.confirm_selection');
@@ -52,6 +52,9 @@ test('installed host resumes the same pending question and consumes a scoped rep
   assert.deepEqual(await snapshot(state.root), saved);
   const ready = await workflow('prepare', 'reply', proposal, ['--host-user-event']);
   assert.equal(ready.result.receipt.outcome, 'job_ready');
+  assert.equal(waiting.result.confirmation.confirmOutcome, ready.result.receipt.outcome);
+  assert.equal(waiting.result.confirmation.requestId, task.pending.requestId);
+  assert.deepEqual(resumed.result.guidance.confirmation, waiting.result.confirmation);
   const committed = await snapshot(state.root);
   assert.equal((await workflow('prepare', 'reply', proposal, ['--host-user-event'])).result.replayed, true);
   assert.deepEqual(await snapshot(state.root), committed);
@@ -60,7 +63,7 @@ test('installed host resumes the same pending question and consumes a scoped rep
   assert.equal(canonical.ok, true);
   assert.equal(canonical.snapshot.jobs.find(job => job.id === 'job').status, 'ready');
   assert.equal(String(canonical.snapshot.jobs.find(job => job.id === 'job').revision), ready.result.receipt.task.subject.jobRevision);
-  assert.deepEqual((await workflow('prepare', 'context')).result, { task: null, context: null });
+  assert.equal((await workflow('prepare', 'context')).result.task, null);
   assert.deepEqual(await readdir(home), []);
 });
 
@@ -124,4 +127,36 @@ test('installed exact selection needs one context and mutation and survives a fr
   assert.equal((await workflow('prepare','select',repeated)).error,'action_unavailable');
   assert.deepEqual(await snapshot(state.root),saved);
   assert.deepEqual(await readdir(home),[]);
+});
+
+test('installed preparation guidance executes exact canonical run-start arguments without source access', { timeout: 60000 }, async t => {
+  const { ApplicationRunsService } = await import('../runtime/workspace-core/application-runs.js');
+  const { ResumeFactsService } = await import('../runtime/workspace-core/resume-facts.js');
+  const { fromJSON, get, int, string } = await import('../runtime/contracts/workspace/values.js');
+  const host = await installedHost(t), { state, workflow, invoke, common, fixture } = host;
+  await new ApplicationRunsService(state.repository).complete('run-fixture', 1n);
+  const facts = new ResumeFactsService(state.repository);
+  const draft = await facts.createDraft('resume', fromJSON({ name: 'PRIVATE-FICTIONAL-NAME' }), 1n, null);
+  await facts.confirm('resume', int(get(draft, 'revision')), string(get(draft, 'contentRevision')));
+  const before = await snapshot(state.root);
+  const context = await workflow('prepare', 'context', undefined, ['--job-id', 'job']);
+  const descriptor = context.result.guidance.resumeChoices[0].runStart;
+  assert.equal(descriptor.requiresExplicitInputConfirmation, true);
+  assert.doesNotMatch(JSON.stringify(context), /PRIVATE-FICTIONAL-NAME|PRIVATE-RESUME/);
+  assert.deepEqual(await snapshot(state.root), before);
+  const input = join(fixture.root, 'confirmed-run-input.json');
+  await writeFile(input, JSON.stringify(descriptor.input), { mode: 0o600 });
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const started = await promisify(execFile)(process.execPath, [host.command, ...descriptor.args, ...common, '--input', input],
+    { cwd: host.plugin, env: { HOME: host.home, PATH: '', JOB_APPLY_STORE_DIR: join(host.home, 'unused-owner-store') }, timeout: 10000 });
+  assert.equal(started.stderr, '');
+  assert.equal(JSON.parse(started.stdout).status, 'active');
+  const current = await workflow('prepare', 'context', undefined, ['--job-id', 'job']);
+  assert.equal(current.result.guidance.nextOperation, 'select');
+  const { jobId, jobRevision, inputRevision } = current.result.selection;
+  assert.equal((await workflow('prepare', 'select', { operationId: 'guided-select', jobId, jobRevision, inputRevision })).ok, true);
+  const resumed = await workflow('prepare', 'context');
+  assert.equal(resumed.result.selection.jobId, 'job');
+  assert.equal(resumed.result.guidance.nextOperation, 'report_ready');
 });

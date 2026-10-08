@@ -3,6 +3,10 @@ import { exact, identifier, record, requireCondition, revision, snapshot } from 
 export const preparationIdentity = Object.freeze({ id: 'application.prepare', version: 1 });
 export const preparationProfile = 'application_preparation';
 export const confirmationQuestion = 'confirm_job_selection';
+export const selectionConfirmation = Object.freeze({
+    questionId: confirmationQuestion, confirmOutcome: 'job_ready', declineOutcome: 'declined',
+    prompt: 'Confirm saving this job selection as Ready? Confirm marks the job Ready; decline cancels this pending preparation. Filling and submission will not start.',
+});
 export function preparationInput(raw) {
     const value = record(snapshot(raw), 'invalid_arguments');
     exact(value, ['jobId', 'jobRevision'], 'invalid_arguments');
