@@ -14,7 +14,7 @@ Slice 4e responds to the [continuation comparison](continuation-model-eval.md). 
 | `src/workflows/applications/prepare.ts` | Code-defined question and confirm/decline outcomes |
 | `src/cli/experimental-workflow.ts` | Return the question presentation with accepted/replayed ask receipts |
 | `skills/job-apply/references/experimental-workflow.md` | Explain guidance consumption, explicit input authorization and accurate confirmation wording |
-| `tests_js/workspace_preparation_guidance.test.mjs` | Ambiguity, current references, drift, revocation, stale pending scope and byte preservation |
+| `tests_js/workspace_preparation_guidance.test.mjs` | Ambiguity, current references, drift, revocation, cross-job/stale pending scope, file failures and byte preservation |
 | `tests_js/workspace_host_commands.test.mjs` | Execute generated arguments through the installed command; compare question effect with actual confirmed outcome |
 
 Each TypeScript module has a generated `runtime/` counterpart. Existing durable preparation tests now allow additive inspection fields while preserving their task, receipt and canonical-state assertions.
@@ -27,11 +27,11 @@ For a missing run, guidance lists active managed resumes, labels, exact decimal 
 
 Run execution and candidate eligibility share the same guard. The command repeats the guard in its own transaction, so a draft or changed resume after inspection can invalidate advertised arguments without a write. Creating a run and selecting a job remain separate guarded transactions. This slice does not make the two commands atomic or add a run-start replay receipt.
 
-Current preparation preflight supplies blocker codes independently of stored job status. Existing pending tasks take precedence over a fresh operation; changed pending scope suppresses the confirmation presentation and asks for cancellation/reconciliation. Revoked profile access exposes no run-start descriptor. An active claim suppresses missing-run setup guidance. Underlying mutation guards remain authoritative.
+Current preparation preflight supplies blocker codes independently of stored job status. Recognized unreadable-file errors remain file blockers; healthy alternate resumes remain discoverable. Unexpected errors propagate. Existing pending tasks take precedence over a fresh operation; changed pending scope suppresses the confirmation presentation and asks for cancellation/reconciliation. Revoked profile access exposes no run-start descriptor. An active claim suppresses missing-run setup guidance. Underlying mutation guards remain authoritative.
 
 ## Confirmation presentation
 
-The code-defined question says that confirmation saves the selection as Ready and does not start filling or submission. Ask responses include its `questionId`, `requestId`, prompt and confirm/decline outcomes. Context repeats the presentation only while its pending scope and preflight remain current. This is an additive response field; it is not persisted in task metadata.
+The code-defined question says that confirmation saves the selection as Ready and does not start filling or submission. Ask responses include its `questionId`, `requestId`, prompt and confirm/decline outcomes. Context repeats the presentation only while its job identity, pending scope and preflight remain current. Inspecting a different job does not expose or invalidate the active task's confirmation. This is an additive response field; it is not persisted in task metadata.
 
 Prompt instructions request the code-defined wording. A model can still paraphrase it incorrectly, and the shell host can still supply its own user-event attestation. Model transcripts must verify wording and reply provenance; a trusted host message/rendering adapter remains future work.
 
@@ -40,3 +40,7 @@ Prompt instructions request the code-defined wording. A model can still paraphra
 Focused tests exercise generated descriptors through the installed public command with no source/dependencies in that installation. Existing durable replay, cancellation and revision tests remain required. The skill validator, runtime reproduction, source-size and test-matrix checks apply. The full local gate includes installed Codex/Claude package validation.
 
 Repeat the four paired continuation scenarios with three repetitions per arm using the committed candidate SHA. Record all traces and failed iterations. Compare state outcomes, truthfulness, questions, command effort and latency separately; do not infer an overall UX gain from one successful path. Preserve the prior report as the original evidence.
+
+## Measured comparison
+
+The [48-turn comparison](preparation-guidance-model-eval.md) records all four scenarios at the committed product revision, separate state and explanation scores, descriptive effort/latency, and limitations. Publication receipts remain separate from model outcomes.

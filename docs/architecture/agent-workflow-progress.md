@@ -67,11 +67,11 @@ Published as [PR #199](https://github.com/neonwatty/job-apply-plugin/pull/199), 
 
 ## Slice 4e: preparation discovery and input guidance
 
-Implementation is on `codex/agent-workflows-09-guidance`, stacked on PR #199. See the [file map and contract](preparation-guidance-slice.md). Read-only context now supplies discovery, canonical blockers and exact input references for existing run commands. A shared guard checks both advisory eligibility and actual run creation. Code defines the pending confirmation's Ready effect. Paired evaluation and final gates follow after the candidate is committed.
+Implementation is on `codex/agent-workflows-09-guidance`, stacked on PR #199. See the [file map and contract](preparation-guidance-slice.md). Read-only context now supplies discovery, canonical blockers and exact input references for existing run commands. A shared guard checks both advisory eligibility and actual run creation. Code defines the pending confirmation's Ready effect. The [paired comparison](preparation-guidance-model-eval.md) completed 48 turns at product `614a6484fae72344293ddd5045b69e5d65a19f8c`: all state checks passed; explicit alternate-resume completion improved from the prior candidate's 1/3 to 3/3, fresh-context discovery errors were absent, and changed-facts reporting remained 3/3 versus baseline 0/3. Command effort fell; latency was mixed. Three review findings were fixed with regressions. Final publication gates are recorded locally.
 
 ## Next slices
 
-1. Fix code-provided preparation discovery and missing-run intake guidance, and accurately render confirmation effects; rerun all four paired scenarios before replacing ordinary prompts.
+1. Complete publication of preparation guidance with its paired evidence and configured gates; keep ordinary-route replacement pending broader acceptance.
 2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
 3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
