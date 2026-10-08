@@ -35,9 +35,13 @@ export async function preparationGuidance(domain: PreparationDomain, task: Workf
   const blockers = (get(preflight, 'errors') as Value[]).map(value => string(value)!);
   let nextOperation = selection.ready ? 'report_ready' : selection.allowedActions.includes('select') ? 'select' : 'resolve_blockers';
   let resumeChoices: Array<unknown> = [];
-  const pendingCurrent = task?.pending && task.subject.jobRevision === selection.jobRevision
+  const taskMatches = task?.subject.jobId === selection.jobId;
+  const pendingCurrent = taskMatches && task?.pending && task.subject.jobRevision === selection.jobRevision
     && task.subject.inputRevision === selection.inputRevision && get(preflight, 'ready') === true;
-  if (task) nextOperation = task.pending
+  if (task && !taskMatches) {
+    nextOperation = 'continue_task';
+    blockers.push('different_active_preparation');
+  } else if (task) nextOperation = task.pending
     ? pendingCurrent ? 'await_reply_or_cancel' : 'cancel_stale_preparation' : 'continue_task';
   else if (get(snapshot.coordinator, 'claim') !== null) nextOperation = 'claim_requires_handoff';
   else if (run === null) {
@@ -53,7 +57,11 @@ export async function preparationGuidance(domain: PreparationDomain, task: Workf
         try { await inspectRunInputs(snapshot, resumeId, resumeRevision, factRevision); available = true; }
         catch (error) {
           if (!(error instanceof JobsError)) throw error;
-          inputBlockers.push(error.message === 'resume file changed' ? 'resume_file_changed' : 'resume_facts_unconfirmed');
+          if (error.message === 'resume file changed') inputBlockers.push('resume_file_changed');
+          else if (error.message === 'confirmed resume facts are unavailable or stale') inputBlockers.push('resume_facts_unconfirmed');
+          else if (['managed resume content is unavailable', 'resume file exceeds the 10 MiB limit',
+            'resume source changed during import'].includes(error.message)) inputBlockers.push('resume_file_unavailable');
+          else throw error;
         }
       } else inputBlockers.push('resume_facts_missing');
       resumeChoices.push({ resumeId, label: string(get(resume, 'label')), resumeRevision: resumeRevision.toString(),

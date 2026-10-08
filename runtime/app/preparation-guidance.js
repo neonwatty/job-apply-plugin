@@ -33,9 +33,14 @@ export async function preparationGuidance(domain, task, currentAccess, requested
     const blockers = get(preflight, 'errors').map(value => string(value));
     let nextOperation = selection.ready ? 'report_ready' : selection.allowedActions.includes('select') ? 'select' : 'resolve_blockers';
     let resumeChoices = [];
-    const pendingCurrent = task?.pending && task.subject.jobRevision === selection.jobRevision
+    const taskMatches = task?.subject.jobId === selection.jobId;
+    const pendingCurrent = taskMatches && task?.pending && task.subject.jobRevision === selection.jobRevision
         && task.subject.inputRevision === selection.inputRevision && get(preflight, 'ready') === true;
-    if (task)
+    if (task && !taskMatches) {
+        nextOperation = 'continue_task';
+        blockers.push('different_active_preparation');
+    }
+    else if (task)
         nextOperation = task.pending
             ? pendingCurrent ? 'await_reply_or_cancel' : 'cancel_stale_preparation' : 'continue_task';
     else if (get(snapshot.coordinator, 'claim') !== null)
@@ -58,7 +63,15 @@ export async function preparationGuidance(domain, task, currentAccess, requested
                 catch (error) {
                     if (!(error instanceof JobsError))
                         throw error;
-                    inputBlockers.push(error.message === 'resume file changed' ? 'resume_file_changed' : 'resume_facts_unconfirmed');
+                    if (error.message === 'resume file changed')
+                        inputBlockers.push('resume_file_changed');
+                    else if (error.message === 'confirmed resume facts are unavailable or stale')
+                        inputBlockers.push('resume_facts_unconfirmed');
+                    else if (['managed resume content is unavailable', 'resume file exceeds the 10 MiB limit',
+                        'resume source changed during import'].includes(error.message))
+                        inputBlockers.push('resume_file_unavailable');
+                    else
+                        throw error;
                 }
             }
             else

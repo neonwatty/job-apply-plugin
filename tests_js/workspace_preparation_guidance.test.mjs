@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdir, realpath } from 'node:fs/promises';
+import { mkdir, realpath, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
@@ -113,5 +113,47 @@ test('stale pending confirmation exposes a blocker instead of an executable conf
   assert.ok(stale.guidance.blockers.includes('resume_facts_unconfirmed'));
   assert.equal(stale.guidance.confirmation, null);
   assert.deepEqual(stale.task, waiting.task);
+  assert.deepEqual(await snapshot(fixture.storeRoot), before);
+});
+
+test('an explicit second-job inspection never borrows or invalidates the active task confirmation', async t => {
+  const { fixture, repository, workflow, runs } = await setup(t, 'fresh-context');
+  const jobs = new JobsService(repository);
+  await jobs.create(fromJSON({ id: 'second-job', role: 'Second', company: 'Synthetic', url: 'https://second.example.invalid' }));
+  const run = plain(await runs.status());
+  await runs.update(run.runId, BigInt(run.revision), fromJSON({ jobIds: [fixture.jobId, 'second-job'] }));
+  const started = await workflow.route({ kind: 'newTask', operationId: 'start', taskId: null, expectedRevision: null,
+    workflow: { id: 'application.prepare', version: 1 }, input: { jobId: fixture.jobId, jobRevision: '1' } });
+  const task = started.receipt.task;
+  await workflow.action({ kind: 'askUser', operationId: 'ask', taskId: task.taskId, expectedRevision: task.revision,
+    actionId: 'application.confirm_selection' });
+  for (const change of ['same-revisions', 'inspected-job-changed', 'task-job-changed']) {
+    if (change === 'inspected-job-changed') await jobs.update('second-job', fromJSON({ notes: 'changed' }), 1n);
+    if (change === 'task-job-changed') await jobs.update(fixture.jobId, fromJSON({ notes: 'changed' }), 1n);
+    const before = await snapshot(fixture.storeRoot);
+    const other = await workflow.inspect('second-job');
+    assert.equal(other.selection.jobId, 'second-job');
+    assert.equal(other.task.subject.jobId, fixture.jobId);
+    assert.equal(other.guidance.nextOperation, 'continue_task');
+    assert.ok(other.guidance.blockers.includes('different_active_preparation'));
+    assert.equal(other.guidance.confirmation, null);
+    const actual = await workflow.inspect();
+    assert.equal(actual.guidance.nextOperation, change === 'task-job-changed' ? 'cancel_stale_preparation' : 'await_reply_or_cancel');
+    assert.deepEqual(await snapshot(fixture.storeRoot), before);
+  }
+});
+
+
+test('unreadable alternate resume reports a file blocker while confirmed facts remain confirmed', async t => {
+  const { fixture, workflow } = await setup(t, 'unresolved-resume');
+  await writeFile(join(fixture.storeRoot, 'resume-files', `${alternateResumeId}.txt`), Buffer.alloc(10 * 1024 * 1024 + 1));
+  const before = await snapshot(fixture.storeRoot);
+  const choices = (await workflow.inspect(fixture.jobId)).guidance.resumeChoices;
+  const unavailable = choices.find(choice => choice.resumeId === alternateResumeId);
+  assert.equal(unavailable.factState, 'confirmed');
+  assert.equal(unavailable.available, false);
+  assert.equal(unavailable.runStart, null);
+  assert.deepEqual(unavailable.blockers, ['resume_file_unavailable']);
+  assert.equal(choices.find(choice => choice.resumeId !== alternateResumeId).available, true);
   assert.deepEqual(await snapshot(fixture.storeRoot), before);
 });
