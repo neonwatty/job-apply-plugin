@@ -108,6 +108,9 @@ jobs:
         suite: [node-migration-evidence, node-recorder, node-renderer, node-workspace-other, native-posix-lock, native-canonical-store-clone, native-default-cutover, native-posix-timestamps, native-email-canary-composition]
     steps:
       - uses: actions/checkout@v7
+      - name: Fetch pinned package for continuation compatibility regression
+        if: matrix.suite == 'node-workspace-other'
+        run: git fetch --no-tags --depth=1 origin f95b4947453ad6c6abc9cc0e81c3e443706d4714
       - uses: actions/setup-node@v7
         with:
           node-version: '20'

@@ -1,0 +1,913 @@
+{
+  "schemaVersion": 1,
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "9f940d64bbd2c9aec657b6933b596b8de0387be4"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "repetitionsPerArmAndScenario": 3,
+  "sources": [
+    {
+      "directory": ".workflows/local/continuation-eval-1791478148420",
+      "reportSha256": "ffb81d1c7c9e4e4ed98ffb720d881619866c4ea5d4c6129a319e7af5a2d36fca",
+      "evidenceManifestSha256": "7b98b6229143620ce4ea5387ca558a24c0c90ab567abfabd98ae7555e11e560d",
+      "harnessRevision": "a49385f016422bbb519ea84a14cce54027dc7276",
+      "harnessSources": {
+        "continuation-run.mjs": "3b508ac589405e0ec66b326a19aa5e85eff0ba0501041e0d1c5a93f0294406d1",
+        "continuation-fixture.mjs": "5290e45dcbb052ce4a03bf23d56b317a137d7f044452b391b4d8e1a2481d0aec",
+        "continuation-scenarios.mjs": "eae1f06d0f8669fe11f5b8db587a191a4eeea06d3f5f7fa622859efa070620de",
+        "support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+        "fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd"
+      },
+      "executedConversations": 24,
+      "removedTemporaryRoots": 24,
+      "includedScenarios": [
+        "fresh-context",
+        "stale-facts",
+        "unresolved-resume"
+      ]
+    },
+    {
+      "directory": ".workflows/local/continuation-eval-1791479865583",
+      "reportSha256": "ce4e9349a4755667ee7912a637f99fce396f5ff0ce9de0514d2c11e885c42961",
+      "evidenceManifestSha256": "d5b16da69dc6348445a72656af9e7e3bd512d6d5f2c8b07395caa77ce1c6d931",
+      "harnessRevision": "c5120a5c8cbb33053915ee0c83b387e22f975295",
+      "harnessSources": {
+        "continuation-run.mjs": "3b508ac589405e0ec66b326a19aa5e85eff0ba0501041e0d1c5a93f0294406d1",
+        "continuation-fixture.mjs": "5290e45dcbb052ce4a03bf23d56b317a137d7f044452b391b4d8e1a2481d0aec",
+        "continuation-scenarios.mjs": "8a0d84be64271f4a48cab9dd65f022087daa77fb7d200948123cfb21bbb51010",
+        "support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+        "fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd"
+      },
+      "executedConversations": 6,
+      "removedTemporaryRoots": 6,
+      "includedScenarios": [
+        "cancel-pending"
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "trial": 1,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        19994,
+        27792
+      ],
+      "shellCalls": [
+        3,
+        7
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "trial": 1,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        26848,
+        37406
+      ],
+      "shellCalls": [
+        3,
+        7
+      ],
+      "failedShellCalls": [
+        0,
+        2
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "trial": 2,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        28281,
+        35033
+      ],
+      "shellCalls": [
+        4,
+        8
+      ],
+      "failedShellCalls": [
+        1,
+        2
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "trial": 2,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        19444,
+        19129
+      ],
+      "shellCalls": [
+        4,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "trial": 3,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        25752,
+        18639
+      ],
+      "shellCalls": [
+        5,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "trial": 3,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        32659,
+        61447
+      ],
+      "shellCalls": [
+        5,
+        12
+      ],
+      "failedShellCalls": [
+        2,
+        2
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "trial": 1,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        19622,
+        12387
+      ],
+      "shellCalls": [
+        5,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "trial": 1,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        21670,
+        14810
+      ],
+      "shellCalls": [
+        3,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "trial": 2,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        21100,
+        14371
+      ],
+      "shellCalls": [
+        3,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "trial": 2,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        39112,
+        21131
+      ],
+      "shellCalls": [
+        7,
+        5
+      ],
+      "failedShellCalls": [
+        2,
+        2
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "trial": 3,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        89788,
+        13617
+      ],
+      "shellCalls": [
+        9,
+        1
+      ],
+      "failedShellCalls": [
+        2,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "trial": 3,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        26897,
+        14091
+      ],
+      "shellCalls": [
+        3,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "trial": 1,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        34323,
+        45649
+      ],
+      "shellCalls": [
+        6,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "trial": 1,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        49069,
+        146392
+      ],
+      "shellCalls": [
+        5,
+        27
+      ],
+      "failedShellCalls": [
+        2,
+        5
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "exactResumeSelected",
+        "lastReady"
+      ],
+      "truthfulFinalOutcome": false,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "trial": 2,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        39691,
+        57609
+      ],
+      "shellCalls": [
+        4,
+        15
+      ],
+      "failedShellCalls": [
+        1,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "trial": 2,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        22455,
+        36885
+      ],
+      "shellCalls": [
+        7,
+        9
+      ],
+      "failedShellCalls": [
+        1,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "trial": 3,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        36012,
+        25613
+      ],
+      "shellCalls": [
+        11,
+        9
+      ],
+      "failedShellCalls": [
+        4,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "ready",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "trial": 3,
+      "sourceIndex": 0,
+      "elapsedMs": [
+        16544,
+        61399
+      ],
+      "shellCalls": [
+        2,
+        12
+      ],
+      "failedShellCalls": [
+        0,
+        2
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "exactResumeSelected",
+        "lastReady"
+      ],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": false,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "trial": 1,
+      "sourceIndex": 1,
+      "elapsedMs": [
+        17132,
+        23203
+      ],
+      "shellCalls": [
+        4,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "trial": 1,
+      "sourceIndex": 1,
+      "elapsedMs": [
+        24521,
+        20946
+      ],
+      "shellCalls": [
+        4,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "trial": 2,
+      "sourceIndex": 1,
+      "elapsedMs": [
+        23983,
+        30697
+      ],
+      "shellCalls": [
+        5,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "incorrect"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "trial": 2,
+      "sourceIndex": 1,
+      "elapsedMs": [
+        19097,
+        23624
+      ],
+      "shellCalls": [
+        3,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        2
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "trial": 3,
+      "sourceIndex": 1,
+      "elapsedMs": [
+        16387,
+        25873
+      ],
+      "shellCalls": [
+        2,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "trial": 3,
+      "sourceIndex": 1,
+      "elapsedMs": [
+        29050,
+        27268
+      ],
+      "shellCalls": [
+        5,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "semanticQuestions": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "truthfulFinalOutcome": true,
+      "finalJobStatus": "saved",
+      "finalPreflightReady": true,
+      "claimOrSessionCreated": false,
+      "confirmationEffectWording": "see narrative review"
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "fresh-context",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 0,
+      "conversationShellCalls": [
+        10,
+        9,
+        9
+      ],
+      "conversationLatencyMs": {
+        "median": 44391,
+        "min": 38573,
+        "max": 47786
+      }
+    },
+    {
+      "scenario": "fresh-context",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 0,
+      "conversationShellCalls": [
+        10,
+        12,
+        17
+      ],
+      "conversationLatencyMs": {
+        "median": 64254,
+        "min": 63314,
+        "max": 94106
+      }
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 0,
+      "questions": 0,
+      "conversationShellCalls": [
+        7,
+        12,
+        10
+      ],
+      "conversationLatencyMs": {
+        "median": 60243,
+        "min": 32009,
+        "max": 103405
+      }
+    },
+    {
+      "scenario": "stale-facts",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 0,
+      "conversationShellCalls": [
+        5,
+        5,
+        5
+      ],
+      "conversationLatencyMs": {
+        "median": 36480,
+        "min": 35471,
+        "max": 40988
+      }
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        10,
+        16,
+        20
+      ],
+      "conversationLatencyMs": {
+        "median": 61625,
+        "min": 59340,
+        "max": 79972
+      }
+    },
+    {
+      "scenario": "unresolved-resume",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 1,
+      "truthfulFinalOutcomes": 2,
+      "questions": 3,
+      "conversationShellCalls": [
+        32,
+        19,
+        14
+      ],
+      "conversationLatencyMs": {
+        "median": 97300,
+        "min": 77943,
+        "max": 195461
+      }
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "baseline",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        10,
+        9,
+        8
+      ],
+      "conversationLatencyMs": {
+        "median": 42260,
+        "min": 40335,
+        "max": 42721
+      }
+    },
+    {
+      "scenario": "cancel-pending",
+      "arm": "candidate",
+      "conversations": 3,
+      "statePasses": 3,
+      "truthfulFinalOutcomes": 3,
+      "questions": 3,
+      "conversationShellCalls": [
+        8,
+        9,
+        9
+      ],
+      "conversationLatencyMs": {
+        "median": 54680,
+        "min": 45467,
+        "max": 56318
+      }
+    }
+  ],
+  "excludedInitialCancellation": {
+    "sourceIndex": 0,
+    "conversations": 6,
+    "reason": "Original request did not explicitly preserve the application run, but the state grader required that. Both arms rerun with explicit preservation; no original baseline instruction failure inferred."
+  },
+  "limits": [
+    "State grades, truthful final outcomes, and confirmation-effect wording are separate; no aggregate acceptance pass.",
+    "Full transcripts reviewed semantically; failed shell exit counts omit hidden failures within compound commands.",
+    "Small descriptive sample with uncontrolled model/host latency.",
+    "Installed archives include source/tests/evaluation files; some candidate trials inspected them.",
+    "No live browser, applicant data, actual filling or general recovery acceptance."
+  ]
+}
