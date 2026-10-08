@@ -37,3 +37,5 @@ Repeated confirmation in an intact host conversation is not transport replay, mo
 | `../../tests_js/point_paths_domain_support.mjs` | Validate the exact new evaluation registrations before the unchanged historical matrix digest check |
 
 The use of JSONL tool traces and independent artifacts follows the approach in OpenAI's [skill evaluation guide](https://developers.openai.com/blog/eval-skills). Installed CLI help is the source for the particular invocation flags used here.
+
+For fresh-context continuation, changed facts, unresolved resume choice and cancellation, use the [continuation comparison](continuation-README.md).
