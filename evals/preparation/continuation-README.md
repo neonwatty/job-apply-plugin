@@ -43,4 +43,4 @@ This comparison does not exercise live application filling, browser interruption
 
 The runner reuses the bounded process, trace and host-configuration helpers already tested by the [preparation comparison](README.md). No product runtime or prompt changes are implied by these scenario additions.
 
-The initial cancellation wording did not explicitly preserve the active run, while its grader required that. Those initial cancellation trials are diagnostic only: closing the run is not counted as a user-request failure. The current request explicitly preserves the existing run and both arms must be rerun with that wording. Other scenario requests and grades are unchanged.
+The initial cancellation wording did not explicitly preserve the active run, while its grader required that. Those initial cancellation trials are diagnostic only: closing the run is not counted as a user-request failure. The current request explicitly preserves the existing run and both arms were rerun with that wording; see the [measured report](../../docs/architecture/continuation-model-eval.md). Other scenario requests and grades are unchanged.

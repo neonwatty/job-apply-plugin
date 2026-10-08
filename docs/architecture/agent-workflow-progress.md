@@ -63,11 +63,11 @@ Published as [PR #198](https://github.com/neonwatty/job-apply-plugin/pull/198), 
 
 ## Slice 4d: continuation and interruption evaluation
 
-Implementation is on `codex/agent-workflows-08-continuation`, stacked on PR #198. The [scenario runner and file map](../../evals/preparation/continuation-README.md) cover fresh-session preparation, changed facts, unresolved resume choice and cancellation. Each scenario uses independent fictional Stores and before/after observations. Product revisions remain pinned; measurements and final review/gate receipts follow after execution.
+Implementation is on `codex/agent-workflows-08-continuation`, stacked on PR #198. The [scenario runner and file map](../../evals/preparation/continuation-README.md) cover fresh-session preparation, changed facts, unresolved resume choice and cancellation. Each scenario uses independent fictional Stores and before/after observations. Product revisions remain pinned. The [measured report](continuation-model-eval.md) includes 48 comparison turns plus 12 diagnostic cancellation turns. Candidate stale-readiness reporting passed 3/3 versus baseline 0/3, but alternate-resume completion regressed to 1/3 versus baseline 3/3. Fresh continuation and scoped cancellation preserve state; discovery and confirmation wording still need work. The cancellation request was clarified and both arms rerun because the original grader required a preservation condition not explicit in the prompt. Final review/gate receipts follow after the report is committed.
 
 ## Next slices
 
-1. Extend preparation trials to fresh-context continuation, stale input, unresolved choices and cancellation before replacing ordinary prompts.
+1. Fix code-provided preparation discovery and missing-run intake guidance, and accurately render confirmation effects; rerun all four paired scenarios before replacing ordinary prompts.
 2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
 3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
