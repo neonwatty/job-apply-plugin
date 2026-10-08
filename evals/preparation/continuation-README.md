@@ -41,6 +41,8 @@ This comparison does not exercise live application filling, browser interruption
 - `../../tests_js/test-runner-continuation-eval.test.mjs`: adversarial grade checks.
 - `../../tests_js/workspace_continuation_fixture.test.mjs`: real native fixture and fact-drift checks, including the archived pinned baseline package.
 
+The archived baseline regression requires the pinned Git object. The `node-workspace-other` CI shard fetches that exact commit after its shallow checkout; local full-history checkouts already contain it.
+
 The runner reuses the bounded process, trace and host-configuration helpers already tested by the [preparation comparison](README.md). No product runtime or prompt changes are implied by these scenario additions.
 
 The initial cancellation wording did not explicitly preserve the active run, while its grader required that. Those initial cancellation trials are diagnostic only: closing the run is not counted as a user-request failure. The current request explicitly preserves the existing run and both arms were rerun with that wording; see the [measured report](../../docs/architecture/continuation-model-eval.md). Other scenario requests and grades are unchanged.

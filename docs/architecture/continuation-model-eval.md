@@ -80,7 +80,7 @@ With explicit preservation scope, baseline stopped without canonical writes. The
 
 ## Verification and evidence
 
-Seven focused fixture/grader checks pass, including an archived baseline regression. Independent review caught an observer import that did not exist in staging; the observer now uses `WorkspaceProjectionsService.preflight`, shared by both pinned packages. Each implementation commit passed eleven commit-hook suites. Final branch-review and publication receipts are recorded locally after the completed report is committed.
+Seven focused fixture/grader checks pass, including an archived baseline regression. Independent review caught an observer import that did not exist in staging; the observer now uses `WorkspaceProjectionsService.preflight`, shared by both pinned packages. Final native review also caught the historical-package test's missing baseline object in shallow CI checkouts. The affected CI shard now fetches that exact pinned commit, verified in a local depth-one clone. Each implementation commit passed eleven commit-hook suites. Final branch-review and publication receipts are recorded locally after the completed report is committed.
 
 Raw evidence:
 
