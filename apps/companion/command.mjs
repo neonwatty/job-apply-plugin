@@ -25,6 +25,15 @@ function selectedRoot(args) {
 }
 async function run() {
   const [surface, ...args] = process.argv.slice(2), target = targets[surface];
+  if (surface === 'workflow') {
+    // Fixture-only composition validates explicit paths before any Store activation.
+    // Run in this process so the foreground broker owns its PID and signal handlers.
+    const { experimentalHost } = await import('../../runtime/cli/experimental-host.js');
+    const response = await experimentalHost(args);
+    process.stdout.write(JSON.stringify(response) + '\n');
+    process.exitCode = response.ok ? 0 : 2;
+    return;
+  }
   if (!target) throw new Error('unknown Job Apply command surface');
   let command;
   for (let index = 0; index < args.length; index += 1) {

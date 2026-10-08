@@ -173,4 +173,6 @@ Application question answers live in the separate reusable answer library. Job r
 
 ## Keep the map current
 
+Explicit fictional agent-workflow trials use the [experimental workflow route](../../job-apply/references/experimental-workflow.md) through `command.mjs workflow prepare` and `workflow attempt`. Preparation exposes code-owned actions and a durable pending reply; attempts use the same canonical claim, session and handoff guards as the ordinary route. The fixture broker retains private authority. These commands require explicit fixture/native-lock paths and do not replace the ordinary routes above. Their receipts establish Store outcomes; browser evidence and repeated model UX evaluation remain separate.
+
 Update the affected diagram and transition row whenever a skill handoff or Store state changes. Check the operative rules in [resume handling](resumes.md), [search queue intake](../../job-search/references/queue.md), [application intake](../../job-apply/references/intake.md), [browser consent](../../job-apply/references/browser.md), [handoff](../../job-apply/references/application.md), and [recovery](../../job-apply/references/recovery.md). These detailed references govern execution; correct this map if it falls out of sync.

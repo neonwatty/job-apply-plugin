@@ -163,8 +163,9 @@ async function group1(t) {
   await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   const liveSkillFiles = (await trackedPaths(GRAPH_ROOT)).filter(SKILL_SOURCE_PATH);
-  assert.equal(liveSkillFiles.length, 37);
+  assert.equal(liveSkillFiles.length, 38);
   assert.ok(liveSkillFiles.includes('skills/job-apply/references/consent-intents.md'));
+  assert.ok(liveSkillFiles.includes('skills/job-apply/references/experimental-workflow.md'));
   assert.deepEqual(liveSkillFiles.filter(file => file.startsWith('skills/job-title-discovery/')), [
     'skills/job-title-discovery/SKILL.md',
     'skills/job-title-discovery/references/discovery-workflow.md',
@@ -197,12 +198,25 @@ async function group1(t) {
   await fs.promises.rm(path.join(f.root, 'skills/job-apply/references/new-consumer.md'));
   f.files.delete('skills/job-apply/references/new-consumer.md');
   const liveSkillGraph = await discoverConsumerGraph(f.root, f.tracked());
-  assert.ok(!liveSkillGraph.reasons.includes('Unreviewed skill document inventory'), liveSkillGraph.reasons.join('; '));
+  // Experimental prompts are outside the frozen focused-check inventory and must escalate.
+  assert.ok(liveSkillGraph.reasons.includes('Unreviewed skill document inventory'));
   assert.ok(liveSkillGraph.edges.some(edge => edge.from === companionLauncherInputs[0]
     && edge.to === companionLauncherInputs[1]));
   assert.ok(liveSkillGraph.edges.some(edge => edge.from === companionLauncherInputs[0]
     && edge.to === companionLauncherInputs[2]));
-  await fs.promises.rm(path.join(f.root, 'skills/account-setup/SKILL.md'));
+  // Restore the already-reviewed inventory before proving that a missing document rejects it.
+  for (const file of [...f.files.keys()].filter(SKILL_SOURCE_PATH)) {
+    if (!reviewed.has(file)) {
+      await fs.promises.rm(path.join(f.root, file));
+      f.files.delete(file);
+    }
+  }
+  for (const file of [...[...reviewed.keys()].filter(SKILL_SOURCE_PATH),
+    'tests_js/workspace_skill_support.mjs', 'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
+    await f.write(file, reviewed.get(file).toString('utf8'));
+  }
+  assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
+  await fs.promises.rm(path.join(f.root, 'skills/job-apply/SKILL.md'));
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   for (const file of ['qa/unified_task_spine_oracle.mjs', 'tests_js/unified_task_spine_oracle.test.mjs', 'workspace/index.html']) {
     await f.write(file, reviewed.get(file).toString('utf8'));
@@ -361,7 +375,8 @@ export async function checkLiveGraph() {
   const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
   const { digest, PYTHON_INVENTORY_SHA256 } = await import('../tools/local-checks/focused-contracts.mjs');
   const liveGraph = await discoverConsumerGraph(GRAPH_ROOT, await trackedPaths(GRAPH_ROOT));
-  assert.ok(!liveGraph.reasons.includes('Unreviewed skill document inventory'), 'live skill documents require review');
+  assert.equal(evaluateFocusedClosure(liveGraph, ['skills/job-apply/references/experimental-workflow.md']).bounded,
+    false, 'experimental prompts require broad validation');
   const { PYTHON_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
   const livePython = [...liveGraph.tracked].filter(PYTHON_SOURCE_PATH).sort();
   const pythonInventory = digest(JSON.stringify(livePython.map(file => ({ path: file, sha256: liveGraph.hashes.get(file) }))));
