@@ -170,10 +170,11 @@
         "directStoreAccess": false,
         "notes": [
           "Invalid claim-status; combined progress/rm rejection; corrected",
-          "Redundant init both turns and no-op selection"
+          "Redundant init both turns and no-op selection",
+          "Distinct combined progress/cleanup and handoff/cleanup requests were rejected in the two turns; both corrected through separate calls and file edits."
         ],
         "scopeExceptions": [],
-        "additionalHiddenFailures": 1
+        "additionalHiddenFailures": 2
       }
     },
     {
