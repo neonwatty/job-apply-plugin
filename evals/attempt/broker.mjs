@@ -11,6 +11,7 @@ export async function startBroker(pluginRoot, fixture, arm) {
   const args = arm === 'candidate' ? [command, 'workflow', 'attempt', 'serve', '--root', fixture.storeRoot,
     '--native-lock', fixture.nativeLock] : [fileURLToPath(new URL('./baseline-broker.mjs', import.meta.url)),
     pluginRoot, fixture.storeRoot, fixture.nativeLock];
+  const startedAt = Date.now();
   const child = spawn(process.execPath, args, { cwd: pluginRoot, env: { PATH: '', HOME: fixture.workspace },
     stdio: ['ignore', 'pipe', 'pipe'] });
   let stdout = '', stderr = '', ended = false;
@@ -22,7 +23,7 @@ export async function startBroker(pluginRoot, fixture, arm) {
   });
   // Observe the PID published by this exact owned child; never infer ownership from an arbitrary file.
   const { nativeAttemptPidName } = await import(pathToFileURL(join(pluginRoot, 'runtime/store/native-store-layout.js')).href);
-  const broker = { pid: child.pid, done, async stop(signal = 'SIGTERM') {
+  const broker = { pid: child.pid, startedAt, done, async stop(signal = 'SIGTERM') {
     if (!ended) child.kill(signal);
     const escalation = setTimeout(() => { if (!ended) child.kill('SIGKILL'); }, 5000);
     try { return await done; } finally { clearTimeout(escalation); }

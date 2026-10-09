@@ -84,3 +84,11 @@ test('continuation interventions require a real exact acquisition and checkpoint
   const ordinary = structuredClone(first); ordinary.metadata = {};
   assert.equal(continuationPrerequisite(ordinary, initial, 'baseline'), true);
 });
+
+test('baseline acquisition window reserves model timeout plus shutdown margin', async () => {
+  const { requireAcquisitionWindow, baselineIdleMilliseconds, modelTurnTimeout } = await import('../evals/attempt/timing.mjs');
+  const startedAt = 1_000_000, latest = startedAt + baselineIdleMilliseconds - modelTurnTimeout - 10_000;
+  requireAcquisitionWindow(startedAt, startedAt);
+  requireAcquisitionWindow(startedAt, latest - 1);
+  for (const now of [latest, latest + 1, startedAt - 1, NaN]) assert.throws(() => requireAcquisitionWindow(startedAt, now));
+});

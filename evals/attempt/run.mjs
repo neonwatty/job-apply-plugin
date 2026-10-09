@@ -7,6 +7,7 @@ import { execute, hostEnvironment, installRevision, parseTrace, writeJson } from
 import { prepareAttemptFixture, observeAttempt, introduceStaleFacts, expireFixtureClaim } from './fixture.mjs';
 import { startBroker, cleanupBrokerArtifacts } from './broker.mjs';
 import { comparisonArms, scenarioIds, scenarioTurns, trialPrompt, gradeState, continuationPrerequisite } from './scenarios.mjs';
+import { modelTurnTimeout, requireAcquisitionWindow } from './timing.mjs';
 import { attemptArguments, attemptContext, validateAttemptContext, fixtureSocket, probeHost } from './host.mjs';
 import { repositoryIdentity, packageFingerprint, captureHarness } from './evidence.mjs';
 
@@ -75,8 +76,11 @@ try {
           await writeFile(`${prefix}-prompt.txt`, prompt, { mode: 0o600 });
           const args = attemptArguments({ sessionId, workspace, model, socket });
           await writeJson(`${prefix}-invocation.json`, { command: 'codex', args, cwd: workspace });
+          if (arm === 'baseline' && (turn === 0 || scenario === 'broker-loss')) {
+            requireAcquisitionWindow(brokers.at(-1).startedAt);
+          }
           const result = await execute('codex', args, { cwd: workspace, env: hostEnvironment(installation.codexHome, fixture.storeRoot),
-            timeout: 360000, input: prompt });
+            timeout: modelTurnTimeout, input: prompt });
           await writeFile(`${prefix}-trace.jsonl`, result.stdout, { mode: 0o600 });
           await writeFile(`${prefix}-stderr.txt`, result.stderr, { mode: 0o600 });
           const trace = parseTrace(result.stdout), state = await observeAttempt(installation.pluginRoot, fixture);
@@ -105,7 +109,7 @@ try {
       } finally {
         // Retain the fixture if cleanup cannot establish that its brokers stopped.
         try {
-          const stopped = await Promise.allSettled(brokers.map(async broker => ({ pid: broker.pid, ...await broker.stop() })));
+          const stopped = await Promise.allSettled(brokers.map(async broker => ({ pid: broker.pid, startedAt: broker.startedAt, ...await broker.stop() })));
           run.brokers = stopped.map(result => result.status === 'fulfilled' ? result.value : { error: String(result.reason) });
           if (stopped.some(result => result.status === 'rejected')) throw Error('Broker cleanup failed');
           if (installation && fixture) run.removedBrokerArtifacts = await cleanupBrokerArtifacts(installation.pluginRoot, fixture);

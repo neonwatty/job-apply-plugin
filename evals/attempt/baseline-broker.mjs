@@ -1,3 +1,4 @@
+import { baselineIdleMilliseconds } from './timing.mjs';
 // Harness-owned foreground composition of the unchanged ordinary broker.
 // Only its pre-acquisition idle timeout is extended while a model reads references.
 import { pathToFileURL } from 'node:url';
@@ -8,5 +9,5 @@ const [{ NativeJobsRepository }, { ClaimsService }, { ApplicationAuthorityServic
   { runAttemptBroker }] = await Promise.all([load('store/native-jobs'), load('workspace-core/claims'),
   load('workspace-core/application-authority'), load('store/posix-flock'), load('cli/attempt-broker')]);
 const provider = loadPosixFlockProvider(artifact), repository = new NativeJobsRepository(root, provider);
-await runAttemptBroker(root, new ClaimsService(repository), provider, { idleMilliseconds: 360000 },
+await runAttemptBroker(root, new ClaimsService(repository), provider, { idleMilliseconds: baselineIdleMilliseconds },
   new ApplicationAuthorityService(repository));
