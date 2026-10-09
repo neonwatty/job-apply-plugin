@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { checkpoint, comparisonArms, gradeState } from '../evals/attempt/scenarios.mjs';
+import { checkpoint, comparisonArms, gradeState, continuationPrerequisite } from '../evals/attempt/scenarios.mjs';
 function states() {
   const job = { id: 'job', status: 'ready', revision: 2, notes: 'keep' };
   const initial = { job, otherJobs: {}, metadata: {}, activeRun: { runId: 'run' }, claim: null, sessions: [], history: [],
@@ -69,4 +69,18 @@ test('attempt host validation rejects broader filesystem, different profiles and
   const args = attemptArguments({ ...expected, socket: '/fixture/one.sock' });
   assert.ok(args.includes('permissions.attempt_eval={extends=":workspace",network={enabled=true,domains={},unix_sockets={"/fixture/one.sock"="allow"}}}'));
   assert.ok(!args.some(value => value.includes('sandbox_mode=')));
+});
+
+test('continuation interventions require a real exact acquisition and checkpoint', () => {
+  const { initial, first } = states();
+  assert.equal(continuationPrerequisite(first, initial, 'candidate'), true);
+  assert.equal(continuationPrerequisite(initial, initial, 'candidate'), false);
+  for (const mutate of [s => s.claim = null, s => s.claim.jobId = 'other', s => s.job.revision++,
+    s => s.sessions = [], s => s.sessions[0].step = 'wrong', s => s.sessions[0].attemptRevision++,
+    s => s.metadata.agentWorkflows.tasks.task.status = 'cancelled']) {
+    const changed = structuredClone(first); mutate(changed);
+    assert.equal(continuationPrerequisite(changed, initial, 'candidate'), false);
+  }
+  const ordinary = structuredClone(first); ordinary.metadata = {};
+  assert.equal(continuationPrerequisite(ordinary, initial, 'baseline'), true);
 });

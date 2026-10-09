@@ -46,6 +46,15 @@ function stableJob(state) {
 function unrelatedMetadata(state) {
   return Object.fromEntries(Object.entries(state.metadata).filter(([key]) => !['agentWorkflows', 'updatedAt'].includes(key)));
 }
+// Interventions require an actual acquired/checkpointed attempt; model refusal is an outcome, not a fixture error.
+export function continuationPrerequisite(first, initial, arm) {
+  const saved = session(first);
+  return initial.job.status === 'ready' && first.job.id === initial.job.id && first.job.status === 'in_progress'
+    && first.job.revision === initial.job.revision + 1 && first.claim?.jobId === initial.job.id
+    && first.sessions.length === 1 && saved?.attemptRevision === first.job.revision
+    && saved.step === checkpoint.step && same(saved.handoffChecklist, checkpoint.handoffChecklist)
+    && (arm === 'baseline' || task(first)?.workflow.id === 'application.attempt' && task(first)?.status === 'active');
+}
 export function gradeState(scenario, states, initial, beforeSecond, arm) {
   if (!scenarioIds.includes(scenario) || !['baseline', 'candidate'].includes(arm)
     || states.length !== 2 || !initial || !beforeSecond || scenario === 'expired-recovery' && arm !== 'candidate') throw Error('Invalid attempt grading scope');

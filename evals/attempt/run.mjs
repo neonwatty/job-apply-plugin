@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { execute, hostEnvironment, installRevision, parseTrace, writeJson } from '../preparation/support.mjs';
 import { prepareAttemptFixture, observeAttempt, introduceStaleFacts, expireFixtureClaim } from './fixture.mjs';
 import { startBroker, cleanupBrokerArtifacts } from './broker.mjs';
-import { comparisonArms, scenarioIds, scenarioTurns, trialPrompt, gradeState } from './scenarios.mjs';
+import { comparisonArms, scenarioIds, scenarioTurns, trialPrompt, gradeState, continuationPrerequisite } from './scenarios.mjs';
 import { attemptArguments, attemptContext, validateAttemptContext, fixtureSocket, probeHost } from './host.mjs';
 import { repositoryIdentity, packageFingerprint, captureHarness } from './evidence.mjs';
 
@@ -94,8 +94,13 @@ try {
           sessionId = trace.sessionId;
           if (await packageFingerprint(repository, installation.pluginRoot, revisions[arm]) !== run.packageFingerprint) throw Error('Installed package changed');
           if (await repositoryIdentity(repository) !== harnessRevision) throw Error('Repository changed during trial');
+          if (turn === 0 && !continuationPrerequisite(state, run.initial, arm)) {
+            run.grade = { checks: { acquisitionPrerequisite: false }, statePassed: false, transcriptReviewRequired: true };
+            run.notExercised = { turn: 2, reason: 'Acquisition/checkpoint prerequisite was not established' };
+            break;
+          }
         }
-        run.grade = gradeState(scenario, run.turns.map(turn => turn.state), run.initial, run.beforeSecond, arm);
+        run.grade ??= gradeState(scenario, run.turns.map(turn => turn.state), run.initial, run.beforeSecond, arm);
         console.log(`${name}: deterministic state ${run.grade.statePassed ? 'pass' : 'FAIL'}; transcript review required`);
       } finally {
         // Retain the fixture if cleanup cannot establish that its brokers stopped.
