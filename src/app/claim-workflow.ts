@@ -66,7 +66,8 @@ export class ClaimWorkflow {
           if (current && current.subject.jobRevision !== event.jobRevision
             || int(get(job, 'revision'))!.toString() !== event.jobRevision) throw new TaskProtocolError('stale_revision');
           const scope = preparationScope(domain.snapshot, job);
-          if (current && event.kind === 'progress' && scope !== current.subject.inputRevision) throw new TaskProtocolError('stale_revision');
+          const continuesInputs = event.kind === 'progress' || event.kind === 'handoff' && !safeExit(event);
+          if (current && continuesInputs && scope !== current.subject.inputRevision) throw new TaskProtocolError('stale_revision');
           const task: WorkflowTask = current ? {...current,revision:(BigInt(current.revision)+1n).toString()}
             : {taskId:randomUUID(),workflow:attemptIdentity,revision:'1',status:'active',pending:null,
               subject:{jobId:event.jobId,jobRevision:event.jobRevision,inputRevision:scope}};
@@ -98,8 +99,9 @@ export class ClaimWorkflow {
           }
           const outcome: TaskOutcome = event.kind === 'cancel' ? 'cancelled' : event.kind === 'handoff' ? event.status!
             : event.kind === 'progress' ? 'progress_saved' : event.kind === 'recover' ? 'claim_recovered' : 'claim_acquired';
+          // Recovery restores the claim capability; only a new task may bind new inputs.
           return {task:{...task,status:terminal ? event.kind === 'cancel' ? 'cancelled' : 'finished' : 'active',pending:null,
-            subject:{jobId:event.jobId,jobRevision:revision,inputRevision:scope}},outcome};
+            subject:{jobId:event.jobId,jobRevision:revision,inputRevision:task.subject.inputRevision}},outcome};
         },
       });
       if (!result.replayed && acquired) this.#capability = acquired;
