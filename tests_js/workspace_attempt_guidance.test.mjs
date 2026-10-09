@@ -129,7 +129,7 @@ test('unexpected observation failures are propagated, not described as ordinary 
   });
 });
 
-test('pending questions require an observed packet and unchanged templates cannot clear them', posix, async t => {
+test('pending progress requires observations while safe exit preserves the saved checkpoint', posix, async t => {
   const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
   const state = await setup(fixture, 'guidance-pending'), { workflow } = host(state); t.after(() => workflow.close());
   const task = await acquire(state, workflow);
@@ -140,7 +140,7 @@ test('pending questions require an observed packet and unchanged templates canno
   const before = await snapshot(state.root), context = await workflow.inspect();
   assert.equal(context.guidance.sessionRequiresObservation, true);
   assert.doesNotMatch(JSON.stringify(context), /PRIVATE QUESTION/);
-  for (const kind of ['progress', 'handoff', 'cancel']) {
+  for (const kind of ['progress']) {
     const template = context.guidance.actions.find(item => item.kind === kind);
     assert.deepEqual(template.requiredFields, ['operationId', 'session']);
     assert.equal(Object.hasOwn(template.input, 'session'), false);
@@ -149,7 +149,9 @@ test('pending questions require an observed packet and unchanged templates canno
     assert.deepEqual(await snapshot(state.root), before);
   }
   const template = context.guidance.actions.find(item => item.kind === 'cancel');
-  const request = { ...template.input, operationId: 'observed-cancel', session };
+  const request = { ...template.input, operationId: 'saved-cancel' };
+  assert.deepEqual(template.requiredFields, ['operationId']);
+  assert.match(request.savedSessionFingerprint, /^[a-f0-9]{64}$/);
   await workflow.execute(request, request);
   const saved = await read(state.root, 'sessions/job.json');
   assert.equal(saved.pendingFields.length, 1);

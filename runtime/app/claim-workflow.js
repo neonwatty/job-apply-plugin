@@ -87,7 +87,7 @@ export class ClaimWorkflow {
                     await executeWorkflowTool({ kind: 'callTool', operationId: event.operationId, taskId: task.taskId,
                         expectedRevision: current?.revision ?? task.revision, actionId: tool, arguments: event }, { taskId: task.taskId, revision: current?.revision ?? task.revision, workflow: attemptIdentity, canLeave: false,
                         allowedActions: [{ kind: 'callTool', id: tool, toolId: tool }], complete: false, terminal: false, childDepth: 0 }, this.registry, access, new Map([[tool, async () => {
-                                value = await domain.execute(event.kind, event.jobId, BigInt(event.jobRevision), capability?.token ?? null, event.session === undefined ? undefined : claimSessionInput(event.session), event.status);
+                                value = await domain.execute(event.kind, event.jobId, BigInt(event.jobRevision), capability?.token ?? null, event.session === undefined ? undefined : claimSessionInput(event.session), event.status, event.savedSessionFingerprint);
                             }]]));
                     if (!safeExit(event))
                         this.registry.resolve(attemptIdentity, this.access());
