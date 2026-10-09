@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { pendingCheckpoint, pendingScenarioIds } from '../evals/attempt/pending.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { checkpoint, comparisonArms, gradeState, continuationPrerequisite } from '../evals/attempt/scenarios.mjs';
@@ -91,4 +93,49 @@ test('baseline acquisition window reserves model timeout plus shutdown margin', 
   requireAcquisitionWindow(startedAt, startedAt);
   requireAcquisitionWindow(startedAt, latest - 1);
   for (const now of [latest, latest + 1, startedAt - 1, NaN]) assert.throws(() => requireAcquisitionWindow(startedAt, now));
+});
+
+function pendingStates() {
+  const values = states(), { first, last } = values;
+  const fields = pendingCheckpoint.pendingFields.map(({ question, ...field }, index) => ({ ...field,
+    questionFingerprint: createHash('sha256').update(question.toLowerCase()).digest('hex'),
+    reference: 'pending_' + String(index).repeat(32) }));
+  const saved = { ...first.sessions[0], status: 'active', ats: null, answerKeys: [], approvals: [], readiness: null,
+    pendingFields: fields, browserHandoff: pendingCheckpoint.browserHandoff,
+    blockers: [...fields.map((field, index) => ({ reference: field.reference, type: 'information',
+      code: index ? 'sensitive-answer-required' : 'answer-required', sensitivity: index ? 'high' : 'none' })),
+      ...pendingCheckpoint.blockers] };
+  first.sessions = [structuredClone(saved)]; last.sessions = [structuredClone(saved)];
+  for (const state of [first, last]) state.metadata.agentWorkflows.tasks.task.subject.inputRevision = 'original';
+  return values;
+}
+test('pending scenarios require actual unanswered fields and preserve their full canonical checkpoint', () => {
+  const { initial, first, last } = pendingStates();
+  const grade = value => gradeState('pending-cancel', [first, value], initial, first, 'candidate').statePassed;
+  assert.equal(grade(last), true);
+  assert.equal(continuationPrerequisite(first, initial, 'candidate', 'pending-cancel'), true);
+  for (const mutate of [s => s.sessions[0].pendingFields = [],
+    s => s.sessions[0].pendingFields[0].questionFingerprint = 'a'.repeat(64),
+    s => s.sessions[0].pendingFields[1].sensitive = false, s => s.sessions[0].blockers = [],
+    s => s.sessions[0].browserHandoff.revision++, s => s.sessions[0].approvals = [{}],
+    s => s.sessions[0].readiness = {}, s => s.metadata.agentWorkflows.tasks.task.subject.inputRevision = 'rebound']) {
+    const changed = structuredClone(last); mutate(changed); assert.equal(grade(changed), false);
+  }
+  const incomplete = structuredClone(first); incomplete.sessions[0].pendingFields.pop();
+  assert.equal(continuationPrerequisite(incomplete, initial, 'candidate', 'pending-cancel'), false);
+  for (const scenario of pendingScenarioIds) assert.deepEqual(comparisonArms(scenario, 1), ['candidate']);
+  assert.throws(() => gradeState('pending-cancel', [first, last], initial, first, 'baseline'));
+});
+test('changed-input pending recovery rejects a rebound intermediate receipt even when terminal scope is restored', () => {
+  const { initial, first, last } = pendingStates(), before = structuredClone(first);
+  before.preflightReady = false; last.preflightReady = false;
+  before.hashes['resume-facts.json'] = 'draft'; last.hashes['resume-facts.json'] = 'draft';
+  last.history.push({ event: 'claim-recovered' });
+  const recoveryTask = structuredClone(first.metadata.agentWorkflows.tasks.task);
+  last.metadata.agentWorkflows.receipts.recovery = { receipt: { outcome: 'claim_recovered', task: recoveryTask } };
+  const grade = () => gradeState('pending-stale-recovery', [first, last], initial, before, 'candidate');
+  assert.equal(grade().statePassed, true);
+  recoveryTask.subject.inputRevision = 'rebound';
+  assert.equal(grade().checks.recoveryScopePreserved, false);
+  assert.equal(grade().statePassed, false);
 });

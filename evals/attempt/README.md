@@ -58,3 +58,27 @@ The scoped-host smoke at `.workflows/local/attempt-eval-1791504422296/` passed o
 See the [21-conversation report](../../docs/architecture/attempt-continuation-model-eval.md) and [machine-readable measurements](../../docs/architecture/attempt-continuation-model-results.json). The immutable batch predates the final timing correction; failed prerequisites and unexercised recovery turns remain in its results.
 
 The [attempt guidance follow-up](../../docs/architecture/attempt-guidance-model-eval.md) reruns the same scenarios against the committed guidance product, using `--candidate b47e6b03c11b10298bbb7580615681c6b83118e1`. It records all 21 conversations / 42 turns and separates its diagnostic pair from the main sample.
+
+## Pending-checkpoint acceptance batch
+
+```bash
+node evals/attempt/run.mjs --suite pending --trials 3 --candidate 712582a541f9c0434edb0be0345dfee6f30d6fbb
+```
+
+This opt-in extension schedules **nine candidate-only conversations / at most 18 turns** at the saved-handoff product from PR #204. The default standard comparison and its pinned revisions remain unchanged; pass the candidate explicitly for this extension. Each scenario can also be selected with `--scenario`. The model and host policy remain the same as the earlier comparison.
+
+| Scenario | Intervention before a fresh second session | Required outcome |
+| --- | --- | --- |
+| `pending-cancel` | Archive and clear model proposal workspace | Cancel through Needs Info, retaining every saved session field except its update timestamp |
+| `pending-stale-handoff` | Clear workspace; create canonical facts draft | Needs Info handoff, checkpoint and original input scope preserved, draft still blocking |
+| `pending-stale-recovery` | Clear workspace; create facts draft; stop broker; expire fixture lease; start replacement | Recover the same task with original input scope, then cancel while preserving the full checkpoint |
+
+The first turn receives two explicitly synthetic unanswered observations, one sensitive, an outstanding resume-upload checklist and a required browser handoff. Acquisition is a prerequisite: missing or altered pending fields leave the second turn unexercised. Code grades normalized question/scope fingerprints, unique pending references, sensitivity, blockers, browser handoff and lack of invented readiness/approvals. Terminal grading compares the entire canonical session except `updatedAt`, input hashes and run, and both the recovery receipt and terminal task's original input scope.
+
+For these scenarios the Store lives outside the writable model proposal workspace. Before turn two, the harness archives that workspace under the run evidence and recreates it empty. The new session receives neither the first prompt nor its proposal files. Public Store commands remain the required source of state. This is not a blind security test: installed packages contain source and the host profile still allows filesystem reads; full transcripts must be checked for unauthorized discovery or state access. The existing socket rejection probes and persisted host-context validation remain mandatory, following the [official permission-profile guidance](https://learn.chatgpt.com/docs/permissions).
+
+`pending.mjs` owns the synthetic packets, fresh-session requests and additional checkpoint assertions; `scenarios.mjs` composes these with the common state grader. `run.mjs` owns the proposal-workspace boundary and the combined changed-input/expiry intervention. `evidence.mjs` captures the additional executed source. The existing fixture and grader test files exercise all three scenarios and counterexamples for dropped pending metadata and rebound recovery scope.
+
+This batch is candidate acceptance evidence, not an ordinary-route comparison or a latency improvement claim. Human-event flags remain model-authored attestations; trusted host delivery, browser-mediated filling and final-review acceptance remain separate work. State grades require full trace/stderr review and do not establish genuine browser observations.
+
+The [pending-checkpoint report](../../docs/architecture/pending-checkpoint-model-eval.md) records nine conversations / 18 turns at this product revision, all state checks passing, with complete transcript qualifications and [machine-readable measurements](../../docs/architecture/pending-checkpoint-model-results.json). The diagnostic smoke remains separate.

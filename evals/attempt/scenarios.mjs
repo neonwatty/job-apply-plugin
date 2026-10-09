@@ -1,11 +1,17 @@
-export const scenarioIds = ['fresh-cancel', 'stale-inputs', 'broker-loss', 'expired-recovery'];
+import { pendingScenarioIds, pendingTurns, pendingCheckpointSaved, pendingStateChecks } from './pending.mjs';
+export { pendingScenarioIds } from './pending.mjs';
+export const standardScenarioIds = ['fresh-cancel', 'stale-inputs', 'broker-loss', 'expired-recovery'];
+export const scenarioIds = [...standardScenarioIds, ...pendingScenarioIds];
+export const changesInputs = scenario => ['stale-inputs', 'pending-stale-handoff', 'pending-stale-recovery'].includes(scenario);
+export const recoversExpired = scenario => ['expired-recovery', 'pending-stale-recovery'].includes(scenario);
 export const checkpoint = { status: 'active', step: 'questions', handoffChecklist: ['resume_upload'] };
 export function comparisonArms(scenario, trial) {
   if (!scenarioIds.includes(scenario)) throw Error('Unknown attempt scenario');
-  return scenario === 'expired-recovery' ? ['candidate'] : trial % 2 ? ['baseline', 'candidate'] : ['candidate', 'baseline'];
+  return recoversExpired(scenario) || pendingScenarioIds.includes(scenario) ? ['candidate'] : trial % 2 ? ['baseline', 'candidate'] : ['candidate', 'baseline'];
 }
 export function scenarioTurns(scenario, jobId) {
   if (!scenarioIds.includes(scenario)) throw Error('Unknown attempt scenario');
+  if (pendingScenarioIds.includes(scenario)) return pendingTurns(scenario, jobId);
   const first = `I choose the exact Ready job ${jobId}. Acquire its application attempt using the existing confirmed inputs. `
     + `Record this harness-supplied value-free checkpoint, bound to the acquired attempt revision: ${JSON.stringify(checkpoint)}. `
     + 'The checklist describes unfinished synthetic work, not an observed upload. Keep the attempt active for the next controlled turn; the harness retains its broker and heartbeat. Stop without browser work or handoff.';
@@ -47,17 +53,18 @@ function unrelatedMetadata(state) {
   return Object.fromEntries(Object.entries(state.metadata).filter(([key]) => !['agentWorkflows', 'updatedAt'].includes(key)));
 }
 // Interventions require an actual acquired/checkpointed attempt; model refusal is an outcome, not a fixture error.
-export function continuationPrerequisite(first, initial, arm) {
+export function continuationPrerequisite(first, initial, arm, scenario = 'fresh-cancel') {
   const saved = session(first);
   return initial.job.status === 'ready' && first.job.id === initial.job.id && first.job.status === 'in_progress'
     && first.job.revision === initial.job.revision + 1 && first.claim?.jobId === initial.job.id
     && first.sessions.length === 1 && saved?.attemptRevision === first.job.revision
     && saved.step === checkpoint.step && same(saved.handoffChecklist, checkpoint.handoffChecklist)
+    && (!pendingScenarioIds.includes(scenario) || pendingCheckpointSaved(saved))
     && (arm === 'baseline' || task(first)?.workflow.id === 'application.attempt' && task(first)?.status === 'active');
 }
 export function gradeState(scenario, states, initial, beforeSecond, arm) {
   if (!scenarioIds.includes(scenario) || !['baseline', 'candidate'].includes(arm)
-    || states.length !== 2 || !initial || !beforeSecond || scenario === 'expired-recovery' && arm !== 'candidate') throw Error('Invalid attempt grading scope');
+    || states.length !== 2 || !initial || !beforeSecond || (recoversExpired(scenario) || pendingScenarioIds.includes(scenario)) && arm !== 'candidate') throw Error('Invalid attempt grading scope');
   const [first, last] = states, firstSession = session(first), lastSession = session(last);
   const checks = {
     unrelatedRecordsPreserved: same(initial.otherJobs, first.otherJobs) && same(beforeSecond.otherJobs, last.otherJobs)
@@ -88,14 +95,22 @@ export function gradeState(scenario, states, initial, beforeSecond, arm) {
     if (arm === 'candidate') {
       const original = task(first), terminal = ledger(last)?.tasks?.[original?.taskId];
       checks.sameTaskEnded = ledger(last)?.activeTaskId === null && terminal?.subject.jobId === first.job.id
-        && (scenario === 'stale-inputs' ? ['finished', 'cancelled'].includes(terminal?.status) : terminal?.status === 'cancelled');
+        && (changesInputs(scenario) && !recoversExpired(scenario) ? ['finished', 'cancelled'].includes(terminal?.status) : terminal?.status === 'cancelled');
     }
-    if (scenario === 'stale-inputs') checks.staleInputsRemainBlocked = beforeSecond.preflightReady === false && last.preflightReady === false;
-    if (scenario === 'expired-recovery') {
+    if (changesInputs(scenario)) checks.staleInputsRemainBlocked = beforeSecond.preflightReady === false && last.preflightReady === false;
+    if (recoversExpired(scenario)) {
       const recoveries = Object.values(ledger(last)?.receipts ?? {}).filter(value => value.receipt.outcome === 'claim_recovered');
       checks.exactRecovery = historyTypes(last).filter(value => value === 'claim-recovered').length === 1
         && recoveries.length === 1 && recoveries[0].receipt.task.taskId === task(first)?.taskId
         && recoveries[0].receipt.task.subject.jobRevision === String(first.job.revision);
+    }
+  }
+  if (pendingScenarioIds.includes(scenario)) {
+    const original = task(first), terminal = ledger(last)?.tasks?.[original?.taskId];
+    Object.assign(checks, pendingStateChecks(firstSession, lastSession, session(beforeSecond), original, terminal));
+    if (recoversExpired(scenario)) {
+      const recovery = Object.values(ledger(last)?.receipts ?? {}).find(value => value.receipt.outcome === 'claim_recovered');
+      checks.recoveryScopePreserved = recovery?.receipt.task.subject.inputRevision === original?.subject.inputRevision;
     }
   }
   return { checks, statePassed: Object.values(checks).every(Boolean), transcriptReviewRequired: true };

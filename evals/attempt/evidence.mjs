@@ -21,7 +21,7 @@ export async function packageFingerprint(repository, pluginRoot, revision) {
 }
 export async function captureHarness(repository, output) {
   const sources = {};
-  const files = ['attempt/run.mjs', 'attempt/scenarios.mjs', 'attempt/fixture.mjs', 'attempt/broker.mjs', 'attempt/host.mjs', 'attempt/timing.mjs',
+  const files = ['attempt/run.mjs', 'attempt/pending.mjs', 'attempt/scenarios.mjs', 'attempt/fixture.mjs', 'attempt/broker.mjs', 'attempt/host.mjs', 'attempt/timing.mjs',
     'attempt/baseline-broker.mjs', 'attempt/evidence.mjs', 'preparation/support.mjs',
     'preparation/fixture.mjs', 'preparation/continuation-fixture.mjs'];
   for (const name of files) {
