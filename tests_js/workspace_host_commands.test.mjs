@@ -90,7 +90,13 @@ test('installed attempt command owns broker signals, rejects unattested events a
   assert.deepEqual(await snapshot(state.root), saved);
   assert.equal((await read(state.root, 'jobs.json')).jobs.job.status, 'needs_info');
   assert.equal((await read(state.root, 'coordinator.json')).claim, null);
-  assert.deepEqual((await workflow('attempt', 'context')).result, { task: null, brokerAvailable: false });
+  const ended = (await workflow('attempt', 'context')).result;
+  assert.equal(ended.task, null);
+  assert.equal(ended.brokerAvailable, false);
+  assert.deepEqual(ended.broker, { connected: true, ownsClaim: false });
+  const explicit = (await workflow('attempt', 'context', undefined, ['--job-id', 'job'])).result;
+  assert.equal(explicit.guidance.selection.jobRevision, '4');
+  assert.deepEqual(explicit.guidance.actions, []);
   const canonical = await invoke(['task', ...common, 'snapshot']);
   assert.equal(canonical.snapshot.jobs.find(job => job.id === 'job').status, 'needs_info');
   assert.equal(String(canonical.snapshot.jobs.find(job => job.id === 'job').revision), cancelled.result.receipt.task.subject.jobRevision);
