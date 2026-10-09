@@ -1,0 +1,926 @@
+{
+  "schemaVersion": 1,
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "0dfe2fb429770efc31436ac649ee2ff0afe66d2f"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "harnessRevision": "f6847f6bac2c4c93b3f1109b2f835a19889b13e0",
+  "harnessSources": {
+    "attempt/run.mjs": "25659f4b5dc8f2b547aab98f7be6c066e4a7a6c241e3378050d884e0aeba856c",
+    "attempt/scenarios.mjs": "8998c5f8159be479cee740949b146bcde7cc5f50bf220ea4a61cc23535cb8705",
+    "attempt/fixture.mjs": "48112584048377c36e1a7c8c98ed8469900b4ace0960f83f8f79910c6af10b6c",
+    "attempt/broker.mjs": "6dfea1267e03ef3f1d13fed2a13ef27661bee13f9de67cf93d8985c83a92d23c",
+    "attempt/host.mjs": "0262754e30f5737b3d95280cb61a79f1e9c4a12869ce7b0a06f8c4dd343fb231",
+    "attempt/baseline-broker.mjs": "957c206ce36f27ed158a385ee4ab2a0c1444c855e4683763df1d6a03361c4f0e",
+    "attempt/evidence.mjs": "39233a428b10cc575271fd876b19e767b805fbc8946e9497288ce9ff8277f4e9",
+    "preparation/support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+    "preparation/fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd",
+    "preparation/continuation-fixture.mjs": "5290e45dcbb052ce4a03bf23d56b317a137d7f044452b391b4d8e1a2481d0aec"
+  },
+  "hostProfile": "attempt_eval: workspace plus exact fixture socket, proxy with no allowed domains",
+  "complete": true,
+  "source": {
+    "directory": ".workflows/local/attempt-eval-1791504751229",
+    "reportSha256": "fbb15c5c46b0ce819388b1d7f01247b47f612dfc18e91e208bf0593dee09e671",
+    "scheduledConversations": 21,
+    "executedConversations": 21,
+    "executedTurns": 31,
+    "evidenceManifestSha256": "9551d2bd71286e85dad11be52088fbd4813e0d5e3adaca488c053afd8d01ef94",
+    "evidenceFiles": 239,
+    "temporaryRootsVerifiedAbsent": 21
+  },
+  "runs": [
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        59100,
+        40671
+      ],
+      "shellCalls": [
+        11,
+        13
+      ],
+      "failedShellCalls": [
+        4,
+        3
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 30000
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        23435
+      ],
+      "shellCalls": [
+        4
+      ],
+      "failedShellCalls": [
+        2
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        18103
+      ],
+      "shellCalls": [
+        3
+      ],
+      "failedShellCalls": [
+        1
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        68803,
+        45213
+      ],
+      "shellCalls": [
+        18,
+        8
+      ],
+      "failedShellCalls": [
+        2,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 33000
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        38132,
+        35550
+      ],
+      "shellCalls": [
+        9,
+        15
+      ],
+      "failedShellCalls": [
+        1,
+        5
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 27000
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        56289
+      ],
+      "shellCalls": [
+        10
+      ],
+      "failedShellCalls": [
+        3
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": [
+          "Direct fixture Store-content read: turn-1-trace.jsonl:18 item_8 returned store/jobs.json lines."
+        ],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        43730,
+        32291
+      ],
+      "shellCalls": [
+        11,
+        11
+      ],
+      "failedShellCalls": [
+        1,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 32000
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        15939
+      ],
+      "shellCalls": [
+        2
+      ],
+      "failedShellCalls": [
+        0
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        30519
+      ],
+      "shellCalls": [
+        6
+      ],
+      "failedShellCalls": [
+        3
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        57324,
+        38053
+      ],
+      "shellCalls": [
+        16,
+        14
+      ],
+      "failedShellCalls": [
+        2,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 31000
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        51357,
+        37886
+      ],
+      "shellCalls": [
+        14,
+        13
+      ],
+      "failedShellCalls": [
+        1,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 30000
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        112572,
+        37294
+      ],
+      "shellCalls": [
+        24,
+        4
+      ],
+      "failedShellCalls": [
+        6,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": []
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        94180,
+        54746
+      ],
+      "shellCalls": [
+        16,
+        13
+      ],
+      "failedShellCalls": [
+        1,
+        2
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 46000
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        25287
+      ],
+      "shellCalls": [
+        4
+      ],
+      "failedShellCalls": [
+        2
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        31603
+      ],
+      "shellCalls": [
+        9
+      ],
+      "failedShellCalls": [
+        1
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        52374,
+        33287
+      ],
+      "shellCalls": [
+        11,
+        16
+      ],
+      "failedShellCalls": [
+        2,
+        7
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": [],
+        "inspectionLimitation": "Turn 2 never successfully retrieved the saved session; preservation confirmed independently."
+      },
+      "acquisitionUpperBoundMs": 38000
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        48772,
+        69612
+      ],
+      "shellCalls": [
+        13,
+        18
+      ],
+      "failedShellCalls": [
+        2,
+        3
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": []
+      },
+      "acquisitionUpperBoundMs": 34000
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        29987
+      ],
+      "shellCalls": [
+        7
+      ],
+      "failedShellCalls": [
+        2
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": [
+          "Fixture Store filename enumeration (no contents); sandbox-rejected process inspection."
+        ],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        40860
+      ],
+      "shellCalls": [
+        9
+      ],
+      "failedShellCalls": [
+        1
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        40582
+      ],
+      "shellCalls": [
+        11
+      ],
+      "failedShellCalls": [
+        2
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": true,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker."
+      }
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "fcdb786fddb5dd0a7951177ed9a7635c8aa997c57cde9f4f2d5dbd4c681c2851",
+      "elapsedMs": [
+        31468
+      ],
+      "shellCalls": [
+        6
+      ],
+      "failedShellCalls": [
+        4
+      ],
+      "statePassed": false,
+      "failedStateChecks": [
+        "acquisitionPrerequisite"
+      ],
+      "notExercised": {
+        "turn": 2,
+        "reason": "Acquisition/checkpoint prerequisite was not established"
+      },
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "ready",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspectionOrSearch": false,
+        "scopeExceptions": [],
+        "initialSnapshotsIdentical": true,
+        "unchangedRecordedFileHashes": 18,
+        "availabilityInterpretation": "Successful no-claim context was treated as inability to acquire; not evidence of an unavailable broker.",
+        "stderrNote": "209 bytes: first process creation failed, identical retry reached broker. Nonzero item counts include this infrastructure failure."
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        11,
+        18,
+        9
+      ],
+      "firstTurnMedianMs": 59100,
+      "conversationShellCalls": [
+        24,
+        26,
+        24
+      ],
+      "conversationMedianMs": 99771
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 0,
+      "statePasses": 0,
+      "turn2Exercised": 0,
+      "firstTurnShellCalls": [
+        4,
+        3,
+        10
+      ],
+      "firstTurnMedianMs": 23435,
+      "conversationShellCalls": [
+        4,
+        3,
+        10
+      ],
+      "conversationMedianMs": 23435
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        11,
+        16,
+        14
+      ],
+      "firstTurnMedianMs": 51357,
+      "conversationShellCalls": [
+        22,
+        30,
+        27
+      ],
+      "conversationMedianMs": 89243
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 1,
+      "statePasses": 1,
+      "turn2Exercised": 1,
+      "firstTurnShellCalls": [
+        2,
+        6,
+        24
+      ],
+      "firstTurnMedianMs": 30519,
+      "conversationShellCalls": [
+        2,
+        6,
+        28
+      ],
+      "conversationMedianMs": 30519
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        16,
+        11,
+        13
+      ],
+      "firstTurnMedianMs": 52374,
+      "conversationShellCalls": [
+        29,
+        27,
+        31
+      ],
+      "conversationMedianMs": 118384
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 0,
+      "statePasses": 0,
+      "turn2Exercised": 0,
+      "firstTurnShellCalls": [
+        4,
+        9,
+        7
+      ],
+      "firstTurnMedianMs": 29987,
+      "conversationShellCalls": [
+        4,
+        9,
+        7
+      ],
+      "conversationMedianMs": 29987
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 0,
+      "statePasses": 0,
+      "turn2Exercised": 0,
+      "firstTurnShellCalls": [
+        9,
+        11,
+        6
+      ],
+      "firstTurnMedianMs": 40582,
+      "conversationShellCalls": [
+        9,
+        11,
+        6
+      ],
+      "conversationMedianMs": 40582
+    }
+  ],
+  "diagnostics": {
+    "productBatches": [
+      {
+        "directory": ".workflows/local/attempt-eval-1791503892107",
+        "conversations": 2,
+        "turns": 4,
+        "statePasses": 0,
+        "reportSha256": "29fa866a2f4094829bc5309b31f13e189d627e058a79afa094f8b74f2ada33b1",
+        "manifestSha256": "fbeb8d177b3fe706ee1b8cd8d83feab5ef1892088800ab95e69c672b2f3d73c5",
+        "files": 36
+      },
+      {
+        "directory": ".workflows/local/attempt-eval-1791504422296",
+        "conversations": 2,
+        "turns": 4,
+        "statePasses": 1,
+        "reportSha256": "c52073c88955c6cd21cf2e896a77fd89e845a77e50b1343a549497f00d0622cb",
+        "manifestSha256": "09be10b3bafe1525453a67e2b456c4cc3f51eb57fa13d1de579a3c26cd4d6613",
+        "files": 39
+      }
+    ],
+    "separateHostProbeTurns": 1,
+    "allProductTrialRootsVerifiedAbsent": 25
+  },
+  "metricDefinitions": {
+    "failedShellCalls": "Completed shell items with nonzero exit; excludes hidden host-policy rejections and failures masked by later commands. Includes infrastructure process-creation failures.",
+    "elapsedMs": "Model/tool elapsed time per executed turn; excludes fixture installation. Host/service load uncontrolled.",
+    "statePassed": "Canonical conversation outcome, distinct from complete inspection or instruction compliance.",
+    "clarificationQuestions": "Semantic review of all model final text and full traces; excludes requested checkpoint content."
+  },
+  "limitations": [
+    "All first-turn acquisition/checkpoint requests are identical across scenario labels.",
+    "Eleven candidate second turns were not exercised; there is no model recovery result.",
+    "Installed source/tests were available and inspected; this is not a blind comparison.",
+    "Workspace read permissions do not enforce the no-owner-data instruction.",
+    "The final harness timing correction was applied after this immutable batch.",
+    "No browser filling, final-review acceptance, submission or model authority-revocation trial.",
+    "Shorter failed candidate runs do not establish a speed improvement."
+  ],
+  "timingCorrection": {
+    "executedHarnessIdleMs": 360000,
+    "publishedHarnessIdleMs": 900000,
+    "modelTimeoutMs": 360000,
+    "requiredTerminationMarginMs": 10000,
+    "appliedAfterBatch": true,
+    "acquisitionUpperBoundMethod": "Acquisition history timestamp minus Ready selection timestamp plus 1000 ms for timestamp precision; selection preceded broker startup."
+  }
+}
