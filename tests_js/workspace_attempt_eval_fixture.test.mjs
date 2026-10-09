@@ -10,6 +10,7 @@ import { startBroker, cleanupBrokerArtifacts } from '../evals/attempt/broker.mjs
 import { checkpoint, gradeState } from '../evals/attempt/scenarios.mjs';
 
 const root = await realpath(fileURLToPath(new URL('../', import.meta.url)));
+const posixFixture = { skip: !['darwin', 'linux'].includes(process.platform) };
 async function installBase(temporary) {
   const pluginRoot = join(temporary, 'baseline');
   await mkdir(pluginRoot);
@@ -55,7 +56,7 @@ async function client(pluginRoot, fixture, arm) {
   }, get task() { return current; } };
 }
 
-test('attempt fixture runs real public clients for pinned baseline and candidate, retaining progress through cancellation', async t => {
+test('attempt fixture runs real public clients for pinned baseline and candidate, retaining progress through cancellation', posixFixture, async t => {
   const temporary = await realpath(await mkdtemp(join(tmpdir(), 'attempt-eval-test-')));
   try {
     const baseline = await installBase(temporary);
@@ -81,7 +82,7 @@ test('attempt fixture runs real public clients for pinned baseline and candidate
   } finally { await rm(temporary, { recursive: true, force: true }); }
 });
 
-test('stale facts reject progress and retain safe handoff through both installed routes', async t => {
+test('stale facts reject progress and retain safe handoff through both installed routes', posixFixture, async t => {
   const temporary = await realpath(await mkdtemp(join(tmpdir(), 'attempt-eval-stale-')));
   try {
     const baseline = await installBase(temporary);
@@ -106,7 +107,7 @@ test('stale facts reject progress and retain safe handoff through both installed
   } finally { await rm(temporary, { recursive: true, force: true }); }
 });
 
-test('owned replacement cannot use a lost capability until explicit same-task expiry recovery', async () => {
+test('owned replacement cannot use a lost capability until explicit same-task expiry recovery', posixFixture, async () => {
   const workspace = await realpath(await mkdtemp(join(tmpdir(), 'attempt-eval-recovery-')));
   const children = [];
   let fixture;
