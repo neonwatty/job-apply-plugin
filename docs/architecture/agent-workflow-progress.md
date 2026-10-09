@@ -79,7 +79,11 @@ Implementation is on `codex/agent-workflows-11-attempt-guidance`, stacked on [PR
 
 ## Slice 4h: preserve recovery input scope
 
-Implementation is on `codex/agent-workflows-12-recovery-scope`, stacked on PR #202. See the [file map and contract](recovery-input-scope-slice.md). Existing tasks retain their input fingerprint through recovery and safe exits; only a new task binds new inputs. Both progress and awaiting-review handoff reject changed input scope before writes, while scoped Needs Info handoff/cancellation remain available. Native and installed-host regressions cover repeated recovery, replay, checkpoint preservation and new-task rebinding. This slice adds deterministic coverage, not another model comparison. Final review and publication evidence are recorded in the slice 12 local receipt.
+Implementation is on `codex/agent-workflows-12-recovery-scope`, stacked on PR #202. See the [file map and contract](recovery-input-scope-slice.md). Existing tasks retain their input fingerprint through recovery and safe exits; only a new task binds new inputs. Both progress and awaiting-review handoff reject changed input scope before writes, while scoped Needs Info handoff/cancellation remain available. Native and installed-host regressions cover repeated recovery, replay, checkpoint preservation and new-task rebinding. This slice adds deterministic coverage, not another model comparison. Published as [PR #203](https://github.com/neonwatty/job-apply-plugin/pull/203), head `ec417274e06d5bf0cdedc747f2feb6922a05f7f3`. Twenty-nine focused checks, eleven commit suites, 28 deep suites and fresh native pre-push checks passed; Windows was skipped. Native and five independent reviews found no actionable defects. Evidence: `.workflows/local/agent-workflow-experiment/slice12-validation-summary.json`.
+
+## Slice 4i: saved pending-checkpoint safe exit
+
+Implementation is on `codex/agent-workflows-13-saved-handoff`, stacked on PR #203. See the [file map and contract](saved-checkpoint-handoff-slice.md). An exact checkpoint fingerprint lets code preserve pending questions and historical session metadata during Needs Info handoff/cancellation, under the existing claim and revision guards. Progress still requires current observations. This adds deterministic and installed-host coverage without a new model comparison. Review and publication evidence are recorded in the slice 13 local receipt.
 
 ## Next slices
 

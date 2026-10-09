@@ -24,10 +24,16 @@ export class NativeClaimWorkflowTasks implements WorkflowTaskStore<ClaimWorkflow
       const metadata = object(get(original.jobs, 'metadata'), 'metadata');
       const ledger = has(metadata, workflowMetadataKey) ? decodeWorkflowLedger(get(metadata, workflowMetadataKey)) : emptyWorkflowLedger();
       return operation({ ledger, domain: { snapshot: buffered,
-        execute: async (kind, id, revision, token, session, status) => {
+        execute: async (kind, id, revision, token, session, status, savedSessionFingerprint) => {
           if (invoked) throw new TaskProtocolError('action_unavailable');
           invoked = true;
           const owner = text('Experimental workflow broker');
+          if (savedSessionFingerprint !== undefined) {
+            if (session !== undefined || !(kind === 'cancel' || kind === 'handoff' && status === 'needs_info')) {
+              throw new TaskProtocolError('action_unavailable');
+            }
+            return service.handoffSaved(id, token, revision, savedSessionFingerprint);
+          }
           if (kind === 'acquire') return service.acquire(id, owner, revision);
           if (kind === 'restart') return service.restart(id, owner, revision, true);
           if (kind === 'recover') return service.recover(id, owner);

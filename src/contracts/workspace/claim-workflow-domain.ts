@@ -4,5 +4,5 @@ export type ClaimWorkflowKind = 'acquire' | 'restart' | 'recover' | 'progress' |
 export interface ClaimWorkflowDomain {
   snapshot: ApplicationSnapshot;
   execute(kind: ClaimWorkflowKind, jobId: string, revision: bigint, token: Value, session?: Document,
-    status?: 'needs_info' | 'awaiting_review'): Promise<Value>;
+    status?: 'needs_info' | 'awaiting_review', savedSessionFingerprint?: string): Promise<Value>;
 }

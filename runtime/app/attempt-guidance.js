@@ -2,6 +2,7 @@ import { applicationPreflight, inspectAcquisition, inspectRecovery, inspectRevie
 import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
 import { claimExpired } from '../contracts/workspace/claims.js';
 import { get, int, object, serialize, string, JobsError } from '../contracts/workspace/values.js';
+import { savedClaimSessionFingerprint } from '../contracts/workspace/saved-claim-session.js';
 import { agentCodes } from '../contracts/workspace/answer-session-fields.js';
 import { receiptLimit, taskLimit } from '../contracts/workspace/workflow-tasks.js';
 import { attemptIdentity, attemptRegistry } from '../workflows/applications/attempt.js';
@@ -39,6 +40,7 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
     result.nextOperation = 'inspect_only';
     const revision = result.selection.jobRevision;
     const existing = snapshot.sessions.find(item => string(get(item, 'applicationId')) === jobId);
+    let savedFingerprint = null;
     const session = { status: 'active', attemptRevision: revision };
     if (existing) {
         for (const key of ['step', 'handoffChecklist', 'answerKeys']) {
@@ -59,7 +61,9 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
         session.blockers = Array.isArray(blockers) ? blockers.map(value => object(value, 'blocker'))
             .filter(value => agentCodes.includes(string(get(value, 'code'))))
             .map(value => ({ type: string(get(value, 'type')), code: string(get(value, 'code')) })) : [];
-        result.checkpoint = { ...structuredClone(session), status: string(get(existing, 'status')),
+        savedFingerprint = savedClaimSessionFingerprint(existing, jobId, BigInt(revision));
+        result.checkpoint = { pendingFieldCount: Array.isArray(pending) ? pending.length : 0,
+            ...(savedFingerprint === null ? {} : { savedSessionFingerprint: savedFingerprint }), ...structuredClone(session), status: string(get(existing, 'status')),
             attemptRevision: int(get(existing, 'attemptRevision'))?.toString() ?? null };
     }
     try {
@@ -82,11 +86,13 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
     const add = (kind) => {
         const explicit = ['acquire', 'restart', 'recover', 'cancel'].includes(kind);
         const needsSession = ['progress', 'handoff', 'cancel'].includes(kind);
-        const sessionMissing = needsSession && result.sessionRequiresObservation;
+        const preserveSaved = ['handoff', 'cancel'].includes(kind) && result.sessionRequiresObservation && savedFingerprint !== null;
+        const sessionMissing = needsSession && result.sessionRequiresObservation && !preserveSaved;
         result.actions.push({ kind, args: ['workflow', 'attempt', 'event', ...(explicit ? ['--host-user-event'] : [])],
             requiresExplicitUserEvent: explicit, requiredFields: ['operationId', ...(sessionMissing ? ['session'] : [])], input: {
                 kind, taskId: task?.taskId ?? null, expectedRevision: task?.revision ?? null, jobId, jobRevision: revision,
-                ...(needsSession && !sessionMissing ? { session: structuredClone(session) } : {}),
+                ...(preserveSaved ? { savedSessionFingerprint: savedFingerprint }
+                    : needsSession && !sessionMissing ? { session: structuredClone(session) } : {}),
                 ...(kind === 'handoff' ? { status: 'needs_info' } : {}),
             } });
     };

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { inspectSavedClaimHandoff } from '../contracts/workspace/saved-claim-session.js';
 import { claimHeartbeatSeconds, claimLeaseSeconds, heartbeatClaim, makeClaim, publicClaim, requireClaim, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { safeId, validateJob } from '../contracts/workspace/jobs.js';
 import { requireClaimOwner, requireSelectionIntent, requireRestartConfirmation, requireJobRevision, requireHandoffTarget } from '../contracts/workspace/application-intents.js';
@@ -153,17 +154,28 @@ export class ClaimsService {
       return session;
     });
   }
+  /** Internal workflow operation: keep historical checkpoint state without fabricating observations. */
+  handoffSaved(id:string,token:Value,expectedRevision:bigint,fingerprint:string):Promise<Value> {
+    return this.repository.claimTransaction(async tx => {
+      const {job,session,at} = inspectSavedClaimHandoff(tx,id,token,expectedRevision,fingerprint,this.now());
+      return this.commitHandoff(tx,job,session,'needs_info',at);
+    });
+  }
+  private async commitHandoff(tx:ClaimTransaction,job:Document,session:Document,status:string,now:string):Promise<Value> {
+    const id = string(get(job,'id'))!;
+    const op = operation('handoff',job,now,status === 'needs_info' ? 'job-blocked' : 'reviewed',status,null);
+    if (status === 'awaiting_review') {
+      const authority = consumeAutofillAuthority(tx.authority, id, now);
+      if (authority !== null) set(op, 'applicationAuthority', authority);
+    }
+    set(op,'session',session);await tx.commit(op);
+    const result = doc({claim:null});set(result,'job',transitioned(job,status,now));return set(result,'session',session);
+  }
   handoff(id:string,token:Value,status:string,incoming:Document,expectedRevision:bigint):Promise<Value> {
     requireHandoffTarget(status);
     return this.repository.claimTransaction(async tx => {
       const {job,session,at:now} = await inspectHandoff(tx,id,token,status,incoming,expectedRevision,this.now);
-      const op = operation('handoff',job,now,status === 'needs_info' ? 'job-blocked' : 'reviewed',status,null);
-      if (status === 'awaiting_review') {
-        const authority = consumeAutofillAuthority(tx.authority, id, now);
-        if (authority !== null) set(op, 'applicationAuthority', authority);
-      }
-      set(op,'session',session);await tx.commit(op);
-      const result = doc({claim:null});set(result,'job',transitioned(job,status,now));return set(result,'session',session);
+      return this.commitHandoff(tx,job,session,status,now);
     });
   }
 }

@@ -8,20 +8,26 @@ export function claimEvent(raw) {
     requireCondition(kinds.includes(value.kind), 'invalid_event');
     const kind = value.kind;
     const session = ['progress', 'handoff', 'cancel'].includes(kind);
+    const saved = Object.hasOwn(value, 'savedSessionFingerprint');
+    if (saved) {
+        requireCondition(kind === 'cancel' || kind === 'handoff' && value.status === 'needs_info', 'invalid_event');
+        requireCondition(typeof value.savedSessionFingerprint === 'string'
+            && value.savedSessionFingerprint.length === 64 && /^[a-f0-9]{64}$/.test(value.savedSessionFingerprint), 'invalid_event');
+    }
     exact(value, ['kind', 'operationId', 'taskId', 'expectedRevision', 'jobId', 'jobRevision',
-        ...(session ? ['session'] : []), ...(kind === 'handoff' ? ['status'] : [])], 'invalid_event');
+        ...(session ? [saved ? 'savedSessionFingerprint' : 'session'] : []), ...(kind === 'handoff' ? ['status'] : [])], 'invalid_event');
     const fresh = kind === 'acquire' || kind === 'restart';
     if (fresh)
         requireCondition(value.taskId === null && value.expectedRevision === null, 'invalid_event');
     if (kind === 'handoff')
         requireCondition(value.status === 'needs_info' || value.status === 'awaiting_review', 'invalid_event');
-    if (session)
+    if (session && !saved)
         record(value.session, 'invalid_event');
     return { kind, operationId: identifier(value.operationId, 'invalid_event'),
         taskId: fresh ? null : identifier(value.taskId, 'invalid_event'),
         expectedRevision: fresh ? null : revision(value.expectedRevision, 'invalid_event'),
         jobId: identifier(value.jobId, 'invalid_event'), jobRevision: revision(value.jobRevision, 'invalid_event'),
-        ...(session ? { session: value.session } : {}), ...(kind === 'handoff' ? { status: value.status } : {}) };
+        ...(saved ? { savedSessionFingerprint: value.savedSessionFingerprint } : session ? { session: value.session } : {}), ...(kind === 'handoff' ? { status: value.status } : {}) };
 }
 export function attemptRegistry() {
     return new WorkflowRegistry([{ id: attemptProfile, tools: kinds.map(kind => ({ id: `application.${kind}`, inputSchema: { parse: claimEvent } })),
