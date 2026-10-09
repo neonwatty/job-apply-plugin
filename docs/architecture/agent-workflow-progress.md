@@ -87,11 +87,11 @@ Implementation is on `codex/agent-workflows-13-saved-handoff`, stacked on PR #20
 
 ## Slice 4j: pending-checkpoint model acceptance
 
-Implementation is on `codex/agent-workflows-14-pending-eval`, stacked on PR #204. The [attempt runner](../../evals/attempt/README.md) adds a candidate-only acceptance batch for fresh-session cancellation, changed-input handoff and changed-input expired recovery with saved unanswered fields. The harness archives and clears prior proposals before the new session, grades complete checkpoint preservation, and checks original input scope in recovery receipts and terminal state. Results are pending; no model acceptance is claimed yet.
+Implementation is on `codex/agent-workflows-14-pending-eval`, stacked on PR #204. The [attempt runner](../../evals/attempt/README.md) adds a candidate-only acceptance batch for fresh-session cancellation, changed-input handoff and changed-input expired recovery with saved unanswered fields. The harness archives and clears prior proposals before the new session, grades complete checkpoint preservation, and checks original input scope in recovery receipts and terminal state. The [measured report](pending-checkpoint-model-eval.md) records 9/9 conversations and all 18 turns passing state checks at product `712582a541f9c0434edb0be0345dfee6f30d6fbb`, using harness `b3d4737b83e9a1ac710e8863b745f8ab81ec6ba4`. Every fresh-session safe exit preserved the full checkpoint; all three changed-input recoveries retained original scope. Seven nonzero shell items, three hidden tool rejections, masked reference errors and corrected invented IDs remain documented. This candidate-only sample does not establish ordinary-route UX improvement or genuine browser observations. Eighteen focused checks and eleven harness commit suites passed; final publication gates are recorded in the slice 14 local receipt.
 
 ## Next slices
 
-1. Evaluate observed pending-question sessions and trusted human-event delivery; extend model recovery trials to changed inputs against the fixed executor.
+1. Implement trusted human-event delivery, then evaluate pending-question sessions using genuine browser observations. Changed-input model recovery with synthetic pending checkpoints now has a completed nine-conversation acceptance batch.
 2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
 3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.

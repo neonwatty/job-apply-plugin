@@ -1,0 +1,619 @@
+{
+  "schemaVersion": 1,
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "712582a541f9c0434edb0be0345dfee6f30d6fbb"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "harnessRevision": "b3d4737b83e9a1ac710e8863b745f8ab81ec6ba4",
+  "harnessSources": {
+    "attempt/run.mjs": "b251b7f94b4661ffc71d8f5626233839d616d395f1cf8792957cdd29ba9f61c2",
+    "attempt/pending.mjs": "ae762dbf2c9a765d72bbe63b8bff4ee4dd8be250f2c7f4d762255403a5113609",
+    "attempt/scenarios.mjs": "606b4c3d2c7f9f13d464d7bf5b382143e249bbc6bdbfa6225a762c826fbb7d6c",
+    "attempt/fixture.mjs": "48112584048377c36e1a7c8c98ed8469900b4ace0960f83f8f79910c6af10b6c",
+    "attempt/broker.mjs": "0a75bc2dcf67252b0e8f56ab43b94f15a0052642ade4e073beb4f5afeaa0ada3",
+    "attempt/host.mjs": "0262754e30f5737b3d95280cb61a79f1e9c4a12869ce7b0a06f8c4dd343fb231",
+    "attempt/timing.mjs": "4f7c5b977cbd012e845feb15cdf454e9248b167a97d4286f234d3934fd2347be",
+    "attempt/baseline-broker.mjs": "ca2148b39ca3a0b677c3d0e5cdf8ba27a2a4003b69a518aed529e28338ddfb9e",
+    "attempt/evidence.mjs": "bcf34ef0c949767eaf266fdc09556b4510cbea011faaad7243c8d30f1ce33cd9",
+    "preparation/support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+    "preparation/fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd",
+    "preparation/continuation-fixture.mjs": "5290e45dcbb052ce4a03bf23d56b317a137d7f044452b391b4d8e1a2481d0aec"
+  },
+  "hostProfile": "attempt_eval: workspace plus exact fixture socket, proxy with no allowed domains",
+  "complete": true,
+  "source": {
+    "directory": ".workflows/local/attempt-eval-1791582617674",
+    "reportSha256": "7ea739180d440f80c88442aea25663cf7dff9e79b28a98ad0ae73e7392ea5a0d",
+    "scheduledConversations": 9,
+    "executedConversations": 9,
+    "executedTurns": 18,
+    "manifestSha256": "d39eb6ece829c6d42a54fdf1e5330d73a64de8cadfe24b26304e916777daf71c",
+    "manifestFiles": 139
+  },
+  "runs": [
+    {
+      "scenario": "pending-cancel",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        31828,
+        63003
+      ],
+      "shellCalls": [
+        6,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-cancel",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        84435,
+        21633
+      ],
+      "shellCalls": [
+        7,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-cancel",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        36970,
+        26282
+      ],
+      "shellCalls": [
+        7,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-stale-handoff",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        42099,
+        48094
+      ],
+      "shellCalls": [
+        9,
+        6
+      ],
+      "failedShellCalls": [
+        2,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "staleInputsRemainBlocked": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-stale-handoff",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        40213,
+        71370
+      ],
+      "shellCalls": [
+        7,
+        7
+      ],
+      "failedShellCalls": [
+        0,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "staleInputsRemainBlocked": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-stale-handoff",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        37453,
+        24333
+      ],
+      "shellCalls": [
+        6,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "staleInputsRemainBlocked": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-stale-recovery",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        33937,
+        37936
+      ],
+      "shellCalls": [
+        7,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "staleInputsRemainBlocked": true,
+        "exactRecovery": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true,
+        "recoveryScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-stale-recovery",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        37919,
+        43995
+      ],
+      "shellCalls": [
+        7,
+        10
+      ],
+      "failedShellCalls": [
+        0,
+        2
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "staleInputsRemainBlocked": true,
+        "exactRecovery": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true,
+        "recoveryScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    },
+    {
+      "scenario": "pending-stale-recovery",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "047eecd8451913c9b287a75d09e9a5465a3e9bd8cd5e3aa943f504f33649b93e",
+      "elapsedMs": [
+        74184,
+        30690
+      ],
+      "shellCalls": [
+        7,
+        6
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "proposalWorkspaceReset": true,
+      "checks": {
+        "unrelatedRecordsPreserved": true,
+        "acquiredExactReadyJob": true,
+        "checkpointSaved": true,
+        "noInputRewriteFirst": true,
+        "noInputRewriteLast": true,
+        "noFinalState": true,
+        "oneAcquisition": true,
+        "persistedAttempt": true,
+        "claimReleased": true,
+        "needsInfo": true,
+        "checkpointPreserved": true,
+        "sameTaskEnded": true,
+        "staleInputsRemainBlocked": true,
+        "exactRecovery": true,
+        "pendingCheckpointSaved": true,
+        "completeCheckpointPreserved": true,
+        "inputScopePreserved": true,
+        "recoveryScopePreserved": true
+      },
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info"
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "pending-cancel",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        6,
+        7,
+        7
+      ],
+      "firstTurnMedianMs": 36970,
+      "conversationShellCalls": [
+        10,
+        11,
+        12
+      ],
+      "conversationMedianMs": 94831
+    },
+    {
+      "scenario": "pending-stale-handoff",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        9,
+        7,
+        6
+      ],
+      "firstTurnMedianMs": 40213,
+      "conversationShellCalls": [
+        15,
+        14,
+        11
+      ],
+      "conversationMedianMs": 90193
+    },
+    {
+      "scenario": "pending-stale-recovery",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        7,
+        7,
+        7
+      ],
+      "firstTurnMedianMs": 37919,
+      "conversationShellCalls": [
+        13,
+        17,
+        13
+      ],
+      "conversationMedianMs": 81914
+    }
+  ],
+  "transcriptAudit": {
+    "runs": {
+      "pending-cancel-1-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 1,
+        "notes": [
+          "Turn 2 initial apply_patch payload was malformed and rejected; corrected before accepted cancellation.",
+          "All completed shell items succeeded. Only skill references and public commands were read; recorded proposal files were deleted."
+        ]
+      },
+      "pending-cancel-2-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 0,
+        "notes": [
+          "One unnecessary preparation-context read before acquisition, then correct attempt context.",
+          "All shell items succeeded; skill-only reference reads, correct saved-fingerprint cancellation, all recorded proposal files deleted."
+        ]
+      },
+      "pending-cancel-3-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 0,
+        "notes": [
+          "Turn 1 read an additional application skill reference.",
+          "Turn 2 used an incorrect native-lock path outside its fixture spelling; command failed with exit 2, then corrected. No successful external access evidenced.",
+          "All recorded proposal files deleted."
+        ]
+      },
+      "pending-stale-handoff-1-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 1,
+        "notes": [
+          "Turn 1 truncated command/root paths to an external nonexistent prefix; Node failed before loading the command. A second malformed native-lock path returned workflow_failed. Both corrected.",
+          "Turn 2 corrected wrong skill-reference path and invented fixture-job query; public context supplied the active job.",
+          "One rm-f cleanup/context chain rejected by host, then file deleted using apply_patch and context verified.",
+          "Final state and stale-input report accurate; full checkpoint preserved."
+        ]
+      },
+      "pending-stale-handoff-2-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 0,
+        "notes": [
+          "Turn 2 first reference-read chain masked two missing-file errors behind a successful final sed; corrected both references in next call.",
+          "Invented fixture-job query corrected via unscoped attempt context.",
+          "One verification command used truncated nonexistent external plugin path and failed before load; corrected.",
+          "Proposal cleanup used rm without flags in turn 1 and apply_patch in turn 2."
+        ]
+      },
+      "pending-stale-handoff-3-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 0,
+        "notes": [
+          "All eleven completed shell items succeeded; stderr empty. Duplicate experimental reference read in turn 2.",
+          "Saved-fingerprint Needs Info handoff preserved the complete checkpoint; all recorded proposal files deleted."
+        ]
+      },
+      "pending-stale-recovery-1-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 0,
+        "notes": [
+          "All thirteen completed shell items succeeded; stderr empty. Turn 2 reference read used suppressed errors, but expected references were visible.",
+          "Recovered the exact task then cancelled with saved fingerprint; all recorded proposal files deleted."
+        ]
+      },
+      "pending-stale-recovery-2-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 0,
+        "notes": [
+          "Turn 2 corrected two malformed native-lock paths (two exit-2 shell items), including one external nonexistent prefix; no successful external access evidenced.",
+          "Guessed fixture-job query returned different_active_job; corrected via unscoped context.",
+          "Turn 1 described context as confirming no browser evidence was required; this was explicitly synthetic input, and the descriptor cannot establish real observation.",
+          "All recorded proposal files deleted; accepted recovery and cancellation preserved original scope and checkpoint."
+        ]
+      },
+      "pending-stale-recovery-3-candidate": {
+        "reviewedTurns": 2,
+        "finalOutcomeAccurate": true,
+        "clarificationQuestions": 0,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "stderrOnlyRejections": 1,
+        "notes": [
+          "Turn 1 unnecessarily read preparation context before correct attempt context.",
+          "All thirteen completed shell items succeeded. Turn 2 rm-f proposal cleanup was rejected by the host; both files were then deleted via apply_patch.",
+          "Same-task recovery and cancellation preserved the original input scope and full pending checkpoint."
+        ]
+      }
+    }
+  },
+  "totals": {
+    "shellCalls": 116,
+    "nonzeroCompletedShellItems": 7,
+    "stderrOnlyRejections": 3,
+    "clarificationQuestions": 0,
+    "statePasses": 9,
+    "cleanedMainRoots": 9,
+    "cleanedDiagnosticRoots": 1
+  }
+}
