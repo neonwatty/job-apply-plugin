@@ -24,7 +24,7 @@ export async function experimentalClaimWorkflow(args) {
             attested = true;
             continue;
         }
-        if (!['--root', '--native-lock', '--input'].includes(name) || options.has(name) || !rest[index + 1])
+        if (!['--root', '--native-lock', '--input', ...(command === 'context' ? ['--job-id'] : [])].includes(name) || options.has(name) || !rest[index + 1])
             throw new Error('invalid options');
         options.set(name, rest[++index]);
     }
@@ -44,7 +44,7 @@ export async function experimentalClaimWorkflow(args) {
         await runAttemptBroker(root, claims, provider, { createAuthority: stop => new WorkflowBroker(workflow, stop) });
         return { ok: true };
     }
-    const request = command === 'context' ? { command } : { command, event: JSON.parse(await boundedFile(options.get('--input'), 131072)), hostUserEvent: attested };
+    const request = command === 'context' ? { command, ...(options.has('--job-id') ? { jobId: options.get('--job-id') } : {}) } : { command, event: JSON.parse(await boundedFile(options.get('--input'), 131072)), hostUserEvent: attested };
     return JSON.parse(serialize(await requestAttempt(root, object(fromJSON(request), 'request'))));
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

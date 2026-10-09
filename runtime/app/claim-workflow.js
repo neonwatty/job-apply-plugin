@@ -8,6 +8,8 @@ import { runDurableOperation } from '../harness/run.js';
 import { executeWorkflowTool } from '../harness/tool-gateway.js';
 import { attemptIdentity, attemptProfile, attemptRegistry, claimEvent, safeExit } from '../workflows/applications/attempt.js';
 import { claimSessionInput } from '../workflows/applications/attempt-session.js';
+import { attemptGuidance } from './attempt-guidance.js';
+import { identifier } from '../harness/validation.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 const fingerprint = (value) => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
 /** Lives in the broker. No bearer enters the task ledger, response, or host proposal. */
@@ -113,7 +115,9 @@ export class ClaimWorkflow {
             return result;
         });
     }
-    inspect() {
+    inspect(requestedJobId) {
+        if (requestedJobId !== undefined)
+            identifier(requestedJobId, 'invalid_arguments');
         return this.serial(() => this.store.transaction(async (tx) => {
             const task = tx.ledger.activeTaskId === null ? null : tx.ledger.tasks[tx.ledger.activeTaskId];
             let brokerAvailable = false;
@@ -127,7 +131,9 @@ export class ClaimWorkflow {
                         throw error;
                 }
             }
-            return { task: task ? structuredClone(task) : null, brokerAvailable };
+            return { task: task ? structuredClone(task) : null, brokerAvailable,
+                broker: { connected: !this.#closed, ownsClaim: brokerAvailable },
+                guidance: await attemptGuidance(tx.domain.snapshot, tx.ledger, task, brokerAvailable, !this.#closed, this.access, this.now, requestedJobId) };
         }));
     }
     heartbeat() {
