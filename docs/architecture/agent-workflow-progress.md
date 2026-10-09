@@ -83,7 +83,11 @@ Implementation is on `codex/agent-workflows-12-recovery-scope`, stacked on PR #2
 
 ## Slice 4i: saved pending-checkpoint safe exit
 
-Implementation is on `codex/agent-workflows-13-saved-handoff`, stacked on PR #203. See the [file map and contract](saved-checkpoint-handoff-slice.md). An exact checkpoint fingerprint lets code preserve pending questions and historical session metadata during Needs Info handoff/cancellation, under the existing claim and revision guards. Progress still requires current observations. This adds deterministic and installed-host coverage without a new model comparison. Review and publication evidence are recorded in the slice 13 local receipt.
+Implementation is on `codex/agent-workflows-13-saved-handoff`, stacked on PR #203. See the [file map and contract](saved-checkpoint-handoff-slice.md). An exact checkpoint fingerprint lets code preserve pending questions and historical session metadata during Needs Info handoff/cancellation, under the existing claim and revision guards. Progress still requires current observations. This adds deterministic and installed-host coverage without a new model comparison. Published as [PR #204](https://github.com/neonwatty/job-apply-plugin/pull/204), head `712582a541f9c0434edb0be0345dfee6f30d6fbb`. Forty-six focused checks, eleven commit suites, 28 deep suites and fresh native pre-push checks passed; Windows was skipped. Native and five independent reviews found no actionable defects. Two earlier intermittent gate failures and passing base/candidate diagnostics are retained. Evidence: `.workflows/local/agent-workflow-experiment/slice13-validation-summary.json`.
+
+## Slice 4j: pending-checkpoint model acceptance
+
+Implementation is on `codex/agent-workflows-14-pending-eval`, stacked on PR #204. The [attempt runner](../../evals/attempt/README.md) adds a candidate-only acceptance batch for fresh-session cancellation, changed-input handoff and changed-input expired recovery with saved unanswered fields. The harness archives and clears prior proposals before the new session, grades complete checkpoint preservation, and checks original input scope in recovery receipts and terminal state. Results are pending; no model acceptance is claimed yet.
 
 ## Next slices
 

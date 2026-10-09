@@ -1,26 +1,27 @@
 #!/usr/bin/env node
-import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execute, hostEnvironment, installRevision, parseTrace, writeJson } from '../preparation/support.mjs';
 import { prepareAttemptFixture, observeAttempt, introduceStaleFacts, expireFixtureClaim } from './fixture.mjs';
 import { startBroker, cleanupBrokerArtifacts } from './broker.mjs';
-import { comparisonArms, scenarioIds, scenarioTurns, trialPrompt, gradeState, continuationPrerequisite } from './scenarios.mjs';
+import { comparisonArms, scenarioIds, scenarioTurns, trialPrompt, gradeState, continuationPrerequisite, standardScenarioIds, pendingScenarioIds, changesInputs, recoversExpired } from './scenarios.mjs';
 import { modelTurnTimeout, requireAcquisitionWindow } from './timing.mjs';
 import { attemptArguments, attemptContext, validateAttemptContext, fixtureSocket, probeHost } from './host.mjs';
 import { repositoryIdentity, packageFingerprint, captureHarness } from './evidence.mjs';
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const revisions = { baseline: 'f95b4947453ad6c6abc9cc0e81c3e443706d4714', candidate: '0dfe2fb429770efc31436ac649ee2ff0afe66d2f' };
-let trials = 3, model = 'gpt-5.6-luna', scenarios = scenarioIds;
+let trials = 3, model = 'gpt-5.6-luna', scenarios = standardScenarioIds;
 for (let index = 2; index < process.argv.length; index++) {
   const flag = process.argv[index], value = process.argv[++index];
   if (flag === '--trials') trials = Number(value);
   else if (flag === '--model') model = value;
+  else if (flag === '--suite' && value === 'pending') scenarios = pendingScenarioIds;
   else if (flag === '--candidate') revisions.candidate = value;
   else if (flag === '--scenario' && scenarioIds.includes(value)) scenarios = [value];
-  else throw Error('Usage: run.mjs [--trials 1..10] [--model MODEL] [--candidate FULL_SHA] [--scenario ID]');
+  else throw Error('Usage: run.mjs [--trials 1..10] [--model MODEL] [--candidate FULL_SHA] [--scenario ID] [--suite pending]');
 }
 if (process.env.CI) throw Error('Authenticated model trials are local-only');
 if (!Number.isInteger(trials) || trials < 1 || trials > 10 || !model || !/^[a-f0-9]{40}$/.test(revisions.candidate ?? '')) throw Error('Invalid trial options');
@@ -47,7 +48,9 @@ try {
         installation = await installRevision(repository, revisions[arm], temporary);
         const workspace = join(temporary, 'workspace');
         await mkdir(workspace, { mode: 0o700 });
-        fixture = await prepareAttemptFixture(installation.pluginRoot, workspace);
+        const fixtureWorkspace = pendingScenarioIds.includes(scenario) ? join(temporary, 'fixture') : workspace;
+        if (fixtureWorkspace !== workspace) await mkdir(fixtureWorkspace, { mode: 0o700 });
+        fixture = { ...await prepareAttemptFixture(installation.pluginRoot, fixtureWorkspace), workspace };
         run.packageFingerprint = await packageFingerprint(repository, installation.pluginRoot, revisions[arm]);
         brokers.push(await startBroker(installation.pluginRoot, fixture, arm));
         const socket = await fixtureSocket(installation.pluginRoot, fixture);
@@ -60,10 +63,16 @@ try {
         const turns = scenarioTurns(scenario, fixture.jobId);
         for (let turn = 0; turn < turns.length; turn++) {
           if (turn === 1) {
-            if (scenario === 'stale-inputs') await introduceStaleFacts(installation.pluginRoot, fixture);
-            if (['broker-loss', 'expired-recovery'].includes(scenario)) {
+            if (pendingScenarioIds.includes(scenario)) {
+              await cp(workspace, join(evidence, 'turn-1-workspace'), { recursive: true, dereference: false });
+              await rm(workspace, { recursive: true, force: true });
+              await mkdir(workspace, { mode: 0o700 });
+              run.proposalWorkspaceReset = true;
+            }
+            if (changesInputs(scenario)) await introduceStaleFacts(installation.pluginRoot, fixture);
+            if (scenario === 'broker-loss' || recoversExpired(scenario)) {
               run.interruption = await brokers.at(-1).stop('SIGKILL');
-              if (scenario === 'expired-recovery') await expireFixtureClaim(installation.pluginRoot, fixture);
+              if (recoversExpired(scenario)) await expireFixtureClaim(installation.pluginRoot, fixture);
               brokers.push(await startBroker(installation.pluginRoot, fixture, arm));
             }
           }
@@ -98,7 +107,7 @@ try {
           sessionId = trace.sessionId;
           if (await packageFingerprint(repository, installation.pluginRoot, revisions[arm]) !== run.packageFingerprint) throw Error('Installed package changed');
           if (await repositoryIdentity(repository) !== harnessRevision) throw Error('Repository changed during trial');
-          if (turn === 0 && !continuationPrerequisite(state, run.initial, arm)) {
+          if (turn === 0 && !continuationPrerequisite(state, run.initial, arm, scenario)) {
             run.grade = { checks: { acquisitionPrerequisite: false }, statePassed: false, transcriptReviewRequired: true };
             run.notExercised = { turn: 2, reason: 'Acquisition/checkpoint prerequisite was not established' };
             break;

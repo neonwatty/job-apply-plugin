@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { execute } from '../evals/preparation/support.mjs';
 import { prepareAttemptFixture, observeAttempt, introduceStaleFacts, expireFixtureClaim } from '../evals/attempt/fixture.mjs';
 import { startBroker, cleanupBrokerArtifacts } from '../evals/attempt/broker.mjs';
-import { checkpoint, gradeState } from '../evals/attempt/scenarios.mjs';
+import { pendingCheckpoint, pendingScenarioIds } from '../evals/attempt/pending.mjs';
+import { checkpoint, gradeState, continuationPrerequisite, changesInputs, recoversExpired } from '../evals/attempt/scenarios.mjs';
 
 const root = await realpath(fileURLToPath(new URL('../', import.meta.url)));
 const posixFixture = { skip: !['darwin', 'linux'].includes(process.platform) };
@@ -38,7 +39,10 @@ async function client(pluginRoot, fixture, arm) {
     return JSON.parse(result.stdout);
   };
   const workflow = ['workflow', 'attempt', 'event', '--root', fixture.storeRoot, '--native-lock', fixture.nativeLock];
-  return { async send(kind, extra = {}) {
+  return { async inspect() {
+    const response = await call(['workflow', 'attempt', 'context', '--root', fixture.storeRoot, '--native-lock', fixture.nativeLock]);
+    assert.equal(response.ok, true); return response.result;
+  }, async send(kind, extra = {}) {
     let response;
     if (arm === 'candidate') {
       const event = { kind, operationId: `operation-${++serial}`, taskId: current?.taskId ?? null,
@@ -139,3 +143,46 @@ test('owned replacement cannot use a lost capability until explicit same-task ex
     await rm(workspace, { recursive: true, force: true });
   }
 });
+
+for (const scenario of pendingScenarioIds) {
+  test(`pending evaluation fixture exercises ${scenario} through the public installed route`, posixFixture, async () => {
+    const workspace = await realpath(await mkdtemp(join(tmpdir(), 'attempt-eval-pending-'))), children = [];
+    let fixture;
+    try {
+      fixture = await prepareAttemptFixture(root, workspace);
+      children.push(await startBroker(root, fixture, 'candidate'));
+      const initial = await observeAttempt(root, fixture), api = await client(root, fixture, 'candidate');
+      assert.equal((await api.send('acquire')).ok, true);
+      assert.equal((await api.send('progress', { session: pendingCheckpoint })).ok, true);
+      const first = await observeAttempt(root, fixture);
+      assert.equal(continuationPrerequisite(first, initial, 'candidate', scenario), true);
+      if (changesInputs(scenario)) await introduceStaleFacts(root, fixture);
+      if (recoversExpired(scenario)) {
+        await children[0].stop('SIGKILL');
+        await expireFixtureClaim(root, fixture);
+        children.push(await startBroker(root, fixture, 'candidate'));
+      }
+      const before = await observeAttempt(root, fixture);
+      if (recoversExpired(scenario)) {
+        const original = api.task;
+        assert.equal((await api.send('recover')).ok, true);
+        assert.equal(api.task.subject.inputRevision, original.subject.inputRevision);
+        const context = await api.inspect();
+        assert.equal(context.guidance.selection.inputsCurrent, false);
+        assert.deepEqual(context.guidance.actions.map(action => action.kind), ['handoff', 'cancel']);
+      }
+      const context = await api.inspect(), kind = scenario === 'pending-stale-handoff' ? 'handoff' : 'cancel';
+      const action = context.guidance.actions.find(action => action.kind === kind);
+      assert.deepEqual(action.requiredFields, ['operationId']);
+      assert.equal(Object.hasOwn(action.input, 'session'), false);
+      assert.equal((await api.send(kind, { savedSessionFingerprint: action.input.savedSessionFingerprint,
+        ...(kind === 'handoff' ? { status: 'needs_info' } : {}) })).ok, true);
+      const result = gradeState(scenario, [first, await observeAttempt(root, fixture)], initial, before, 'candidate');
+      assert.equal(result.statePassed, true, JSON.stringify(result));
+    } finally {
+      for (const broker of children) await broker.stop();
+      if (fixture) await cleanupBrokerArtifacts(root, fixture);
+      await rm(workspace, { recursive: true, force: true });
+    }
+  });
+}
