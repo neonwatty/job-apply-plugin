@@ -56,3 +56,5 @@ The scoped-host smoke at `.workflows/local/attempt-eval-1791504422296/` passed o
 ## Measured comparison
 
 See the [21-conversation report](../../docs/architecture/attempt-continuation-model-eval.md) and [machine-readable measurements](../../docs/architecture/attempt-continuation-model-results.json). The immutable batch predates the final timing correction; failed prerequisites and unexercised recovery turns remain in its results.
+
+The [attempt guidance follow-up](../../docs/architecture/attempt-guidance-model-eval.md) reruns the same scenarios against the committed guidance product, using `--candidate b47e6b03c11b10298bbb7580615681c6b83118e1`. It records all 21 conversations / 42 turns and separates its diagnostic pair from the main sample.

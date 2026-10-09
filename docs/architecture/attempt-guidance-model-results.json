@@ -1,0 +1,958 @@
+{
+  "schemaVersion": 1,
+  "revisions": {
+    "baseline": "f95b4947453ad6c6abc9cc0e81c3e443706d4714",
+    "candidate": "b47e6b03c11b10298bbb7580615681c6b83118e1"
+  },
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "medium",
+  "cliVersion": "codex-cli 0.160.0",
+  "harnessRevision": "b47e6b03c11b10298bbb7580615681c6b83118e1",
+  "harnessSources": {
+    "attempt/run.mjs": "a943c28d117f303f65f374eab7eae1e444f77f02c0ef88c649109f2c39d0c9c6",
+    "attempt/scenarios.mjs": "8998c5f8159be479cee740949b146bcde7cc5f50bf220ea4a61cc23535cb8705",
+    "attempt/fixture.mjs": "48112584048377c36e1a7c8c98ed8469900b4ace0960f83f8f79910c6af10b6c",
+    "attempt/broker.mjs": "0a75bc2dcf67252b0e8f56ab43b94f15a0052642ade4e073beb4f5afeaa0ada3",
+    "attempt/host.mjs": "0262754e30f5737b3d95280cb61a79f1e9c4a12869ce7b0a06f8c4dd343fb231",
+    "attempt/timing.mjs": "4f7c5b977cbd012e845feb15cdf454e9248b167a97d4286f234d3934fd2347be",
+    "attempt/baseline-broker.mjs": "ca2148b39ca3a0b677c3d0e5cdf8ba27a2a4003b69a518aed529e28338ddfb9e",
+    "attempt/evidence.mjs": "0b7b50e7edeb2a6bd48376942b300a4f302f964279525cd65798c2f1d5aceca1",
+    "preparation/support.mjs": "0d598a0606e027924251346b47048336065471ff9e292e4e08975efc5815e59c",
+    "preparation/fixture.mjs": "0dc5b20ddf26ddb660f890c1a1dec68744f285712aa978b33242243a7b1760dd",
+    "preparation/continuation-fixture.mjs": "5290e45dcbb052ce4a03bf23d56b317a137d7f044452b391b4d8e1a2481d0aec"
+  },
+  "hostProfile": "attempt_eval: workspace plus exact fixture socket, proxy with no allowed domains",
+  "complete": true,
+  "source": {
+    "directory": ".workflows/local/attempt-eval-1791510001754",
+    "reportSha256": "e5a92348d0d8ced2054ace6e9aea256f8ab74f530a8973c12076cfeca76f2f9e",
+    "scheduledConversations": 21,
+    "executedConversations": 21,
+    "executedTurns": 42,
+    "evidenceManifestSha256": "6601be31372d6578ba6fe76ad551f9a5ebf13fded899c2559d17d197671c3be5",
+    "evidenceFiles": 306,
+    "temporaryRootsVerifiedAbsent": 21
+  },
+  "runs": [
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        56411,
+        41441
+      ],
+      "shellCalls": [
+        14,
+        10
+      ],
+      "failedShellCalls": [
+        1,
+        2
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status; two wrong external reference/module paths rejected then corrected",
+          "One authorized heartbeat before handoff; redundant init/no-op selection"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        42267,
+        28203
+      ],
+      "shellCalls": [
+        6,
+        5
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "rm -f rejected twice, patch cleanup succeeded",
+          "Wrong fixture-job lookup returned different_active_job; corrected without mutation",
+          "Narration says action authorizes acquisition; prompt separately authorized it"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 2
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        37755,
+        32600
+      ],
+      "shellCalls": [
+        6,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        60484,
+        41465
+      ],
+      "shellCalls": [
+        14,
+        6
+      ],
+      "failedShellCalls": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status; combined progress/rm rejection; corrected",
+          "Redundant init both turns and no-op selection"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 1
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        38039,
+        36960
+      ],
+      "shellCalls": [
+        9,
+        7
+      ],
+      "failedShellCalls": [
+        2,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status twice; root help failure; redundant init/no-op selection"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        30281,
+        30088
+      ],
+      "shellCalls": [
+        6,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        78888,
+        61475
+      ],
+      "shellCalls": [
+        18,
+        18
+      ],
+      "failedShellCalls": [
+        2,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": true,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status; rejected progress corrected; unsupported facts-list flag",
+          "Implementation/test inspection; truthful owner-input-required blocker added during handoff",
+          "Generic progress rejection does not prove precise model explanation"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        37667,
+        20500
+      ],
+      "shellCalls": [
+        6,
+        3
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        45649,
+        30088
+      ],
+      "shellCalls": [
+        7,
+        4
+      ],
+      "failedShellCalls": [
+        1,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Missing workflow-map path corrected",
+          "Handoff proposal updated before submission; no rejected event"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        55533,
+        35369
+      ],
+      "shellCalls": [
+        15,
+        16
+      ],
+      "failedShellCalls": [
+        1,
+        5
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status, four wrong-root reads, unsupported facts-list flag",
+          "Redundant Ready selection was no-op"
+        ],
+        "scopeExceptions": [
+          "Four public reads targeted an abbreviated path outside fixture; all activation failures. No successful external-state access."
+        ],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        64646,
+        35194
+      ],
+      "shellCalls": [
+        15,
+        8
+      ],
+      "failedShellCalls": [
+        2,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": true,
+        "directStoreAccess": false,
+        "notes": [
+          "Root help failure, invalid claim-status, unsupported facts-list flag",
+          "Implementation/runtime inspection; hidden rm -f rejection then successful deletion"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 1
+      }
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        38484,
+        25699
+      ],
+      "shellCalls": [
+        6,
+        4
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "trial": 1,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        51638,
+        29366
+      ],
+      "shellCalls": [
+        9,
+        9
+      ],
+      "failedShellCalls": [
+        2,
+        2
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": true,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status; rejected malformed external-root task select; source searches",
+          "T2 root help and native-lock placement failures; then loaded saved session and claim"
+        ],
+        "scopeExceptions": [
+          "Attempted public task select at malformed root outside fixture; activation rejected; corrected before acquisition."
+        ],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        60947,
+        17726
+      ],
+      "shellCalls": [
+        8,
+        2
+      ],
+      "failedShellCalls": [
+        2,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Wrong command path and wrong native-lock path corrected",
+          "T2 one context call read checkpoint and connected/no-capability/live claim boundary"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        40413,
+        21086
+      ],
+      "shellCalls": [
+        6,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Hidden failed proposal patch and rm -f rejection corrected; cleanup completed",
+          "T2 one context call read checkpoint and authority boundary"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 2
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "trial": 2,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        55612,
+        54020
+      ],
+      "shellCalls": [
+        12,
+        12
+      ],
+      "failedShellCalls": [
+        2,
+        2
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": true,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status/root help in both turns; implementation inspection",
+          "T2 successfully read session and claim"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "trial": 3,
+      "packageFingerprint": "106fd29f174cae7bcb38e44da1d80980bf36af3ecfc8314c99301d972b8bfa05",
+      "elapsedMs": [
+        66389,
+        33535
+      ],
+      "shellCalls": [
+        14,
+        5
+      ],
+      "failedShellCalls": [
+        1,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": true,
+        "directStoreAccess": false,
+        "notes": [
+          "Invalid claim-status; implementation inspection",
+          "Interim false claim that acquisition did not return attempt revision; returned job revision was3",
+          "T2 chained root-help/claim-status failures; snapshot/claim read but no saved session reload"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 0
+      }
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        42693,
+        14237
+      ],
+      "shellCalls": [
+        6,
+        2
+      ],
+      "failedShellCalls": [
+        0,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "in_progress",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Hidden rm -f rejection then successful deletion",
+          "T2 one context call read checkpoint and authority boundary"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 1
+      }
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "trial": 1,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        50803,
+        49723
+      ],
+      "shellCalls": [
+        9,
+        6
+      ],
+      "failedShellCalls": [
+        2,
+        0
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Wrong workflow-map path corrected before mutation; unsupported CLI job flags on acquire corrected",
+          "Hidden combined context/rm rejection then corrected",
+          "Final future recovery/resume wording imprecise after release; fresh preparation/acquisition needed"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 1
+      }
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "trial": 2,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        40841,
+        56925
+      ],
+      "shellCalls": [
+        7,
+        8
+      ],
+      "failedShellCalls": [
+        1,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Unmatched shell quote corrected; hidden cleanup rejection corrected",
+          "T2 model inserted space into native-lock path then corrected; inaccurately called supplied-path typo"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 1
+      }
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "trial": 3,
+      "packageFingerprint": "8707a2945db374cde86b0c558319e32f3751d3663941b4c1dc949f8e00b16ae3",
+      "elapsedMs": [
+        64576,
+        46564
+      ],
+      "shellCalls": [
+        8,
+        7
+      ],
+      "failedShellCalls": [
+        1,
+        1
+      ],
+      "statePassed": true,
+      "failedStateChecks": [],
+      "notExercised": null,
+      "hostProbePassed": true,
+      "cleanupComplete": true,
+      "finalJobStatus": "needs_info",
+      "audit": {
+        "clarificationQuestions": 0,
+        "recordedOutcomeReportedAccurately": true,
+        "implementationInspection": false,
+        "directStoreAccess": false,
+        "notes": [
+          "Generic acquisition rejection corrected; exact claimed cause not established without proposal contents",
+          "T2 relative reference read and malformed patch failed then corrected"
+        ],
+        "scopeExceptions": [],
+        "additionalHiddenFailures": 1
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "fresh-cancel",
+      "arm": "baseline",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        14,
+        14,
+        9
+      ],
+      "firstTurnMedianMs": 56411,
+      "conversationShellCalls": [
+        24,
+        20,
+        16
+      ],
+      "conversationMedianMs": 97852
+    },
+    {
+      "scenario": "fresh-cancel",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        6,
+        6,
+        6
+      ],
+      "firstTurnMedianMs": 37755,
+      "conversationShellCalls": [
+        11,
+        10,
+        10
+      ],
+      "conversationMedianMs": 70355
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "baseline",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        18,
+        15,
+        15
+      ],
+      "firstTurnMedianMs": 64646,
+      "conversationShellCalls": [
+        36,
+        31,
+        23
+      ],
+      "conversationMedianMs": 99840
+    },
+    {
+      "scenario": "stale-inputs",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        6,
+        7,
+        6
+      ],
+      "firstTurnMedianMs": 38484,
+      "conversationShellCalls": [
+        9,
+        11,
+        10
+      ],
+      "conversationMedianMs": 64183
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "baseline",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        9,
+        12,
+        14
+      ],
+      "firstTurnMedianMs": 55612,
+      "conversationShellCalls": [
+        18,
+        24,
+        19
+      ],
+      "conversationMedianMs": 99924
+    },
+    {
+      "scenario": "broker-loss",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        8,
+        6,
+        6
+      ],
+      "firstTurnMedianMs": 42693,
+      "conversationShellCalls": [
+        10,
+        8,
+        8
+      ],
+      "conversationMedianMs": 61499
+    },
+    {
+      "scenario": "expired-recovery",
+      "arm": "candidate",
+      "conversations": 3,
+      "acquisitionPrerequisitePasses": 3,
+      "statePasses": 3,
+      "turn2Exercised": 3,
+      "firstTurnShellCalls": [
+        9,
+        7,
+        8
+      ],
+      "firstTurnMedianMs": 50803,
+      "conversationShellCalls": [
+        15,
+        15,
+        15
+      ],
+      "conversationMedianMs": 100526
+    }
+  ],
+  "diagnosticSmoke": {
+    "directory": ".workflows/local/attempt-eval-1791509721231",
+    "conversations": 2,
+    "turns": 4,
+    "statePasses": 2,
+    "reportSha256": "d0307104ff249db12445d512dc475983e4043333e09a23a7c0794859eb726615",
+    "manifestSha256": "b6c4b1ff1deb5416b622bd7f8beeb3b50f2e8d160de0035bffc1597332f23c79",
+    "evidenceFiles": 40,
+    "temporaryRootsVerifiedAbsent": 2,
+    "separateFromMain": true
+  },
+  "metricDefinitions": {
+    "statePassed": "Canonical conversation outcome; separate from instruction compliance and complete inspection.",
+    "failedShellCalls": "Completed shell items with nonzero exit or incomplete status; excludes hidden host rejections and may combine several failed subcommands.",
+    "elapsedMs": "Model/tool duration per turn, excluding fixture installation. Host/service load uncontrolled.",
+    "templateUse": "Inferred from context, narration, receipts and state; proposal contents generally absent from trace."
+  },
+  "limitations": [
+    "Three repetitions per scenario; no population-level reliability/speed claim.",
+    "All first-turn requests are identical; scenario labels describe later interventions.",
+    "Installed source/tests were available; ordinary implementation inspection occurred.",
+    "No browser or authenticated human-event acceptance; CLI attestation remains model authored.",
+    "Observed pending-question reconstruction is not covered by the simple checkpoint trials.",
+    "Existing recovery executor can replace input fingerprint when inputs changed; this recovery sample keeps inputs unchanged.",
+    "No intermediate recovered private-claim fingerprint captured; rotation belongs to deterministic evidence.",
+    "The previous main sample preceded the harness idle-budget correction; both samples acquired well within their respective windows."
+  ]
+}

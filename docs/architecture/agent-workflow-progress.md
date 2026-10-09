@@ -75,11 +75,11 @@ Implementation is on `codex/agent-workflows-10-attempt-eval`, stacked on PR #200
 
 ## Slice 4g: attempt entry and continuation guidance
 
-Implementation is on `codex/agent-workflows-11-attempt-guidance`, stacked on [PR #201](https://github.com/neonwatty/job-apply-plugin/pull/201). See the [file map and contract](attempt-guidance-slice.md). Attempt context separates connected transport from claim capability and projects exact target/revision, input blockers, saved checkpoint metadata and advisory event templates. Existing mutation guards remain authoritative. Templates preserve simple-session metadata and require an observed packet when saved pending questions cannot be reconstructed. Task and receipt capacity prevent unavailable entry recommendations. The unchanged attempt comparison will measure the committed product before publication.
+Implementation is on `codex/agent-workflows-11-attempt-guidance`, stacked on [PR #201](https://github.com/neonwatty/job-apply-plugin/pull/201). See the [file map and contract](attempt-guidance-slice.md). Attempt context separates connected transport from claim capability and projects exact target/revision, input blockers, saved checkpoint metadata and advisory event templates. Existing mutation guards remain authoritative. Templates preserve simple-session metadata and require an observed packet when saved pending questions cannot be reconstructed. Task and receipt capacity prevent unavailable entry recommendations. The [paired comparison](attempt-guidance-model-eval.md) completed 21 conversations and 42 turns at product `b47e6b03c11b10298bbb7580615681c6b83118e1`. All state checks passed: ordinary 9/9 paired, experimental 9/9 paired plus 3/3 expired recovery. Experimental acquisition improved from 1/12 in the prior sample to 12/12; no continuation was skipped. Paired shell calls totaled 87 versus ordinary 211, with median conversation duration 64.2 s versus 99.8 s. Transcript qualifications and the pre-existing changed-input recovery fingerprint limitation remain explicit. Twenty-seven focused checks and eleven product commit suites passed; final publication receipts follow separately.
 
 ## Next slices
 
-1. Complete the attempt guidance comparison and review its actual continuation/recovery coverage.
+1. Resolve the existing changed-input recovery fingerprint boundary, then evaluate observed pending-question sessions and trusted human-event delivery.
 2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
 3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
