@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { setup, read, write, snapshot, host, event, acquire } from './workspace_durable_claims_support.mjs';
+import { get, int, object, parse, string } from '../runtime/contracts/workspace/values.js';
 import { ClaimWorkflow } from '../runtime/app/claim-workflow.js';
 import { attemptGuidance } from '../runtime/app/attempt-guidance.js';
 import { emptyWorkflowLedger, receiptLimit, taskLimit, validateWorkflowLedger } from '../runtime/contracts/workspace/workflow-tasks.js';
@@ -192,3 +193,26 @@ test('task capacity blocks fresh acquisition even when receipt budget remains', 
   const request = event('acquire'); await assert.rejects(workflow.execute(request, request), /history_full/);
   assert.deepEqual(await snapshot(state.root), before);
 });
+
+for (const kind of ['progress', 'handoff', 'cancel']) {
+  test(`templates preserve an explicit browser handoff without a matching blocker through ${kind}`, posix, async t => {
+    const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+    const state = await setup(fixture, `guidance-explicit-${kind}`), { workflow } = host(state);
+    t.after(() => workflow.close());
+    const task = await acquire(state, workflow);
+    const browserHandoff = { state: 'required', reasonCode: 'captcha-required', revision: '9007199254740993' };
+    await workflow.execute(event('progress', task, { session: { status: 'active', browserHandoff } }));
+    const before = await snapshot(state.root), context = await workflow.inspect();
+    assert.deepEqual(await snapshot(state.root), before);
+    assert.deepEqual(context.guidance.checkpoint.browserHandoff, browserHandoff);
+    const request = action(context, kind, `preserve-${kind}`);
+    assert.deepEqual(request.session.browserHandoff, browserHandoff);
+    assert.deepEqual(request.session.blockers, []);
+    await workflow.execute(request, request);
+    const saved = object(parse((await snapshot(state.root))['sessions/job.json']), 'session');
+    const handoff = object(get(saved, 'browserHandoff'), 'handoff');
+    assert.equal(string(get(handoff, 'state')), browserHandoff.state);
+    assert.equal(string(get(handoff, 'reasonCode')), browserHandoff.reasonCode);
+    assert.equal(int(get(handoff, 'revision')).toString(), browserHandoff.revision);
+  });
+}

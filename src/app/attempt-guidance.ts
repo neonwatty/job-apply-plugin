@@ -59,6 +59,12 @@ export async function attemptGuidance(snapshot: ApplicationSnapshot, ledger: Wor
       const value = get(existing, key);
       if (value !== null) session[key] = plain(value);
     }
+    const handoff = get(existing, 'browserHandoff');
+    if (handoff !== null) {
+      const saved = object(handoff, 'browser handoff');
+      session.browserHandoff = { state: string(get(saved, 'state')), reasonCode: string(get(saved, 'reasonCode')),
+        revision: int(get(saved, 'revision'))!.toString() };
+    }
     const pending = get(existing, 'pendingFields');
     result.sessionRequiresObservation = Array.isArray(pending) && pending.length > 0;
     // Derived blockers are rebuilt by canonical policy. Only closed agent blockers are inputs.

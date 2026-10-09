@@ -49,13 +49,13 @@ Proposal file-change traces retain paths but not proposal contents. Described te
 
 The change adds code-returned broker/claim distinction, exact target/revision, guarded advisory action templates and checkpoint metadata. Canonical execution still validates events, revisions, profile access, session packets, private capability and transitions. Explicit user-event flags remain model-authored attestations. No browser interaction or final submission is authorized by a claim.
 
-Simple templates retain saved step, checklist, answer-key references and closed agent blockers. Saved pending-question fingerprints cannot recreate original observations: those actions require a complete observed session packet and cannot be executed unchanged. Tests verify that an incomplete template rejects without clearing pending work. Model scenarios use the supplied simple checkpoint, so they do not establish usability for reconstructing pending-question sessions.
+Simple templates retain saved step, checklist, answer-key references, explicit browser-handoff metadata and closed agent blockers. Saved pending-question fingerprints cannot recreate original observations: those actions require a complete observed session packet and cannot be executed unchanged. Tests verify that an incomplete template rejects without clearing pending work. Model scenarios use the supplied simple checkpoint, so they do not establish usability for reconstructing pending-question sessions.
 
 Review also confirmed an existing canonical executor limitation: explicit expired recovery can replace the attempt's input fingerprint with the current scope. The new guidance reports changed inputs before recovery but does not change that execution behavior. The recovery scenario keeps inputs unchanged. Recovery after changed inputs remains a separate follow-up; no result here establishes its safety for continued progress.
 
 ## Verification
 
-Twenty-seven focused checks and eleven commit-hook suites passed for the product commit. Review fixed two introduced defects: missing task-count capacity and incomplete session templates that could discard pending fields/blockers. Both fixes were independently validated. Native review's sandbox could not run all socket/release checks; the final local publication gate provides that evidence separately.
+Twenty-seven focused checks and eleven commit-hook suites passed for the product commit. Review fixed two introduced defects before the measured batch: missing task-count capacity and incomplete session templates that could discard pending fields/blockers. Both fixes were independently validated. Final publication review then found that an explicit browser handoff without a matching blocker could be omitted by a template. The post-batch fix retains its state, reason and exact decimal revision; deterministic regressions exercise progress, handoff and cancellation. The model measurements remain pinned to the earlier product commit and do not measure this additional preservation fix. Native review's sandbox could not run all socket/release checks; the final local publication gate provides that evidence separately.
 
 ## Next work
 
