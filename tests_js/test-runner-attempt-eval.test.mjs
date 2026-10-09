@@ -50,3 +50,23 @@ test('expired recovery is candidate-only and must preserve the same task and can
   assert.deepEqual(comparisonArms('fresh-cancel', 2), ['candidate', 'baseline']);
   assert.throws(() => gradeState('expired-recovery', [first, last], initial, first, 'baseline'));
 });
+
+test('attempt host validation rejects broader filesystem, different profiles and changed model context', async () => {
+  const { validateAttemptContext, attemptArguments } = await import('../evals/attempt/host.mjs');
+  const context = { count: 1, cwd: '/fixture', model: 'model', effort: 'medium', approvalPolicy: 'never',
+    sandbox: { type: 'workspace-write', network_access: true }, profile: { id: 'attempt_eval', extends: ':workspace' },
+    filesystem: { kind: 'restricted', entries: [{ path: { type: 'special', value: { kind: 'root' } }, access: 'read' },
+      ...['slash_tmp', 'tmpdir'].map(kind => ({ path: { type: 'special', value: { kind } }, access: 'write' })),
+      { path: { type: 'path', path: '/fixture' }, access: 'write' }] } };
+  const expected = { workspace: '/fixture', model: 'model', turn: 1 };
+  validateAttemptContext(context, expected);
+  for (const mutate of [s => s.filesystem.entries.push({ path: { type: 'path', path: '/owner' }, access: 'write' }),
+    s => s.filesystem.entries[0].access = 'write', s => s.filesystem.kind = 'unrestricted',
+    s => s.profile.id = ':danger-full-access', s => s.profile.extends = ':read-only', s => s.approvalPolicy = 'on-request',
+    s => s.sandbox.network_access = false, s => s.count = 2, s => s.model = 'other', s => s.cwd = '/owner']) {
+    const changed = structuredClone(context); mutate(changed); assert.throws(() => validateAttemptContext(changed, expected));
+  }
+  const args = attemptArguments({ ...expected, socket: '/fixture/one.sock' });
+  assert.ok(args.includes('permissions.attempt_eval={extends=":workspace",network={enabled=true,domains={},unix_sockets={"/fixture/one.sock"="allow"}}}'));
+  assert.ok(!args.some(value => value.includes('sandbox_mode=')));
+});

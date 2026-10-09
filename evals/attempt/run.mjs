@@ -3,10 +3,11 @@ import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { agentArguments, execute, hostEnvironment, installRevision, parseTrace, sessionContext, validateContext, writeJson } from '../preparation/support.mjs';
+import { execute, hostEnvironment, installRevision, parseTrace, writeJson } from '../preparation/support.mjs';
 import { prepareAttemptFixture, observeAttempt, introduceStaleFacts, expireFixtureClaim } from './fixture.mjs';
 import { startBroker, cleanupBrokerArtifacts } from './broker.mjs';
 import { comparisonArms, scenarioIds, scenarioTurns, trialPrompt, gradeState } from './scenarios.mjs';
+import { attemptArguments, attemptContext, validateAttemptContext, fixtureSocket, probeHost } from './host.mjs';
 import { repositoryIdentity, packageFingerprint, captureHarness } from './evidence.mjs';
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -28,6 +29,7 @@ if (version.code !== 0 || version.failure) throw Error('Codex CLI unavailable');
 const output = join(repository, '.workflows/local', `attempt-eval-${Date.now()}`);
 await mkdir(output, { recursive: true, mode: 0o700 });
 const report = { schemaVersion: 1, revisions, model, reasoningEffort: 'medium', cliVersion: version.stdout.trim(),
+  hostProfile: 'attempt_eval: workspace plus exact fixture socket, proxy with no allowed domains',
   trials, scenarios, harnessRevision, harnessSources: await captureHarness(repository, output), runs: [], complete: false };
 console.log(`Evidence: ${output}`);
 try {
@@ -47,6 +49,10 @@ try {
         fixture = await prepareAttemptFixture(installation.pluginRoot, workspace);
         run.packageFingerprint = await packageFingerprint(repository, installation.pluginRoot, revisions[arm]);
         brokers.push(await startBroker(installation.pluginRoot, fixture, arm));
+        const socket = await fixtureSocket(installation.pluginRoot, fixture);
+        run.hostProbe = await probeHost(installation.codexHome, fixture, socket);
+        await writeJson(join(evidence, 'host-probe.json'), run.hostProbe);
+        if (!run.hostProbe.passed) throw Error('Scoped broker host probe failed');
         run.initial = await observeAttempt(installation.pluginRoot, fixture);
         await writeJson(join(evidence, 'initial-state.json'), run.initial);
         let sessionId, sessionTurns = 0;
@@ -67,14 +73,14 @@ try {
           if (turns[turn].fresh) { sessionId = undefined; sessionTurns = 0; }
           const prompt = trialPrompt(arm, turns[turn].request, installation, fixture);
           await writeFile(`${prefix}-prompt.txt`, prompt, { mode: 0o600 });
-          const args = agentArguments({ sessionId, workspace, model });
+          const args = attemptArguments({ sessionId, workspace, model, socket });
           await writeJson(`${prefix}-invocation.json`, { command: 'codex', args, cwd: workspace });
           const result = await execute('codex', args, { cwd: workspace, env: hostEnvironment(installation.codexHome, fixture.storeRoot),
             timeout: 360000, input: prompt });
           await writeFile(`${prefix}-trace.jsonl`, result.stdout, { mode: 0o600 });
           await writeFile(`${prefix}-stderr.txt`, result.stderr, { mode: 0o600 });
           const trace = parseTrace(result.stdout), state = await observeAttempt(installation.pluginRoot, fixture);
-          const effectiveContext = trace.sessionId ? await sessionContext(installation.codexHome, trace.sessionId) : null;
+          const effectiveContext = trace.sessionId ? await attemptContext(installation.codexHome, trace.sessionId) : null;
           const receipt = { turn: turn + 1, fresh: Boolean(turns[turn].fresh), code: result.code, signal: result.signal,
             failure: result.failure, elapsedMs: result.elapsedMs, ...trace, effectiveContext, state };
           run.turns.push(receipt);
@@ -82,7 +88,7 @@ try {
           await writeJson(join(output, 'report.json'), report);
           console.log(`${name} turn ${turn + 1}: ${result.code}, ${state.job.status}, ${trace.commands.length} shell calls, ${result.elapsedMs}ms`);
           if (result.code !== 0 || result.failure || !trace.completed || !trace.sessionId) throw Error(`Incomplete model turn: ${name}/${turn + 1}`);
-          validateContext(effectiveContext, { workspace, model, turn: ++sessionTurns });
+          validateAttemptContext(effectiveContext, { workspace, model, turn: ++sessionTurns });
           if (sessionId && sessionId !== trace.sessionId) throw Error('Continuation changed session identity');
           if (turns[turn].fresh && trace.sessionId === previousSessionId) throw Error('Fresh context reused prior session');
           sessionId = trace.sessionId;
