@@ -76,6 +76,8 @@ const obj = (raw: unknown) => record(raw, 'invalid_arguments');
 const fields = (raw: Record<string, unknown>, names: string[]) => exact(raw, names, 'invalid_arguments');
 const id = (raw: unknown) => identifier(raw, 'invalid_arguments');
 const rev = (raw: unknown) => revision(raw, 'invalid_arguments');
+const member = (raw: unknown, choices: readonly string[]): raw is string =>
+  typeof raw === 'string' && choices.includes(raw);
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export function controlFingerprint(controls: readonly BrowserControl[]): string {
   return hash(controls.map(({id, kind}) => ({id, kind})));
@@ -115,15 +117,15 @@ export function browserMutation(raw: unknown): BrowserMutation {
 export function browserObservation(raw: unknown): BrowserObservation {
   return parse(raw, value => {
     fields(value, ['evidenceKind', 'form', 'observationRevision', 'controls', 'finalAction']);
-    if (value.evidenceKind !== 'synthetic_adapter' || !['untouched', 'activated'].includes(String(value.finalAction))) return fail();
+    if (value.evidenceKind !== 'synthetic_adapter' || !member(value.finalAction, ['untouched', 'activated'])) return fail();
     if (!Array.isArray(value.controls) || value.controls.length === 0 || value.controls.length > 256) return fail();
     let previous = '';
     const controls = value.controls.map(rawControl => {
       const control = obj(rawControl);
       fields(control, ['id', 'kind', 'state']);
       const controlId = id(control.id);
-      if (controlId <= previous || !['fill','upload','final'].includes(String(control.kind))
-        || !['empty','complete','unavailable'].includes(String(control.state))) return fail();
+      if (controlId <= previous || !member(control.kind, ['fill','upload','final'])
+        || !member(control.state, ['empty','complete','unavailable'])) return fail();
       previous = controlId;
       return Object.freeze({id:controlId, kind:control.kind, state:control.state}) as BrowserControl;
     });
@@ -137,7 +139,7 @@ export function browserReadback(raw: unknown): BrowserReadback {
   return parse(raw, value => {
     fields(value, ['observation', 'operationId', 'requestFingerprint', 'effect']);
     if (typeof value.requestFingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(value.requestFingerprint)
-      || !['matches', 'differs', 'unavailable'].includes(String(value.effect))) return fail();
+      || !member(value.effect, ['matches', 'differs', 'unavailable'])) return fail();
     return Object.freeze({observation:browserObservation(value.observation), operationId:id(value.operationId),
       requestFingerprint:value.requestFingerprint, effect:value.effect as BrowserReadback['effect']});
   });
@@ -146,7 +148,7 @@ export function browserWriteResult(raw: unknown): BrowserWriteResult {
   return parse(raw, value => {
     if (value.status === 'applied') { fields(value, ['status']); return {status:'applied'}; }
     fields(value, ['status', 'reason']);
-    if (value.status !== 'not_applied' || !['scope_changed', 'control_unavailable'].includes(String(value.reason))) return fail();
+    if (value.status !== 'not_applied' || !member(value.reason, ['scope_changed', 'control_unavailable'])) return fail();
     return {status:'not_applied', reason:value.reason as 'scope_changed' | 'control_unavailable'};
   });
 }

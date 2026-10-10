@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BrowserBoundary } from '../runtime/integrations/browser/boundary.js';
-import { BrowserBoundaryError, browserMutation, controlFingerprint, requestFingerprint } from '../runtime/integrations/browser/contract.js';
+import { BrowserBoundaryError, browserMutation, browserObservation, browserReadback, browserWriteResult,
+  controlFingerprint, requestFingerprint } from '../runtime/integrations/browser/contract.js';
 import { SyntheticBrowserAdapter } from '../runtime/integrations/browser/synthetic.js';
 
 const binding = {taskId:'task-fictional', taskRevision:'9007199254740993', jobId:'job-fictional',
@@ -36,6 +37,41 @@ function wrapper(base, overrides) {
   return {evidenceKind:'synthetic_adapter', observe:() => base.observe(), mutate:request => base.mutate(request),
     readback:request => base.readback(request), ...overrides};
 }
+
+test('non-string observation and readback enums reject instead of bypassing unavailable controls', async () => {
+  const observed = observation();
+  const malformed = {...observed, controls:observed.controls.map((control, index) =>
+    index === 0 ? {...control, state:['unavailable']} : control)};
+  assert.throws(() => new SyntheticBrowserAdapter(malformed, values()), {code:'invalid_browser_input'});
+  for (const input of [malformed, {...observed, finalAction:['untouched']}]) {
+    assert.throws(() => browserObservation(input), {code:'invalid_browser_input'});
+  }
+  const badKind = {...observed, controls:observed.controls.map((control, index) =>
+    index === 0 ? {...control, kind:['fill']} : control)};
+  badKind.form = {...observed.form, controlSetFingerprint:controlFingerprint(badKind.controls)};
+  assert.throws(() => browserObservation(badKind), {code:'invalid_browser_input'});
+  assert.throws(() => browserReadback({observation:observed, operationId:'operation-one',
+    requestFingerprint:requestFingerprint(mutation(observed)), effect:['matches']}), {code:'invalid_browser_input'});
+  const base = new SyntheticBrowserAdapter(observed, values());
+  const boundary = new BrowserBoundary(wrapper(base, {observe:async () => malformed}), allow, binding);
+  await rejects(boundary.observe(), 'adapter_unavailable');
+  await rejects(boundary.execute(mutation(observed)), 'observation_required');
+  assert.equal(base.calls.writes, 0);
+});
+
+test('malformed no-effect reason keeps a completed write uncertain until reconciliation', async () => {
+  const base = new SyntheticBrowserAdapter(observation(), values());
+  const malformed = {status:'not_applied', reason:['scope_changed']};
+  assert.throws(() => browserWriteResult(malformed), {code:'invalid_browser_input'});
+  const adapter = wrapper(base, {mutate:async request => { await base.mutate(request); return malformed; }});
+  const {boundary, request} = await setup({adapter});
+  assert.equal((await boundary.execute(request)).status, 'uncertain');
+  const current = await boundary.observe();
+  await rejects(boundary.execute(mutation(current, {operationId:'second-operation'})), 'reconciliation_required');
+  assert.equal(base.calls.writes, 1);
+  assert.equal((await boundary.reconcile(request.operationId)).status, 'verified');
+  assert.equal(base.calls.writes, 1);
+});
 
 test('denial, malformed proposals, final actions and forged evidence make zero adapter calls', async () => {
   for (const authority of [
