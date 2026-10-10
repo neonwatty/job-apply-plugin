@@ -1,8 +1,13 @@
 # Workflow retention and recovery design
 
-Status: read-only planning leaf implemented; archival remains a design for the bounded experimental ledger. Baseline: PR #206,
+Historical design baseline: read-only planning leaf from PR #206,
 `21999d2d724033c7e90c2a87a7e360e37ad8eba3`. This document does not authorize
 history deletion or claim that capacity has been reclaimed.
+
+The subsequent [durable archive implementation](durable-workflow-archive.md)
+implements the bounded v2 experiment stacked on PR #207. The v1 report retains
+its original shape; v2 reports include archive segment and receipt counts. The
+sections below describe the original v1 pressure and migration requirements.
 
 ## Existing contract and pressure
 

@@ -1,4 +1,9 @@
 import { fromJSON, serialize } from './values.js';
+import { validateWorkflowArchiveRoot } from './workflow-archive.js';
+export function isJobWorkflowTask(task) { return 'jobId' in task.subject; }
+export function workflowSubjectIdentity(subject) {
+    return 'jobId' in subject ? `job:${subject.jobId}` : `resume:${subject.resumeId}`;
+}
 export class TaskProtocolError extends Error {
     code;
     constructor(code) {
@@ -11,6 +16,8 @@ export const workflowMetadataKey = 'agentWorkflows';
 export const taskLimit = 64, receiptLimit = 256;
 const statuses = ['active', 'waiting', 'finished', 'cancelled'];
 const outcomes = ['started', 'question_pending', 'job_ready', 'cancelled', 'declined', 'claim_acquired', 'claim_recovered', 'progress_saved', 'needs_info', 'awaiting_review'];
+const extractionOutcomes = ['extraction_requested', 'extraction_proposed', 'extraction_review_pending',
+    'extraction_accepted', 'extraction_rejected', 'extraction_interrupted'];
 function check(value) { if (!value)
     throw new TaskProtocolError('invalid_task_state'); }
 function record(value, fields) {
@@ -25,16 +32,29 @@ function id(value) {
     check(typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value) && !value.includes('..'));
 }
 function revision(value) { check(typeof value === 'string' && value.length <= 4300 && /^[1-9][0-9]*$/.test(value)); }
-function task(value) {
+function task(value, version) {
     const input = record(value, ['taskId', 'workflow', 'revision', 'subject', 'status', 'pending']);
     id(input.taskId);
     revision(input.revision);
     const workflow = record(input.workflow, ['id', 'version']);
     id(workflow.id);
     check(typeof workflow.version === 'number' && Number.isSafeInteger(workflow.version) && workflow.version > 0);
-    const subject = record(input.subject, ['jobId', 'jobRevision', 'inputRevision']);
-    id(subject.jobId);
-    revision(subject.jobRevision);
+    const rawSubject = record(input.subject);
+    const subject = version === 2 && rawSubject.kind === 'resume'
+        ? record(rawSubject, ['kind', 'resumeId', 'resumeRevision', 'inputRevision', 'requestId', 'requestRevision', 'factRevision'])
+        : record(rawSubject, ['jobId', 'jobRevision', 'inputRevision']);
+    if (subject.kind === 'resume') {
+        id(subject.resumeId);
+        revision(subject.resumeRevision);
+        id(subject.requestId);
+        revision(subject.requestRevision);
+        if (subject.factRevision !== null)
+            revision(subject.factRevision);
+    }
+    else {
+        id(subject.jobId);
+        revision(subject.jobRevision);
+    }
     check(typeof subject.inputRevision === 'string' && /^[a-f0-9]{64}$/.test(subject.inputRevision));
     check(statuses.includes(input.status));
     if (input.pending !== null) {
@@ -47,14 +67,18 @@ function task(value) {
 }
 /** Closed, bounded, value-free metadata. Unsupported versions and malformed history fail closed. */
 export function validateWorkflowLedger(value) {
-    const input = record(value, ['schemaVersion', 'activeTaskId', 'tasks', 'receipts']);
-    check(input.schemaVersion === 1);
+    const raw = record(value);
+    check(raw.schemaVersion === 1 || raw.schemaVersion === 2);
+    const version = raw.schemaVersion;
+    const input = record(raw, ['schemaVersion', 'activeTaskId', 'tasks', 'receipts', ...(version === 2 ? ['archive'] : [])]);
+    if (version === 2)
+        validateWorkflowArchiveRoot(input.archive);
     const tasks = record(input.tasks), receipts = record(input.receipts);
     check(Object.keys(tasks).length <= taskLimit && Object.keys(receipts).length <= receiptLimit);
     const active = [];
     for (const [key, raw] of Object.entries(tasks)) {
         id(key);
-        const item = task(raw);
+        const item = task(raw, version);
         check(item.taskId === key);
         if (item.status === 'active' || item.status === 'waiting')
             active.push(key);
@@ -67,11 +91,11 @@ export function validateWorkflowLedger(value) {
         const item = record(raw, ['fingerprint', 'receipt']);
         check(typeof item.fingerprint === 'string' && /^[a-f0-9]{64}$/.test(item.fingerprint));
         const receipt = record(item.receipt, ['operationId', 'task', 'outcome']);
-        check(receipt.operationId === key && outcomes.includes(receipt.outcome));
-        const historical = task(receipt.task), current = tasks[historical.taskId];
+        check(receipt.operationId === key && (outcomes.includes(receipt.outcome) || version === 2 && extractionOutcomes.includes(receipt.outcome)));
+        const historical = task(receipt.task, version), current = tasks[historical.taskId];
         check(current !== undefined);
-        const latest = task(current);
-        check(historical.subject.jobId === latest.subject.jobId && historical.workflow.id === latest.workflow.id
+        const latest = task(current, version);
+        check(workflowSubjectIdentity(historical.subject) === workflowSubjectIdentity(latest.subject) && historical.workflow.id === latest.workflow.id
             && historical.workflow.version === latest.workflow.version && BigInt(historical.revision) <= BigInt(latest.revision));
     }
     check(JSON.stringify(input).length <= 1024 * 1024);
@@ -92,3 +116,10 @@ export function decodeWorkflowLedger(value) {
 export function encodeWorkflowLedger(ledger) {
     return fromJSON(validateWorkflowLedger(ledger));
 }
+/** Explicit experimental migration; decoding never changes historical byte shapes. */
+export function upgradeWorkflowLedger(ledger) {
+    validateWorkflowLedger(ledger);
+    return ledger.schemaVersion === 2 ? structuredClone(ledger)
+        : { ...structuredClone(ledger), schemaVersion: 2, archive: { schemaVersion: 1, segments: [] } };
+}
+export function emptyWorkflowLedgerV2() { return upgradeWorkflowLedger(emptyWorkflowLedger()); }

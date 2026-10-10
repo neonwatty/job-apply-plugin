@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { activeApplicationJob, inspectSelection } from '../contracts/workspace/application-policy.js';
 import { fromJSON, get, int, object, string, JobsError } from '../contracts/workspace/values.js';
-import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
+import { isJobWorkflowTask, TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 import { WorkflowError } from '../harness/contracts.js';
 import { parseActionProposal, parseRouteProposal } from '../harness/proposals.js';
 import { validateAction } from '../harness/planner.js';
@@ -15,7 +15,7 @@ import { preparationIdentity, preparationActions, preparationInput, preparationR
 const fingerprint = (value) => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
 const active = (task) => task.status === 'active' || task.status === 'waiting';
 function sameWorkflow(task) {
-    if (task.workflow.id !== preparationIdentity.id || task.workflow.version !== preparationIdentity.version) {
+    if (!isJobWorkflowTask(task) || task.workflow.id !== preparationIdentity.id || task.workflow.version !== preparationIdentity.version) {
         throw new WorkflowError('workflow_unavailable');
     }
 }
@@ -62,12 +62,12 @@ export class PreparationWorkflow {
         this.store = store;
         this.currentAccess = currentAccess;
     }
-    authorize(ledger, proposal) {
+    authorize(history, proposal) {
         if ('kind' in proposal && proposal.kind === 'newTask') {
             this.registry.resolve(proposal.workflow, this.currentAccess());
             return;
         }
-        const task = proposal.taskId !== null && Object.hasOwn(ledger.tasks, proposal.taskId) ? ledger.tasks[proposal.taskId] : null;
+        const task = proposal.taskId === null ? null : history.task(proposal.taskId);
         if (!task)
             throw new TaskProtocolError('task_conflict');
         sameWorkflow(task);
@@ -85,7 +85,7 @@ export class PreparationWorkflow {
             || fingerprint(preparationReply(attestation.reply)) !== fingerprint(reply)))
             throw new TaskProtocolError('user_event_required');
         return runDurableOperation(this.store, { ...proposal, fingerprint: fingerprint(proposal) }, {
-            authorize: ledger => this.authorize(ledger, proposal),
+            authorize: (_ledger, history) => this.authorize(history, proposal),
             execute: async (current, domain) => {
                 if (proposal.kind === 'newTask') {
                     const input = preparationInput(proposal.input);
@@ -101,6 +101,7 @@ export class PreparationWorkflow {
                 }
                 if (!current)
                     throw new TaskProtocolError('task_conflict');
+                sameWorkflow(current);
                 const task = nextTask(current);
                 requireSafe(domain, task);
                 if (proposal.kind === 'cancel')
@@ -134,10 +135,11 @@ export class PreparationWorkflow {
     async action(raw) {
         const proposal = parseActionProposal(raw);
         return runDurableOperation(this.store, { ...proposal, fingerprint: fingerprint(proposal) }, {
-            authorize: ledger => this.authorize(ledger, proposal),
+            authorize: (_ledger, history) => this.authorize(history, proposal),
             execute: async (current, domain) => {
                 if (!current)
                     throw new TaskProtocolError('task_conflict');
+                sameWorkflow(current);
                 const validated = validateAction(proposal, await context(domain, current), this.registry, this.currentAccess());
                 if (validated.action.kind !== 'askUser')
                     throw new WorkflowError('action_unavailable');

@@ -2,9 +2,12 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { get, set, int, integer, object, string, text, fromJSON, JobsError } from '../contracts/workspace/values.js';
 import type { Document } from '../contracts/workspace/values.js';
 import type { NativeResumeFiles } from '../store/native-resume-files.js';
-export interface ExtractionUpdates { profile?: Document; resumes?: Document; requests?: Document; proposals?: Document; facts?: Document }
+import type { WorkflowArchiveService } from '../harness/task-store.js';
+export interface ExtractionUpdates { jobs?: Document; profile?: Document; resumes?: Document; requests?: Document; proposals?: Document; facts?: Document }
 export interface ExtractionTransaction {
   profile: Document; resumes: Document; requests: Document; proposals: Document; facts: Document;
+  jobs?: Document;
+  workflowArchive?: WorkflowArchiveService;
   files: NativeResumeFiles;
   commit(kind: string, updates: ExtractionUpdates): Promise<void>;
 }

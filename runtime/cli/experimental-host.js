@@ -1,3 +1,6 @@
+import { experimentalResumeWorkflow } from './experimental-resume-workflow.js';
+import { WorkflowArchiveError } from '../contracts/workspace/workflow-archive.js';
+import { experimentalArchive } from './experimental-archive.js';
 import { experimentalWorkflow } from './experimental-workflow.js';
 import { experimentalClaimWorkflow } from './experimental-claim-workflow.js';
 import { WorkflowError } from '../harness/contracts.js';
@@ -6,6 +9,10 @@ import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 export async function experimentalHost(args) {
     try {
         const [workflow, ...invocation] = args;
+        if (workflow === 'resume')
+            return { ok: true, result: await experimentalResumeWorkflow(invocation) };
+        if (workflow === 'archive')
+            return { ok: true, result: await experimentalArchive(invocation) };
         if (workflow === 'prepare')
             return { ok: true, result: await experimentalWorkflow(invocation) };
         if (workflow !== 'attempt')
@@ -20,6 +27,6 @@ export async function experimentalHost(args) {
     }
     catch (error) {
         return { ok: false, error: error instanceof WorkflowError || error instanceof TaskProtocolError
-                ? error.code : 'workflow_failed' };
+                ? error.code : error instanceof WorkflowArchiveError ? 'workflow_archive_corrupt' : 'workflow_failed' };
     }
 }

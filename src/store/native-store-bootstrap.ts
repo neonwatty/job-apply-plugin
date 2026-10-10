@@ -1,3 +1,4 @@
+import { validateWorkflowRecovery, validateExtractionWorkflowArchive } from './native-workflow-recovery.js';
 import { constants } from 'node:fs';
 import type { Stats } from 'node:fs';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
@@ -154,6 +155,10 @@ export class NativeStoreBootstrap {
         const bytes = await readPrivateFile(join(this.root, name), name);
         if (bytes !== null) validate(document(bytes, name.replace('.json', '')));
       }
+      await validateWorkflowRecovery(this.root, async name => {
+        const bytes = await readPrivateFile(join(this.root, `${name}.json`), name);
+        return bytes === null ? null : document(bytes, name);
+      });
       await this.validateSessions();
       const history = await readPrivateFile(this.layout.history, 'history');
       let pendingClaim = false;
@@ -309,6 +314,7 @@ export class NativeStoreBootstrap {
       const recovery = new NativeExtractionJournal(
         async () => document((await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json', false))!, 'resume extraction journal'),
         (name, value) => this.writeDocument(name, value),
+        journal => validateExtractionWorkflowArchive(this.root, journal),
       );
       await recovery.recover();
     }

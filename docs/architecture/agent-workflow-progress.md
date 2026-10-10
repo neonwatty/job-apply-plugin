@@ -122,18 +122,47 @@ This slice supplies deterministic foundations; it does not establish an
 installed authenticated approval path, live browser enforcement or reclaimed
 ledger capacity.
 
+## Resume extraction and durable archive integration
+
+This slice starts from PR #207 at `193358336d4fe74b9e8f2a675758bc48f0fd4a86`
+on `codex/agent-workflows-17-extraction-archive`. Resume extraction and archival
+were implemented in separate managed worktrees, with one integration owner for
+the task protocol, Store facade, bootstrap, and publication checks.
+
+- [Resume extraction](resume-extraction-workflow.md) adds a second workflow to
+  the same durable harness. Code owns the exact managed source, extraction
+  request, draft version, pending review, accepted event, and replay receipt.
+  The model proposes structured facts; a matching host-attested review decides
+  whether to confirm the exact draft. Existing profile facts are preserved.
+- [Durable archival](durable-workflow-archive.md) introduces explicit v2 ledger
+  activation and bounded immutable archive segments. Historical receipt lookup
+  covers both storage tiers. The active task and pending review remain hot;
+  previous active-task receipts can move to the archive.
+- Store recovery validates current and pending archive references before
+  replaying canonical writes. Segment publication precedes the existing atomic
+  jobs replacement or journal publication. Interrupted, unreferenced files
+  provide no replay authority.
+- V1 decoding retains its existing representation. Ordinary v1 application
+  operations do not migrate storage. The experimental resume start or explicit
+  fixture archive activation publishes v2; older runtimes reject v2.
+
+This is still an experimental plugin. The archive has a finite 32-segment
+horizon; exhaustion fails closed. Host attestation remains the existing trust
+boundary. Neither workflow supplies authenticated human identity or live
+browser integration. Publication and gate evidence belong in the slice 17 local
+receipt; tests are run against synthetic Stores.
+
 ## Next slices
 
 1. Connect the browser boundary through a supported host-owned adapter and
    canonical authority checks, preserving explicit synthetic versus live
    evidence. If host routing cannot be enforced, retain the documented limit.
-2. Implement the staged retention migration with exact historical replay,
-   active-task history archival and crash recovery. The capacity report alone
-   does not prevent exhaustion or repeated broker-loss recovery exhaustion.
+2. Evaluate the finite archive horizon against long-running fixture workloads
+   before choosing a further versioned storage strategy.
 3. Select and demonstrate a protected human-event deployment for attempt and
    preparation replies before claiming authenticated approval.
-4. Prove a second workflow through resume extraction, then sequential campaigns
-   with interruption and one-active-claim invariants.
+4. Extend the demonstrated workflow protocol to sequential campaigns with
+   interruption and one-active-claim invariants.
 5. Reconcile the stacked experimental PRs and integration receipts when
    authorized, extend host evaluations, and run cumulative acceptance before
    any staging promotion.

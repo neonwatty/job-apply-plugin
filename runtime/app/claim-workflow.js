@@ -3,7 +3,8 @@ import { activeApplicationJob } from '../contracts/workspace/application-policy.
 import { requireClaim } from '../contracts/workspace/claims.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fromJSON, get, int, object, string, JobsError } from '../contracts/workspace/values.js';
-import { TaskProtocolError, receiptLimit } from '../contracts/workspace/workflow-tasks.js';
+import { isJobWorkflowTask, TaskProtocolError, receiptLimit } from '../contracts/workspace/workflow-tasks.js';
+import { workflowHistory } from '../harness/task-store.js';
 import { runDurableOperation } from '../harness/run.js';
 import { executeWorkflowTool } from '../harness/tool-gateway.js';
 import { attemptIdentity, attemptProfile, attemptRegistry, claimEvent, safeExit } from '../workflows/applications/attempt.js';
@@ -13,6 +14,11 @@ import { identifier } from '../harness/validation.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 const fingerprint = (value) => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
 const needsUserEvent = (kind) => ['acquire', 'restart', 'recover', 'cancel'].includes(kind);
+function requireAttemptTask(task) {
+    if (!isJobWorkflowTask(task) || task.workflow.id !== attemptIdentity.id || task.workflow.version !== attemptIdentity.version) {
+        throw new TaskProtocolError('task_conflict');
+    }
+}
 /** Lives in the broker. No bearer enters the task ledger, response, or host proposal. */
 export class ClaimWorkflow {
     store;
@@ -44,14 +50,17 @@ export class ClaimWorkflow {
         return this.serial(() => this.store.transaction(async (tx) => {
             if (this.#closed)
                 throw new TaskProtocolError('broker_unavailable');
-            const prior = Object.hasOwn(tx.ledger.receipts, event.operationId) ? tx.ledger.receipts[event.operationId] : undefined;
+            const history = workflowHistory(tx), prior = history.receipt(event.operationId);
             if (prior) {
                 if (prior.fingerprint !== digest)
                     throw new TaskProtocolError('operation_conflict');
+                requireAttemptTask(prior.receipt.task);
                 // Historical retries use the accepted scope, even after the job is archived.
                 return { event, binding: { eventFingerprint: digest, inputRevision: prior.receipt.task.subject.inputRevision } };
             }
-            const task = event.taskId !== null && Object.hasOwn(tx.ledger.tasks, event.taskId) ? tx.ledger.tasks[event.taskId] : undefined;
+            const task = event.taskId === null ? null : history.task(event.taskId);
+            if (task)
+                requireAttemptTask(task);
             if (event.taskId === null ? tx.ledger.activeTaskId !== null
                 : !task || tx.ledger.activeTaskId !== event.taskId || task.revision !== event.expectedRevision
                     || task.subject.jobId !== event.jobId || task.subject.jobRevision !== event.jobRevision) {
@@ -90,20 +99,24 @@ export class ClaimWorkflow {
                 })),
             };
             const result = await runDurableOperation(guardedStore, { ...event, fingerprint: digest }, {
-                authorize: ledger => {
-                    if (Object.hasOwn(ledger.receipts, event.operationId)) {
-                        binding = { eventFingerprint: digest, inputRevision: ledger.receipts[event.operationId].receipt.task.subject.inputRevision };
+                authorize: (ledger, history) => {
+                    const prior = history.receipt(event.operationId);
+                    if (prior) {
+                        if (prior.fingerprint !== digest)
+                            throw new TaskProtocolError('operation_conflict');
+                        requireAttemptTask(prior.receipt.task);
+                        binding = { eventFingerprint: digest, inputRevision: prior.receipt.task.subject.inputRevision };
                         requireApproval();
                     }
                     if (event.taskId !== null) {
-                        const task = ledger.tasks[event.taskId];
-                        if (!task || task.workflow.id !== attemptIdentity.id || task.workflow.version !== attemptIdentity.version) {
+                        const task = history.task(event.taskId);
+                        if (!task)
                             throw new TaskProtocolError('task_conflict');
-                        }
+                        requireAttemptTask(task);
                     }
                     if (!safeExit(event))
                         this.registry.resolve(attemptIdentity, this.access());
-                    if (!Object.hasOwn(ledger.receipts, event.operationId) && !['handoff', 'cancel'].includes(event.kind)) {
+                    if (!prior && !['handoff', 'cancel'].includes(event.kind)) {
                         const remaining = receiptLimit - Object.keys(ledger.receipts).length;
                         // Keep room for a handoff and, for routine work, one explicit broker-loss recovery.
                         if (remaining < (event.kind === 'recover' ? 2 : 3))
@@ -111,6 +124,8 @@ export class ClaimWorkflow {
                     }
                 },
                 execute: async (current, domain) => {
+                    if (current)
+                        requireAttemptTask(current);
                     if (current && current.subject.jobId !== event.jobId)
                         throw new TaskProtocolError('task_conflict');
                     const job = activeApplicationJob(domain.snapshot, event.jobId);
@@ -174,7 +189,7 @@ export class ClaimWorkflow {
         return this.serial(() => this.store.transaction(async (tx) => {
             const task = tx.ledger.activeTaskId === null ? null : tx.ledger.tasks[tx.ledger.activeTaskId];
             let brokerAvailable = false;
-            if (task && this.#capability?.taskId === task.taskId && !this.#closed) {
+            if (task && isJobWorkflowTask(task) && this.#capability?.taskId === task.taskId && !this.#closed) {
                 try {
                     requireClaim(tx.domain.snapshot.coordinator, tx.domain.snapshot.jobs, task.subject.jobId, this.#capability.token, this.now());
                     brokerAvailable = true;

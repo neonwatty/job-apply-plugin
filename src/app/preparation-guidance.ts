@@ -2,7 +2,7 @@ import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/a
 import { applicationPreflight } from '../contracts/workspace/application-policy.js';
 import { inspectRunInputs, latestRunFacts } from '../contracts/workspace/application-run-inputs.js';
 import type { PreparationDomain } from '../contracts/workspace/preparation-domain.js';
-import type { WorkflowTask } from '../contracts/workspace/workflow-tasks.js';
+import type { JobWorkflowTask } from '../contracts/workspace/workflow-tasks.js';
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
 import type { Value } from '../contracts/workspace/values.js';
 import type { ProfileAccess } from '../harness/contracts.js';
@@ -15,7 +15,7 @@ function unavailableResumeFile(error: unknown): boolean {
 }
 
 /** Advisory metadata from one locked snapshot; contains no applicant facts, paths or authority. */
-export async function preparationGuidance(domain: PreparationDomain, task: WorkflowTask | null,
+export async function preparationGuidance(domain: PreparationDomain, task: JobWorkflowTask | null,
   currentAccess: () => ProfileAccess, requestedJobId?: string) {
   const enabled = () => preparationRegistry().eligible(currentAccess()).some(item => item.id === preparationIdentity.id);
   const unavailable = { guidance: { nextOperation: 'profile_unavailable', blockers: ['profile_unavailable'] } };

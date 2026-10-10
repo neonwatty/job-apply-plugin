@@ -1,3 +1,4 @@
+import type { WorkflowArchiveService } from '../harness/task-store.js';
 import { randomUUID } from 'node:crypto';
 import { inspectSavedClaimHandoff } from '../contracts/workspace/saved-claim-session.js';
 import { claimHeartbeatSeconds, claimLeaseSeconds, heartbeatClaim, makeClaim, publicClaim, requireClaim, requireJobUnclaimed } from '../contracts/workspace/claims.js';
@@ -10,6 +11,7 @@ import { activeApplicationJob, inspectSelection, inspectAcquisition, inspectRevi
 import { consumeAutofillAuthority } from '../contracts/workspace/application-authority.js';
 
 export interface ClaimTransaction {
+  workflowArchive?: WorkflowArchiveService;
   jobs: Document; coordinator: Document; profile: Document; resumes: Document; facts?: Document; requests?: Document; answers: Document;
   authority: Document;
   sessions: Document[]; history: Document[]; files: NativeResumeFiles;

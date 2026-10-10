@@ -4,7 +4,7 @@ import { claimExpired } from '../contracts/workspace/claims.js';
 import { get, int, object, serialize, string, JobsError } from '../contracts/workspace/values.js';
 import { savedClaimSessionFingerprint } from '../contracts/workspace/saved-claim-session.js';
 import { agentCodes } from '../contracts/workspace/answer-session-fields.js';
-import { receiptLimit, taskLimit } from '../contracts/workspace/workflow-tasks.js';
+import { isJobWorkflowTask, receiptLimit, taskLimit } from '../contracts/workspace/workflow-tasks.js';
 import { attemptIdentity, attemptRegistry } from '../workflows/applications/attempt.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 const plain = (value) => JSON.parse(serialize(value));
@@ -18,7 +18,7 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
         .map(job => ({ jobId: string(get(job, 'id')), jobRevision: int(get(job, 'revision')).toString(),
         status: string(get(job, 'status')), role: string(get(job, 'role')), company: string(get(job, 'company')) }));
     const ready = jobs.filter(job => job.status === 'ready');
-    const jobId = requestedJobId ?? task?.subject.jobId ?? (ready.length === 1 ? ready[0].jobId : undefined);
+    const jobId = requestedJobId ?? (task && isJobWorkflowTask(task) ? task.subject.jobId : undefined) ?? (ready.length === 1 ? ready[0].jobId : undefined);
     const job = records.find(item => string(get(item, 'id')) === jobId);
     const claimValue = get(snapshot.coordinator, 'claim'), claim = claimValue === null ? null : object(claimValue, 'claim');
     const claimState = claim === null ? 'none' : claimExpired(claim, now()) ? 'expired' : 'live';
@@ -29,7 +29,7 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
         checkpoint: null, sessionRequiresObservation: false, actions: [] };
     if (!connected)
         return { ...result, nextOperation: 'inspect_only', blockers: ['broker_closed'] };
-    if (task && (task.workflow.id !== attemptIdentity.id || task.workflow.version !== attemptIdentity.version)) {
+    if (task && (!isJobWorkflowTask(task) || task.workflow.id !== attemptIdentity.id || task.workflow.version !== attemptIdentity.version)) {
         return { ...result, nextOperation: 'continue_other_task', blockers: ['different_active_workflow'] };
     }
     if (task && requestedJobId !== undefined && requestedJobId !== task.subject.jobId) {

@@ -1,6 +1,9 @@
+import { recoverNativeAnswers } from './native-answer-recovery.js';
+import { NativeWorkflowArchive } from './native-workflow-archive.js';
+import { validateWorkflowRecovery, validateExtractionWorkflowArchive } from './native-workflow-recovery.js';
 import { automationTransaction as runAutomationTransaction } from './native-automation.js';
 import { accountOperation, emptyAccountOperationJournal, validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
-import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from './native-claim-journal.js';
+import { NativeClaimJournal } from './native-claim-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { constants } from "node:fs";
@@ -98,7 +101,7 @@ export class NativeJobsRepository {
         await this.write(join(this.root, `${journalName}.json`), journal, documentOptions);
     }
     extractionJournal() {
-        return new NativeExtractionJournal(() => this.journal(extractionJournalName), (name, document) => this.write(join(this.root, `${name}.json`), document, documentOptions));
+        return new NativeExtractionJournal(() => this.journal(extractionJournalName), (name, document) => this.write(join(this.root, `${name}.json`), document, documentOptions), journal => validateExtractionWorkflowArchive(this.root, journal));
     }
     async saveResumeDocument(document) {
         validateExtractionResumes(document);
@@ -117,6 +120,7 @@ export class NativeJobsRepository {
         // The extraction journal can contain the resume document intended by the file
         // journal. Finish it first so subsequent file recovery never restores an older
         // extraction snapshot over a newly installed resume. Validate before file I/O.
+        await validateWorkflowRecovery(this.root, name => name === 'jobs' ? this.document(name) : this.journal(name));
         await this.recoverAnswers();
         await this.extractionJournal().recover();
         const files = new NativeResumeFiles(this.root);
@@ -244,6 +248,7 @@ export class NativeJobsRepository {
     }
     async extractionTransaction(operation) {
         return this.transaction(async () => operation({
+            jobs: validateJobsDocument(await this.document('jobs')), workflowArchive: new NativeWorkflowArchive(this.root, this.checkpoint),
             profile: validateProfile(await this.document("profile")),
             resumes: validateExtractionResumes(await this.document("resumes")),
             requests: validateExtractionRequests(await this.document("resume-extraction-requests")),
@@ -299,28 +304,14 @@ export class NativeJobsRepository {
         return new NativeClaimJournal((name, document) => this.write(join(this.root, `${name}.json`), document, options), this.history(), this.checkpoint);
     }
     async recoverAnswers() {
-        const coordinator = validateCoordinator(await this.journal('coordinator'));
-        const sessions = await this.answerSessions();
-        const journal = await this.journal(answerJournalName), operation = get(journal, 'operation');
-        if (operation !== null && claimOperationKinds.has(string(get(object(operation, 'coordinator operation'), 'kind')))) {
-            validateClaimJournal(journal);
-            await this.history().repairPendingTail();
-            await this.claimJournal().recover(journal, validateJobsDocument(await this.document('jobs')));
-            return;
-        }
-        await this.answerHistory();
-        if (operation !== null && get(coordinator, 'claim') !== null)
-            throw new JobsError('answer recovery requires an idle coordinator');
-        if (operation !== null && string(get(object(operation, 'coordinator operation'), 'kind')) === 'answer_resolution') {
-            await this.resolutionJournal().recover(journal, validateJobsDocument(await this.document('jobs')), sessions);
-        }
-        else
-            await this.answerJournal().recover(journal, validateAnswers(await this.document('answers')), sessions);
+        return recoverNativeAnswers({ journal: name => this.journal(name), document: name => this.document(name),
+            sessions: () => this.answerSessions(), history: this.history(), claimJournal: this.claimJournal(),
+            resolutionJournal: this.resolutionJournal(), answerJournal: this.answerJournal() });
     }
     async claimTransaction(operation) {
         return this.transaction(async () => {
             const jobs = validateJobsDocument(await this.document('jobs'));
-            return operation({ jobs, coordinator: validateCoordinator(await this.journal('coordinator')),
+            return operation({ jobs, workflowArchive: new NativeWorkflowArchive(this.root, this.checkpoint), coordinator: validateCoordinator(await this.journal('coordinator')),
                 authority: await loadApplicationAuthority(name => this.document(name), () => new Date().toISOString().replace(/\.\d{3}Z$/u, 'Z')),
                 sessions: await this.answerSessions(), history: await this.answerHistory(), answers: validateAnswers(await this.document('answers')),
                 profile: validateProfile(await this.document('profile')), resumes: validateExtractionResumes(await this.document('resumes')),
