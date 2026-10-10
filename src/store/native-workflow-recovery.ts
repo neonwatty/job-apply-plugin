@@ -1,10 +1,14 @@
 import { NativeWorkflowArchive } from './native-workflow-archive.js';
+import { browserOperationsMetadataKey, decodeBrowserOperationLedger } from '../contracts/workspace/browser-operations.js';
 import { decodeWorkflowLedger, emptyWorkflowLedger, workflowMetadataKey } from '../contracts/workspace/workflow-tasks.js';
-import { get, object } from '../contracts/workspace/values.js';
+import { get, has, object } from '../contracts/workspace/values.js';
 import type { Document } from '../contracts/workspace/values.js';
 
 export async function validateWorkflowJobsArchive(root: string, jobs: Document): Promise<void> {
-  const value = get(object(get(jobs, 'metadata'), 'metadata'), workflowMetadataKey);
+  const metadata = object(get(jobs, 'metadata'), 'metadata');
+  // Keep unrelated job validation behind each domain's existing lifecycle guards.
+  if (has(metadata, browserOperationsMetadataKey)) decodeBrowserOperationLedger(get(metadata, browserOperationsMetadataKey));
+  const value = get(metadata, workflowMetadataKey);
   await new NativeWorkflowArchive(root).validate(value === null ? emptyWorkflowLedger() : decodeWorkflowLedger(value));
 }
 

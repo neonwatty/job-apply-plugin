@@ -3,6 +3,7 @@ import { WorkflowArchiveError } from '../contracts/workspace/workflow-archive.js
 import { experimentalArchive } from './experimental-archive.js';
 import { experimentalWorkflow } from './experimental-workflow.js';
 import { experimentalClaimWorkflow } from './experimental-claim-workflow.js';
+import { experimentalCampaignWorkflow } from './experimental-campaign-workflow.js';
 import { WorkflowError } from '../harness/contracts.js';
 import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
 /** Public composition for explicitly scoped synthetic trials on either model host. */
@@ -15,9 +16,10 @@ export async function experimentalHost(args) {
             return { ok: true, result: await experimentalArchive(invocation) };
         if (workflow === 'prepare')
             return { ok: true, result: await experimentalWorkflow(invocation) };
-        if (workflow !== 'attempt')
+        if (workflow !== 'attempt' && workflow !== 'campaign')
             return { ok: false, error: 'invalid_invocation' };
-        const response = await experimentalClaimWorkflow(invocation);
+        const response = workflow === 'campaign' ? await experimentalCampaignWorkflow(invocation)
+            : await experimentalClaimWorkflow(invocation);
         if (!response || typeof response !== 'object' || !('ok' in response))
             throw new Error('invalid response');
         // Broker errors are intentionally fixed and redacted; don't forward arbitrary socket data.

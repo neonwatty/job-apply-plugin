@@ -1,6 +1,5 @@
 import { fromJSON, object, serialize } from '../../contracts/workspace/values.js';
 import { exact, identifier, record, requireCondition, snapshot } from '../../harness/validation.js';
-/** Adapter for the existing private broker transport. The bearer stays inside ClaimWorkflow. */
 export class WorkflowBroker {
     workflow;
     failed;

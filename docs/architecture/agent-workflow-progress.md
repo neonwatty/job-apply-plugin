@@ -152,6 +152,38 @@ boundary. Neither workflow supplies authenticated human identity or live
 browser integration. Publication and gate evidence belong in the slice 17 local
 receipt; tests are run against synthetic Stores.
 
+## Slice 18: sequential campaigns, durable browser intent, combined acceptance
+
+Implementation is stacked on PR #208 at
+`93b97deae45cf3dc8aae54612059dfc41d25bbb2`, on
+`codex/agent-workflows-18-campaign-browser`. Three isolated workers own campaign
+composition, durable browser operations, and combined acceptance. The integration
+owner controls shared contracts, canonical validation, routing, and release gates.
+
+- [Sequential campaigns](sequential-campaign-workflow.md) derive queue position
+  from the current authorized run and canonical job statuses. Code guards queue
+  order, pause/resume/stop, one active claim, exact revisions, and safe exit after
+  revocation. There is no additional persisted cursor for the model to maintain.
+- [Durable browser intent](durable-browser-workflow.md) records a bounded pending
+  operation before adapter mutation, rechecks authority after reservation, and
+  retains uncertainty across process loss. Explicit reconciliation reads the
+  original request without retrying its mutation. Pending or uncertain state
+  blocks new browser writes across the Store.
+- [Combined acceptance](combined-workflow-acceptance.md) composes native extraction,
+  preparation, attempts, campaigns, and archival with a synthetic browser adapter.
+  It tests interruption, scoped replay, revocation, and unrelated-data preservation.
+- Canonical jobs validation checks browser metadata both on normal reads and in
+  pending extraction destinations before recovery writes. Browser operations and
+  archived workflow receipts keep separate versioned contracts.
+
+The browser ledger has a finite Store-wide limit of 64 operations, with no automatic
+reset or eviction. Unresolved operations fail closed; this slice does not add a
+live host adapter, automatic cleanup of uncertain external effects, or an external
+exactly-once guarantee. Campaign attestation does not authenticate a human. These
+are synthetic fixture capabilities within the same plugin; staging promotion and
+measured model UX improvements remain separate gates. Final review and publication
+results are recorded in the slice 18 local evidence bundle and PR.
+
 ## Next slices
 
 1. Connect the browser boundary through a supported host-owned adapter and
@@ -161,8 +193,8 @@ receipt; tests are run against synthetic Stores.
    before choosing a further versioned storage strategy.
 3. Select and demonstrate a protected human-event deployment for attempt and
    preparation replies before claiming authenticated approval.
-4. Extend the demonstrated workflow protocol to sequential campaigns with
-   interruption and one-active-claim invariants.
+4. Evaluate campaign and extraction host behavior across repeated model trials,
+   including unresolved inputs, interruptions, and explicit human decisions.
 5. Reconcile the stacked experimental PRs and integration receipts when
    authorized, extend host evaluations, and run cumulative acceptance before
    any staging promotion.
