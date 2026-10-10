@@ -93,7 +93,7 @@ reconciliation. Filesystem errors are sanitized as `storage_unavailable` and
 never converted into successful browser completion.
 
 Jobs validation recognizes the optional ledger, and recovery preflight validates
-canonical and pending extraction jobs documents before publishing any recovery
+browser ledgers in canonical and pending extraction jobs documents before publishing any recovery
 destination, including history. Corrupt states fail closed with
 `invalid_browser_state`. Other Store documents, metadata, facts, and preferences
 are preserved byte-for-byte by normal browser ledger commits.
