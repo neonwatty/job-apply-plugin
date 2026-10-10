@@ -89,9 +89,15 @@ Implementation is on `codex/agent-workflows-13-saved-handoff`, stacked on PR #20
 
 Implementation is on `codex/agent-workflows-14-pending-eval`, stacked on PR #204. The [attempt runner](../../evals/attempt/README.md) adds a candidate-only acceptance batch for fresh-session cancellation, changed-input handoff and changed-input expired recovery with saved unanswered fields. The harness archives and clears prior proposals before the new session, grades complete checkpoint preservation, and checks original input scope in recovery receipts and terminal state. The [measured report](pending-checkpoint-model-eval.md) records 9/9 conversations and all 18 turns passing state checks at product `712582a541f9c0434edb0be0345dfee6f30d6fbb`, using harness `b3d4737b83e9a1ac710e8863b745f8ab81ec6ba4`. Every fresh-session safe exit preserved the full checkpoint; all three changed-input recoveries retained original scope. Seven nonzero shell items, three hidden tool rejections, masked reference errors and corrected invented IDs remain documented. This candidate-only sample does not establish ordinary-route UX improvement or genuine browser observations. Eighteen focused checks and eleven harness commit suites passed; final publication gates are recorded in the slice 14 local receipt.
 
+## Slice 4k: host-owned attempt approval
+
+Implementation is on `codex/agent-workflows-15-host-approval`, stacked on [PR #205](https://github.com/neonwatty/job-apply-plugin/pull/205), final head `b4fda9a6260195c56e9d6b09e1132040529d5d03`. Slice 4j publication passed 28 deep suites with Windows skipped and fresh native pre-push checks; evidence is `.workflows/local/agent-workflow-experiment/slice14-validation-summary.json`.
+
+The [host-approval file map and contract](trusted-host-approval-slice.md) add an embedding API with separate host approval and model proposal paths. In that mode, expiring/revocable grants bind the exact event and original task input scope; model attestation flags cannot grant authority. Checks run before domain work/replay and at the durable commit boundary. The existing fixture shell route and preparation replies remain attested. This is a host integration primitive; authenticated Codex/Claude user-event delivery is not yet connected. Seventy-nine focused checks cover the new path and existing recovery/checkpoint behavior. Review found and fixed historical review incorrectly requiring an untrashed current job; the regression verifies exact replay through a fresh host without resurrecting state. Publication results belong in the slice 15 receipt.
+
 ## Next slices
 
-1. Implement trusted human-event delivery, then evaluate pending-question sessions using genuine browser observations. Changed-input model recovery with synthetic pending checkpoints now has a completed nine-conversation acceptance batch.
+1. Connect the host-owned approval primitive to an actual authenticated human-event adapter, including preparation replies, then evaluate it through model sessions and genuine browser observations.
 2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
 3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
 4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.

@@ -12,10 +12,12 @@ import { fromJSON, object, serialize } from '../contracts/workspace/values.js';
 import { boundedFile } from './experimental-files.js';
 import { runAttemptBroker, requestAttempt } from './attempt-broker.js';
 /** Explicit fixture-only server/client. The caller owns the foreground broker lifecycle. */
-export async function experimentalClaimWorkflow(args) {
+export async function experimentalClaimWorkflow(args, host) {
     const [command, ...rest] = args;
     if (!['serve', 'context', 'event'].includes(command ?? ''))
         throw new Error('invalid command');
+    if (host && command !== 'serve')
+        throw new Error('host port requires server');
     const options = new Map();
     let attested = false;
     for (let index = 0; index < rest.length; index++) {
@@ -40,7 +42,8 @@ export async function experimentalClaimWorkflow(args) {
     await repository.transaction(async () => { });
     if (command === 'serve') {
         const claims = new ClaimsService(repository);
-        const workflow = new ClaimWorkflow(new NativeClaimWorkflowTasks(repository), claims, () => ({ enabled: [attemptProfile], authorized: [attemptProfile] }));
+        const workflow = new ClaimWorkflow(new NativeClaimWorkflowTasks(repository), claims, () => ({ enabled: [attemptProfile], authorized: [attemptProfile] }), undefined, host?.userEvents);
+        host?.ready(raw => workflow.reviewUserEvent(raw));
         await runAttemptBroker(root, claims, provider, { createAuthority: stop => new WorkflowBroker(workflow, stop) });
         return { ok: true };
     }
