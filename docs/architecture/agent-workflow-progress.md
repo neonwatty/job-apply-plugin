@@ -95,11 +95,49 @@ Implementation is on `codex/agent-workflows-15-host-approval`, stacked on [PR #2
 
 The [host-approval file map and contract](trusted-host-approval-slice.md) add an embedding API with separate host approval and model proposal paths. In that mode, expiring/revocable grants bind the exact event and original task input scope; model attestation flags cannot grant authority. Checks run before domain work/replay and at the durable commit boundary. The existing fixture shell route and preparation replies remain attested. This is a host integration primitive; authenticated Codex/Claude user-event delivery is not yet connected. Seventy-nine focused checks cover the new path and existing recovery/checkpoint behavior. Review found and fixed historical review incorrectly requiring an untrashed current job; the regression verifies exact replay through a fresh host without resurrecting state. Publication results belong in the slice 15 receipt.
 
+## Slice 5a: parallel boundary foundations
+
+Work starts from PR #206 at `21999d2d724033c7e90c2a87a7e360e37ad8eba3`.
+Its publication passed 28 deep suites with Windows skipped and fresh native
+pre-push checks; evidence is the slice 15 local validation receipt. Three
+isolated worktrees contribute to `codex/agent-workflows-16-parallel-foundations`.
+
+- The [approval feasibility report](trusted-approval-adapter-feasibility.md)
+  checks existing source and official host interfaces. No protected human-event
+  channel has been demonstrated for this plugin installation. A supported
+  supervisor with protected human input remains a separate integration task;
+  the existing in-process grants and legacy attestation keep their scope.
+- The [browser boundary](browser-boundary-design.md) introduces an isolated
+  contract and synthetic adapter for scoped, non-final fill/upload operations.
+  Its boundary owns validation, mutation/readback ordering and uncertain-result
+  handling. It is not connected to live browser tools or production readiness.
+- The [retention report and migration design](workflow-retention-design.md)
+  expose ledger capacity without changing persisted state. Actual archival needs
+  versioned storage, historical union lookup and recoverable publication;
+  deleting old receipts would break exact replay and collision detection.
+
+The integration owner runs review and broader checks after collecting the leaf
+implementations. Publication evidence belongs in the slice 16 local receipt.
+This slice supplies deterministic foundations; it does not establish an
+installed authenticated approval path, live browser enforcement or reclaimed
+ledger capacity.
+
 ## Next slices
 
-1. Connect the host-owned approval primitive to an actual authenticated human-event adapter, including preparation replies, then evaluate it through model sessions and genuine browser observations.
-2. Reconcile the stacked experimental PRs and their integration receipts when authorized.
-3. Extend model trials to interruptions, stale input, authority changes, task cancellation and browser-mediated recovery.
-4. Demonstrate browser mediation where supported, then extend to extraction and campaigns and run cumulative acceptance.
+1. Connect the browser boundary through a supported host-owned adapter and
+   canonical authority checks, preserving explicit synthetic versus live
+   evidence. If host routing cannot be enforced, retain the documented limit.
+2. Implement the staged retention migration with exact historical replay,
+   active-task history archival and crash recovery. The capacity report alone
+   does not prevent exhaustion or repeated broker-loss recovery exhaustion.
+3. Select and demonstrate a protected human-event deployment for attempt and
+   preparation replies before claiming authenticated approval.
+4. Prove a second workflow through resume extraction, then sequential campaigns
+   with interruption and one-active-claim invariants.
+5. Reconcile the stacked experimental PRs and integration receipts when
+   authorized, extend host evaluations, and run cumulative acceptance before
+   any staging promotion.
 
-There is no staging promotion, regular-plugin installation, live applicant Store mutation, or measured application UX improvement from these foundation slices alone.
+There is no staging promotion, regular-plugin installation, live applicant Store
+mutation, or measured application UX improvement from these foundation slices
+alone.
