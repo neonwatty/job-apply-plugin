@@ -327,10 +327,18 @@ class LauncherCase(ChromeLauncherCase):
         sockets = []
         try:
             for _ in range(LAUNCHER_MODULE.MAX_CONTROL_CONNECTIONS + 12):
-                client = socket.create_connection(("127.0.0.1", control["port"]), timeout=2)
-                client.settimeout(0.25)
-                client.sendall(b"POST /control HTTP/1.1\r\nHost: 127.0.0.1")
+                try:
+                    client = socket.create_connection(("127.0.0.1", control["port"]), timeout=2)
+                except ConnectionResetError:
+                    # Excess connections may be closed before connect returns.
+                    continue
                 sockets.append(client)
+                client.settimeout(0.25)
+                try:
+                    client.sendall(b"POST /control HTTP/1.1\r\nHost: 127.0.0.1")
+                except (ConnectionResetError, BrokenPipeError):
+                    pass
+            self.assertTrue(sockets, "saturation fixture established no connections")
             time.sleep(0.15)
             still_open = 0
             for client in sockets:
@@ -345,6 +353,6 @@ class LauncherCase(ChromeLauncherCase):
         finally:
             for client in sockets:
                 client.close()
-        stopped = self.run_cli("stop", "--profile", "saturated-control", timeout=7)
+            stopped = self.run_cli("stop", "--profile", "saturated-control", timeout=7)
         self.assertEqual(stopped.returncode, 0, stopped.stderr)
         self.assertFalse(runtime.exists())
