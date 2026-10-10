@@ -22,8 +22,10 @@ export class NativeClaimWorkflowTasks implements WorkflowTaskStore<ClaimWorkflow
         commit: async value => { if (staged) throw new TaskProtocolError('action_unavailable'); staged = clone(value); } };
       const service = new ClaimsService({claimTransaction: callback => callback(buffered)}, this.now);
       const metadata = object(get(original.jobs, 'metadata'), 'metadata');
-      const ledger = has(metadata, workflowMetadataKey) ? decodeWorkflowLedger(get(metadata, workflowMetadataKey)) : emptyWorkflowLedger();
-      return operation({ ledger, domain: { snapshot: buffered,
+      const storedLedger = has(metadata, workflowMetadataKey) ? decodeWorkflowLedger(get(metadata, workflowMetadataKey)) : emptyWorkflowLedger();
+      const prepared = await original.workflowArchive?.prepare(storedLedger);
+      const ledger = prepared?.ledger ?? storedLedger;
+      return operation({ ledger, ...(prepared ? { history: prepared.history } : {}), domain: { snapshot: buffered,
         execute: async (kind, id, revision, token, session, status, savedSessionFingerprint) => {
           if (invoked) throw new TaskProtocolError('action_unavailable');
           invoked = true;
@@ -51,6 +53,7 @@ export class NativeClaimWorkflowTasks implements WorkflowTaskStore<ClaimWorkflow
         if (committed || !staged) throw new TaskProtocolError('invalid_task_state');
         committed = true;
         set(staged, 'workflow', workflowCommit(original.jobs, next));
+        await prepared?.flush();
         await original.commit(staged);
       } });
     });

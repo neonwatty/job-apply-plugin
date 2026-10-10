@@ -21,7 +21,7 @@ export const nativeStoreRequiredEntries = [
 ];
 export const nativeStoreAllowedEntries = new Set([
     ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
-    nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json',
+    nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json', 'workflow-archive',
 ]);
 export function nativeCloneTrees(bytes) {
     let marker;

@@ -5,15 +5,15 @@ import { createHash, randomUUID } from 'node:crypto';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { activeApplicationJob, inspectSelection } from '../contracts/workspace/application-policy.js';
 import { fromJSON, get, int, object, string, JobsError } from '../contracts/workspace/values.js';
-import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
-import type { WorkflowTask, WorkflowLedger } from '../contracts/workspace/workflow-tasks.js';
+import { isJobWorkflowTask, TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
+import type { WorkflowTask, JobWorkflowTask } from '../contracts/workspace/workflow-tasks.js';
 import { WorkflowError } from '../harness/contracts.js';
 import type { ActionContext, ProfileAccess, RouteProposal } from '../harness/contracts.js';
 import { parseActionProposal, parseRouteProposal } from '../harness/proposals.js';
 import { validateAction } from '../harness/planner.js';
 import { runDurableOperation } from '../harness/run.js';
 import type { OperationResult } from '../harness/run.js';
-import type { WorkflowTaskStore } from '../harness/task-store.js';
+import type { WorkflowTaskStore, WorkflowHistoryLookup } from '../harness/task-store.js';
 import { executeWorkflowTool } from '../harness/tool-gateway.js';
 import { preparationIdentity, preparationActions, preparationInput, preparationReply,
   preparationRegistry, confirmationQuestion } from '../workflows/applications/prepare.js';
@@ -28,12 +28,12 @@ export interface HostUserEvent {
 }
 const fingerprint = (value: unknown): string => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
 const active = (task: WorkflowTask): boolean => task.status === 'active' || task.status === 'waiting';
-function sameWorkflow(task: WorkflowTask): void {
-  if (task.workflow.id !== preparationIdentity.id || task.workflow.version !== preparationIdentity.version) {
+function sameWorkflow(task: WorkflowTask): asserts task is JobWorkflowTask {
+  if (!isJobWorkflowTask(task) || task.workflow.id !== preparationIdentity.id || task.workflow.version !== preparationIdentity.version) {
     throw new WorkflowError('workflow_unavailable');
   }
 }
-function subject(domain: PreparationDomain, task: WorkflowTask): { revision: string | null; inputRevision: string | null; status: string; canLeave: boolean } {
+function subject(domain: PreparationDomain, task: JobWorkflowTask): { revision: string | null; inputRevision: string | null; status: string; canLeave: boolean } {
   const value = get(object(get(domain.snapshot.jobs, 'jobs'), 'jobs'), task.subject.jobId);
   const job = value === null ? null : object(value, 'job');
   const available = job !== null && get(job, 'deletedAt') === null;
@@ -44,7 +44,7 @@ function subject(domain: PreparationDomain, task: WorkflowTask): { revision: str
     canLeave: (!available || string(get(job, 'status')) !== 'in_progress')
       && (claim === null || string(get(object(claim, 'claim'), 'jobId')) !== task.subject.jobId) };
 }
-async function context(domain: PreparationDomain, task: WorkflowTask): Promise<ActionContext> {
+async function context(domain: PreparationDomain, task: JobWorkflowTask): Promise<ActionContext> {
   const canonical = subject(domain, task);
   let allowedActions = preparationActions(task, canonical.canLeave, canonical.revision, canonical.inputRevision);
   if (allowedActions.length) {
@@ -55,10 +55,10 @@ async function context(domain: PreparationDomain, task: WorkflowTask): Promise<A
     allowedActions,
     complete: task.status === 'finished', terminal: !active(task), childDepth: 0 };
 }
-function requireSafe(domain: PreparationDomain, task: WorkflowTask): void {
+function requireSafe(domain: PreparationDomain, task: JobWorkflowTask): void {
   if (!subject(domain, task).canLeave) throw new TaskProtocolError('handoff_required');
 }
-function nextTask(task: WorkflowTask): WorkflowTask {
+function nextTask(task: JobWorkflowTask): JobWorkflowTask {
   return { ...task, revision: (BigInt(task.revision) + 1n).toString() };
 }
 
@@ -67,12 +67,12 @@ export class PreparationWorkflow {
   constructor(private readonly store: WorkflowTaskStore<PreparationDomain>,
     private readonly currentAccess: () => ProfileAccess) {}
 
-  private authorize(ledger: WorkflowLedger, proposal: RouteProposal | { taskId: string }): void {
+  private authorize(history: WorkflowHistoryLookup, proposal: RouteProposal | { taskId: string }): void {
     if ('kind' in proposal && proposal.kind === 'newTask') {
       this.registry.resolve(proposal.workflow, this.currentAccess());
       return;
     }
-    const task = proposal.taskId !== null && Object.hasOwn(ledger.tasks, proposal.taskId) ? ledger.tasks[proposal.taskId]! : null;
+    const task = proposal.taskId === null ? null : history.task(proposal.taskId);
     if (!task) throw new TaskProtocolError('task_conflict');
     sameWorkflow(task);
     // Safe cancellation remains possible after profile revocation. Execution rechecks the claim.
@@ -87,11 +87,11 @@ export class PreparationWorkflow {
       || attestation.expectedRevision !== proposal.expectedRevision
       || fingerprint(preparationReply(attestation.reply)) !== fingerprint(reply))) throw new TaskProtocolError('user_event_required');
     return runDurableOperation(this.store, { ...proposal, fingerprint: fingerprint(proposal) }, {
-      authorize: ledger => this.authorize(ledger, proposal),
+      authorize: (_ledger, history) => this.authorize(history, proposal),
       execute: async (current, domain) => {
         if (proposal.kind === 'newTask') {
           const input = preparationInput(proposal.input);
-          const task: WorkflowTask = { taskId: randomUUID(), workflow: preparationIdentity, revision: '1',
+          const task: JobWorkflowTask = { taskId: randomUUID(), workflow: preparationIdentity, revision: '1',
             subject: { ...input, inputRevision: preparationScope(domain.snapshot, activeApplicationJob(domain.snapshot, input.jobId)) }, status: 'active', pending: null };
           activeApplicationJob(domain.snapshot, input.jobId);
           requireSafe(domain, task);
@@ -101,6 +101,7 @@ export class PreparationWorkflow {
           return { task, outcome: 'started' };
         }
         if (!current) throw new TaskProtocolError('task_conflict');
+        sameWorkflow(current);
         const task = nextTask(current);
         requireSafe(domain, task);
         if (proposal.kind === 'cancel') return { task: { ...task, status: 'cancelled', pending: null }, outcome: 'cancelled' };
@@ -131,9 +132,10 @@ export class PreparationWorkflow {
   async action(raw: unknown): Promise<OperationResult> {
     const proposal = parseActionProposal(raw);
     return runDurableOperation(this.store, { ...proposal, fingerprint: fingerprint(proposal) }, {
-      authorize: ledger => this.authorize(ledger, proposal),
+      authorize: (_ledger, history) => this.authorize(history, proposal),
       execute: async (current, domain) => {
         if (!current) throw new TaskProtocolError('task_conflict');
+        sameWorkflow(current);
         const validated = validateAction(proposal, await context(domain, current), this.registry, this.currentAccess());
         if (validated.action.kind !== 'askUser') throw new WorkflowError('action_unavailable');
         requireSafe(domain, current);

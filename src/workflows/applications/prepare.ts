@@ -1,7 +1,7 @@
 import { WorkflowRegistry } from '../../harness/registry.js';
 import { exact, identifier, record, requireCondition, revision, snapshot } from '../../harness/validation.js';
 import type { AllowedAction } from '../../harness/contracts.js';
-import type { WorkflowTask } from '../../contracts/workspace/workflow-tasks.js';
+import type { JobWorkflowTask } from '../../contracts/workspace/workflow-tasks.js';
 
 export const preparationIdentity = Object.freeze({ id: 'application.prepare', version: 1 });
 export const preparationProfile = 'application_preparation';
@@ -31,7 +31,7 @@ export function preparationRegistry(): WorkflowRegistry {
   [{ ...preparationIdentity, routeDescription: 'Prepare one exact job for an application attempt after a scoped owner reply.',
     requiredProfiles: [preparationProfile], startInputSchema: { parse: preparationInput }, userEventSchema: { parse: preparationReply } }]);
 }
-export function preparationActions(task: WorkflowTask, canLeave: boolean, jobRevision: string | null, inputRevision: string | null): readonly AllowedAction[] {
+export function preparationActions(task: JobWorkflowTask, canLeave: boolean, jobRevision: string | null, inputRevision: string | null): readonly AllowedAction[] {
   return task.status === 'active' && canLeave && task.subject.jobRevision === jobRevision && task.subject.inputRevision === inputRevision
     ? [Object.freeze({ kind: 'askUser', id: 'application.confirm_selection', questionId: confirmationQuestion })] : [];
 }

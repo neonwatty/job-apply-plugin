@@ -4,14 +4,15 @@ import { validateResumeReferences } from '../contracts/workspace/resume-referenc
 import { validateExtractionRequests } from '../contracts/workspace/extraction-requests.js';
 import { validateExtractions } from '../contracts/workspace/extraction-proposals.js';
 import { validateResumeFacts } from '../contracts/workspace/resume-facts.js';
-import { safeId } from '../contracts/workspace/jobs.js';
+import { safeId, validateJobsDocument } from '../contracts/workspace/jobs.js';
 import { fromJSON, get, int, integer, keys, object, parse, serialize, set, string, text, JobsError } from '../contracts/workspace/values.js';
-const destinations = { profile: 'profile', proposals: 'resume-extractions', requests: 'resume-extraction-requests', resumes: 'resumes', facts: 'resume-facts' };
+const destinations = { profile: 'profile', proposals: 'resume-extractions', requests: 'resume-extraction-requests', resumes: 'resumes', facts: 'resume-facts', jobs: 'jobs' };
 export const extractionJournalName = 'resume-extraction-journal';
-const kinds = new Set(['create', 'review', 'request-create', 'request-close', 'request-retry', 'request-complete', 'request-complete-scoped', 'resume-request-close', 'facts-draft', 'facts-confirm']);
+const kinds = new Set(['create', 'review', 'request-create', 'request-close', 'request-retry', 'request-complete', 'request-complete-scoped', 'resume-request-close', 'facts-draft', 'facts-confirm', 'workflow-extraction']);
 const legacy = ['kind', 'operationId', 'profileDocument', 'proposalsDocument'];
 const expanded = [...legacy, 'requestsDocument', 'resumesDocument'];
 const scoped = [...expanded, 'factsDocument'];
+const workflow = [...scoped, 'jobsDocument'];
 export function validateExtractionResumes(document) {
     if (int(get(document, 'schemaVersion')) !== 1n || document.size !== 3
         || keys(document).some(key => !['schemaVersion', 'resumes', 'metadata'].includes(key))) {
@@ -34,13 +35,16 @@ export function validateExtractionJournal(document) {
     const isLegacy = fields.length === legacy.length && fields.every(key => legacy.includes(key));
     const isExpanded = fields.length === expanded.length && fields.every(key => expanded.includes(key));
     const isScoped = fields.length === scoped.length && fields.every(key => scoped.includes(key));
-    if ((!isLegacy && !isExpanded && !isScoped)
+    const isWorkflow = fields.length === workflow.length && fields.every(key => workflow.includes(key));
+    if ((!isLegacy && !isExpanded && !isScoped && !isWorkflow)
+        || isWorkflow !== (kind === 'workflow-extraction')
+        || isWorkflow && get(operation, 'jobsDocument') === null
         || !kind || !kinds.has(kind) || isLegacy && !['create', 'review'].includes(kind)) {
         throw new JobsError('resume proposal journal operation is invalid');
     }
     safeId(string(get(operation, 'operationId')));
     for (const [key, validator] of Object.entries({ profile: validateProfile, proposals: validateExtractions,
-        requests: validateExtractionRequests, resumes: validateExtractionResumes, facts: validateResumeFacts })) {
+        requests: validateExtractionRequests, resumes: validateExtractionResumes, facts: validateResumeFacts, jobs: validateJobsDocument })) {
         const value = get(operation, `${key}Document`);
         if (value !== null)
             validator(object(value, `journal ${key}`));
@@ -50,9 +54,11 @@ export function validateExtractionJournal(document) {
 export class NativeExtractionJournal {
     read;
     write;
-    constructor(read, write) {
+    beforeReplay;
+    constructor(read, write, beforeReplay) {
         this.read = read;
         this.write = write;
+        this.beforeReplay = beforeReplay;
     }
     async recover() {
         const journal = validateExtractionJournal(await this.read());
@@ -61,6 +67,7 @@ export class NativeExtractionJournal {
     async replay(journal) {
         if (get(journal, 'operation') === null)
             return;
+        await this.beforeReplay?.(journal);
         const operation = object(get(journal, 'operation'), 'extraction operation');
         for (const [key, destination] of Object.entries(destinations)) {
             const value = get(operation, `${key}Document`);
@@ -74,12 +81,15 @@ export class NativeExtractionJournal {
             throw new JobsError('unsupported extraction update');
         const operation = object(fromJSON({ kind, operationId: `extraction-${randomUUID()}`,
             profileDocument: null, proposalsDocument: null, requestsDocument: null, resumesDocument: null, factsDocument: null }), 'operation');
+        if (kind === 'workflow-extraction')
+            set(operation, 'jobsDocument', null);
         for (const [key, value] of Object.entries(updates))
             if (value !== undefined)
                 set(operation, `${key}Document`, value);
         const journal = object(fromJSON({ schemaVersion: 1, operation: null }), 'journal');
         set(journal, 'operation', operation);
         validateExtractionJournal(journal);
+        await this.beforeReplay?.(journal);
         await this.write(extractionJournalName, journal);
         await this.replay(journal);
     }

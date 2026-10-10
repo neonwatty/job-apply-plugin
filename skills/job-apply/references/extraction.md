@@ -11,3 +11,25 @@ Use this workflow when the owner asks about resume facts or supplies an exact ex
 6. Delete the temporary candidate and all temporary resume data after success, failure, conflict, or interruption. Keep values, paths, filenames, and bytes out of chat, logs, receipts, and diagnostics. Stop at owner review; do not begin application browser work from extraction alone.
 
 Companion import or replacement requests scoped extraction by default unless the owner opts out. After an agent imports or replaces a resume through the Store CLI, run `resume-extraction-request-create --resume-id <resume-id> --expected-resume-revision <saved-revision> --scope resume` unless the owner opted out. A queued request is visible even when no agent is present to process it.
+
+### Experimental durable extraction fixtures
+
+The experimental `runtime/cli/experimental-resume-workflow.js` entry is restricted
+by a synthetic Store marker and explicit absolute `--root` and `--native-lock`
+paths. Use it only for authorized disposable workflow experiments. Production
+extraction continues through the canonical commands above.
+
+`route --input <private-event.json>` starts `resume.extract` with an exact managed
+resume/revision or an exact scoped request/revision. `action --input
+<private-event.json>` accepts the returned `resume.propose`, `resume.review`, or
+`resume.interrupt` action. `context` restores the persisted task and pending review
+after interruption. Candidate facts become a resume-scoped draft. A review event
+must name the returned pending request, exact draft revision and source content
+revision; accept confirms only that draft, while reject leaves it unconfirmed.
+
+`reply --host-user-event --input <private-event.json>` is an explicit host
+attestation boundary for fixture testing. The flag cannot authenticate a human or
+justify fabricating approval. A model-generated candidate or boolean is never an
+owner review. Do not call accept on the owner's behalf. Cancellation closes an
+open request; interruption records the canonical `interrupted` failure reason.
+Matching operation IDs replay the original result without repeating extraction.

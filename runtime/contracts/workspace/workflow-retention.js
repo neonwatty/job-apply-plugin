@@ -1,3 +1,4 @@
+import { archiveSegmentLimit } from './workflow-archive.js';
 import { receiptLimit, taskLimit, validateWorkflowLedger } from './workflow-tasks.js';
 /** Matches the v1 codec's JSON.stringify length bound, measured in UTF-16 code units. */
 const serializedCodeUnitLimit = 1024 * 1024;
@@ -19,7 +20,11 @@ export function workflowRetentionReport(value) {
     const pinned = ledger.activeTaskId === null ? null : ledger.tasks[ledger.activeTaskId];
     const canStart = pinned === null && taskCapacity.remaining > 0;
     return {
-        mode: 'read_only', archiveImplemented: false,
+        mode: 'read_only', archiveImplemented: ledger.schemaVersion === 2,
+        ...(ledger.schemaVersion === 2 ? { archive: {
+                segments: usage(ledger.archive.segments.length, archiveSegmentLimit),
+                receipts: ledger.archive.segments.reduce((count, item) => count + item.receiptCount, 0), finiteCapacity: true,
+            } } : {}),
         reclaimed: { tasks: 0, receipts: 0, serializedCodeUnits: 0 },
         capacity: { tasks: taskCapacity, receipts: receiptCapacity,
             serializedCodeUnits: usage(JSON.stringify(ledger).length, serializedCodeUnitLimit) },

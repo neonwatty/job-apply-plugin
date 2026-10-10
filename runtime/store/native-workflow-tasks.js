@@ -19,10 +19,12 @@ export class NativeWorkflowTasks {
                 saveJobs: async (value) => { jobs = value; buffered.jobs = value; },
                 saveCoordinator: unsupported, saveSession: unsupported, commit: unsupported };
             const value = get(object(get(jobs, 'metadata'), 'jobs metadata'), workflowMetadataKey);
-            const ledger = has(object(get(jobs, 'metadata'), 'jobs metadata'), workflowMetadataKey)
+            const storedLedger = has(object(get(jobs, 'metadata'), 'jobs metadata'), workflowMetadataKey)
                 ? decodeWorkflowLedger(value) : emptyWorkflowLedger();
+            const prepared = await original.workflowArchive?.prepare(storedLedger);
+            const ledger = prepared?.ledger ?? storedLedger;
             const service = new ClaimsService({ claimTransaction: callback => callback(buffered) }, this.now);
-            return operation({ ledger, domain: { snapshot: buffered,
+            return operation({ ledger, ...(prepared ? { history: prepared.history } : {}), domain: { snapshot: buffered,
                     select: async (id, expected) => { await service.select(id, expected, true); } },
                 commit: async (next) => {
                     if (committed)
@@ -31,6 +33,7 @@ export class NativeWorkflowTasks {
                     set(metadata, workflowMetadataKey, encodeWorkflowLedger(next));
                     set(metadata, 'updatedAt', text(this.now()));
                     committed = true;
+                    await prepared?.flush();
                     await original.saveJobs(jobs);
                 } });
         });
