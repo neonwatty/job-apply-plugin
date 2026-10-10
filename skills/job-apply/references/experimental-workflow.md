@@ -89,6 +89,12 @@ Use `guidance.nextOperation`, `blockers`, `selection` and `actions`:
 
 Action templates are advisory. The event endpoint rechecks the proposed session, exact revisions, profile access, private claim and canonical transition; errors require refreshed context. `broker.ownsClaim: true` establishes only claim capability, not browser consent or readiness. An old acquisition receipt cannot restore lost authority: wait for expiry and use an explicitly requested same-job `recover` event. Recovery restores capability while retaining the task's original input fingerprint; it does not adopt or confirm changed inputs. If refreshed context still reports changed inputs, progress and awaiting-review handoff are blocked. Use the scoped Needs Info handoff or cancellation, then fresh preparation/acquisition before continuing. Do not silently acquire, recover or switch tasks. Inspect the current canonical job through the same fixture root if its revision has changed; an incompatible task/input scope requires a safe handoff and fresh preparation, not guessing a new revision.
 
+### Host-owned approval mode
+
+If context includes `userEventSource: "trusted_host"`, the embedding host supplies approval outside your command channel. Follow the returned action arguments; they omit `--host-user-event`. Acquisition, restart, recovery and cancellation need an exact host-approved event, including its operation ID, revisions and payload. A flag, added approval field, or previously accepted different operation cannot create that approval. On rejection, preserve state and report the need for host approval; do not invent a grant, auto-approve a request, or replace/relaunch the broker in legacy mode. A changed proposal or expired/revoked grant requires the host's matching decision. Exact retries remain subject to that grant's lifetime. Read-only context and the existing guarded Needs Info handoff remain available.
+
+This mode is supplied by an embedding host, not selected by a model flag. The plain fixture `serve` route and preparation reply flags still use the attestation boundary described above. Neither mode grants browser consent or final-submission authority.
+
 ## Report accepted outcomes
 
 Use the receipt's outcome and canonical state, preserving these distinctions:

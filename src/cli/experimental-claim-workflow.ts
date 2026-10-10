@@ -11,11 +11,18 @@ import { attemptProfile } from '../workflows/applications/attempt.js';
 import { fromJSON, object, serialize } from '../contracts/workspace/values.js';
 import { boundedFile } from './experimental-files.js';
 import { runAttemptBroker, requestAttempt } from './attempt-broker.js';
+import type { UserEventVerifier } from '../harness/user-events.js';
+
+interface TrustedHostPort {
+  userEvents: UserEventVerifier;
+  ready(review: (raw: unknown) => ReturnType<ClaimWorkflow['reviewUserEvent']>): void;
+}
 
 /** Explicit fixture-only server/client. The caller owns the foreground broker lifecycle. */
-export async function experimentalClaimWorkflow(args: string[]): Promise<unknown> {
+export async function experimentalClaimWorkflow(args: string[], host?: TrustedHostPort): Promise<unknown> {
   const [command,...rest] = args;
   if (!['serve','context','event'].includes(command ?? '')) throw new Error('invalid command');
+  if (host && command !== 'serve') throw new Error('host port requires server');
   const options = new Map<string,string>();
   let attested = false;
   for (let index = 0; index < rest.length; index++) {
@@ -34,7 +41,8 @@ export async function experimentalClaimWorkflow(args: string[]): Promise<unknown
   if (command === 'serve') {
     const claims = new ClaimsService(repository);
     const workflow = new ClaimWorkflow(new NativeClaimWorkflowTasks(repository),claims,
-      () => ({enabled:[attemptProfile],authorized:[attemptProfile]}));
+      () => ({enabled:[attemptProfile],authorized:[attemptProfile]}), undefined, host?.userEvents);
+    host?.ready(raw => workflow.reviewUserEvent(raw));
     await runAttemptBroker(root,claims,provider,{createAuthority:stop => new WorkflowBroker(workflow,stop)});
     return {ok:true};
   }

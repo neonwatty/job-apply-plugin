@@ -12,31 +12,62 @@ import { attemptGuidance } from './attempt-guidance.js';
 import { identifier } from '../harness/validation.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 const fingerprint = (value) => createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
+const needsUserEvent = (kind) => ['acquire', 'restart', 'recover', 'cancel'].includes(kind);
 /** Lives in the broker. No bearer enters the task ledger, response, or host proposal. */
 export class ClaimWorkflow {
     store;
     claims;
     access;
     now;
+    userEvents;
     #capability = null;
     #pending = Promise.resolve();
     #closed = false;
     registry = attemptRegistry();
-    constructor(store, claims, access, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
+    constructor(store, claims, access, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), userEvents) {
         this.store = store;
         this.claims = claims;
         this.access = access;
         this.now = now;
+        this.userEvents = userEvents;
     }
     serial(operation) {
         const next = this.#pending.then(operation);
         this.#pending = next.then(() => { }, () => { });
         return next;
     }
-    /** The separate argument attests the exact host event; it is not human authentication. */
+    /** Read-only review for a trusted host. The returned binding alone grants no authority. */
+    reviewUserEvent(raw) {
+        const event = claimEvent(raw), digest = fingerprint(event);
+        if (!needsUserEvent(event.kind))
+            throw new TaskProtocolError('action_unavailable');
+        return this.serial(() => this.store.transaction(async (tx) => {
+            if (this.#closed)
+                throw new TaskProtocolError('broker_unavailable');
+            const prior = Object.hasOwn(tx.ledger.receipts, event.operationId) ? tx.ledger.receipts[event.operationId] : undefined;
+            if (prior) {
+                if (prior.fingerprint !== digest)
+                    throw new TaskProtocolError('operation_conflict');
+                // Historical retries use the accepted scope, even after the job is archived.
+                return { event, binding: { eventFingerprint: digest, inputRevision: prior.receipt.task.subject.inputRevision } };
+            }
+            const task = event.taskId !== null && Object.hasOwn(tx.ledger.tasks, event.taskId) ? tx.ledger.tasks[event.taskId] : undefined;
+            if (event.taskId === null ? tx.ledger.activeTaskId !== null
+                : !task || tx.ledger.activeTaskId !== event.taskId || task.revision !== event.expectedRevision
+                    || task.subject.jobId !== event.jobId || task.subject.jobRevision !== event.jobRevision) {
+                throw new TaskProtocolError('task_conflict');
+            }
+            const job = activeApplicationJob(tx.domain.snapshot, event.jobId);
+            if (int(get(job, 'revision')).toString() !== event.jobRevision)
+                throw new TaskProtocolError('stale_revision');
+            return { event, binding: { eventFingerprint: digest,
+                    inputRevision: task?.subject.inputRevision ?? preparationScope(tx.domain.snapshot, job) } };
+        }));
+    }
+    /** Legacy attestation is ignored when a trusted-host verifier is composed into this instance. */
     execute(raw, hostEvent) {
         const event = claimEvent(raw), digest = fingerprint(event);
-        if (['acquire', 'restart', 'recover', 'cancel'].includes(event.kind)
+        if (!this.userEvents && needsUserEvent(event.kind)
             && (hostEvent === undefined || fingerprint(claimEvent(hostEvent)) !== digest)) {
             return Promise.reject(new TaskProtocolError('user_event_required'));
         }
@@ -44,8 +75,26 @@ export class ClaimWorkflow {
             if (this.#closed)
                 throw new TaskProtocolError('broker_unavailable');
             let acquired = null;
-            const result = await runDurableOperation(this.store, { ...event, fingerprint: digest }, {
+            let binding;
+            const requireApproval = () => {
+                if (this.userEvents && needsUserEvent(event.kind)) {
+                    if (!binding)
+                        throw new TaskProtocolError('user_event_required');
+                    this.userEvents.require(binding);
+                }
+            };
+            const guardedStore = {
+                transaction: callback => this.store.transaction(tx => callback({ ...tx,
+                    // Linearize approval immediately before the canonical commit begins.
+                    commit: next => { requireApproval(); return tx.commit(next); },
+                })),
+            };
+            const result = await runDurableOperation(guardedStore, { ...event, fingerprint: digest }, {
                 authorize: ledger => {
+                    if (Object.hasOwn(ledger.receipts, event.operationId)) {
+                        binding = { eventFingerprint: digest, inputRevision: ledger.receipts[event.operationId].receipt.task.subject.inputRevision };
+                        requireApproval();
+                    }
                     if (event.taskId !== null) {
                         const task = ledger.tasks[event.taskId];
                         if (!task || task.workflow.id !== attemptIdentity.id || task.workflow.version !== attemptIdentity.version) {
@@ -69,6 +118,8 @@ export class ClaimWorkflow {
                         || int(get(job, 'revision')).toString() !== event.jobRevision)
                         throw new TaskProtocolError('stale_revision');
                     const scope = preparationScope(domain.snapshot, job);
+                    binding = { eventFingerprint: digest, inputRevision: current?.subject.inputRevision ?? scope };
+                    requireApproval();
                     const continuesInputs = event.kind === 'progress' || event.kind === 'handoff' && !safeExit(event);
                     if (current && continuesInputs && scope !== current.subject.inputRevision)
                         throw new TaskProtocolError('stale_revision');
@@ -133,9 +184,13 @@ export class ClaimWorkflow {
                         throw error;
                 }
             }
+            const guidance = await attemptGuidance(tx.domain.snapshot, tx.ledger, task, brokerAvailable, !this.#closed, this.access, this.now, requestedJobId);
+            if (this.userEvents)
+                for (const action of guidance.actions)
+                    action.args = action.args.filter(arg => arg !== '--host-user-event');
             return { task: task ? structuredClone(task) : null, brokerAvailable,
                 broker: { connected: !this.#closed, ownsClaim: brokerAvailable },
-                guidance: await attemptGuidance(tx.domain.snapshot, tx.ledger, task, brokerAvailable, !this.#closed, this.access, this.now, requestedJobId) };
+                ...(this.userEvents ? { userEventSource: 'trusted_host' } : {}), guidance };
         }));
     }
     heartbeat() {
@@ -152,6 +207,7 @@ export class ClaimWorkflow {
         });
     }
     close() {
+        this.userEvents?.close();
         return this.serial(async () => { this.#closed = true; this.#capability = null; });
     }
 }

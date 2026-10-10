@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { cp, mkdir, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -55,8 +56,11 @@ export async function installedHost(t) {
     assert.doesNotMatch(JSON.stringify(response), /PRIVATE|tokenHash|claim_[A-Za-z0-9_-]{43}|configured-owner-store/);
     return response;
   }
-  async function serve() {
-    const child = spawn(process.execPath, [command, 'workflow', 'attempt', 'serve', ...common], { cwd: plugin, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  async function serve(trusted = false) {
+    const args = trusted ? [fileURLToPath(new URL('./workspace_host_approval_process_support.mjs', import.meta.url)), plugin, ...common]
+      : [command, 'workflow', 'attempt', 'serve', ...common];
+    const child = spawn(process.execPath, args, { cwd: plugin, env,
+      stdio: trusted ? ['ignore', 'pipe', 'pipe', 'ipc'] : ['ignore', 'pipe', 'pipe'] });
     let stdout = '', stderr = '';
     child.stdout.on('data', bytes => { stdout += bytes; });
     child.stderr.on('data', bytes => { stderr += bytes; });
