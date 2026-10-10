@@ -49,13 +49,18 @@ export function browserBinding(raw) {
 }
 export function browserMutation(raw) {
     return parse(raw, value => {
-        fields(value, ['operationId', 'scope', 'kind', 'controlId', 'valueRef']);
+        fields(value, ['operationId', 'scope', 'kind', 'controlId', 'valueRef',
+            ...(Object.hasOwn(value, 'sourceGrantFingerprint') ? ['sourceGrantFingerprint'] : [])]);
+        if (Object.hasOwn(value, 'sourceGrantFingerprint')
+            && (typeof value.sourceGrantFingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(value.sourceGrantFingerprint)))
+            return fail();
         if (value.kind !== 'fill' && value.kind !== 'upload')
             return fail();
         const scope = obj(value.scope);
         fields(scope, [...bindingFields, 'form', 'observationRevision']);
         return Object.freeze({ operationId: id(value.operationId), kind: value.kind, controlId: id(value.controlId),
-            valueRef: id(value.valueRef), scope: Object.freeze({ ...binding(scope), form: form(scope.form),
+            valueRef: id(value.valueRef),
+            ...(Object.hasOwn(value, 'sourceGrantFingerprint') ? { sourceGrantFingerprint: value.sourceGrantFingerprint } : {}), scope: Object.freeze({ ...binding(scope), form: form(scope.form),
                 observationRevision: rev(scope.observationRevision) }) });
     });
 }

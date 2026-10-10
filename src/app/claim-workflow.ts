@@ -1,6 +1,6 @@
-import { browserMutation, requestFingerprint } from '../contracts/workspace/browser-boundary.js';
-import type { BrowserMutation } from '../contracts/workspace/browser-boundary.js';
-import { browserValueGrant } from '../contracts/workspace/browser-authority.js';
+import { browserBinding, browserMutation, requestFingerprint } from '../contracts/workspace/browser-boundary.js';
+import type { BrowserBinding, BrowserMutation } from '../contracts/workspace/browser-boundary.js';
+import { browserValueGrant, browserValueGrantFingerprint } from '../contracts/workspace/browser-authority.js';
 import type { BrowserValueGrant } from '../contracts/workspace/browser-authority.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { activeApplicationJob } from '../contracts/workspace/application-policy.js';
@@ -192,14 +192,26 @@ export class ClaimWorkflow {
   }
   /** Private capability stays in this broker; all state and source checks share one Store snapshot. */
   checkBrowserAuthority(raw: BrowserMutation, rawGrant: BrowserValueGrant) {
-    const request = browserMutation(raw), grant = browserValueGrant(rawGrant);
-    const fingerprint = requestFingerprint(request);
+    return this.checkBoundBrowserAuthority(raw, rawGrant);
+  }
+  checkBrowserReconciliationAuthority(raw: BrowserMutation, grant: BrowserValueGrant, current: BrowserBinding) {
+    return this.checkBoundBrowserAuthority(raw, grant, browserBinding(current));
+  }
+  private checkBoundBrowserAuthority(raw: BrowserMutation, rawGrant: BrowserValueGrant, current?: BrowserBinding) {
+    const original = browserMutation(raw), grant = browserValueGrant(rawGrant);
+    const fingerprint = requestFingerprint(original);
+    // Reconciliation is confined to the same attempt and original canonical input scope.
+    const compatible = original.sourceGrantFingerprint === browserValueGrantFingerprint(grant)
+      && (!current || current.taskId === original.scope.taskId && current.jobId === original.scope.jobId
+      && current.attemptRevision === original.scope.attemptRevision
+      && BigInt(current.taskRevision) >= BigInt(original.scope.taskRevision));
+    const request = current ? browserMutation({ ...original, scope: { ...original.scope, ...current } }) : original;
     return this.serial(async () => {
       let authorized = false;
       try {
         authorized = await this.store.transaction(async tx => {
           const capability = this.#capability, scope = request.scope;
-          if (this.#closed || !capability || capability.taskId !== scope.taskId || capability.jobId !== scope.jobId
+          if (!compatible || this.#closed || !capability || capability.taskId !== scope.taskId || capability.jobId !== scope.jobId
             || tx.ledger.activeTaskId !== scope.taskId) return false;
           const task = tx.ledger.tasks[scope.taskId];
           if (!task) return false;

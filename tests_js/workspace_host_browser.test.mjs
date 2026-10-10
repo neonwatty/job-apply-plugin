@@ -111,7 +111,7 @@ test('trusted control mappings and source grants are copied and cannot be substi
     scope: { taskId: 'task', taskRevision: '1', jobId: 'job', attemptRevision: '3', authorizationRevision: '1',
       observationRevision: '1', form: { documentId: 'document', formId: 'form', origin: 'https://example.invalid',
         controlSetFingerprint: controlFingerprint([{ id: 'name', kind: 'fill' }]) } } };
-  assert.equal((await authority.check(request)).authorized, true);
+  assert.equal((await authority.check(authority.bind(request))).authorized, true);
   assert.equal((await authority.check({ ...request, controlId: 'email' })).authorized, false);
   assert.equal((await authority.check({ ...request, valueRef: 'profile.email' })).authorized, false);
   assert.equal(evaluations, 1);

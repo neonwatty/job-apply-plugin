@@ -42,7 +42,7 @@ export function createWorkflowBrowserHost(options) {
         execute: (raw) => {
             const request = browserMutation(raw), { taskId, taskRevision, jobId, attemptRevision, authorizationRevision } = request.scope;
             const binding = { taskId, taskRevision, jobId, attemptRevision, authorizationRevision };
-            return serial(() => boundary(binding).execute(request));
+            return serial(() => boundary(binding).execute(authority.bind(request)));
         },
         reconcile: (raw, operationId) => {
             const binding = browserBinding(raw);

@@ -31,6 +31,8 @@ export interface BrowserMutation {
   readonly controlId: string;
   /** Opaque identifier resolved privately by the trusted adapter; never an applicant value/path. */
   readonly valueRef: string;
+  /** Trusted host stamps the immutable canonical source identity; generic adapters may omit it. */
+  readonly sourceGrantFingerprint?: string;
 }
 export interface BrowserControl {
   readonly id: string;
@@ -63,6 +65,9 @@ export interface BrowserAdapter {
 /** Trusted embedding assumption. Never expose this port as a model approval tool. */
 export interface BrowserAuthority {
   check(request: BrowserMutation): Promise<{ readonly authorized: boolean; readonly requestFingerprint: string }>;
+  /** Read-only reconciliation may use a current binding while retaining the original effect identity. */
+  checkReconciliation?(request: BrowserMutation, binding: BrowserBinding):
+    Promise<{ readonly authorized: boolean; readonly requestFingerprint: string }>;
 }
 export interface BrowserReceipt {
   readonly operationId: string;
@@ -105,12 +110,16 @@ export function browserBinding(raw: unknown): BrowserBinding {
 }
 export function browserMutation(raw: unknown): BrowserMutation {
   return parse(raw, value => {
-    fields(value, ['operationId', 'scope', 'kind', 'controlId', 'valueRef']);
+    fields(value, ['operationId', 'scope', 'kind', 'controlId', 'valueRef',
+      ...(Object.hasOwn(value, 'sourceGrantFingerprint') ? ['sourceGrantFingerprint'] : [])]);
+    if (Object.hasOwn(value, 'sourceGrantFingerprint')
+      && (typeof value.sourceGrantFingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(value.sourceGrantFingerprint))) return fail();
     if (value.kind !== 'fill' && value.kind !== 'upload') return fail();
     const scope = obj(value.scope);
     fields(scope, [...bindingFields, 'form', 'observationRevision']);
     return Object.freeze({operationId:id(value.operationId), kind:value.kind, controlId:id(value.controlId),
-      valueRef:id(value.valueRef), scope:Object.freeze({...binding(scope), form:form(scope.form),
+      valueRef:id(value.valueRef),
+      ...(Object.hasOwn(value, 'sourceGrantFingerprint') ? {sourceGrantFingerprint:value.sourceGrantFingerprint as string} : {}), scope:Object.freeze({...binding(scope), form:form(scope.form),
         observationRevision:rev(scope.observationRevision)})});
   });
 }

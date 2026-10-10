@@ -1,5 +1,5 @@
-import { browserMutation, BrowserBoundaryError, requestFingerprint } from '../../contracts/workspace/browser-boundary.js';
-import { browserValueGrant } from '../../contracts/workspace/browser-authority.js';
+import { browserBinding, browserMutation, BrowserBoundaryError, requestFingerprint, sameBinding } from '../../contracts/workspace/browser-boundary.js';
+import { browserValueGrant, browserValueGrantFingerprint } from '../../contracts/workspace/browser-authority.js';
 import { identifier } from '../../harness/validation.js';
 /** Trusted configuration maps opaque references to canonical sources, never model classifications. */
 export function createBrowserAuthority(workflow, incoming, controlValues) {
@@ -18,13 +18,34 @@ export function createBrowserAuthority(workflow, incoming, controlValues) {
             throw new BrowserBoundaryError('invalid_browser_input');
         controls.set(controlId, valueRef);
     }
+    const check = async (raw, current) => {
+        const request = browserMutation(raw), grant = grants.get(request.valueRef);
+        const denied = { authorized: false, requestFingerprint: requestFingerprint(request) };
+        if (!grant || grant.kind !== request.kind || controls.get(request.controlId) !== request.valueRef
+            || request.sourceGrantFingerprint !== browserValueGrantFingerprint(grant))
+            return denied;
+        if (current) {
+            const binding = browserBinding(current);
+            if (workflow.checkBrowserReconciliationAuthority)
+                return workflow.checkBrowserReconciliationAuthority(request, grant, binding);
+            if (!sameBinding(binding, request.scope))
+                return denied;
+        }
+        return workflow.checkBrowserAuthority(request, grant);
+    };
     return Object.freeze({
-        async check(raw) {
+        bind(raw) {
             const request = browserMutation(raw), grant = grants.get(request.valueRef);
             if (!grant || grant.kind !== request.kind || controls.get(request.controlId) !== request.valueRef) {
-                return { authorized: false, requestFingerprint: requestFingerprint(request) };
+                throw new BrowserBoundaryError('authority_denied');
             }
-            return workflow.checkBrowserAuthority(request, grant);
+            const sourceGrantFingerprint = browserValueGrantFingerprint(grant);
+            if (request.sourceGrantFingerprint && request.sourceGrantFingerprint !== sourceGrantFingerprint) {
+                throw new BrowserBoundaryError('authority_denied');
+            }
+            return browserMutation({ ...request, sourceGrantFingerprint });
         },
+        check: (raw) => check(raw),
+        checkReconciliation: (raw, binding) => check(raw, binding)
     });
 }

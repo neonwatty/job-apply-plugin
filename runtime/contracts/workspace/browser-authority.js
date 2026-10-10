@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { exact, identifier, record, revision, snapshot } from '../../harness/validation.js';
 import { BrowserBoundaryError } from './browser-boundary.js';
 export const browserProfileFields = Object.freeze(['name', 'firstName', 'lastName', 'email', 'phone']);
@@ -30,3 +31,4 @@ export function browserValueGrant(raw) {
         throw new BrowserBoundaryError('invalid_browser_input');
     }
 }
+export const browserValueGrantFingerprint = (grant) => createHash('sha256').update(JSON.stringify(browserValueGrant(grant))).digest('hex');

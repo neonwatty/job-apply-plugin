@@ -108,3 +108,20 @@ Installed acceptance exercises the same public commands using a test-only host
 driver. Neither source nor installed tests claim live-browser draft preservation
 or actual human authentication. Those require a supported production embedding
 and a demonstrated conditional write/readback mechanism.
+
+Read-only reconciliation supplies the current binding separately from the
+immutable recorded mutation. It permits task revision advancement from progress
+or claim recovery within the same attempt, while requiring the current private
+claim, unchanged preparation inputs, exact current source grants, current
+application authority revision, and current profile access. The adapter reads
+back the original request and fingerprint; this path cannot dispatch a mutation.
+New writes and ordinary execution replay retain their exact binding checks.
+A finished attempt or changed canonical source still fails closed; handoff does
+not erase an unresolved effect or grant another attempt permission to retry it.
+
+Before recording an operation, the host stamps a fingerprint of the frozen
+canonical source grant into the request. Reconciliation and replay require that
+same fingerprint, including after host replacement. Reusing an opaque value
+reference for a newer profile, answer, or resume revision cannot authorize an old
+operation. Generic standalone adapters retain their existing request shape;
+unstamped historical operations cannot gain authority through this host bridge.

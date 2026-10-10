@@ -45,11 +45,12 @@ export class DurableBrowserBoundary {
             }
         });
     }
-    async #authorize(request) {
-        if (!sameBinding(this.#binding, request.scope))
+    async #authorize(request, reconciliation = false) {
+        const recheck = reconciliation && this.authority.checkReconciliation;
+        if (!recheck && !sameBinding(this.#binding, request.scope))
             throw new BrowserBoundaryError('scope_changed');
         try {
-            const decision = await this.authority.check(request);
+            const decision = recheck ? await recheck.call(this.authority, request, this.#binding) : await this.authority.check(request);
             if (decision.authorized === true && decision.requestFingerprint === requestFingerprint(request))
                 return;
         }
@@ -186,7 +187,7 @@ export class DurableBrowserBoundary {
             const operation = await this.#transaction(async (tx) => browserOperationHistory(tx).operation(operationId));
             if (!operation)
                 throw new BrowserBoundaryError('operation_conflict');
-            await this.#authorize(operation.request);
+            await this.#authorize(operation.request, true);
             if (!unresolvedBrowserOperation(operation))
                 return operation.receipt;
             return this.#readback(operation);

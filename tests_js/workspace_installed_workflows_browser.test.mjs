@@ -34,10 +34,10 @@ test('installed protected browser host preserves approval separation, archival r
     const review = await host.trusted({ kind: 'review', event: request });
     const approval = await host.trusted({ kind: 'approve', binding: review.binding, lifetime: 300000 });
     const acquired = await state.call('workflow', ['browser', 'event'], request);
-    const task = acquired.receipt.task;
+    let task = acquired.receipt.task;
     await host.trusted({ kind: 'revoke', grant: approval });
     assert.equal((await state.call('workflow', ['browser', 'event'], request, [], { failure: true })).ok, false);
-    const binding = { taskId: task.taskId, taskRevision: task.revision, jobId: 'job',
+    let binding = { taskId: task.taskId, taskRevision: task.revision, jobId: 'job',
       attemptRevision: task.subject.jobRevision, authorizationRevision: '1' };
     let first;
     for (let index = 0; index < 64; index++) {
@@ -78,6 +78,11 @@ test('installed protected browser host preserves approval separation, archival r
     assert.equal(blocked.unresolvedOperationId, interrupted.operationId);
     assert.equal((await state.call('workflow', ['browser', 'execute'], { ...interrupted, operationId: 'blind-new-operation' }, [], { failure: true })).ok, false);
     assert.deepEqual(await durableSnapshot(state.root), uncertain);
+    task = (await state.call('workflow', ['browser', 'event'], { kind: 'progress', operationId: 'uncertain-progress',
+      taskId: task.taskId, expectedRevision: task.revision, jobId: 'job', jobRevision: task.subject.jobRevision,
+      session: { status: 'active', handoffChecklist: ['resume_upload'] } })).receipt.task;
+    assert.equal((await state.call('workflow', ['browser', 'reconcile'], { binding, operationId: interrupted.operationId }, [], { failure: true })).ok, false);
+    binding = { ...binding, taskRevision: task.revision };
     assert.equal((await state.call('workflow', ['browser', 'reconcile'], { binding, operationId: interrupted.operationId })).status, 'verified');
     const recoveredStats = await host.trusted({ kind: 'stats' });
     assert.equal(recoveredStats.writes, 65);

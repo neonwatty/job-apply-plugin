@@ -1,4 +1,4 @@
-import type { BrowserMutation } from '../contracts/workspace/browser-boundary.js';
+import type { BrowserBinding, BrowserMutation } from '../contracts/workspace/browser-boundary.js';
 import type { BrowserValueGrant } from '../contracts/workspace/browser-authority.js';
 import { ClaimWorkflow } from './claim-workflow.js';
 import { campaignProjection, requireCampaignOperation } from '../contracts/workspace/sequential-campaign.js';
@@ -55,6 +55,9 @@ export class SequentialCampaignWorkflow {
   reviewUserEvent(raw: unknown) { return this.attempt.reviewUserEvent(raw); }
   checkBrowserAuthority(request: BrowserMutation, grant: BrowserValueGrant) {
     return this.attempt.checkBrowserAuthority(request, grant);
+  }
+  checkBrowserReconciliationAuthority(request: BrowserMutation, grant: BrowserValueGrant, binding: BrowserBinding) {
+    return this.attempt.checkBrowserReconciliationAuthority(request, grant, binding);
   }
   heartbeat() { return this.attempt.heartbeat(); }
   close() { return this.attempt.close(); }

@@ -56,6 +56,9 @@ export class SequentialCampaignWorkflow {
     checkBrowserAuthority(request, grant) {
         return this.attempt.checkBrowserAuthority(request, grant);
     }
+    checkBrowserReconciliationAuthority(request, grant, binding) {
+        return this.attempt.checkBrowserReconciliationAuthority(request, grant, binding);
+    }
     heartbeat() { return this.attempt.heartbeat(); }
     close() { return this.attempt.close(); }
     /** Fixture host attestation is explicit but does not authenticate a human identity. */
