@@ -1,3 +1,5 @@
+import type { BrowserMutation } from '../contracts/workspace/browser-boundary.js';
+import type { BrowserValueGrant } from '../contracts/workspace/browser-authority.js';
 import { ClaimWorkflow } from './claim-workflow.js';
 import { campaignProjection, requireCampaignOperation } from '../contracts/workspace/sequential-campaign.js';
 import type { ClaimWorkflowDomain } from '../contracts/workspace/claim-workflow-domain.js';
@@ -51,6 +53,9 @@ export class SequentialCampaignWorkflow {
   }
   execute(raw: unknown, hostEvent?: unknown) { return this.attempt.execute(raw, hostEvent); }
   reviewUserEvent(raw: unknown) { return this.attempt.reviewUserEvent(raw); }
+  checkBrowserAuthority(request: BrowserMutation, grant: BrowserValueGrant) {
+    return this.attempt.checkBrowserAuthority(request, grant);
+  }
   heartbeat() { return this.attempt.heartbeat(); }
   close() { return this.attempt.close(); }
   /** Fixture host attestation is explicit but does not authenticate a human identity. */

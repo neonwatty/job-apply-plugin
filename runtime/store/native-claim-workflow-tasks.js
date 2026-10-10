@@ -1,3 +1,4 @@
+import { checkClaimBrowserAuthority } from '../workspace-core/claim-browser-authority.js';
 import { ClaimsService } from '../workspace-core/claims.js';
 import { fromJSON, get, has, object, parse, serialize, set, text, integer } from '../contracts/workspace/values.js';
 import { decodeWorkflowLedger, emptyWorkflowLedger, TaskProtocolError, workflowMetadataKey } from '../contracts/workspace/workflow-tasks.js';
@@ -26,6 +27,7 @@ export class NativeClaimWorkflowTasks {
             const prepared = await original.workflowArchive?.prepare(storedLedger);
             const ledger = prepared?.ledger ?? storedLedger;
             return operation({ ledger, ...(prepared ? { history: prepared.history } : {}), domain: { snapshot: buffered,
+                    checkBrowserAuthority: (request, grant, token) => checkClaimBrowserAuthority(buffered, request, grant, token, this.now),
                     execute: async (kind, id, revision, token, session, status, savedSessionFingerprint) => {
                         if (invoked)
                             throw new TaskProtocolError('action_unavailable');

@@ -1,3 +1,5 @@
+import { validateBrowserOperationArchiveRoot } from './browser-operation-archive.js';
+import type { BrowserOperationArchiveRoot } from './browser-operation-archive.js';
 import { exact, identifier, record, snapshot } from '../../harness/validation.js';
 import { BrowserBoundaryError, browserMutation, requestFingerprint } from './browser-boundary.js';
 import type { BrowserMutation, BrowserReceipt } from './browser-boundary.js';
@@ -14,10 +16,14 @@ export interface BrowserOperation {
   readonly state: BrowserOperationState;
   readonly receipt: BrowserReceipt;
 }
-export interface BrowserOperationLedger {
+export type BrowserOperationLedger = {
   readonly schemaVersion: 1;
   readonly operations: Readonly<Record<string, BrowserOperation>>;
-}
+} | {
+  readonly schemaVersion: 2;
+  readonly operations: Readonly<Record<string, BrowserOperation>>;
+  readonly archive: BrowserOperationArchiveRoot;
+};
 export const unresolvedBrowserOperation = (operation: BrowserOperation): boolean =>
   operation.state === 'pending' || operation.state === 'uncertain';
 const invalid = (): never => { throw new BrowserBoundaryError('invalid_browser_state'); };
@@ -37,8 +43,9 @@ function receipt(raw: unknown, operationId: string, state: BrowserOperationState
 export function validateBrowserOperationLedger(raw: unknown): BrowserOperationLedger {
   try {
     const value = record(snapshot(raw, 0, { nodes: 10000, characters: browserOperationCodeUnitLimit }), 'invalid_arguments');
-    exact(value, ['schemaVersion', 'operations'], 'invalid_arguments');
-    if (value.schemaVersion !== 1) return invalid();
+    exact(value, value.schemaVersion === 2 ? ['schemaVersion', 'operations', 'archive'] : ['schemaVersion', 'operations'], 'invalid_arguments');
+    if (value.schemaVersion !== 1 && value.schemaVersion !== 2) return invalid();
+    const archive = value.schemaVersion === 2 ? validateBrowserOperationArchiveRoot(value.archive) : null;
     const entries = record(value.operations, 'invalid_arguments');
     if (Object.keys(entries).length > browserOperationLimit) return invalid();
     const operations: Record<string, BrowserOperation> = Object.create(null) as Record<string, BrowserOperation>;
@@ -57,7 +64,8 @@ export function validateBrowserOperationLedger(raw: unknown): BrowserOperationLe
       operations[operationId] = operation;
     }
     if (unresolved > 1 || JSON.stringify(value).length > browserOperationCodeUnitLimit) return invalid();
-    return Object.freeze({ schemaVersion: 1, operations: Object.freeze(operations) });
+    return archive ? Object.freeze({ schemaVersion: 2, operations: Object.freeze(operations), archive })
+      : Object.freeze({ schemaVersion: 1, operations: Object.freeze(operations) });
   } catch { return invalid(); }
 }
 export function emptyBrowserOperationLedger(): BrowserOperationLedger {
@@ -74,6 +82,8 @@ export const encodeBrowserOperationLedger = (value: BrowserOperationLedger): Val
 export function validateBrowserOperationTransition(previous: BrowserOperationLedger, next: BrowserOperationLedger): void {
   validateBrowserOperationLedger(previous);
   validateBrowserOperationLedger(next);
+  if (previous.schemaVersion !== next.schemaVersion || JSON.stringify(previous.schemaVersion === 2 ? previous.archive : null)
+    !== JSON.stringify(next.schemaVersion === 2 ? next.archive : null)) return invalid();
   let changed = 0;
   for (const [id, before] of Object.entries(previous.operations)) {
     const after = next.operations[id];

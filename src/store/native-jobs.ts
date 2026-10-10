@@ -1,4 +1,5 @@
 import { recoverNativeAnswers } from './native-answer-recovery.js';
+import { NativeBrowserArchive } from './native-browser-archive.js';
 import { NativeWorkflowArchive } from './native-workflow-archive.js';
 import { validateWorkflowRecovery, validateExtractionWorkflowArchive } from './native-workflow-recovery.js';
 import { automationTransaction as runAutomationTransaction } from './native-automation.js';
@@ -342,7 +343,8 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
   async claimTransaction<T>(operation:(transaction:ClaimTransaction)=>Promise<T>):Promise<T> {
     return this.transaction(async () => {
       const jobs = validateJobsDocument(await this.document('jobs'));
-      return operation({jobs,workflowArchive:new NativeWorkflowArchive(this.root, this.checkpoint),coordinator:validateCoordinator(await this.journal('coordinator')),
+      return operation({jobs,workflowArchive:new NativeWorkflowArchive(this.root, this.checkpoint),
+        browserArchive:new NativeBrowserArchive(this.root, this.checkpoint),coordinator:validateCoordinator(await this.journal('coordinator')),
         authority:await loadApplicationAuthority(name => this.document(name), () => new Date().toISOString().replace(/\.\d{3}Z$/u,'Z')),
         sessions:await this.answerSessions(), history:await this.answerHistory(), answers:validateAnswers(await this.document('answers')),
         profile:validateProfile(await this.document('profile')),resumes:validateExtractionResumes(await this.document('resumes')),

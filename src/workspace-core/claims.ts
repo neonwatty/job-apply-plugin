@@ -1,3 +1,4 @@
+import type { BrowserOperationArchiveService } from '../integrations/browser/durable-contract.js';
 import type { WorkflowArchiveService } from '../harness/task-store.js';
 import { randomUUID } from 'node:crypto';
 import { inspectSavedClaimHandoff } from '../contracts/workspace/saved-claim-session.js';
@@ -12,6 +13,7 @@ import { consumeAutofillAuthority } from '../contracts/workspace/application-aut
 
 export interface ClaimTransaction {
   workflowArchive?: WorkflowArchiveService;
+  browserArchive?: BrowserOperationArchiveService;
   jobs: Document; coordinator: Document; profile: Document; resumes: Document; facts?: Document; requests?: Document; answers: Document;
   authority: Document;
   sessions: Document[]; history: Document[]; files: NativeResumeFiles;

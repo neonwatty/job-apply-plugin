@@ -6,6 +6,7 @@ import { browserOperationCodeUnitLimit, browserOperationLimit, unresolvedBrowser
   validateBrowserOperationLedger } from '../../contracts/workspace/browser-operations.js';
 import type { BrowserOperation, BrowserOperationState } from '../../contracts/workspace/browser-operations.js';
 import type { BrowserOperationStore, BrowserOperationTransaction } from './durable-contract.js';
+import { browserOperationHistory } from './durable-contract.js';
 import { identifier } from '../../harness/validation.js';
 
 /** Synthetic adapter only. Durable intent is a replay fence, not an external exactly-once guarantee. */
@@ -68,7 +69,7 @@ export class DurableBrowserBoundary {
   }
   async #finish(request: BrowserMutation, state: BrowserOperationState, reason: BrowserReceipt['reason']): Promise<BrowserReceipt> {
     return this.#transaction(async tx => {
-      const current = tx.ledger.operations[request.operationId];
+      const current = browserOperationHistory(tx).operation(request.operationId);
       if (!current || current.fingerprint !== requestFingerprint(request)) throw new BrowserBoundaryError('operation_conflict');
       // A concurrent readback may already have proved the effect. Never downgrade its durable receipt.
       if (!unresolvedBrowserOperation(current) || current.state === state) return current.receipt;
@@ -99,7 +100,7 @@ export class DurableBrowserBoundary {
     try { request = browserMutation(raw); } catch (error) { return Promise.reject(error); }
     return this.#serial(async () => {
       const fingerprint = requestFingerprint(request);
-      const previous = await this.#transaction(async tx => tx.ledger.operations[request.operationId] ?? null);
+      const previous = await this.#transaction(async tx => browserOperationHistory(tx).operation(request.operationId) ?? null);
       if (previous && previous.fingerprint !== fingerprint) throw new BrowserBoundaryError('operation_conflict');
       if (previous) {
         await this.#authorize(request);
@@ -108,7 +109,7 @@ export class DurableBrowserBoundary {
       this.#scope(request);
       await this.#authorize(request);
       const reserved = await this.#transaction(async tx => {
-        const existing = tx.ledger.operations[request.operationId];
+        const existing = browserOperationHistory(tx).operation(request.operationId);
         if (existing) {
           if (existing.fingerprint !== fingerprint) throw new BrowserBoundaryError('operation_conflict');
           return { operation: existing, fresh: false };
@@ -151,8 +152,7 @@ export class DurableBrowserBoundary {
     try { identifier(operationId, 'invalid_arguments'); }
     catch { return Promise.reject(new BrowserBoundaryError('invalid_browser_input')); }
     return this.#serial(async () => {
-      const operation = await this.#transaction(async tx => Object.hasOwn(tx.ledger.operations, operationId)
-        ? tx.ledger.operations[operationId]! : null);
+      const operation = await this.#transaction(async tx => browserOperationHistory(tx).operation(operationId));
       if (!operation) throw new BrowserBoundaryError('operation_conflict');
       await this.#authorize(operation.request);
       if (!unresolvedBrowserOperation(operation)) return operation.receipt;

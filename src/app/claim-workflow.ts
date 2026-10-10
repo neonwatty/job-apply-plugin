@@ -1,3 +1,7 @@
+import { browserMutation, requestFingerprint } from '../contracts/workspace/browser-boundary.js';
+import type { BrowserMutation } from '../contracts/workspace/browser-boundary.js';
+import { browserValueGrant } from '../contracts/workspace/browser-authority.js';
+import type { BrowserValueGrant } from '../contracts/workspace/browser-authority.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { activeApplicationJob } from '../contracts/workspace/application-policy.js';
 import { requireClaim } from '../contracts/workspace/claims.js';
@@ -185,6 +189,35 @@ export class ClaimWorkflow {
         broker: { connected: !this.#closed, ownsClaim: brokerAvailable },
         ...(this.userEvents ? { userEventSource: 'trusted_host' as const } : {}), guidance };
     }));
+  }
+  /** Private capability stays in this broker; all state and source checks share one Store snapshot. */
+  checkBrowserAuthority(raw: BrowserMutation, rawGrant: BrowserValueGrant) {
+    const request = browserMutation(raw), grant = browserValueGrant(rawGrant);
+    const fingerprint = requestFingerprint(request);
+    return this.serial(async () => {
+      let authorized = false;
+      try {
+        authorized = await this.store.transaction(async tx => {
+          const capability = this.#capability, scope = request.scope;
+          if (this.#closed || !capability || capability.taskId !== scope.taskId || capability.jobId !== scope.jobId
+            || tx.ledger.activeTaskId !== scope.taskId) return false;
+          const task = tx.ledger.tasks[scope.taskId];
+          if (!task) return false;
+          requireAttemptTask(task);
+          if (task.status !== 'active' || task.revision !== scope.taskRevision
+            || task.subject.jobId !== scope.jobId || task.subject.jobRevision !== scope.attemptRevision) return false;
+          this.registry.resolve(attemptIdentity, this.access());
+          const job = activeApplicationJob(tx.domain.snapshot, scope.jobId);
+          if (int(get(job, 'revision'))?.toString() !== scope.attemptRevision
+            || preparationScope(tx.domain.snapshot, job) !== task.subject.inputRevision) return false;
+          requireClaim(tx.domain.snapshot.coordinator, tx.domain.snapshot.jobs, scope.jobId, capability.token, this.now());
+          const allowed = await tx.domain.checkBrowserAuthority?.(request, grant, capability.token) ?? false;
+          this.registry.resolve(attemptIdentity, this.access());
+          return allowed;
+        });
+      } catch { /* Denial exposes no claim, canonical values, or private diagnostics. */ }
+      return { authorized, requestFingerprint: fingerprint };
+    });
   }
   heartbeat(): Promise<void> {
     return this.serial(async () => {

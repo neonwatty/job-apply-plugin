@@ -202,3 +202,31 @@ results are recorded in the slice 18 local evidence bundle and PR.
 There is no staging promotion, regular-plugin installation, live applicant Store
 mutation, or measured application UX improvement from these foundation slices
 alone.
+
+## Slice 19: protected browser host, terminal retention, installed acceptance
+
+Implementation is on `codex/agent-workflows-19-host-retention`, stacked on
+[PR #209](https://github.com/neonwatty/job-apply-plugin/pull/209) at
+`a2e7b826a72625e8f2568cac6ee26ad63d7971b0`. Three isolated workers own host
+composition, browser retention, and installed acceptance. The integration owner
+owns the shared contracts, Store wiring, routing, review, and release gates.
+
+- [Protected host composition](host-browser-workflow.md) connects the private
+  claim capability, exact task/source revisions, canonical application authority,
+  and durable browser boundary. The model client cannot approve its own claim
+  event. Host-supplied opaque values are bound to intended controls.
+- [Browser retention](browser-operation-retention.md) lazily archives terminal
+  operations into immutable segments. Historical replay stays available;
+  unresolved operations stay hot and preserve the global mutation barrier.
+  Committed-state guidance distinguishes reconciliation from capacity handoff.
+- [Installed acceptance](installed-workflow-acceptance.md) invokes copied runtime
+  public commands against isolated synthetic Stores, including private host
+  approval, archival replay, interruptions, and revoked authority. The offline
+  evaluator records measured command metrics and keeps model UX metrics unset.
+
+The archive remains finite, with 64 hot operations and at most 32 terminal
+segments. The executable browser host accepts synthetic adapters only. The
+embedding retains responsibility for protected human input, trustworthy control
+mapping, and interrupt checks; this slice does not establish authenticated human
+identity, a live browser route, or measured model UX improvement. Final validation
+and publication evidence are retained in the slice 19 local evidence bundle.

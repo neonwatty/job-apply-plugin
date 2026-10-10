@@ -53,6 +53,9 @@ export class SequentialCampaignWorkflow {
     }
     execute(raw, hostEvent) { return this.attempt.execute(raw, hostEvent); }
     reviewUserEvent(raw) { return this.attempt.reviewUserEvent(raw); }
+    checkBrowserAuthority(request, grant) {
+        return this.attempt.checkBrowserAuthority(request, grant);
+    }
     heartbeat() { return this.attempt.heartbeat(); }
     close() { return this.attempt.close(); }
     /** Fixture host attestation is explicit but does not authenticate a human identity. */
