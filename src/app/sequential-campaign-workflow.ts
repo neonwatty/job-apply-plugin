@@ -1,0 +1,66 @@
+import { ClaimWorkflow } from './claim-workflow.js';
+import { campaignProjection, requireCampaignOperation } from '../contracts/workspace/sequential-campaign.js';
+import type { ClaimWorkflowDomain } from '../contracts/workspace/claim-workflow-domain.js';
+import type { WorkflowTaskStore } from '../harness/task-store.js';
+import type { UserEventVerifier } from '../harness/user-events.js';
+import type { ProfileAccess } from '../harness/contracts.js';
+import { exact, record, revision, snapshot } from '../harness/validation.js';
+import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
+import type { ClaimsService } from '../workspace-core/claims.js';
+import type { ApplicationAuthorityService } from '../workspace-core/application-authority.js';
+
+/** A sequential campaign reuses one claim-owned attempt at a time, with no competing active task. */
+export class SequentialCampaignWorkflow {
+  private readonly attempt: ClaimWorkflow;
+  constructor(private readonly store: WorkflowTaskStore<ClaimWorkflowDomain>,
+    claims: Pick<ClaimsService, 'heartbeat'>,
+    private readonly authority: Pick<ApplicationAuthorityService, 'control'>,
+    access: () => ProfileAccess,
+    private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    userEvents?: UserEventVerifier) {
+    this.attempt = new ClaimWorkflow(store, claims, access, now, userEvents);
+  }
+  async inspect(requestedJobId?: string) {
+    const campaign = await this.store.transaction(async tx => {
+      const projection = campaignProjection(tx.domain.snapshot, this.now());
+      if (projection.nextJob) {
+        try { await requireCampaignOperation(tx.domain.snapshot, 'acquire', projection.nextJob.jobId,
+          BigInt(projection.nextJob.jobRevision), undefined, this.now()); }
+        catch (error) {
+          if (!(error instanceof TaskProtocolError)) throw error;
+          return {...projection, status: 'unavailable' as const, reason: 'campaign_inputs_changed', nextJob: null};
+        }
+      }
+      return projection;
+    });
+    const context = await this.attempt.inspect(requestedJobId ?? campaign.nextJob?.jobId);
+    context.guidance.actions = context.guidance.actions.filter(action => {
+      if (action.kind === 'cancel' || action.kind === 'handoff' && action.input.status === 'needs_info') return true;
+      if (action.kind === 'recover') return true;
+      if (campaign.status !== 'active' || action.kind === 'restart') return false;
+      return action.kind !== 'acquire' || action.input.jobId === campaign.nextJob?.jobId;
+    });
+    for (const action of context.guidance.actions) action.args = action.args.map(arg => arg === 'attempt' ? 'campaign' : arg);
+    if (campaign.reason) context.guidance.blockers.push(campaign.reason);
+    if (campaign.status !== 'active' && context.guidance.actions.length) context.guidance.nextOperation =
+      context.guidance.actions.some(action => action.kind === 'recover') ? 'recover_only_if_requested' : 'needs_info_handoff';
+    if (!context.guidance.actions.length && !context.guidance.blockers.includes('different_active_workflow')) {
+      context.guidance.nextOperation = campaign.status === 'complete' ? 'campaign_complete' : 'inspect_only';
+    }
+    return {...context, campaign};
+  }
+  execute(raw: unknown, hostEvent?: unknown) { return this.attempt.execute(raw, hostEvent); }
+  reviewUserEvent(raw: unknown) { return this.attempt.reviewUserEvent(raw); }
+  heartbeat() { return this.attempt.heartbeat(); }
+  close() { return this.attempt.close(); }
+  /** Fixture host attestation is explicit but does not authenticate a human identity. */
+  control(action: 'pause' | 'resume' | 'stop', expectedRevision: string, hostEvent?: unknown) {
+    if (!['pause', 'resume', 'stop'].includes(action)) throw new TaskProtocolError('action_unavailable');
+    revision(expectedRevision, 'invalid_event');
+    if (hostEvent === undefined) throw new TaskProtocolError('user_event_required');
+    const event = record(snapshot(hostEvent), 'invalid_event');
+    exact(event, ['action', 'expectedRevision'], 'invalid_event');
+    if (event.action !== action || event.expectedRevision !== expectedRevision) throw new TaskProtocolError('user_event_required');
+    return this.authority.control(action, BigInt(expectedRevision));
+  }
+}

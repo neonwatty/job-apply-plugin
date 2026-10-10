@@ -1,7 +1,9 @@
 import { NativeWorkflowArchive } from './native-workflow-archive.js';
+import { validateJobsDocument } from '../contracts/workspace/jobs.js';
 import { decodeWorkflowLedger, emptyWorkflowLedger, workflowMetadataKey } from '../contracts/workspace/workflow-tasks.js';
 import { get, object } from '../contracts/workspace/values.js';
 export async function validateWorkflowJobsArchive(root, jobs) {
+    validateJobsDocument(jobs);
     const value = get(object(get(jobs, 'metadata'), 'metadata'), workflowMetadataKey);
     await new NativeWorkflowArchive(root).validate(value === null ? emptyWorkflowLedger() : decodeWorkflowLedger(value));
 }

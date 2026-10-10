@@ -95,6 +95,31 @@ If context includes `userEventSource: "trusted_host"`, the embedding host suppli
 
 This mode is supplied by an embedding host, not selected by a model flag. The plain fixture `serve` route and preparation reply flags still use the attestation boundary described above. Neither mode grants browser consent or final-submission authority.
 
+## Sequential campaign fixture
+
+An explicitly authorized synthetic campaign can use `workflow campaign serve`
+with the same absolute fixture root and native-lock paths. Use `workflow campaign
+context` and `workflow campaign event` for this broker. Campaign and ordinary
+attempt messages are distinct; do not switch transports to bypass a rejection.
+
+Code selects the next Ready job in the current campaign's authorized queue.
+Follow its action descriptors and exact revisions. An active claim or workflow
+must finish before another job starts. Reading context or restarting the broker
+does not acquire, recover, or advance a job. Each acquisition still requires the
+applicable scoped user event.
+
+`workflow campaign pause|resume|stop --expected-revision <authority-revision>
+--host-user-event` requires the same explicit paths and a matching owner request.
+The flag is fixture attestation. Pausing or stopping blocks new work; if a claim
+is held, use the guarded Needs Info handoff before waiting. Explicit expired
+claim recovery can restore the same task's capability for a safe exit; it does
+not restore campaign authorization. A completed review is terminal for this
+campaign. A Needs Info job requires an explicit canonical re-selection to Ready
+before it can become eligible again.
+
+Durable browser operations remain a synthetic embedding API. Campaign receipts
+do not establish browser effects or authorize final submission.
+
 ## Report accepted outcomes
 
 Use the receipt's outcome and canonical state, preserving these distinctions:

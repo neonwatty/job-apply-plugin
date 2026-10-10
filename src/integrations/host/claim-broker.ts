@@ -4,9 +4,10 @@ import type { Document } from '../../contracts/workspace/values.js';
 import { exact, identifier, record, requireCondition, snapshot } from '../../harness/validation.js';
 
 /** Adapter for the existing private broker transport. The bearer stays inside ClaimWorkflow. */
+export type ClaimWorkflowBrokerPort = Pick<ClaimWorkflow, 'inspect' | 'execute' | 'heartbeat' | 'close'>;
 export class WorkflowBroker {
   private timer: ReturnType<typeof setInterval> | undefined;
-  constructor(private readonly workflow: ClaimWorkflow, private readonly failed: () => void,
+  constructor(private readonly workflow: ClaimWorkflowBrokerPort, private readonly failed: () => void,
     private readonly heartbeatMilliseconds = 60_000) {}
   async acquire(request: Document): Promise<Document> {
     const result = await this.dispatch(request);
