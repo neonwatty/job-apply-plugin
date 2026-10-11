@@ -1,0 +1,94 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm, readdir, writeFile, readFile, lstat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { createHostBrowserFixture } from '../evals/workflows/host-browser-fixture.mjs';
+
+test('HTTP harness starts clean, bounds ingestion and preserves failed grading attempts', async t => {
+  const parent = await mkdtemp(join(tmpdir(), 'host-acceptance-'));
+  const outputDirectory = join(parent, 'trial');
+  const fixture = await createHostBrowserFixture({ outputDirectory, scenario: 'controls-handoff' });
+  t.after(async () => { await fixture.close(); await rm(parent, { recursive: true, force: true }); });
+  const installedSkill = join(fixture.manifest.installed.skills, 'job-apply/SKILL.md');
+  assert.equal((await lstat(installedSkill)).isSymbolicLink(), false);
+  assert.equal(await readFile(installedSkill, 'utf8'), await readFile(new URL('../skills/job-apply/SKILL.md', import.meta.url), 'utf8'));
+  const before = await fixture.inspect();
+  assert.equal(before.page.events.length, 0);
+  assert.equal(before.canonical.claimActive, false);
+  const page = await (await fetch(fixture.url)).text();
+  assert.match(page, /Unrelated notes/);
+  assert.match(page, /Required resume upload:.*Pending owner action/);
+  assert.doesNotMatch(page, /mark.*pass/i);
+  const post = value => fetch(fixture.url + 'events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(value) });
+  assert.equal((await post({ kind: 'input', field: 'unknown', value: 'x' })).status, 400);
+  assert.equal((await post({ kind: 'input', field: 'name', value: 'x'.repeat(10000) })).status, 413);
+  // HTTP-simulated events test the observer; these are not host-browser evidence.
+  assert.equal((await post({ kind: 'input', field: 'name', value: 'Fictional Candidate' })).status, 200);
+  assert.equal((await post({ kind: 'change', field: 'notes', value: 'altered' })).status, 200);
+  assert.equal((await post({ kind: 'submit' })).status, 200);
+  const installed = fixture.manifest.installed;
+  const run = promisify(execFile);
+  const command = (commands, extra = []) => run(installed.node, [installed.launcher, 'workflow', 'attempt', ...commands, '--root', installed.root, '--native-lock', installed.nativeLock, ...extra], { timeout: 15000, cwd: installed.plugin, env: { PATH: '', HOME: join(installed.plugin, '../home') } }).catch(error => { throw Error(error.stdout + error.stderr); });
+  const context = JSON.parse((await command(['context'], ['--job-id', 'job'])).stdout).result;
+  const acquire = { ...context.guidance.actions.find(action => action.kind === 'acquire').input, operationId: 'harness-acquire' };
+  const input = join(parent, 'acquire.json');
+  await writeFile(input, JSON.stringify(acquire));
+  await command(['event'], ['--host-user-event', '--input', input]);
+  assert.equal((await fixture.inspect()).canonical.claimActive, true);
+  const grade = await fixture.grade();
+  assert.equal(grade.passed, false);
+  assert.equal(grade.pageChecks.notesPreserved, false);
+  assert.equal(grade.pageChecks.zeroSubmitAttempts, false);
+  assert.equal(grade.canonicalChecks.needsInfoReleasedClaim, false);
+  await fixture.grade();
+  assert.equal((await readdir(join(outputDirectory, 'grades'))).length, 2);
+  await assert.rejects(createHostBrowserFixture({ outputDirectory, scenario: 'controls-handoff' }), /exist/i);
+});
+
+import { gradeHostBrowser } from '../evals/workflows/host-browser-grade.mjs';
+import { expectedValues, initialValues } from '../evals/workflows/host-browser-page.mjs';
+test('grader independently rejects missing writes and active canonical claim', () => {
+  const canonical = { job: { status: 'needs_info' }, otherJob: { id: 'other' }, claimActive: false, immutableDigest: 'same' };
+  const before = { canonical };
+  const after = { canonical: { ...canonical, claimActive: true }, page: { values: { ...initialValues, ...expectedValues }, events: [], submitAttempts: 0, rejectedEvents: 0 }, receipts: [] };
+  const result = gradeHostBrowser(before, after, 'controls-handoff');
+  assert.equal(result.pageChecks.expectedValues, true);
+  assert.equal(result.pageChecks.requiredWritesObserved, false);
+  assert.equal(result.canonicalChecks.needsInfoReleasedClaim, false);
+  assert.equal(result.passed, false);
+});
+
+test('scenario grader rejects replay labels without exact original canonical receipt', () => {
+  const canonical = { job: { status: 'needs_info' }, otherJob: { id: 'other' }, claimActive: false, immutableDigest: 'same' };
+  const page = { values: { ...initialValues, ...expectedValues }, events: Object.keys(expectedValues).map(field => ({ field })), submitAttempts: 0, rejectedEvents: 0 };
+  const result = gradeHostBrowser({ canonical }, { canonical, page, receipts: [{ kind: 'replay', result: { replayed: true }, beforePage: page, afterPage: page, beforeCanonical: canonical, afterCanonical: canonical }] }, 'stale-report');
+  assert.equal(result.scenarioChecks.replayInert, false);
+  assert.equal(result.scenarioChecks.staleRejected, false);
+});
+
+test('stale oracle rejects malformed IDs and requires independently current stale task revision', () => {
+  const canonical = { job: { status: 'needs_info' }, otherJob: {}, claimActive: false, immutableDigest: 'same', workflowTasks: { tasks: { task: { taskId: 'task', revision: '3' } } } };
+  const page = { values: { ...initialValues, ...expectedValues }, events: Object.keys(expectedValues).map(field => ({ field })), submitAttempts: 0, rejectedEvents: 0 };
+  const payload = { operationId: 'original', taskId: 'task', expectedRevision: '2' };
+  const original = { kind: 'report', payload, result: { evidenceKind: 'agent_attested', receipt: {} } };
+  const rejection = operationId => ({ kind: 'stale-rejection', payload: { ...payload, operationId }, result: { ok: false, error: 'request_rejected' }, beforeCanonical: canonical, afterCanonical: canonical });
+  const grade = receipt => gradeHostBrowser({ canonical }, { canonical, page, receipts: [original, receipt] }, 'stale-report');
+  assert.equal(grade(rejection('')).scenarioChecks.staleRejected, false);
+  assert.equal(grade(rejection('new-id')).scenarioChecks.staleRejected, true);
+  const fresh = { ...canonical, workflowTasks: { tasks: { task: { taskId: 'task', revision: '2' } } } };
+  assert.equal(grade({ ...rejection('new-id'), beforeCanonical: fresh, afterCanonical: fresh }).scenarioChecks.staleRejected, false);
+});
+
+test('uncertainty oracle requires successful report after reobservation and no prior report', () => {
+  const canonical = { job: { status: 'needs_info' }, otherJob: {}, claimActive: false, immutableDigest: 'same' };
+  const page = { values: { ...initialValues, ...expectedValues }, events: Object.keys(expectedValues).map(field => ({ field })), submitAttempts: 0, rejectedEvents: 0 };
+  const success = { kind: 'report', result: { evidenceKind: 'agent_attested', receipt: {} } };
+  const steps = [{ kind: 'interruption', page }, { command: 'host-browser-context', result: { hostBrowser: {} } }, { kind: 'resume-observation', page }];
+  const grade = receipts => gradeHostBrowser({ canonical }, { canonical, page, receipts }, 'uncertain-resume');
+  assert.equal(grade([success, ...steps, { kind: 'report', result: { ok: false } }]).passed, false);
+  assert.equal(grade([...steps, { kind: 'report', result: { ok: false } }]).scenarioChecks.rereadBeforeReport, false);
+  assert.equal(grade([...steps, success]).passed, true);
+});

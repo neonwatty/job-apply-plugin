@@ -292,3 +292,29 @@ These are experimental plugin modules. A terminal declaration is an embedding
 prerequisite, not proof of human identity. The current approval tests do not
 collect a real owner decision or deploy a protected stock-plugin approval UI.
 No staging promotion, live ATS, or owner Store mutation is included.
+
+## Slice 22: existing host browser tools and code-managed reports
+
+Implementation is on `codex/agent-workflows-22-operator-controls-evaluation`,
+stacked on [PR #212](https://github.com/neonwatty/job-apply-plugin/pull/212).
+The revised [integration plan](../superpowers/plans/2026-10-11-workflow-integration.md)
+uses three parallel packages: host protocol, browser-aware skill guidance, and
+instrumented acceptance fixtures.
+
+- The attempt broker projects current context and accepts closed
+  `host-browser-report` packets through the installed command. Existing code
+  owns claim authority, revision checks, durable checkpoints, replay and safe
+  Needs Info release.
+- The [host-browser route](host-browser-workflow.md) keeps Codex's existing
+  browser tools available to the agent. Fresh DOM observations guide control
+  selection and reconciliation after uncertain replies.
+- The [acceptance harness](host-browser-acceptance.md) compares page events and
+  canonical Store snapshots on fictional loopback forms. Actual host trials
+  remain separate from deterministic harness tests.
+
+Reports are explicitly `agent_attested`: they do not independently prove browser
+state, authenticate human consent or constrain arbitrary host-tool actions.
+Report replay is idempotent recording, not an exactly-once browser guarantee.
+The previous restricted CLI trials remain controller evidence. Other host apps,
+live ATS workflows and improved conversational UX remain unverified. Final
+submission remains manual; this slice does not promote the experiment to staging.

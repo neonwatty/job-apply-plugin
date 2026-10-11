@@ -2,7 +2,7 @@
 
 Use only for an explicitly requested agent-workflow trial with an initialized fictional Store, an absolute Store root, and an absolute native-lock artifact path supplied by the fixture harness. Missing fixture scope means stop this route and report what is missing. Do not initialize, clone, mark, or substitute the owner's Store. A QA replay URL also requires [QA replay routing](../../answer-memory/references/qa-replay.md).
 
-This route uses the installed plugin command on Codex and Claude. It exercises durable preparation and attempt events; it does not provide a browser adapter. Browser activity requires separate explicit fixture instructions and [browser and consent](browser.md). Ordinary applications continue through [canonical intake](intake.md).
+This route uses the installed plugin command on Codex and Claude. It exercises durable preparation and attempt events; it does not provide a browser adapter. Browser activity requires separate explicit fixture instructions and [browser and consent](browser.md). Explicit host-browser fixtures use [the host-browser protocol](host-browser-workflow.md) with Codex’s existing browser tools; there is no restricted model launcher or replacement browser tool. Ordinary applications continue through [canonical intake](intake.md).
 
 ## Read state, then propose
 

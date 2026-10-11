@@ -14,10 +14,12 @@ import { runAttemptBroker, requestAttempt } from './attempt-broker.js';
 /** Explicit fixture-only server/client. The caller owns the foreground broker lifecycle. */
 export async function experimentalClaimWorkflow(args, host) {
     const [command, ...rest] = args;
-    if (!['serve', 'context', 'event'].includes(command ?? ''))
+    if (!['serve', 'context', 'event', 'host-browser-context', 'host-browser-report'].includes(command ?? ''))
         throw new Error('invalid command');
     if (host && command !== 'serve')
         throw new Error('host port requires server');
+    const isContext = command === 'context' || command === 'host-browser-context';
+    const isReport = command === 'host-browser-report';
     const options = new Map();
     let attested = false;
     for (let index = 0; index < rest.length; index++) {
@@ -26,15 +28,17 @@ export async function experimentalClaimWorkflow(args, host) {
             attested = true;
             continue;
         }
-        if (!['--root', '--native-lock', '--input', ...(command === 'context' ? ['--job-id'] : [])].includes(name) || options.has(name) || !rest[index + 1])
+        if (!['--root', '--native-lock', '--input', ...(isContext ? ['--job-id'] : [])].includes(name) || options.has(name) || !rest[index + 1])
             throw new Error('invalid options');
         options.set(name, rest[++index]);
     }
     const root = options.get('--root'), artifact = options.get('--native-lock');
     if (!root || !isAbsolute(root) || !artifact || !isAbsolute(artifact))
         throw new Error('explicit paths required');
-    if ((command === 'event') !== options.has('--input'))
+    if ((command === 'event' || isReport) !== options.has('--input'))
         throw new Error('invalid input option');
+    if (isReport && !isAbsolute(options.get('--input')))
+        throw new Error('explicit input path required');
     if (await boundedFile(join(root, nativeFixtureMarkerName), 256) !== nativeFixtureMarker)
         throw new Error('synthetic Store required');
     const provider = loadPosixFlockProvider(artifact), repository = new NativeJobsRepository(root, provider);
@@ -47,7 +51,8 @@ export async function experimentalClaimWorkflow(args, host) {
         await runAttemptBroker(root, claims, provider, { createAuthority: stop => new WorkflowBroker(workflow, stop) });
         return { ok: true };
     }
-    const request = command === 'context' ? { command, ...(options.has('--job-id') ? { jobId: options.get('--job-id') } : {}) } : { command, event: JSON.parse(await boundedFile(options.get('--input'), 131072)), hostUserEvent: attested };
+    const request = isContext ? { command, ...(options.has('--job-id') ? { jobId: options.get('--job-id') } : {}) } : isReport ? { command, report: JSON.parse(await boundedFile(options.get('--input'), 131072)) }
+        : { command, event: JSON.parse(await boundedFile(options.get('--input'), 131072)), hostUserEvent: attested };
     return JSON.parse(serialize(await requestAttempt(root, object(fromJSON(request), 'request'))));
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -14,6 +14,7 @@ First read [answer-memory](../answer-memory/SKILL.md) to resolve the plugin and 
 For first use or a cross-skill handoff, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 - An approved loopback URL with `#qa-route=<run-id>.<64-lowercase-hex-token>` requires [QA replay routing](../answer-memory/references/qa-replay.md) **before init or any other Store call**. Keep the isolated root throughout; never fall back to the real Store.
+- Explicitly supplied host-browser fixture instructions with a fictional Store, native lock and controlled loopback page require [host-browser workflow](references/host-browser-workflow.md) before ordinary intake. Use the existing Codex host browser tools after checking their availability; this route supplies no browser tool.
 - An explicitly requested agent-workflow experiment with a supplied synthetic Store and native lock uses [experimental workflow commands](references/experimental-workflow.md) **before init or ordinary intake**. Follow that reference for preparation and attempt events; keep browser work within its stated fixture scope.
 - Resume, facts, onboarding, or an exact extraction request: read [extraction](references/extraction.md). Never scan for extraction requests during every job application. Stop at owner fact review.
 - Explicit legacy applicant-wide profile setup: read [profile setup](references/profile-setup.md). Ordinary applications use the chosen resume's confirmed facts.
