@@ -33,7 +33,7 @@ export function gradeHostBrowser(before, after, scenario) {
     hostReportRecorded: receipts.some(successfulReport),
     ...(scenario === 'uncertain-resume' ? {
       interruptionObserved: interruption >= 0 && receipts[interruption].page.events.length > 0,
-      rereadBeforeReport: resumed > interruption && contextRead > interruption && !receipts.slice(0, interruption).some(successfulReport) && receipts.slice(resumed + 1).some(successfulReport),
+      rereadBeforeReport: resumed > interruption && contextRead > interruption && !receipts.slice(0, resumed + 1).some(successfulReport) && receipts.slice(resumed + 1).some(successfulReport),
       resumedWithoutRepeatWrite: resumed > interruption && digest(receipts[interruption].page) === digest(receipts[resumed].page),
     } : {}),
     ...(scenario === 'stale-report' ? {

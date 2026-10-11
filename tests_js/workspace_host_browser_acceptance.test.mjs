@@ -92,3 +92,13 @@ test('uncertainty oracle requires successful report after reobservation and no p
   assert.equal(grade([...steps, { kind: 'report', result: { ok: false } }]).scenarioChecks.rereadBeforeReport, false);
   assert.equal(grade([...steps, success]).passed, true);
 });
+
+test('uncertainty oracle rejects progress reported before reobservation', () => {
+  const canonical = { job: { status: 'needs_info' }, otherJob: {}, claimActive: false, immutableDigest: 'same' };
+  const page = { values: { ...initialValues, ...expectedValues }, events: Object.keys(expectedValues).map(field => ({ field })), submitAttempts: 0, rejectedEvents: 0 };
+  const success = outcome => ({ kind: 'report', payload: { outcome }, result: { evidenceKind: 'agent_attested', receipt: {} } });
+  const receipts = [{ kind: 'interruption', page }, success('progress'), { command: 'host-browser-context', result: { hostBrowser: {} } }, { kind: 'resume-observation', page }, success('needs_info')];
+  const grade = gradeHostBrowser({ canonical }, { canonical, page, receipts }, 'uncertain-resume');
+  assert.equal(grade.scenarioChecks.rereadBeforeReport, false);
+  assert.equal(grade.passed, false);
+});
