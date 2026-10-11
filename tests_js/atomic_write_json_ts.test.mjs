@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { rm, readFile } from 'node:fs/promises';
+import { mkdtemp, open, rm, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
@@ -16,6 +17,20 @@ const BUFFER_ORACLE_TIMEOUT_MS = 30000;
 const defaultPython = process.platform === 'darwin'
   ? (process.env.JOB_APPLY_CONTRACT_PYTHON ?? selectSupportedPython().executable)
   : 'python3';
+async function bufferingOracle(executable, script, sequences) {
+  const directory = await mkdtemp(join(tmpdir(), 'atomic-buffer-input-'));
+  try {
+    const path = join(directory, 'sequences.json');
+    await writeFile(path, JSON.stringify(sequences), { mode: 0o600 });
+    const input = await open(path, 'r');
+    try {
+      // Keep the oracle's stdin contract without a large synchronous pipe write.
+      return spawnSync(executable, ['-I', '-c', script], {
+        stdio: [input.fd, 'pipe', 'pipe'], encoding: 'utf8', timeout: BUFFER_ORACLE_TIMEOUT_MS,
+      });
+    } finally { await input.close(); }
+  } finally { await rm(directory, { recursive: true, force: true }); }
+}
 function filesystemEffects(rows) {
   // Separate trees have different creation times. Preserve whether each exact
   // fixture mtime changed, alongside every byte, permission and path witness.
@@ -59,9 +74,7 @@ for (const [label, executable] of [['python3', defaultPython], ['python3.12', 'p
         '  steps.append(observe());path.unlink();rows.append(steps)',
         'print(json.dumps(rows))',
       ].join('\n');
-      const run = spawnSync(executable, ['-I', '-c', script], {
-        input: JSON.stringify(sequences), encoding: 'utf8', timeout: BUFFER_ORACLE_TIMEOUT_MS,
-      });
+      const run = await bufferingOracle(executable, script, sequences);
       assert.ifError(run.error);
       assert.equal(run.status, 0, run.stderr);
       const expected = JSON.parse(run.stdout);
