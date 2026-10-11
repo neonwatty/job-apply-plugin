@@ -247,6 +247,18 @@ export function refuseDomain() {
   }
 }
 
+function removeReviewedInstalledWorkflowMatrixAdditions(matrix) {
+  const evalOwner = matrix.ownership.find(rule => rule.paths.includes('evals/workflows/*.mjs'));
+  assert.deepEqual(evalOwner, { paths: ['evals/preparation/*.mjs', 'evals/attempt/*.mjs', 'evals/workflows/*.mjs'],
+    suites: ['node-runner-fast', 'node-workspace-other'] });
+  evalOwner.paths.pop();
+  const hostPath = 'tests_js/workspace_installed_workflows_browser_host.mjs';
+  const supportOwner = matrix.ownership.find(rule => rule.paths.includes(hostPath));
+  assert.deepEqual(supportOwner, { paths: ['tests_js/workspace_*support.mjs', 'tests_js/workspace_*phase*.mjs', hostPath],
+    suites: ['node-workspace-other'] });
+  supportOwner.paths.pop();
+}
+
 export function removeReviewedPreparationEvalMatrixAdditions(matrix) {
   const inventory = 'evals/**/*.mjs';
   const owner = { paths: ['evals/preparation/*.mjs', 'evals/attempt/*.mjs'], suites: ['node-runner-fast', 'node-workspace-other'] };
@@ -258,6 +270,7 @@ export function removeReviewedPreparationEvalMatrixAdditions(matrix) {
 
 export function removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOwnership) {
   // Validate only these reviewed additions; the historical matrix digest stays fixed.
+  removeReviewedInstalledWorkflowMatrixAdditions(matrix);
   removeReviewedPreparationEvalMatrixAdditions(matrix);
   assert.deepEqual(matrix.ownership.pop(), registrationOwnership);
   const coreWorkflowSuite = { id: 'core-workflow-audit', kind: 'command',
