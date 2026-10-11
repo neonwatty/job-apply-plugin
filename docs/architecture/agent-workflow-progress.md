@@ -318,3 +318,28 @@ Report replay is idempotent recording, not an exactly-once browser guarantee.
 The previous restricted CLI trials remain controller evidence. Other host apps,
 live ATS workflows and improved conversational UX remain unverified. Final
 submission remains manual; this slice does not promote the experiment to staging.
+
+## Slice 23: fresh-session and loss-boundary acceptance
+
+The [session/recovery integration plan](../superpowers/plans/2026-10-11-workflow-session-recovery-readiness.md)
+is stacked on [PR #213](https://github.com/neonwatty/job-apply-plugin/pull/213).
+Three disjoint packages extend the existing installed fictional host-browser
+harness and audit the cumulative experiment:
+
+- [Fresh-session evidence](host-browser-fresh-sessions.md) validates exact
+  candidate/session indices, canonical receipts, observation ordering and
+  page-event deltas from the session handoff boundary. Referenced launch and
+  browser traces still require external review; the validator does not create
+  independent conversations or certify tool execution.
+- [Interruption recovery](host-browser-recovery.md) adds fixture-owned broker
+  replacement and separately labeled tab/tool loss checkpoints. A live claim
+  owned by a killed broker must block a replacement from making progress.
+  Closing a tab may lose its unsaved draft; fresh reconstruction is distinct
+  from draft preservation.
+- The [readiness audit](agent-workflow-readiness.md) maps code-owned state and
+  model responsibilities to files and defines a finite promotion checklist.
+
+Actual host results and validation receipts must be bound to a committed
+candidate separately. These additions do not strengthen `agent_attested`
+reports into trusted browser proof or enforce policy over arbitrary host tools.
+The ordinary application route and staging promotion remain outside this slice.

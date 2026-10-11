@@ -19,6 +19,8 @@ function record(event) {
   if (!response.ok) throw Error('Observer rejected event');
  }).catch(() => { document.getElementById('status').textContent = 'Observer error: stop and hand off'; });
 }
+// Reopening this fictional page loses its DOM draft. Record that reset explicitly.
+record({kind:'page-load'});
 for (const field of fields) for (const kind of ['input','change']) document.getElementById(field).addEventListener(kind, event => {
  const control = event.target;
  if (field === 'remote') document.getElementById('conditional').hidden = !control.checked;
