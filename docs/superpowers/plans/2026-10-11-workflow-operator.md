@@ -1,5 +1,8 @@
 # Operator Launcher Implementation Plan
 
+**SUPERSEDED — DO NOT EXECUTE.** A separate terminal launcher is not the intended
+product entry point. See [revised direction](../specs/2026-10-11-workflow-browser-capable-host-design.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Run the existing restricted model workflow only after an explicit standalone terminal acquisition decision.

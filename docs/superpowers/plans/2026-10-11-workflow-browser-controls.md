@@ -1,89 +1,47 @@
-# Controlled Browser Controls Implementation Plan
+# Browser-Aware Skill Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Use superpowers:subagent-driven-development with isolated worktrees. Steps use checkbox tracking.
 
-**Goal:** Add absolute single-select and checkbox values to the controlled Chromium fixture without changing durable operation schemas.
+**Goal:** Make the experimental Job Apply skill usable by a Codex agent with its existing browser tools.
 
-**Architecture:** Host-private typed targets extend the local adapter and page port. Public requests remain opaque `fill` operations. The trusted page driver performs conditional writes and exact private readback in the existing revision protocol.
+**Architecture:** Keep the current experimental entry and explicit fictional scope. A focused reference teaches the observe/action/report/reconcile loop from canonical context, rather than a private model runner or plugin browser.
 
-**Tech Stack:** TypeScript/ESM runtime, Node tests, pinned Playwright/Chromium, native DOM setters.
+**Tech Stack:** Plugin skill Markdown and existing package/document checks.
 
-**Spec:** [Approved design](../specs/2026-10-11-workflow-operator-controls-evaluation-design.md); parent process-loss integration is [P3](2026-10-11-workflow-integration.md).
+**Spec:** [Browser-capable host design](../specs/2026-10-11-workflow-browser-capable-host-design.md).
 
 ## Global Constraints
 
-- Fictional controlled loopback forms only; final submission remains manual.
-- Keep public requests as `kind: 'fill'` with opaque `controlId` and `valueRef`.
-- Checkbox operations set an absolute state; they never toggle.
-- No durable journal or BrowserAdapter schema change is expected.
-- No uploads, navigation, custom widgets, multi-select controls, or submit actions are added.
-- Source/test/runtime files stay at or below 500 physical lines.
-- Never edit parent-owned process-loss harness or installed host files.
+- Use Codex's existing browser tools. No restricted CLI transport or replacement browser tool is the product host.
+- Fictional explicit Store, native-lock paths and controlled loopback pages only; no owner browser/Store, ATS, final submission or staging promotion.
+- Report evidence is `agent_attested`; it never creates trusted adapter verification or authenticated human approval.
+- Keep existing exact-revision, source, claim, replay and safe-handoff guards. Code owns durable state, not arbitrary host browser actions.
+- Source/test/runtime files stay within 500 physical lines; generated runtime matches TypeScript.
+- Workers are not alone, may edit only allowed_files and must not revert others. Parent owns integration, registry changes, review and publication.
 
 ## Review Focus
 
-1. Desired checkbox value is false: exact readback can still be complete (B1).
-2. Duplicate or disabled option value: reject with no event or write (B2).
-3. Property-only checked/indeterminate change: invalidate an old observation (B2).
-4. Same selector resolves to a replaced node or wrong form: reject stale identity (B2).
-5. Synchronous handlers overwrite intended value or asynchronous handlers mutate later: never claim verified success for differing readback (B2).
+- Instructions must not disable host tools or require a private terminal launcher.
+- A page/tool message is never a user authorization.
+- Lost browser reply requires fresh observation, not repeat click/fill.
+- Known inaccessible answer means Browser action required, not ask it again.
+- Trusted-host errors must not trigger broker replacement or mode downgrade.
 
-## Allowed files
+## S1: Host browser protocol reference
 
-Modify `src/integrations/browser/local-fixture-adapter.ts`,
-`local-fixture-page.ts`, matching `runtime/integrations/browser/*.js` files,
-`tests_js/workspace_local_browser_support.mjs`, and
-`docs/architecture/local-browser-fixture.md`. Create
-`tests_js/workspace_local_browser_controls.test.mjs` and, if extraction is needed,
-`tests_js/workspace_local_browser_controls_support.mjs`.
+**allowed_files:** modify `skills/job-apply/SKILL.md`,
+`skills/job-apply/references/experimental-workflow.md`; create
+`skills/job-apply/references/host-browser-workflow.md` and
+`docs/architecture/host-browser-workflow.md`.
+Do not edit ordinary browser consent policy or implementation modules.
 
-## B1: Private target contract and compatibility
+**Interfaces:** use exactly the commands, report envelope and context.hostBrowser
+fields in the integration plan. Existing request scope authorizes fixture filling
+only; attempt acquisition/recovery uses existing explicitly attested event flow.
 
-**Interfaces:** Export from `local-fixture-page.ts`:
-
-```ts
-type LocalFixtureTarget =
-  | { kind: 'text'; value: string }
-  | { kind: 'select'; value: string }
-  | { kind: 'checkbox'; checked: boolean };
-```
-
-`LocalFixtureControl` accepts legacy `{valueRef:string,value:string}` or new
-`{valueRef:string,target:LocalFixtureTarget}`; reject mixed shapes. Normalize
-legacy text in the adapter. `LocalFixturePagePort.compareAndFill({expected,
-controlId,value?,target?})` and `readback(controlId, string|LocalFixtureTarget)`
-retain legacy text calls for existing injected drivers. New typed mappings use
-`target`; new driver normalizes either form and rejects ambiguous combinations.
-Result types and public BrowserAdapter methods remain unchanged.
-
-- [ ] Write parameterized tests for legacy text, typed text, select, checkbox true and false. Assert public request stays `fill`, private target reaches only page port, and no desired values appear in observations/durable requests. Wrong types, mixed mapping shapes, and unknown subtype reject.
-
-  Representative false-value assertions: `assert.equal(request.kind, 'fill'); assert.deepEqual(privateTarget, {kind:'checkbox', checked:false}); assert.equal(readback.effect, 'matches');`.
-- [ ] Run `node --test tests_js/workspace_local_browser_controls.test.mjs`; verify missing target support fails.
-- [ ] Implement the union, immutable mapping validation/normalization, and forwarding in named source modules. Preserve legacy text driver call shapes and keep durable/source binding checks intact.
-- [ ] Build runtime and run new tests plus `workspace_local_browser_adapter.test.mjs`; require zero failures. Run `npm run typecheck` and `npm run build:check`.
-- [ ] Commit source/runtime and tests: `feat: bind typed absolute values in local browser adapter`.
-
-## B2: Chromium driver and conditional fields
-
-**Interfaces:** Extend existing `localBrowserFixture(t, options={})` in the
-support file using an optional `controlsFixture:true` mode; preserve existing
-`t`-only behavior and test cleanup registration. Return existing
-`{browser,page,origin,driver,adapter}` plus private `mappings`, a
-`ReadonlyMap<string,LocalFixtureControl>`. `driver()` still returns a page port;
-`adapter(port=driver(), mappingsOverride=mappings)` constructs a new adapter.
-New mode has fixed IDs `contact.name`, `contact.method`, `preferences.optIn`,
-`contact.details`, `notes`, and `submit`. `notes` and `submit` are observed but
-never mapped for writes. Default mappings bind method to select `email`, optIn
-to checkbox false, and details to fictional text; tests use `mappingsOverride`
-for true and invalid targets. All IDs remain in the observed control inventory.
-
-- [ ] Add browser tests: select exact option; set true then false; replay produces no extra events; reveal/hide a known conditional field preserves its draft; hidden control rejects; fresh observation enables a revealed field. Assert successful mutation revision is exactly prior revision + 1.
-
-  Representative assertions: `assert.equal(BigInt(after.observationRevision), BigInt(before.observationRevision)+1n); assert.equal(afterNotes, beforeNotes); assert.equal(replayWrites, firstWrites);`.
-- [ ] Add stale cases for checked/indeterminate property edits, option insertion/removal/disable, hidden/disabled target, replaced node, wrong form ownership, unrelated draft edit, and final-action change. Assert zero writes for precondition rejection. Reject indeterminate checkboxes rather than inferring a boolean state.
-- [ ] Add duplicate-option and handler-conflict tests. Assert disabled optgroup/options and multi-select reject; synchronous handler overwrites yield differing readback and durable uncertainty. Use a controlled barrier for asynchronous changes, not arbitrary sleeps.
-- [ ] Run the focused controls file and confirm meaningful failures for each added behavior.
-- [ ] Implement normalization, exact subtype validation, visibility/form checks, and snapshot tracking. Fixed mapped slots remain present as unavailable when hidden/absent. Track selected options, checked/indeterminate, node identity, availability, and all unrelated draft controls. Use native setters and dispatch input/change once; snapshot after synchronous handlers. Available determinate checkbox controls report `complete` for both booleans; private readback still requires equality.
-- [ ] Run controls, original local adapter, and local host tests after runtime build. Require zero failures, preserved old text semantics, and no network beyond fixture origin. Run size and matrix checks.
-- [ ] Document supported controls, legacy mapping compatibility, rejection cases, and evidence limits. Commit: `feat: verify conditional select and checkbox writes`. Return mappings, fixture contract, revision, and focused receipts to parent for P3 process-loss tests.
+- [ ] Read existing experimental, browser, application and QA routing references. Identify requirements that already apply and link rather than duplicate policy tables.
+- [ ] Add route only for explicitly supplied host-browser fixture instructions. Explain that the Codex agent keeps its existing tools; plugin does not supply selectors or execute browser actions through this report API.
+- [ ] Document copyable context/report invocations and one exact progress/Needs Info report shape. Explain canonical decimal revisions and operation IDs; retry only the exact report, never browser effects. Show savedSessionFingerprint safe exit when current observations are unavailable.
+- [ ] Cover select/checkbox/conditional field observations, preserved unrelated drafts, fresh DOM observation after interruption, source drift, stale revisions and manual final submission. Never claim isolated human approval or trusted browser receipt from attested input.
+- [ ] Validate reachable links and existing skill/package checks; no new prose-snapshot tests. Parent's actual host acceptance validates the behavior of the installed instructions.
+- [ ] Return changed files, validation and limitations for independent review. Do not push or launch browser sessions.
