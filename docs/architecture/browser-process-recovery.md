@@ -56,7 +56,7 @@ remains zero wherever a surviving document can be inspected.
 node --test tests_js/workspace_browser_process_recovery.test.mjs
 ```
 
-Implementation lives in `workspace_browser_process_child.mjs` (child channels),
+Implementation lives in `workspace_browser_process_child_support.mjs` (child channels),
 `workspace_browser_process_support.mjs` (trusted controller and setup), and
 `workspace_browser_process_recovery.test.mjs` (four failure cases), all under
 `tests_js/`. The existing local browser fixture additionally exposes its owned

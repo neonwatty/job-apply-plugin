@@ -23,7 +23,7 @@ export async function processState(native, fixture, name) {
 }
 
 export async function processHost(t, native, fixture, state, barrier = null) {
-  const child = fork(fileURLToPath(new URL('./workspace_browser_process_child.mjs', import.meta.url)), [],
+  const child = fork(fileURLToPath(new URL('./workspace_browser_process_child_support.mjs', import.meta.url)), [],
     { stdio: ['pipe', 'pipe', 'pipe', 'ipc'], env: { PATH: '' } });
   const model = new Map(), privateCalls = new Map();
   const driver = fixture.driver();

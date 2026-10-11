@@ -320,7 +320,7 @@
     },
     {"paths": ["tests_js/recorder_*support.mjs", "tests_js/recorder_*phase.mjs"], "suites": ["node-recorder"]},
     {"paths": ["tests_js/renderer_*support.mjs"], "suites": ["node-renderer"]},
-    {"paths": ["tests_js/workspace_*support.mjs", "tests_js/workspace_*phase*.mjs", "tests_js/workspace_installed_workflows_browser_host.mjs", "tests_js/workspace_browser_process_child.mjs"], "suites": ["node-workspace-other"]},
+    {"paths": ["tests_js/workspace_*support.mjs", "tests_js/workspace_*phase*.mjs", "tests_js/workspace_installed_workflows_browser_host.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["scripts/check-source-size.py"], "suites": ["source-size", "python-fast"]},
     {"paths": ["scripts/check-links.sh"], "suites": ["docs-links"]},
     {"paths": ["scripts/smoke-plugin.sh"], "suites": ["release-package"]},
