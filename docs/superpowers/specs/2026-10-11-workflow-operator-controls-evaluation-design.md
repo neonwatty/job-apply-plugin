@@ -1,6 +1,6 @@
 # Slice 22: operator integration, browser controls, and repeated evaluation
 
-Status: proposed design for user review; implementation has not started.
+Status: approved by the user on 2026-10-11; implementation has not started.
 
 Base: PR #212, `42759e072f850a2512db322d308d278f7696bc3f`.
 Integration branch: `codex/agent-workflows-22-operator-controls-evaluation`.
