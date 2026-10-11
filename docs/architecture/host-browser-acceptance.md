@@ -17,7 +17,10 @@ node evals/workflows/host-browser-cli.mjs stop --manifest /absolute/new-private-
 
 Start stays foreground and prints one JSON manifest with URL, exact Git candidate
 revision, installed launcher/Store/native-lock paths, and scoped instructions.
-Output must be new. Acquisition remains a separately authorized existing attempt
+Output must be new. Startup establishes an ordinary read-only context handshake
+before returning the manifest, so the broker's initial idle timer cannot expire
+while the agent reads installed skills. This acquires no claim and changes no
+canonical timeout. Acquisition remains a separately authorized existing attempt
 event; the fixture does not acquire. Fill Candidate name `Fictional Candidate`,
 Experience level `Senior`, check Remote work requested, and fill Remote detail
 `Synthetic`. Preserve Unrelated notes. Never touch Submit. The visible required resume upload

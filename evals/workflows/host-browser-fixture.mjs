@@ -74,6 +74,9 @@ export async function createHostBrowserFixture({ outputDirectory, scenario }) {
       await new Promise(res => setTimeout(res, 20));
     }
     if (!ready) throw Error('Owned attempt broker did not become ready');
+    // An ordinary read-only handshake clears the broker's initial idle timer.
+    // Do this before publishing the manifest; skill reading may take longer than 10s.
+    await state.call('workflow', ['attempt', 'context'], undefined, ['--job-id', 'job']);
     initial = await inspect();
     await writeFile(join(outputDirectory, 'initial.json'), JSON.stringify(initial, null, 2), { flag: 'wx', mode: 0o600 });
     server = createServer(async (request, response) => {

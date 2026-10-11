@@ -102,3 +102,18 @@ test('uncertainty oracle rejects progress reported before reobservation', () => 
   assert.equal(grade.scenarioChecks.rereadBeforeReport, false);
   assert.equal(grade.passed, false);
 });
+
+
+test('fixture keeps owned broker available beyond initial idle timeout before first user context', async t => {
+  const parent = await mkdtemp(join(tmpdir(), 'host-delayed-context-'));
+  const fixture = await createHostBrowserFixture({ outputDirectory: join(parent, 'trial'), scenario: 'controls-handoff' });
+  t.after(async () => { await fixture.close(); await rm(parent, { recursive: true, force: true }); });
+  // Real timer check: neither an owner request nor browser action occurs for >10s.
+  await new Promise(resolve => setTimeout(resolve, 10500));
+  const response = await fetch(fixture.url + 'command', { method: 'POST', headers: { authorization: `Bearer ${fixture.manifest.token}`, 'content-type': 'application/json' }, body: JSON.stringify({ command: 'context', kind: 'canonical' }) });
+  const context = await response.json();
+  assert.equal(response.status, 200);
+  assert.ok(context.guidance);
+  assert.equal((await fixture.inspect()).canonical.claimActive, false);
+  assert.equal((await fixture.inspect()).page.events.length, 0);
+});
