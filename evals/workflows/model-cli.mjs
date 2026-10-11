@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 export const liveReadiness = Object.freeze({
   ready: false,
-  reason: 'No verified model transport with an exclusively JSON proposal surface is configured.',
-  evidence: 'Codex CLI 0.160.0 debug prompt-input exposes messages but does not enumerate actual tool schemas. Disabling shell_tool and using MCP enabled_tools does not establish absence of other builtins.',
+  reason: 'No model transport is selected by this generic readiness command.',
+  evidence: 'The experimental codex-model-transport.mjs requires an explicit native Codex binary and authentication home, pins its catalog/configuration, and probes actual tool registration before inference. See docs/architecture/codex-model-evaluation.md.',
   prerequisites: [
     'A trusted transport must prove the model cannot use computer, Store, approval, or network tools before inference.',
     'Use a separate host controller for canonical fixture reads and protected approvals; pass only closed proposals and sanitized model-channel replies.',

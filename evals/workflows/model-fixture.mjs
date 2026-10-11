@@ -24,10 +24,11 @@ export async function createInstalledModelFixture() {
     const context = await state.call('workflow', ['browser', 'context'], undefined, ['--job-id', 'job']);
     const acquire = { ...context.guidance.actions.find(action => action.kind === 'acquire').input,
       operationId: 'model-fixture-acquire' };
-    const review = await host.trusted({ kind: 'review', event: acquire });
-    const grant = await host.trusted({ kind: 'approve', binding: review.binding, lifetime: 300000 });
+    // Synthetic operator input, owned by the fixture controller before inference.
+    const challenge = await host.trusted({ kind: 'operator-challenge', event: acquire, lifetime: 300000 });
+    await host.trusted({ kind: 'operator-decide', challengeId: challenge.challengeId, decision: 'approve' });
     const task = (await state.call('workflow', ['browser', 'event'], acquire)).receipt.task;
-    await host.trusted({ kind: 'revoke', grant });
+    await host.trusted({ kind: 'operator-revoke', challengeId: challenge.challengeId });
     const binding = { taskId: task.taskId, taskRevision: task.revision, jobId: 'job',
       attemptRevision: task.subject.jobRevision, authorizationRevision: '1' };
     const publicCall = (command, input, extra = []) => state.call('workflow', ['browser', command], input, extra, { failure: true });

@@ -1,5 +1,17 @@
 /** Closed proposal surface. The controller alone holds fixture paths and host approvals. */
 export const modelTools = Object.freeze(['context', 'event', 'observe', 'execute', 'reconcile']);
+export const proposalInstructions = [
+  'Return one closed JSON proposal, with message and action. Only the controller executes actions.',
+  'Each action has a fresh id, a name, and argumentsJson containing a JSON object encoded as a string.',
+  'context arguments are {} or {jobId}. observe arguments are the exact current binding object.',
+  'execute arguments are {operationId,kind,controlId,valueRef,scope}. For an upload use kind:"upload".',
+  'Build scope from the current binding plus form and observationRevision from the observe result.',
+  'An exact replay repeats the entire original execute arguments, including the original scope, with a new action id.',
+  'event arguments are the complete event object supplied by fixture instructions or context guidance.',
+  'reconcile arguments are {binding,operationId}. No action can approve a user event or submit an application.',
+  'Replies appear as tool entries in the supplied transcript. A rejected reply grants no authority.',
+  'After completing the requested work, return action:null with a factual message.',
+].join('\n');
 export const proposalSchema = {
   type: 'object', additionalProperties: false, required: ['message', 'action'],
   properties: {

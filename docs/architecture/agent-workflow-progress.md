@@ -261,3 +261,34 @@ synthetic, fill-only, and limited to controlled loopback forms. Host replacement
 tests preserve the same Chromium document; they do not establish browser process
 crash recovery, live ATS support, authenticated human identity, or measured
 conversational improvement. No staging promotion is included.
+
+## Slice 21: process loss, operator decisions, and restricted Codex trials
+
+Implementation is on `codex/agent-workflows-21-process-approval-model`, stacked
+on [PR #211](https://github.com/neonwatty/job-apply-plugin/pull/211) at
+`f6b52bf6c123d958b83d3b146abd2fb4862c21e5`. Three isolated workers own process
+recovery, operator decisions, and the Codex transport. The integration owner
+owns shared contracts, installed fixture composition, review, and release gates.
+
+- [Process recovery](browser-process-recovery.md) kills an actual Node host
+  before or after a browser write. A new host requires explicit recovery and
+  reconciles the original durable intent without another write. Unrelated
+  drafts survive while the Chromium document survives. Reload and browser loss
+  keep the operation uncertain; destroyed drafts are not reconstructed.
+- [Operator decisions](protected-approval-surface.md) keep immutable review,
+  single-use challenges, exact canonical re-review, expiry, revocation, and
+  concurrency in code. A dedicated terminal wrapper presents the reviewed
+  event. The installed model fixture uses the same session through its private
+  fixture channel, with explicitly simulated decisions before inference.
+
+- [Restricted Codex evaluation](codex-model-evaluation.md) pins the local CLI,
+  bundled model metadata, and closed output schema. Its preflight captures a
+  tool-free request and rejects an injected execution call. Code dispatches
+  proposals and grades canonical state plus exact scenario obligations;
+  process traces and failed attempts remain reviewable. The live provider uses
+  the same configuration, with capability equivalence explicitly inferred.
+
+These are experimental plugin modules. A terminal declaration is an embedding
+prerequisite, not proof of human identity. The current approval tests do not
+collect a real owner decision or deploy a protected stock-plugin approval UI.
+No staging promotion, live ATS, or owner Store mutation is included.

@@ -107,5 +107,5 @@ export async function localBrowserFixture(t) {
   };
   const adapter = (port = driver()) => new LocalFixtureBrowserAdapter(port, origin,
     new Map([['contact.name', { valueRef: 'profile.name', value: 'UNRELATED PRIVATE PROFILE' }]]));
-  return { page, origin, driver, adapter };
+  return { browser, page, origin, driver, adapter };
 }

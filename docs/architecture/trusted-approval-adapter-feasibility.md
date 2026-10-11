@@ -2,6 +2,14 @@
 
 Reviewed 2026-10-10 against `21999d2d724033c7e90c2a87a7e360e37ad8eba3` (PR #206).
 
+## Later experimental work
+
+The [operator approval surface](protected-approval-surface.md) adds a host-private
+review/decision session and dedicated terminal wrapper. Its simulated operator
+tests establish challenge binding and lifecycle behavior. They do not establish
+authenticated human origin or a protected stock-plugin deployment. The original
+feasibility limits below still apply to those claims.
+
 ## Decision
 
 No supported, protected human-event channel has been established for the existing Job Apply Codex or Claude plugin installation. Keep the current trusted-attempt embedding API fixture-only and keep legacy attestation explicit. Adding a hook, MCP tool, local HTTP route, or CLI flag now would not justify claiming authenticated human approval.

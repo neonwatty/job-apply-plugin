@@ -5,9 +5,36 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createInstalledModelFixture, gradeInstalledModelFixture, immutableInputsDigest } from '../evals/workflows/model-fixture.mjs';
 import { runModelEvaluation } from '../evals/workflows/model-runner.mjs';
+import { installedFixture } from './workspace_installed_workflows_support.mjs';
+import { installedBrowserHost } from './workspace_installed_workflows_browser_support.mjs';
+import { prepareInstalledCampaign } from '../evals/workflows/scenarios.mjs';
 
 const turn = (name, args, id, message) => ({ completed: true, rawTrace: 'recorded transport fixture',
   text: JSON.stringify({ message, action: name ? { name, argumentsJson: JSON.stringify(args), id } : null }) });
+
+test('installed host shuts down with an outstanding simulated operator grant', {
+  skip: !['darwin', 'linux'].includes(process.platform), timeout: 90000,
+}, async () => {
+  const state = await installedFixture();
+  let host;
+  try {
+    await prepareInstalledCampaign(state);
+    const resume = await state.call('store', ['resume-get'], undefined, ['--id', 'source']);
+    host = await installedBrowserHost(state, { source: 'resume', kind: 'upload', resumeId: 'source',
+      resumeRevision: String(resume.revision), contentRevision: String(resume.contentRevision) });
+    const context = await state.call('workflow', ['browser', 'context'], undefined, ['--job-id', 'job']);
+    const event = { ...context.guidance.actions.find(action => action.kind === 'acquire').input,
+      operationId: 'shutdown-regression-acquire' };
+    const challenge = await host.trusted({ kind: 'operator-challenge', event });
+    const decision = await host.trusted({ kind: 'operator-decide', challengeId: challenge.challengeId, decision: 'approve' });
+    assert.equal(decision.status, 'approved');
+    await host.stop();
+    host = null;
+  } finally {
+    if (host) await host.stop();
+    await state.cleanup();
+  }
+});
 
 test('installed evaluation detects managed byte changes and deletions with unchanged metadata', () => {
   const before = { 'profile.json': 'same profile', 'resumes.json': 'same metadata',
