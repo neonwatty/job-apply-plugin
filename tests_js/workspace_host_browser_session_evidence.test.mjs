@@ -162,3 +162,15 @@ test('session-boundary receipts must be retained as an exact prefix', () => {
   value.fixture.before.receipts = null;
   assert.equal(grade([value]).passed, false);
 });
+
+test('successful exact replay can be indexed as a report but a replay label alone cannot', () => {
+  const value = trial();
+  value.fixture.after.receipts.push(
+    { command: 'host-browser-context', result: { hostBrowser: {} } },
+    { kind: 'replay', result: { evidenceKind: 'agent_attested', replayed: true, receipt: {} } });
+  value.timeline.push({ kind: 'canonical_context', traceRef: 'replay-context', receiptIndex: 2 },
+    { kind: 'report', traceRef: 'replay-report', receiptIndex: 3 });
+  assert.equal(grade([value]).passed, true);
+  value.fixture.after.receipts[3].result.replayed = false;
+  assert.equal(grade([value]).passed, false);
+});

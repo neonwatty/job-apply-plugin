@@ -20,6 +20,13 @@ A separate reviewer must open the referenced artifacts to establish provenance.
 A trace path, session ID, or `no_history` label alone proves nothing about the
 execution environment. Do not relabel this function's result as host acceptance.
 
+Fresh subagents can have separate browser ownership from their coordinator.
+The tested Codex host refused access to coordinator-owned IAB and Chrome tabs.
+Use a new agent-owned fictional tab to test continuation of canonical task state;
+do not infer transfer of an existing browser draft from that result. Keep the
+failed ownership probe in the ledger. A no-history subagent also does not imply
+a separate desktop conversation or app process.
+
 ## Receipt contract
 
 The top-level object has exactly `candidateRevision` (a full lowercase 40-digit
@@ -62,6 +69,8 @@ coordinator transcript and must be unique within the trial. Kinds are:
 - `report`: `receiptIndex` identifies a successful agent-attested report receipt;
   context and observation must precede it. A subsequent action/report requires
   another context read because persistence may advance the revision.
+  An exact replay uses this timeline kind when its fixture receipt is labeled
+  `replay` and its result confirms `replayed: true`.
 - `recovery`: interruption/recovery boundary; `receiptIndex: null`. Both canonical
   context and DOM observation must be reread afterward before actions/reports.
 

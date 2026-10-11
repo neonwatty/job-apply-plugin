@@ -29,7 +29,8 @@ function checkTimeline(timeline, receipts, previousReceipts) {
         if (receipt.command !== 'host-browser-context' || !object(receipt.result?.hostBrowser) || receipt.result?.ok === false) return false;
         context = true;
       } else {
-        if (!context || !observation || receipt.kind !== 'report' || receipt.result?.ok === false || receipt.result?.evidenceKind !== 'agent_attested' || !object(receipt.result?.receipt)) return false;
+        const recorded = receipt.kind === 'report' || (receipt.kind === 'replay' && receipt.result?.replayed === true);
+        if (!context || !observation || !recorded || receipt.result?.ok === false || receipt.result?.evidenceKind !== 'agent_attested' || !object(receipt.result?.receipt)) return false;
         report = true;
         // A persisted report may advance the canonical revision.
         context = false;

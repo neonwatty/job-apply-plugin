@@ -54,6 +54,13 @@ using `--kind replay`. Neither report action performs a browser write. Finish wi
 fresh Needs Info. Receipts establish canonical outcomes; page counters establish
 whether replay changed the page.
 
+The broker renews its live claim on a timer. A renewal can occur between the
+fixture's before/after snapshots even when a report is rejected or replayed.
+Those two grade checks permit only paired monotonic heartbeat/expiry renewal
+with the same 300-second lease and otherwise identical canonical state. Claim
+identity, acquisition time, ownership and every task/domain field still must
+match. This allowance does not apply to broker-loss preservation checks.
+
 Inspect returns page values, separate per-control input/change counts, event
 sequence, prevented submit attempts, canonical job/claim state and private
 receipts. Grade checks page and canonical state independently, preserves immutable

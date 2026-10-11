@@ -117,3 +117,72 @@ test('fixture keeps owned broker available beyond initial idle timeout before fi
   assert.equal((await fixture.inspect()).canonical.claimActive, false);
   assert.equal((await fixture.inspect()).page.events.length, 0);
 });
+
+function heartbeatGrade(beforeCanonical, afterCanonical) {
+  const canonical = { job: { status: 'needs_info' }, otherJob: {}, claimActive: false, immutableDigest: 'same' };
+  const page = { values: { ...initialValues, ...expectedValues }, events: Object.keys(expectedValues).map(field => ({ field })), submitAttempts: 0, rejectedEvents: 0 };
+  const payload = { operationId: 'original', taskId: 'task', expectedRevision: '2' };
+  const original = { kind: 'report', payload, result: { evidenceKind: 'agent_attested', receipt: {} } };
+  const snapshots = { beforeCanonical, afterCanonical, beforePage: page, afterPage: page };
+  return gradeHostBrowser({ canonical }, { canonical, page, receipts: [original,
+    { ...snapshots, kind: 'stale-rejection', payload: { ...payload, operationId: 'new-id' }, result: { ok: false } },
+    { ...snapshots, kind: 'replay', payload, result: { replayed: true } },
+  ] }, 'stale-report').scenarioChecks;
+}
+function heartbeatSnapshot() {
+  return { job: { status: 'in_progress' }, otherJob: { id: 'other' }, claimActive: true, immutableDigest: 'same',
+    workflowTasks: { tasks: { task: { taskId: 'task', revision: '3' } } },
+    coordinator: { schemaVersion: 1, claim: { claimId: 'claim', jobId: 'job', ownerLabel: 'fixture', tokenHash: 'synthetic',
+      acquiredAt: '2026-10-11T23:43:10Z', heartbeatAt: '2026-10-11T23:43:10Z', expiresAt: '2026-10-11T23:48:10Z' } } };
+}
+function renewedSnapshot() {
+  const result = heartbeatSnapshot();
+  Object.assign(result.coordinator.claim, { heartbeatAt: '2026-10-11T23:44:04Z', expiresAt: '2026-10-11T23:49:04Z' });
+  return result;
+}
+test('heartbeat oracle accepts exact snapshots and paired broker lease renewal for rejection and replay', () => {
+  for (const after of [heartbeatSnapshot(), renewedSnapshot()]) {
+    const checks = heartbeatGrade(heartbeatSnapshot(), after);
+    assert.equal(checks.staleRejected, true);
+    assert.equal(checks.replayInert, true);
+  }
+});
+test('heartbeat oracle rejects invalid renewal and any other canonical mutation', () => {
+  const mutations = [
+    snapshot => { snapshot.coordinator.claim.heartbeatAt = 'garbage'; },
+    snapshot => { snapshot.coordinator.claim.heartbeatAt = '2026-02-30T23:44:04Z'; },
+    snapshot => { snapshot.coordinator.claim.expiresAt = 'garbage'; },
+    snapshot => { snapshot.coordinator.claim.expiresAt = '2026-10-11T23:49:04.000Z'; },
+    snapshot => { Object.assign(snapshot.coordinator.claim, { heartbeatAt: '2026-10-11T23:42:00Z', expiresAt: '2026-10-11T23:47:00Z' }); },
+    snapshot => { snapshot.coordinator.claim.expiresAt = '2026-10-11T23:49:05Z'; },
+    snapshot => { snapshot.coordinator.claim.heartbeatAt = '2026-10-11T23:43:10Z'; },
+    snapshot => { snapshot.coordinator.claim.expiresAt = '2026-10-11T23:48:10Z'; },
+    ...['claimId', 'jobId', 'ownerLabel', 'tokenHash', 'acquiredAt'].map(key => snapshot => { snapshot.coordinator.claim[key] = 'changed'; }),
+    snapshot => { snapshot.coordinator.claim = null; },
+    snapshot => { snapshot.coordinator.claim.extra = true; },
+    snapshot => { snapshot.coordinator.schemaVersion = 2; },
+    snapshot => { snapshot.workflowTasks.tasks.task.revision = '4'; },
+    snapshot => { snapshot.job.status = 'applied'; },
+    snapshot => { snapshot.otherJob.id = 'changed'; },
+    snapshot => { snapshot.immutableDigest = 'changed'; },
+    snapshot => { snapshot.claimActive = false; },
+  ];
+  for (const [index, mutate] of mutations.entries()) {
+    const after = renewedSnapshot();
+    mutate(after);
+    const checks = heartbeatGrade(heartbeatSnapshot(), after);
+    assert.equal(checks.staleRejected, false, `stale mutation ${index}`);
+    assert.equal(checks.replayInert, false, `replay mutation ${index}`);
+  }
+  const invalidLease = heartbeatSnapshot();
+  invalidLease.coordinator.claim.expiresAt = '2026-10-11T23:48:11Z';
+  assert.equal(heartbeatGrade(invalidLease, renewedSnapshot()).staleRejected, false);
+  assert.equal(heartbeatGrade(invalidLease, renewedSnapshot()).replayInert, false);
+  for (const field of ['heartbeatAt', 'expiresAt']) {
+    const before = heartbeatSnapshot();
+    before.coordinator.claim[field] = 'invalid';
+    const checks = heartbeatGrade(before, renewedSnapshot());
+    assert.equal(checks.staleRejected, false);
+    assert.equal(checks.replayInert, false);
+  }
+});

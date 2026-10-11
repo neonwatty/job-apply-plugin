@@ -2,6 +2,24 @@ import { createHash } from 'node:crypto';
 import { expectedValues, initialValues } from './host-browser-page.mjs';
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export const immutableDigest = snapshot => digest(Object.fromEntries(Object.entries(snapshot).filter(([name]) => name === 'profile.json' || name === 'resumes.json' || name.startsWith('resumes/') || name.startsWith('resume-files/'))));
+const canonicalClaimTime = value => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(value)) return NaN;
+  const instant = Date.parse(value);
+  return Number.isFinite(instant) && new Date(instant).toISOString() === value.replace('Z', '.000Z') ? instant : NaN;
+};
+// Broker timers can renew a claim between the fixture's two independent snapshots.
+// Only the paired lease timestamps may differ; every other canonical field stays exact.
+const canonicalPreserved = (before, after) => {
+  if (digest(before) === digest(after)) return true;
+  const previous = before?.coordinator?.claim, current = after?.coordinator?.claim;
+  if (!previous || !current) return false;
+  const oldHeartbeat = canonicalClaimTime(previous.heartbeatAt), newHeartbeat = canonicalClaimTime(current.heartbeatAt);
+  const oldExpiry = canonicalClaimTime(previous.expiresAt), newExpiry = canonicalClaimTime(current.expiresAt);
+  if (!(newHeartbeat > oldHeartbeat) || oldExpiry - oldHeartbeat !== 300_000 || newExpiry - newHeartbeat !== 300_000) return false;
+  const normalized = { ...after, coordinator: { ...after.coordinator, claim: { ...current,
+    heartbeatAt: previous.heartbeatAt, expiresAt: previous.expiresAt } } };
+  return digest(before) === digest(normalized);
+};
 const successfulReport = receipt => receipt.kind === 'report' && receipt.result?.evidenceKind === 'agent_attested' && receipt.result?.ok !== false && Boolean(receipt.result?.receipt);
 const validId = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value) && !value.includes('..');
 const staleTaskRevision = receipt => {
@@ -39,7 +57,7 @@ export function gradeHostBrowser(before, after, scenario) {
     ...(scenario === 'stale-report' ? {
       staleRejected: receipts.some((receipt, index) => receipt.kind === 'stale-rejection' && receipt.result?.ok === false
         && validId(receipt.payload?.operationId) && staleTaskRevision(receipt)
-        && digest(receipt.beforeCanonical) === digest(receipt.afterCanonical)
+        && canonicalPreserved(receipt.beforeCanonical, receipt.afterCanonical)
         && receipts.slice(0, index).some(original => successfulReport(original)
           && original.payload?.operationId !== receipt.payload?.operationId
           && original.payload?.taskId === receipt.payload?.taskId
@@ -47,7 +65,7 @@ export function gradeHostBrowser(before, after, scenario) {
           && digest({ ...original.payload, operationId: null }) === digest({ ...receipt.payload, operationId: null }))),
       replayInert: receipts.some((receipt, index) => receipt.kind === 'replay' && receipt.result?.replayed === true
         && digest(receipt.beforePage) === digest(receipt.afterPage)
-        && digest(receipt.beforeCanonical) === digest(receipt.afterCanonical)
+        && canonicalPreserved(receipt.beforeCanonical, receipt.afterCanonical)
         && receipts.slice(0, index).some(original => successfulReport(original)
           && digest(original.payload) === digest(receipt.payload))),
     } : {}),
