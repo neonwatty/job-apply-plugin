@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:GET:/api/browser-recovery",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/browser-recovery",
+      "node": "SESS",
+      "sources": [
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/store/native-browser-recovery.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

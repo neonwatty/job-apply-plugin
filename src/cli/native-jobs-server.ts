@@ -6,6 +6,7 @@ import { JobsService } from "../workspace-core/jobs.js";
 import { jobsHttp, apiError } from "../workspace-core/jobs-http.js";
 import { NativeJobsRepository } from "../store/native-jobs.js";
 import { loadPosixFlockProvider } from "../store/posix-flock.js";
+import { NativeBrowserRecovery } from '../store/native-browser-recovery.js';
 
 const maxBody = 64 * 1024;
 const maxUpload = 4 * Math.ceil(10 * 1024 * 1024 / 3) + maxBody;
@@ -15,6 +16,7 @@ if (args.length !== 4 || args[0] !== "--root" || args[2] !== "--native-lock") {
   throw new Error("usage: native-jobs-server --root /prepared/store --native-lock /artifact.node");
 }
 const repository = new NativeJobsRepository(args[1]!, loadPosixFlockProvider(args[3]!));
+const browserRecovery = new NativeBrowserRecovery(args[1]!, loadPosixFlockProvider(args[3]!));
 const service = new JobsService(repository);
 await service.list();
 const storeMode = existsSync(join(args[1]!, '.native-store-clone')) ? 'native-store-clone' : 'native-jobs-fixture';
@@ -56,7 +58,8 @@ const server = createServer(async (request, response) => {
       try { body = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)); }
       catch { return fail(400, "request_error", "body must be UTF-8 JSON"); }
     }
-    send(await jobsHttp(service, repository, request.method!, path, body, { storeMode }));
+    send(await jobsHttp(service, repository, request.method!, path, body, { storeMode,
+      browserRecovery: () => browserRecovery.inspect() }));
   } catch { fail(503, "store_unavailable", "native Store service is unavailable"); }
 });
 server.requestTimeout = 30_000;

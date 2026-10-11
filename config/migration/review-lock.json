@@ -63,7 +63,7 @@
     },
     {
       "path": "browser-native-automation-surfaces.json",
-      "sha256": "73fc16e2a5748983a8b78d531e4fde9d64c2f3dda47490616f14fa677e47f415"
+      "sha256": "59723fae0ec98f6a224148b94f27abc09f78e20f96a074224bd8f75297d720ee"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -419,7 +419,7 @@
     },
     {
       "path": "source-catalog-native-automation-ux.json",
-      "sha256": "8e5c92953809960c55ed7c4c7f7c1a4f1f660cb93ecc1cb5f6844d612201a5f4"
+      "sha256": "2281b33bbb60f1e4d5feb79990fb9bd85e66b8725a5f3d4d8369cd6f075a53de"
     },
     {
       "path": "source-catalog-native-automation.json",
@@ -552,6 +552,10 @@
     {
       "path": "task-receipts.json",
       "sha256": "c6fac4fca25a75d1a56c26538cc767b2b5acb069e59404e8f902f8c755255fea"
+    },
+    {
+      "path": "http-browser-recovery-surfaces.json",
+      "sha256": "2e44ed265ff3b16cb0e317a88207eef7d6e44704655e2d93835f06394779fbba"
     }
   ]
 }

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect,useMemo,useState } from 'react';
 import type { Client } from './client';
+import { BrowserRecovery } from './BrowserRecovery';
 import type { WorkspaceState } from './contracts';
 import { applicationAuthority,campaignProgress,type ApplicationAuthority,type CampaignProgress } from './automation-model';
 
@@ -51,6 +52,7 @@ export function ApplicationAutomation({client,authority,refreshVersion,disabled,
       {authority.mode==='campaign_to_review'&&authority.status==='paused'&&<button className="secondary" disabled={disabled||busy} onClick={()=>control('resume')}>Resume campaign</button>}
       {authority.mode==='campaign_to_review'&&<button className="trash-delete" disabled={disabled||busy} onClick={()=>control('stop')}>Emergency stop</button>}</div>}
     {counts&&<div className="automation-status-strip" aria-label="Campaign progress"><span><strong>{counts.ready}</strong> ready</span><span><strong>{counts.inProgress}</strong> active</span><span><strong>{counts.needsAttention}</strong> needs attention</span><span><strong>{counts.awaitingReview}</strong> at review</span></div>}
+    <BrowserRecovery client={client} refreshKey={refreshVersion} />
     {notice&&<p className="notice" role="status">{notice}</p>}{error&&<p className="error" role="alert">{error}</p>}
   </section>;
 }

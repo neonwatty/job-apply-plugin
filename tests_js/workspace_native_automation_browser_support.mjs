@@ -1,3 +1,4 @@
+import { nativeBrowserRecoveryUi } from './workspace_browser_recovery_ui_browser_support.mjs';
 import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -35,6 +36,7 @@ export async function nativeAutomationBrowser(page, root) {
   await refreshedChoice.check();
   await page.waitForFunction(()=>[...document.querySelectorAll('.automation-workspace button')]
     .some(button=>button.textContent?.trim()==='Refresh'&&button.disabled));
+  const browserRecovery=await nativeBrowserRecoveryUi(page,workspace,refreshedChoice);
   await refreshedChoice.uncheck();
   await page.waitForFunction(()=>[...document.querySelectorAll('.automation-workspace button')]
     .some(button=>button.textContent?.trim()==='Refresh'&&!button.disabled));
@@ -100,5 +102,5 @@ export async function nativeAutomationBrowser(page, root) {
     await page.setViewportSize({width,height:844});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
   }
-  return {settingsReadOnly:true,redactedRealm:true,removal:true,idleRecovery:true,trustedFillStatus:true,layouts:[390,1280],liveExecutionDisabled:true};
+  return {browserRecovery,settingsReadOnly:true,redactedRealm:true,removal:true,idleRecovery:true,trustedFillStatus:true,layouts:[390,1280],liveExecutionDisabled:true};
 }

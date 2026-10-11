@@ -30,6 +30,21 @@
       "path": "apps/companion/components/automation.css",
       "sha256": "99badcb11513b6c9b1d05e34d6ece653a77cad42544f4b768873886deafd182d",
       "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/BrowserRecovery.tsx",
+      "sha256": "0d0dbbb0a69f3b951baf10c0557e5d9907194e463cc2ba0b146ddb3dd58362b8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/browser-recovery-model.ts",
+      "sha256": "2ed72b343bb8801a0c39a01e78a3e30d89a00862d3ea1805e0a103942a93a556",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-browser-recovery.ts",
+      "sha256": "0cdc6525c6141fd4659f4caf3e3d84391494c93f5b0b62d6637e1090ef71d4dc",
+      "classification": "unreviewed"
     }
   ]
 }

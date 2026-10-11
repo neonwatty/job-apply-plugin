@@ -198,6 +198,72 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "browser:apps/companion/components/BrowserRecovery.tsx:BrowserRecoveryView",
+      "kind": "browser",
+      "export": "BrowserRecoveryView",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/BrowserRecovery.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/BrowserRecovery.tsx:BrowserRecovery",
+      "kind": "browser",
+      "export": "BrowserRecovery",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/BrowserRecovery.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/browser-recovery-model.ts:browserRecoveryProjection",
+      "kind": "browser",
+      "export": "browserRecoveryProjection",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/browser-recovery-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

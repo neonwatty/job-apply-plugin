@@ -230,3 +230,34 @@ embedding retains responsibility for protected human input, trustworthy control
 mapping, and interrupt checks; this slice does not establish authenticated human
 identity, a live browser route, or measured model UX improvement. Final validation
 and publication evidence are retained in the slice 19 local evidence bundle.
+
+## Slice 20: controlled Chromium, recovery UI, and model evaluation boundary
+
+Implementation is on `codex/agent-workflows-20-browser-ux-eval`, stacked on
+[PR #210](https://github.com/neonwatty/job-apply-plugin/pull/210) at
+`2f525d016066387663dc5e2620b03b910f4ddca0`. Three isolated workers implement the
+browser adapter, Companion guidance, and evaluation controller. The integration
+owner supplies the shared display contract, native read-only projection, HTTP
+routing, and combined verification.
+
+- [Controlled Chromium integration](local-browser-fixture.md) compares the form
+  and draft revision in the same browser turn as a text fill. The protected
+  native host retains canonical authority, private claims, durable uncertainty,
+  and reconciliation of the original operation after host replacement.
+- [Companion recovery guidance](browser-recovery-companion.md) shows committed
+  counts and safe next steps without exposing operation or applicant identities.
+  Refresh takes the existing Store lock but does not run recovery, clear pending
+  journals, remove temporary files, or publish an archive. Pending commits and
+  invalid referenced archives produce unavailable status rather than readiness.
+- The [model evaluation controller](../../evals/workflows/README.md) separates
+  model proposals from host approvals and canonical grading. Recorded transport
+  tests exercise the controller but cannot populate live model metrics. Live
+  trials require a separately verified restricted transport; no such evidence
+  is established by the local CLI's ordinary shell-enabled evaluation mode.
+
+These changes keep lifecycle and recovery decisions in code while improving the
+observable browser and user-facing boundaries. The browser evidence remains
+synthetic, fill-only, and limited to controlled loopback forms. Host replacement
+tests preserve the same Chromium document; they do not establish browser process
+crash recovery, live ATS support, authenticated human identity, or measured
+conversational improvement. No staging promotion is included.

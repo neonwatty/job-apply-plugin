@@ -24,6 +24,15 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "", dependencies = {}) {
     try {
+        if (method === 'GET' && path === '/api/browser-recovery') {
+            try {
+                return response(fromJSON(dependencies.browserRecovery ? await dependencies.browserRecovery()
+                    : { available: false, reason: 'unsupported_store' }));
+            }
+            catch {
+                return apiError(503, 'browser_recovery_unavailable', 'Browser recovery status is unavailable. Keep the current browser draft.');
+            }
+        }
         const trustedFill = await trustedFillHttp(repository, method, path, body, dependencies.trustedFill);
         if (trustedFill)
             return trustedFill;

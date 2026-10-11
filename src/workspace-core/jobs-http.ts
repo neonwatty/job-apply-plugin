@@ -22,9 +22,11 @@ import { answerHttp } from "./answers-http.js";
 import { extractionHttp } from "./extractions-http.js";
 import type { TrustedFillHttpDependencies } from './trusted-fill-http.js';
 import { ApplicationRunsService } from './application-runs.js';
+import type { BrowserRecoveryProjection } from '../contracts/workspace/browser-recovery.js';
 
 export type ApiResult = { status: number; body: string | Buffer; contentType?: string; disposition?: string };
 export interface JobsHttpDependencies {
+  browserRecovery?: () => Promise<BrowserRecoveryProjection>;
   trustedFill?: TrustedFillHttpDependencies;
   storeMode?: 'native-jobs-fixture' | 'native-store-clone';
 }
@@ -37,6 +39,12 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
   method: string, path: string, body = "", dependencies: JobsHttpDependencies = {}): Promise<ApiResult> {
   try {
+    if (method === 'GET' && path === '/api/browser-recovery') {
+      try {
+        return response(fromJSON(dependencies.browserRecovery ? await dependencies.browserRecovery()
+          : { available: false, reason: 'unsupported_store' }));
+      } catch { return apiError(503, 'browser_recovery_unavailable', 'Browser recovery status is unavailable. Keep the current browser draft.'); }
+    }
     const trustedFill = await trustedFillHttp(repository, method, path, body, dependencies.trustedFill);
     if (trustedFill) return trustedFill;
     const accountOperation = await accountOperationHttp(repository, method, path, body);

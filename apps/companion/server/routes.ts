@@ -1,5 +1,6 @@
 // Explicit Companion API allowlist; no caller-selected upstream destinations.
 export const apiRoutes = [
+  ['GET', '/api/browser-recovery'],
   ["GET","/api/claims"],
   ["POST","/api/claims/select"],
   ["POST","/api/claims/confirm-input"],

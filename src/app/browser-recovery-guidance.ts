@@ -2,16 +2,10 @@ import { browserArchiveSegmentLimit } from '../contracts/workspace/browser-opera
 import { browserOperationCodeUnitLimit, browserOperationLimit, unresolvedBrowserOperation,
   validateBrowserOperationLedger } from '../contracts/workspace/browser-operations.js';
 import type { BrowserOperationLedger } from '../contracts/workspace/browser-operations.js';
+import type { BrowserRecoveryGuidance } from '../contracts/workspace/browser-recovery.js';
 
 /** A public summary only; callers validate referenced archives before exposing native Store state. */
-export function browserRecoveryGuidance(value: BrowserOperationLedger): {
-  status: 'ready' | 'reconciliation_required' | 'capacity_reached';
-  hotOperationCount: number;
-  archivedOperationCount: number;
-  archiveSegmentsRemaining: number;
-  unresolvedOperationId: string | null;
-  nextAction: 'continue' | 'reconcile_or_handoff' | 'handoff_capacity';
-} {
+export function browserRecoveryGuidance(value: BrowserOperationLedger): BrowserRecoveryGuidance {
   const ledger = validateBrowserOperationLedger(value);
   const entries = Object.entries(ledger.operations);
   const unresolvedOperationId = entries.find(([, item]) => unresolvedBrowserOperation(item))?.[0] ?? null;
