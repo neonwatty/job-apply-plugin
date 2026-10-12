@@ -52,6 +52,8 @@ function groupAlive(child: ChildProcess): boolean {
   try { process.kill(-(child.pid as number), 0); return true; }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    // Permission denial does not prove quiescence; retain the bounded exit wait.
+    if ((error as NodeJS.ErrnoException).code === 'EPERM') return true;
     throw error;
   }
 }

@@ -152,3 +152,39 @@ test('rollback interruption resumes the recovered writer instead of leaving the 
   assert.equal(controller.mode, 'python');
   assert(alive((await record(state, records.at(-1))).parent));
 });
+
+test('permission-denied group probes wait for confirmed exit before Store activation', {timeout:60000}, async t=>{
+  const {controller,records,state}=await setup(t,{python:'ignore'});
+  await controller.start('python');
+  const owned=await record(state,records.at(-1));
+  const kill=process.kill;let forced=false,denied=0;
+  process.kill=function(pid,signal){
+    if(pid===-owned.parent&&signal==='SIGKILL')forced=true;
+    if(pid===-owned.parent&&signal===0&&forced&&denied++<2)throw Object.assign(Error('probe denied'),{code:'EPERM'});
+    return kill.call(process,pid,signal);
+  };
+  try{await controller.activate();}finally{process.kill=kill;}
+  assert.ok(denied>=2);
+  assert.equal(alive(owned.parent),false);
+  assert.equal(alive(owned.descendant),false);
+  assert.equal(controller.mode,'native');
+});
+
+test('persistent permission-denied probes cannot authorize a Store rename', {timeout:60000}, async t=>{
+  const {controller,records,state,active,candidate}=await setup(t,{python:'ignore'});
+  await controller.start('python');
+  const owned=await record(state,records.at(-1));
+  const before=await readFile(join(active,'jobs.json'));
+  const prepared=await readFile(join(candidate,'jobs.json'));
+  const kill=process.kill;let forced=false,renames=0;
+  process.kill=function(pid,signal){
+    if(pid===-owned.parent&&signal==='SIGKILL')forced=true;
+    if(pid===-owned.parent&&signal===0&&forced)throw Object.assign(Error('probe denied'),{code:'EPERM'});
+    return kill.call(process,pid,signal);
+  };
+  try{await assert.rejects(controller.activate({boundary:()=>{renames++;}}),/process group did not stop/);}
+  finally{process.kill=kill;}
+  assert.equal(renames,0);
+  assert.deepEqual(await readFile(join(active,'jobs.json')),before);
+  assert.deepEqual(await readFile(join(candidate,'jobs.json')),prepared);
+});

@@ -36,6 +36,9 @@ function groupAlive(child) {
     catch (error) {
         if (error.code === 'ESRCH')
             return false;
+        // Permission denial does not prove quiescence; retain the bounded exit wait.
+        if (error.code === 'EPERM')
+            return true;
         throw error;
     }
 }
