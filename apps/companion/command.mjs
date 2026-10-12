@@ -25,6 +25,18 @@ function selectedRoot(args) {
 }
 async function run() {
   const [surface, ...args] = process.argv.slice(2), target = targets[surface];
+  if (surface === 'owner-workflow') {
+    const { runOwnerCommand } = await import('./owner-command.mjs');
+    try {
+      const response = await runOwnerCommand(args, pluginRoot);
+      process.stdout.write(JSON.stringify(response) + '\n');
+      process.exitCode = response.ok ? 0 : 2;
+    } catch {
+      process.stdout.write(JSON.stringify({ ok: false, error: 'owner_workflow_unavailable' }) + '\n');
+      process.exitCode = 2;
+    }
+    return;
+  }
   if (surface === 'workflow') {
     // Fixture-only composition validates explicit paths before any Store activation.
     // Run in this process so the foreground broker owns its PID and signal handlers.

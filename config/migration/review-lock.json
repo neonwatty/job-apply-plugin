@@ -556,6 +556,14 @@
     {
       "path": "http-browser-recovery-surfaces.json",
       "sha256": "2e44ed265ff3b16cb0e317a88207eef7d6e44704655e2d93835f06394779fbba"
+    },
+    {
+      "path": "source-catalog-owner-workflow.json",
+      "sha256": "9e170a0df62054bcf02662fd55bb3b32f25dbedf5664ea2af765f0caa0b5c41c"
+    },
+    {
+      "path": "browser-owner-workflow-surfaces.json",
+      "sha256": "162608c1fa2a05d1594fc0a0d42d37a71d57bfa83bec9fa86c553de151ce3623"
     }
   ]
 }

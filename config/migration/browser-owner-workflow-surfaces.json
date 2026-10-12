@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/OwnerWorkflow.tsx:OwnerWorkflow",
+      "kind": "browser",
+      "export": "OwnerWorkflow",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/OwnerWorkflow.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

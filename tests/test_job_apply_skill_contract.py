@@ -11,6 +11,24 @@ README_PATH = ROOT / "README.md"
 
 
 class JobApplySkillContractTests(unittest.TestCase):
+    def test_owner_workflow_requires_explicit_scope_and_guarded_stop(self):
+        owner = (SKILL_PATH.parent / "references" / "owner-workflow.md").read_text(encoding="utf-8")
+        for boundary in (
+            "owner explicitly requests", "one exact saved job", "current active application run",
+            "confirmed managed resume", "runtime resolves its packaged native lock",
+            "Copy the matching descriptor", "guarded Needs Info handoff", "real claim expiry",
+            "restart and awaiting-review completion are unsupported", "Final submission always remains with the owner",
+            "first socket request", "Wait until this context call succeeds", "Only Needs Info handoff or cancellation",
+        ):
+            self.assertIn(boundary, owner)
+        self.assertIn("references/owner-workflow.md", SKILL_PATH.read_text(encoding="utf-8"))
+        mutation_examples = re.findall(r"owner-workflow (?:event|host-browser-report) [^\n]+", owner)
+        self.assertEqual(len(mutation_examples), 2)
+        for example in mutation_examples:
+            self.assertIn("--root /absolute/store-root", example)
+            self.assertIn("--input /absolute/private-", example)
+            self.assertNotIn("--job-id", example)
+
     @classmethod
     def setUpClass(cls):
         cls.skill = skill_text(SKILL_PATH)

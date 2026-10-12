@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { nativeFixture } from './exclusive_file_lock_support.mjs';
+import { setup, read, write, host, event } from './workspace_durable_claims_support.mjs';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
+import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
+import { createOwnerWorkflowStore } from '../runtime/app/owner-workflow-policy.js';
+import { ClaimWorkflow } from '../runtime/app/claim-workflow.js';
+import { attemptProfile } from '../runtime/workflows/applications/attempt.js';
+
+test('owner context and exact replay reconcile a durable acquisition whose response failed', async t => {
+  const fixture=await nativeFixture();t.after(()=>fixture.cleanup());
+  const state=await setup(fixture,'owner-uncertain'),plain=v=>JSON.parse(serialize(v));
+  const facts=new ResumeFactsService(state.repository);
+  const draft=plain(await facts.createDraft('resume',fromJSON({name:'Fictional Owner'}),1n,null));
+  const confirmed=plain(await facts.confirm('resume',BigInt(draft.revision),draft.contentRevision));
+  const jobs=await read(state.root,'jobs.json');
+  jobs.metadata.applicationRuns.runs['run-fixture'].selection.factRevision=confirmed.revision;
+  await write(state.root,'jobs.json',jobs);await state.claims.select('job',1n,true);
+  let armed=true;
+  const {repository}=host(state,{checkpoint:stage=>{if(stage==='history'&&armed){armed=false;throw Error('injected durable response failure');}}});
+  const {store}=await createOwnerWorkflowStore(repository,'job');
+  const workflow=new ClaimWorkflow(store,state.claims,()=>({enabled:[attemptProfile],authorized:[attemptProfile]}));
+  t.after(()=>workflow.close());
+  const request=event('acquire');
+  await assert.rejects(workflow.execute(request,request),/injected durable response failure/);
+  const replay=await workflow.execute(request,request);
+  assert.equal(replay.replayed,true);
+  assert.equal(replay.receipt.outcome,'claim_acquired');
+  const context=await workflow.inspect('job');
+  assert.equal(context.task.taskId,replay.receipt.task.taskId);
+  assert.equal(context.brokerAvailable,false);
+  assert.ok(context.guidance.blockers.includes('claim_capability_missing'));
+  assert.equal(context.guidance.actions.some(a=>a.kind==='progress'),false);
+});

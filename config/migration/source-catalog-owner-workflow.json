@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/OwnerWorkflow.tsx",
+      "sha256": "334fcb2ddfc32f36dbabd67f9fcd58a91b7f4a278c2a374788390675ae918761",
+      "classification": "unreviewed"
+    }
+  ]
+}

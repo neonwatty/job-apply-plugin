@@ -7,6 +7,7 @@ import { JobEditor } from './JobEditor';
 import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
 import { JobTransitions } from './JobTransitions';
+import { OwnerWorkflow } from './OwnerWorkflow';
 
 export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
     client: Client;
@@ -255,6 +256,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                 }} />}
             {claimsEnabled && editor.selected && <JobActivity client={client} jobId={editor.selected.id}
                 refreshKey={editor.selected.revision} openAnswers={openAnswers} />}
+            {editor.selected && <OwnerWorkflow jobId={editor.selected.id} />}
         </JobEditor>}
     </section>;
 }
