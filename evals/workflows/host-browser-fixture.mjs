@@ -8,7 +8,9 @@ import { prepareInstalledCampaign } from './scenarios.mjs';
 import { hostBrowserPage, initialValues, expectedValues } from './host-browser-page.mjs';
 import { immutableDigest, gradeHostBrowser, digest } from './host-browser-grade.mjs';
 import { recoveryScenarios, ownedBrokerLifecycle, validateInjection, recoveryCheckpoint, reportNeedsObservation, gradeHostBrowserRecovery } from './host-browser-recovery.mjs';
-const scenarios = ['controls-handoff', 'uncertain-resume', 'stale-report', ...recoveryScenarios];
+import { expiryScenarios, expiryCheckpoint, gradeHostBrowserExpiry } from './host-browser-expiry.mjs';
+import { driftScenarios, validateDriftInjection, injectSourceInputDrift, driftCheckpoint, driftReportNeedsObservation, gradeHostBrowserDrift } from './host-browser-drift.mjs';
+const scenarios = ['controls-handoff', 'uncertain-resume', 'stale-report', ...recoveryScenarios, ...expiryScenarios, ...driftScenarios];
 async function body(request) {
   let bytes = 0, text = '';
   for await (const chunk of request) {
@@ -35,7 +37,7 @@ export async function createHostBrowserFixture({ outputDirectory, scenario }) {
     const coordinator = await readDocument(state.root, 'coordinator.json');
     return { page: pageSnapshot(), canonical: { job: jobs.jobs.job, otherJob: jobs.jobs.other,
       claimActive: coordinator.claim !== null, immutableDigest: immutableDigest(await durableSnapshot(state.root)),
-      coordinator, workflowTasks: jobs.metadata.agentWorkflows }, receipts: structuredClone(receipts) };
+      coordinator, sourceFacts: await readDocument(state.root, 'resume-facts.json'), workflowTasks: jobs.metadata.agentWorkflows }, receipts: structuredClone(receipts) };
   }
   const stopOwnedBroker = () => lifecycle.close();
   let initial;
@@ -44,7 +46,7 @@ export async function createHostBrowserFixture({ outputDirectory, scenario }) {
   }
   async function grade() {
     const after = await inspect();
-    const report = { ...(recoveryScenarios.includes(scenario) ? gradeHostBrowserRecovery(initial, after, scenario) : gradeHostBrowser(initial, after, scenario)), candidateRevision: manifest.candidateRevision,
+    const report = { ...(expiryScenarios.includes(scenario) ? gradeHostBrowserExpiry(initial, after) : driftScenarios.includes(scenario) ? gradeHostBrowserDrift(initial, after, scenario) : recoveryScenarios.includes(scenario) ? gradeHostBrowserRecovery(initial, after, scenario) : gradeHostBrowser(initial, after, scenario)), candidateRevision: manifest.candidateRevision,
       attempt: ++gradeNumber, capturedAt: new Date().toISOString(), evidence: after };
     await writeFile(join(outputDirectory, 'grades', `${String(gradeNumber).padStart(4, '0')}.json`), JSON.stringify(report, null, 2), { flag: 'wx', mode: 0o600 });
     return report;
@@ -95,23 +97,32 @@ export async function createHostBrowserFixture({ outputDirectory, scenario }) {
         if (request.method === 'POST' && request.url === '/inspect') { reply(200, await inspect()); return; }
         if (request.method === 'POST' && request.url === '/grade') { reply(200, await grade()); return; }
         if (request.method === 'POST' && request.url === '/inject') {
-          const input = await body(request); validateInjection(input);
+          const input = await body(request);
+          const drift = input?.kind === 'source-input-drift';
+          if (drift) {
+            if (!driftScenarios.includes(scenario)) throw Object.assign(Error('scenario_injection_mismatch'), { status: 400 });
+            validateDriftInjection(input);
+          } else validateInjection(input);
           injecting = true;
-          const before = await inspect();
-          const receipt = { ...input, sequence: receipts.length + 1, status: 'started', evidenceKind: 'fixture_owned_process',
-            oldPid: broker.child.pid, beforePage: before.page, beforeCanonical: before.canonical,
+          const beforeAt = new Date().toISOString(), before = await inspect();
+          const receipt = { ...input, sequence: receipts.length + 1, status: 'started', evidenceKind: drift ? 'fixture_supported_store_api' : 'fixture_owned_process',
+            beforeAt, oldPid: broker.child.pid, beforePage: before.page, beforeCanonical: before.canonical,
             beforeDurableDigest: digest(await durableSnapshot(state.root)) };
           receipts.push(receipt);
           try {
             await persist();
-            await lifecycle.stop(broker, input.signal);
-            broker = await lifecycle.start();
-            receipt.newPid = broker.child.pid; receipt.startupContext = broker.startupContext;
+            if (drift) Object.assign(receipt, await injectSourceInputDrift(state));
+            else {
+              await lifecycle.stop(broker, input.signal);
+              broker = await lifecycle.start();
+              receipt.newPid = broker.child.pid; receipt.startupContext = broker.startupContext;
+            }
             receipt.status = 'completed';
           } catch (error) { receipt.status = 'failed'; receipt.error = error.message; }
           finally {
             broker = lifecycle.current;
             const after = await inspect();
+            receipt.afterAt = new Date().toISOString();
             receipt.afterPage = after.page; receipt.afterCanonical = after.canonical;
             receipt.afterDurableDigest = digest(await durableSnapshot(state.root));
             injecting = false;
@@ -124,17 +135,35 @@ export async function createHostBrowserFixture({ outputDirectory, scenario }) {
           const snapshot = { page: pageSnapshot(), canonical: (await inspect()).canonical };
           const receipt = input && ['interruption', 'resume-observation'].includes(input.kind) && Object.keys(input).length === 1
             ? { kind: input.kind, ...snapshot }
-            : recoveryCheckpoint(input, receipts, snapshot, manifest.url);
+            : input?.kind === 'claim-expired' && expiryScenarios.includes(scenario) ? expiryCheckpoint(input, receipts, snapshot)
+              : input?.kind === 'drift-observation' && driftScenarios.includes(scenario) ? driftCheckpoint(input, receipts, snapshot, manifest.url)
+                : recoveryCheckpoint(input, receipts, snapshot, manifest.url);
           receipts.push(receipt); await persist(); reply(200, { ok: true, sequence: receipt.sequence }); return;
+        }
+        if (request.method === 'POST' && request.url === '/authorized-event') {
+          const input = await body(request);
+          const keys = ['kind', 'operationId', 'taskId', 'expectedRevision', 'jobId', 'jobRevision'];
+          if (!input || Array.isArray(input) || typeof input !== 'object' || !['acquire', 'recover'].includes(input.kind)
+            || Object.keys(input).length !== keys.length || !keys.every(key => Object.hasOwn(input, key))) {
+            throw Object.assign(Error('invalid_authorized_event'), { status: 400 });
+          }
+          const beforeAt = new Date().toISOString(), before = await inspect();
+          const result = await state.call('workflow', ['attempt', 'event'], input, ['--host-user-event'], { failure: true });
+          const after = await inspect();
+          receipts.push({ kind: 'authorized-event', command: 'event', payload: input, result,
+            authorizationEvidence: 'host_attested', beforeAt, afterAt: new Date().toISOString(),
+            beforePage: before.page, afterPage: after.page, beforeCanonical: before.canonical, afterCanonical: after.canonical });
+          await persist(); reply(200, result); return;
         }
         if (request.method === 'POST' && request.url === '/command') {
           const input = await body(request);
           if (!['context', 'event', 'host-browser-context', 'host-browser-report'].includes(input.command)
             || !['report', 'replay', 'stale-rejection', 'canonical'].includes(input.kind)) throw Object.assign(Error('invalid_command'), { status: 400 });
-          const beforePage = pageSnapshot(), beforeCanonical = (await inspect()).canonical;
-          const blocked = reportNeedsObservation(input, receipts, { page: beforePage });
-          const result = blocked ? { ok: false, error: 'recovery_observation_required' } : await state.call('workflow', ['attempt', input.command], input.payload, input.command.endsWith('context') ? ['--job-id', 'job'] : [], { failure: true });
-          receipts.push({ kind: input.kind, command: input.command, payload: input.payload, result, beforePage, afterPage: pageSnapshot(), beforeCanonical, afterCanonical: (await inspect()).canonical });
+          const beforeAt = new Date().toISOString(), beforePage = pageSnapshot(), beforeCanonical = (await inspect()).canonical;
+          const blocked = reportNeedsObservation(input, receipts, { page: beforePage }) ? 'recovery_observation_required'
+            : driftReportNeedsObservation(input, receipts) ? 'drift_observation_required' : null;
+          const result = blocked ? { ok: false, error: blocked } : await state.call('workflow', ['attempt', input.command], input.payload, input.command.endsWith('context') ? ['--job-id', 'job'] : [], { failure: true });
+          receipts.push({ kind: input.kind, command: input.command, payload: input.payload, result, beforeAt, afterAt: new Date().toISOString(), beforePage, afterPage: pageSnapshot(), beforeCanonical, afterCanonical: (await inspect()).canonical });
           await persist(); reply(200, result); return;
         }
         if (request.method === 'POST' && request.url === '/stop') {
@@ -162,9 +191,9 @@ export async function createHostBrowserFixture({ outputDirectory, scenario }) {
     manifest = { schemaVersion: 1, scenario, url, token, outputDirectory, manifestPath: join(outputDirectory, 'manifest.json'),
       candidateRevision: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       installed: { plugin: state.plugin, skills: join(state.plugin, 'skills'), root: state.root, nativeLock: state.nativeLock, launcher: join(state.plugin, 'apps/companion/command.mjs'), node: process.execPath },
-      expectedValues, instructions: scenario === 'broker-restart' ? 'Use only the new loopback tab and native host tools. Acquire explicitly, fill four labelled controls preserving notes, capture host-browser-context progress input, then inject owned broker restart. Reobserve DOM and host-browser-context, record recovery-observation, and submit old progress report to demonstrate rejection. Stop safely with live claim; never force lease expiry or submit.' : 'Use only the new loopback tab and native host browser tools. Acquire with existing authorized attempt event. Fill four labelled controls, preserve notes, never submit; save Needs Info using host-browser-report with resume_upload checklist because the required resume upload visibly remains pending owner action. Use command interface for durable receipt evidence. No automatic acquisition occurs.',
-      recoveryProtocol: recoveryScenarios.includes(scenario) ? { injection: { kind: 'broker-restart', signal: 'SIGKILL' }, lossCheckpointKinds: ['tab-closed', 'browser-tool-reconnect'], observationKind: 'recovery-observation', evidence: 'native_host_browser attestation; transcript required', tabClosureDraft: 'lost; page-load resets observer values; reconstruct after observation' } : undefined,
-      scenarioObligations: scenario === 'broker-restart' ? ['real owned broker replacement', 'fresh context and DOM observation', 'old progress report rejected', 'blocked safely with unchanged live claim and page'] : ['tab-closed', 'browser-tool-reconnect'].includes(scenario) ? ['actual host fault transcript', 'loss checkpoint', 'fresh context and DOM recovery-observation', 'Needs Info handoff'] : scenario === 'uncertain-resume' ? ['checkpoint interruption after write before report', 'inspect current DOM and context', 'checkpoint resume-observation without extra write'] : scenario === 'stale-report' ? ['progress report', 'reject new-ID stale revision', 'exact replay without browser action', 'fresh Needs Info report'] : ['Needs Info handoff'] };
+      expectedValues, instructions: expiryScenarios.includes(scenario) ? 'Use native host browser tools on this fictional loopback form only. Explicitly acquire, fill four controls, capture valid old progress, kill owned broker, reobserve and prove live report rejection. Wait original lease expiry without editing Store timestamps; record fresh expired context and claim-expired checkpoint. Explicitly recover through authorized-event, reobserve fresh context and DOM, reject old progress, and save fresh Needs Info resume_upload. Never submit.' : driftScenarios.includes(scenario) ? 'Use native host browser tools only. Explicitly acquire, fill four controls preserving notes, capture valid old progress. Inject source-input-drift through the fixed fixture API. Reobserve context and DOM, record drift-observation, reject old progress, then save fresh Needs Info resume_upload. Never submit or overwrite confirmed facts.' : scenario === 'broker-restart' ? 'Use only the new loopback tab and native host tools. Acquire explicitly, fill four labelled controls preserving notes, capture host-browser-context progress input, then inject owned broker restart. Reobserve DOM and host-browser-context, record recovery-observation, and submit old progress report to demonstrate rejection. Stop safely with live claim; never force lease expiry or submit.' : 'Use only the new loopback tab and native host browser tools. Acquire with existing authorized attempt event. Fill four labelled controls, preserve notes, never submit; save Needs Info using host-browser-report with resume_upload checklist because the required resume upload visibly remains pending owner action. Use command interface for durable receipt evidence. No automatic acquisition occurs.',
+      recoveryProtocol: recoveryScenarios.includes(scenario) || expiryScenarios.includes(scenario) ? { injection: { kind: 'broker-restart', signal: 'SIGKILL' }, lossCheckpointKinds: ['tab-closed', 'browser-tool-reconnect'], observationKind: 'recovery-observation', evidence: 'native_host_browser attestation; transcript required', tabClosureDraft: 'lost; page-load resets observer values; reconstruct after observation' } : undefined,
+      scenarioObligations: expiryScenarios.includes(scenario) ? ['original live claim blocks', 'genuine original lease expiry', 'explicit recovery retains task and inputs', 'fresh observation and stale rejection', 'Needs Info handoff'] : driftScenarios.includes(scenario) ? ['one supported facts draft append', 'preserved confirmed facts and managed bytes', 'fresh drift context and DOM', 'old progress rejection', 'guarded Needs Info handoff'] : scenario === 'broker-restart' ? ['real owned broker replacement', 'fresh context and DOM observation', 'old progress report rejected', 'blocked safely with unchanged live claim and page'] : ['tab-closed', 'browser-tool-reconnect'].includes(scenario) ? ['actual host fault transcript', 'loss checkpoint', 'fresh context and DOM recovery-observation', 'Needs Info handoff'] : scenario === 'uncertain-resume' ? ['checkpoint interruption after write before report', 'inspect current DOM and context', 'checkpoint resume-observation without extra write'] : scenario === 'stale-report' ? ['progress report', 'reject new-ID stale revision', 'exact replay without browser action', 'fresh Needs Info report'] : ['Needs Info handoff'] };
     await writeFile(manifest.manifestPath, JSON.stringify(manifest, null, 2), { flag: 'wx', mode: 0o600 });
     return { url, manifest, inspect, grade, close };
   } catch (error) {

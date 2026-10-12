@@ -1,8 +1,8 @@
 # Agent workflow readiness audit
 
-Audit date: 2026-10-11. Baseline: PR #213,
-`fd5b18146ccf2a08a52ec7c346ba4e5654e0ca22`. This is a cumulative source and
-evidence audit, not a review or acceptance result for unfinished slice 23 work.
+Audit updated: 2026-10-12. Source baseline: PR #214,
+`b7fb790129ab0086d78bd21a959208bdd05bc91a`. This is a cumulative source and
+evidence audit, not a review or acceptance result for unfinished expiry/drift work.
 No browser, applicant Store, live model, or test suite was exercised for this audit.
 
 The original `/Users/neonwatty/Desktop/extensible-agent-system-plan.md` was
@@ -69,7 +69,7 @@ agent conversation would not be nine independent model conversations.
 The checked-in slice 22 acceptance document specifies trial receipt requirements,
 not a measured ledger. The retained coordination summary at
 `/Users/neonwatty/.codex/worktrees/agent-workflow-experiment/job-apply-plugin/.workflows/local/agent-workflow-experiment/parallel-workstreams.json`
-was inspected. It identifies PR #213 and the exact baseline above, and reports
+was inspected. It identifies PR #213 at `fd5b18146ccf2a08a52ec7c346ba4e5654e0ca22`, and reports
 nine passing host trials: three each of controls/handoff, uncertain reply/resume,
 and stale report/replay, plus one prior failed attempt. It explicitly records one
 Codex conversation, null human UX metrics, checkpoint/reobservation rather than
@@ -81,8 +81,23 @@ re-inspected live traces or newly executed gates.
 The summary points to `.workflows/local/agent-workflow-experiment/slice22-host-trials.json`
 in the prior integration checkout. Raw evidence was not reconstructed for this
 audit. Link retained exact-revision trial receipts before relying on their detailed
-observations for promotion. Slice 23 fresh-session and broker/browser-loss results
-must be added only after those packages finish and are verified.
+observations for promotion.
+
+The [PR #214 body](https://github.com/neonwatty/job-apply-plugin/pull/214), retrieved
+on 2026-10-12, identifies the baseline above and reports six passing final-candidate
+native host trials: three fresh no-history subagents, coordinator binding reset,
+tab reconstruction and broker SIGKILL. It reports 34 integrated checks, the commit
+gate, branch review, 28 passing deep suites with Windows skipped, installed release
+checks and fresh native pre-push checks. The named private slice 23 readiness
+receipt was unavailable; these are reported outcomes, not independently replayed
+evidence in this audit. Fresh subagents are not separate desktop conversations;
+cross-agent draft transfer remains unverified. Binding reset is not browser-process
+failure. A live unowned claim blocked safely; actual expired recovery was not
+established. Trace indices remain agent-authored and human UX metrics null.
+
+Actual original-lease expiry recovery and changed-input safe-exit evidence for
+the current workstream remain pending integration verification. Do not mark the
+loss-boundary checklist complete from the PR #214 broker-loss result alone.
 
 ## Finite promotion checklist
 
@@ -134,9 +149,9 @@ shipping an opt-in experiment need not claim improvement.
 
 ## Prioritized next work and stop point
 
-1. Finish the already scoped slice 23 fresh-session and recovery packages, then
-   integrate their exact receipts and limitations. Fix observed failures; do not
-   expand to additional ATS families as a substitute for closing these cases.
+1. Finish the scoped actual-expiry and changed-input packages, then integrate
+   their exact receipts and limitations. Fix observed failures; do not expand
+   to additional ATS families as a substitute for closing these cases.
 2. Assemble one final candidate receipt satisfying the checklist: cumulative
    gates, actual host evidence, preservation/recovery outcomes and scope decision.
    Reuse valid historical evidence for unchanged boundaries while running the
@@ -152,3 +167,12 @@ and `browser-operation-archive.ts` each cap archive segments at 32; browser hot
 operations are bounded under `src/contracts/workspace/browser-operations.ts`.
 Capacity handling and accurate unsupported-state reporting are acceptance criteria;
 removing every limit is not.
+
+For real selected-job owner dogfood after these recovery gates, the
+[minimum dogfood assessment](agent-workflow-dogfood-readiness.md) scopes two
+implementation slices: explicit installed owner opt-in, then complete managed
+upload/current-readiness/manual-review composition. Release verification and an
+explicitly authorized supervised pilot follow. The present fictional route does
+not satisfy those owner-route gates. Further fixes depend on observed failures;
+a generic runner or authenticated host channel is not a prerequisite for the
+declared agent-attested pilot.

@@ -9,7 +9,7 @@ const canonicalClaimTime = value => {
 };
 // Broker timers can renew a claim between the fixture's two independent snapshots.
 // Only the paired lease timestamps may differ; every other canonical field stays exact.
-const canonicalPreserved = (before, after) => {
+export const canonicalPreserved = (before, after) => {
   if (digest(before) === digest(after)) return true;
   const previous = before?.coordinator?.claim, current = after?.coordinator?.claim;
   if (!previous || !current) return false;
