@@ -34,7 +34,7 @@ test('owner activation binds one ready job and confirmed managed run inputs', as
   assert.equal(state.writes.length,0);
   await assert.rejects(store.transaction(tx => tx.domain.execute('acquire','other',3n,null)), /task_conflict/);
   await assert.rejects(store.transaction(tx => tx.domain.execute('restart','job',3n,null)), /action_unavailable/);
-  await assert.rejects(store.transaction(tx => tx.domain.execute('handoff','job',3n,null,undefined,'awaiting_review')), /action_unavailable/);
+  await assert.rejects(store.transaction(tx => tx.domain.execute('handoff','job',3n,null,undefined,'awaiting_review')), /task_conflict/);
   set(jobOf(state),'revision',fromJSON(4));
   await assert.rejects(store.transaction(tx => tx.domain.execute('acquire','job',4n,null)), /stale_revision/);
   assert.equal(state.writes.length,0);

@@ -56,11 +56,11 @@ export class OwnerClaimBroker {
             if (value.result.hostBrowser) {
                 value.result.hostBrowser.reports = (value.result.guidance?.actions ?? [])
                     .filter((action) => action.kind === 'progress'
-                    || action.kind === 'handoff' && action.input.status === 'needs_info')
+                    || action.kind === 'handoff' && ['needs_info', 'awaiting_review'].includes(action.input.status ?? ''))
                     .map((action) => {
                     const { kind: _kind, status: _status, ...input } = action.input;
                     return { args: ['owner-workflow', 'host-browser-report'], requiredFields: [...action.requiredFields],
-                        input: { ...input, evidenceKind: 'agent_attested', outcome: action.kind === 'progress' ? 'progress' : 'needs_info' } };
+                        input: { ...input, evidenceKind: 'agent_attested', outcome: action.kind === 'progress' ? 'progress' : action.input.status } };
                 });
             }
             for (const action of value.result.guidance?.actions ?? []) {

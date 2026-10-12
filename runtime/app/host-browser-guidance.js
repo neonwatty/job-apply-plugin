@@ -4,12 +4,16 @@ export function hostBrowserGuidance(context) {
     const progress = owned && context.guidance.actions.some(action => action.kind === 'progress');
     const handoff = owned && context.guidance.actions.some(action => action.kind === 'handoff'
         && action.input.status === 'needs_info');
+    const review = owned && context.guidance.actions.some(action => action.kind === 'handoff'
+        && action.input.status === 'awaiting_review');
     const reportOutcomes = [];
     if (progress)
         reportOutcomes.push('progress');
     if (handoff)
         reportOutcomes.push('needs_info');
+    if (review)
+        reportOutcomes.push('awaiting_review');
     return { toolSource: 'host_existing', evidenceKind: 'agent_attested',
-        nextStep: progress ? 'observe_and_act' : handoff ? 'inspect_and_handoff' : 'resolve_workflow',
+        nextStep: progress ? 'observe_and_act' : handoff || review ? 'inspect_and_handoff' : 'resolve_workflow',
         reportOutcomes, replayScope: 'report_recording_only' };
 }

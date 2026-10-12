@@ -1,6 +1,8 @@
 import { activeApplicationJob, applicationPreflight } from '../contracts/workspace/application-policy.js';
 import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
 import type { ApplicationSnapshot } from '../contracts/workspace/application-policy.js';
+import { ownerResumeControlId } from '../contracts/workspace/owner-workflow.js';
+import type { Document } from '../contracts/workspace/values.js';
 import type { OwnerWorkflowScope } from '../contracts/workspace/owner-workflow.js';
 import type { ClaimWorkflowDomain } from '../contracts/workspace/claim-workflow-domain.js';
 import { decodeWorkflowLedger, isJobWorkflowTask, TaskProtocolError, workflowMetadataKey } from '../contracts/workspace/workflow-tasks.js';
@@ -12,9 +14,9 @@ import { NativeClaimWorkflowTasks } from '../store/native-claim-workflow-tasks.j
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 import { attemptIdentity } from '../workflows/applications/attempt.js';
 
-async function ready(snapshot: ApplicationSnapshot, jobId: string): Promise<void> {
+async function ready(snapshot: ApplicationSnapshot, jobId: string, status = 'ready'): Promise<void> {
   const job = activeApplicationJob(snapshot, jobId), run = activeApplicationRun(snapshot.jobs);
-  if (!run || !currentRunJobIds(run).includes(jobId) || string(get(job, 'status')) !== 'ready') {
+  if (!run || !currentRunJobIds(run).includes(jobId) || string(get(job, 'status')) !== status) {
     throw new TaskProtocolError('action_unavailable');
   }
   const selection = object(get(run, 'selection'), 'run selection');
@@ -29,6 +31,19 @@ async function ready(snapshot: ApplicationSnapshot, jobId: string): Promise<void
     || get(await applicationPreflight(snapshot, job), 'ready') !== true) {
     throw new TaskProtocolError('action_unavailable');
   }
+}
+
+/** Require the live inventory to identify the selected resume; canonical readiness validates its state. */
+function reviewInventory(session: Document | undefined, saved: string | undefined): void {
+  if (!session || saved !== undefined || !has(session, 'readinessInput')) throw new TaskProtocolError('action_unavailable');
+  const readiness = object(get(session, 'readinessInput'), 'readiness input');
+  if (has(readiness, 'fixture') || !has(readiness, 'observedForm')) throw new TaskProtocolError('action_unavailable');
+  const controls = get(object(get(readiness, 'observedForm'), 'observed form'), 'controls');
+  if (!Array.isArray(controls) || !controls.some(raw => {
+    const control = object(raw, 'observed control');
+    return string(get(control, 'id')) === ownerResumeControlId
+      && string(get(control, 'role')) === 'file' && get(control, 'required') === true;
+  })) throw new TaskProtocolError('action_unavailable');
 }
 
 function selectedTask(ledger: WorkflowLedger, jobId: string) {
@@ -78,7 +93,6 @@ export async function createOwnerWorkflowStore(repository: ClaimRepository, jobI
       if (id !== jobId) throw new TaskProtocolError('task_conflict');
       if (finished) throw new TaskProtocolError('broker_unavailable');
       if (kind === 'restart') throw new TaskProtocolError('action_unavailable');
-      if (kind === 'handoff' && status !== 'needs_info') throw new TaskProtocolError('action_unavailable');
       if (kind === 'acquire') {
         if (ownedTaskId !== null || task !== null) throw new TaskProtocolError('task_conflict');
         const job = activeApplicationJob(tx.domain.snapshot, jobId);
@@ -87,6 +101,12 @@ export async function createOwnerWorkflowStore(repository: ClaimRepository, jobI
         await ready(tx.domain.snapshot, jobId);
       } else if (!task || task.taskId !== ownedTaskId || task.subject.inputRevision !== scope.inputRevision) {
         throw new TaskProtocolError('task_conflict');
+      }
+      if (kind === 'handoff' && status === 'awaiting_review') {
+        const job = activeApplicationJob(tx.domain.snapshot, jobId);
+        if (preparationScope(tx.domain.snapshot, job) !== scope.inputRevision) throw new TaskProtocolError('stale_revision');
+        await ready(tx.domain.snapshot, jobId, 'in_progress');
+        reviewInventory(session, saved);
       }
       return tx.domain.execute(kind, id, revision, token, session, status, saved);
     } }, commit: async next => {

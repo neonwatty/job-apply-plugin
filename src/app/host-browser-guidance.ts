@@ -6,10 +6,13 @@ export function hostBrowserGuidance(context: Awaited<ReturnType<ClaimWorkflow['i
   const progress = owned && context.guidance.actions.some(action => action.kind === 'progress');
   const handoff = owned && context.guidance.actions.some(action => action.kind === 'handoff'
     && action.input.status === 'needs_info');
-  const reportOutcomes: ('progress' | 'needs_info')[] = [];
+  const review = owned && context.guidance.actions.some(action => action.kind === 'handoff'
+    && action.input.status === 'awaiting_review');
+  const reportOutcomes: ('progress' | 'needs_info' | 'awaiting_review')[] = [];
   if (progress) reportOutcomes.push('progress');
   if (handoff) reportOutcomes.push('needs_info');
+  if (review) reportOutcomes.push('awaiting_review');
   return { toolSource: 'host_existing' as const, evidenceKind: 'agent_attested' as const,
-    nextStep: progress ? 'observe_and_act' as const : handoff ? 'inspect_and_handoff' as const : 'resolve_workflow' as const,
+    nextStep: progress ? 'observe_and_act' as const : handoff || review ? 'inspect_and_handoff' as const : 'resolve_workflow' as const,
     reportOutcomes, replayScope: 'report_recording_only' as const };
 }

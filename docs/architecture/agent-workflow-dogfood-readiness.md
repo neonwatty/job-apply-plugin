@@ -6,7 +6,20 @@ not authorize owner Store access or establish staging readiness. Actual expiry
 and changed-input acceptance for the current fictional workstream remain pending
 integration verification.
 
-## Usable experiment versus owner application
+## Implementation update after PR #216
+
+The owner opt-in route is implemented in PR #216. The upload-to-manual-review
+continuation now composes that route with managed upload and fresh readiness.
+An installed native clone and Codex host browser completed a fictional two-step
+form: one accepted upload, three required controls complete, optional portfolio
+blank, zero final actions, durable `awaiting_review`, released claim, clean broker
+exit and the manual-review page preserved. Exact terminal receipt lookup passed.
+The original assessment below records the starting point; release checks and an
+explicitly authorized real selected-job pilot are the remaining acceptance work.
+Browser evidence is still agent-attested. See the
+[implementation plan](../superpowers/plans/2026-10-12-workflow-upload-manual-review.md).
+
+## Original assessment: usable experiment versus owner application
 
 Explicit fictional trials can use code-owned preparation, claims, durable
 checkpoints, replay and guarded handoff through the installed plugin.
@@ -48,9 +61,9 @@ resume identity, `apps/companion/resume-upload-guard.mjs`, complete live control
 inventory, accepted upload and Store-recomputed current-attempt readiness.
 Compose and verify these contracts rather than create a second readiness model.
 
-`src/workflows/applications/host-browser-report.ts` exposes only progress and
-Needs Info. `skills/job-apply/references/host-browser-workflow.md` directs final
-review through the existing guarded handoff. A progress receipt, historical
+`src/workflows/applications/host-browser-report.ts` now maps fresh
+`awaiting_review` reports to the existing guarded handoff. Both host workflow
+references require current readiness and preserve manual final submission. A progress receipt, historical
 checkpoint or report replay cannot replace current upload and review evidence.
 Fictional trials ending at missing upload do not close this acceptance gap.
 

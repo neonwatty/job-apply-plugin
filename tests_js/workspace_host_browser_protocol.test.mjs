@@ -27,7 +27,7 @@ test('host context is scoped read-only and reports record checkpoints with exact
   const other = await dispatch(broker,{command:'host-browser-context',jobId:'other'});
   assert.equal(other.hostBrowser.nextStep,'resolve_workflow');
   assert.deepEqual(other.hostBrowser.reportOutcomes,[]);
-  assert.deepEqual(ctx.hostBrowser.reportOutcomes,['progress','needs_info']);
+  assert.deepEqual(ctx.hostBrowser.reportOutcomes,['progress','needs_info','awaiting_review']);
   const input = report(ctx,'progress','report'); input.session.step = 'questions';
   const result = await send(broker,input), saved = await snapshot(state.root);
   assert.equal(result.evidenceKind,'agent_attested');
@@ -66,7 +66,7 @@ test('privileged and unknown reports reject without mutation; replacement cannot
   await acquire(state,workflow);
   const input = report(await context(broker),'progress','checkpoint');
   const before = await snapshot(state.root);
-  for (const patch of [{evidenceKind:'trusted'},{outcome:'awaiting_review'},{hostUserEvent:true},{extra:true},{outcome:'acquire'},{expectedRevision:'01'},{jobRevision:3},{taskId:null}]) {
+  for (const patch of [{evidenceKind:'trusted'},{outcome:'submitted'},{hostUserEvent:true},{extra:true},{outcome:'acquire'},{expectedRevision:'01'},{jobRevision:3},{taskId:null}]) {
     await assert.rejects(send(broker,{...input,...patch}),/invalid_event/);
     assert.deepEqual(await snapshot(state.root),before);
   }

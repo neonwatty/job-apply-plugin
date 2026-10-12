@@ -102,8 +102,16 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
             add('handoff');
             add('cancel');
         }
-        if (permitted() && result.selection.inputsCurrent && remaining >= 3)
-            add('progress');
+        if (permitted() && result.selection.inputsCurrent) {
+            if (remaining >= 3)
+                add('progress');
+            if (remaining > 0)
+                result.actions.push({ kind: 'handoff', args: ['workflow', 'attempt', 'event'],
+                    requiresExplicitUserEvent: false, requiredFields: ['operationId', 'session'], input: {
+                        kind: 'handoff', taskId: task.taskId, expectedRevision: task.revision, jobId, jobRevision: revision,
+                        status: 'awaiting_review',
+                    } });
+        }
         result.nextOperation = result.selection.inputsCurrent ? 'choose_action' : 'needs_info_handoff';
     }
     else if (task) {
@@ -145,7 +153,8 @@ export async function attemptGuidance(snapshot, ledger, task, ownsClaim, connect
     }
     // Recheck dynamic access after file observations; templates never grant authority.
     if (!permitted()) {
-        result.actions = result.actions.filter(action => ['handoff', 'cancel'].includes(action.kind));
+        result.actions = result.actions.filter(action => action.kind === 'cancel'
+            || action.kind === 'handoff' && action.input.status === 'needs_info');
         result.blockers.push('profile_unavailable');
         result.nextOperation = result.actions.length ? 'needs_info_handoff' : 'inspect_only';
     }

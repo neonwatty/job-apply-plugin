@@ -17,8 +17,8 @@ class JobApplySkillContractTests(unittest.TestCase):
             "owner explicitly requests", "one exact saved job", "current active application run",
             "confirmed managed resume", "runtime resolves its packaged native lock",
             "Copy the matching descriptor", "guarded Needs Info handoff", "real claim expiry",
-            "restart and awaiting-review completion are unsupported", "Final submission always remains with the owner",
-            "first socket request", "Wait until this context call succeeds", "Only Needs Info handoff or cancellation",
+            "Restart remains unsupported", "Final submission always remains with the owner",
+            "first socket request", "Wait until this context call succeeds", "outcome: awaiting_review",
         ):
             self.assertIn(boundary, owner)
         self.assertIn("references/owner-workflow.md", SKILL_PATH.read_text(encoding="utf-8"))
@@ -28,6 +28,24 @@ class JobApplySkillContractTests(unittest.TestCase):
             self.assertIn("--root /absolute/store-root", example)
             self.assertIn("--input /absolute/private-", example)
             self.assertNotIn("--job-id", example)
+
+    def test_owner_review_requires_live_upload_and_accumulated_readiness(self):
+        owner = (SKILL_PATH.parent / "references" / "owner-workflow.md").read_text(encoding="utf-8")
+        for boundary in (
+            "store resume-resolve --id", "resume-upload-guard.mjs", "--expected-revision",
+            "guard's returned `path` unchanged", "chooser success alone is not accepted upload",
+            "every logical control across all reached pages", "optional and conditional controls",
+            "`resume.file`", "`role: file`", "`required: true`", "verified as `accepted`",
+            "never generate success states from the inventory", "readiness-packet.mjs",
+            "fresh `session`", "`pendingFields`, `blockers`, and `handoffChecklist`",
+            "`ready_for_owner`", "Never reuse a saved session", "exact receipt lookup",
+            "identical report payload and operation ID", "including after terminal shutdown",
+            "never fall back to ordinary `attempt` commands or raw claim commands",
+            "Preserve the visible review page", "Never activate any final submission control",
+        ):
+            self.assertIn(boundary, owner)
+        self.assertNotIn("awaiting-review completion are unsupported", owner)
+        self.assertNotIn("Only Needs Info handoff or cancellation", owner)
 
     @classmethod
     def setUpClass(cls):

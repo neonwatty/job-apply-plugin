@@ -559,7 +559,7 @@
     },
     {
       "path": "source-catalog-owner-workflow.json",
-      "sha256": "9e170a0df62054bcf02662fd55bb3b32f25dbedf5664ea2af765f0caa0b5c41c"
+      "sha256": "41a0fa4c2d13a5c4a0c664339c4af6a86ad2c66bedebdf99e12431caf7a28232"
     },
     {
       "path": "browser-owner-workflow-surfaces.json",
