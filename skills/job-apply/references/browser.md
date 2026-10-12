@@ -41,7 +41,7 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ### Embedded ATS resume uploads
 
-For a resume input inside an iframe, arm the selected browser's documented file-chooser listener before clicking the input. If the input is visually hidden and no chooser event arrives, inspect the visible control once and try its **Attach** button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
+For a resume input inside an iframe, inspect the observed Resume/CV group and prefer the visible **Attach** button that opens its file chooser. A tiny or visually hidden file input may also be exposed with the accessible name Attach; distinguish the actual visible button by its element, visibility, and group rather than choosing the first name match. Arm the selected browser's documented file-chooser listener before clicking that visible button. If an initial hidden-input attempt already timed out, inspect the visible control once and try its actual button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
 
 If the upload guard rejects the path, rerun `resume-resolve` for the selected resume, correct the proposed path and selected revision, then run the guard again. Do not open the chooser until it succeeds. If the chooser fails, `setFiles` returns without an accepted upload, or the ATS remains at an upload progress indicator, treat the upload as unresolved. First rerun the guard with the path and revision actually passed to the chooser. A constructed or stale path is an agent error: correct it from `resume-resolve` and retry once only if the same visible widget still exposes an upload control. If the widget is stuck, preserve the filled draft and do not reload it merely to retry. Inspect the visible widget and browser errors for another specific cause. Do not infer success from `setFiles`, a pending progress bar, or an empty file input. Do not repeatedly reattach the file to a stalled control. Do not blame or ask the owner to change Chrome's extension file-URL permission unless its disabled setting or a specific browser error confirms that cause.
 
@@ -82,7 +82,7 @@ that the field accepted the value. Apply this bounded loop to every editable con
 3. Perform one normal write, then immediately read the control's current state and
    compare it privately with the intended value. Keep this verification value-free in
    logs, progress, history, receipts, and user-facing summaries.
-4. If the value did not persist, inspect the control once and make at most one safe
+4. If a readable value demonstrably differs or did not persist, inspect the control once and make at most one safe
    alternate entry attempt supported by the visible browser, such as sequential
    typing for a text control. Verify the control state again. Do not repeat the same
    action after the bounded fallback fails.
@@ -94,6 +94,19 @@ that the field accepted the value. Apply this bounded loop to every editable con
    save only value-free progress, and hand control to the user. This is a browser
    handoff, not a missing-answer request. Never claim the field is complete merely
    because the browser operation returned no error.
+
+A readback of literal `<redacted>`, a masked value, or a tool omission is
+**unobservable**, not evidence of a mismatch. Do not retype a field solely because
+its readback is redacted. Use a supported current screenshot of that exact control
+and compare the visible value privately with the intended canonical value. A clear
+visual match can verify completion; a screenshot showing only masking, clipping,
+or unreadable text cannot. Do not bypass the host's redaction to extract private
+values through another API. If the selected browser offers no supported way to
+verify the value, preserve the draft, leave that control unresolved, and use the
+`unsupported-control` / `owner-input-required` Browser action required handoff.
+An unobservable required control cannot support `awaiting_review`. Record only
+value-free verification states; keep screenshots and applicant values out of Store
+receipts, diagnostics, and summaries.
 
 Record and describe this outcome as **Browser action required**. Tell the user that
 the saved information is already known and that the visible browser control needs

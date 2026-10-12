@@ -1,0 +1,125 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { nativeFixture } from './exclusive_file_lock_support.mjs';
+import { setup, read, write, event, pending, snapshot } from './workspace_durable_claims_support.mjs';
+import { createOwnerWorkflowStore } from '../runtime/app/owner-workflow-policy.js';
+import { ClaimWorkflow } from '../runtime/app/claim-workflow.js';
+import { ClaimsService } from '../runtime/workspace-core/claims.js';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
+import { attemptProfile } from '../runtime/workflows/applications/attempt.js';
+import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
+import { makeLiveFormManifest, makeLiveReadinessObservation } from '../runtime/contracts/workspace/claim-session-readiness.js';
+const plain = value => JSON.parse(serialize(value));
+function driftRun(jobs) {
+  const run=jobs.metadata.applicationRuns.runs['run-fixture'];
+  run.revision++;
+  run.queueVersions.push({...run.queueVersions.at(-1),revision:run.revision});
+}
+async function owner(state) {
+  const {store,scope} = await createOwnerWorkflowStore(state.repository,'job');
+  return {scope,workflow:new ClaimWorkflow(store,new ClaimsService(state.repository),
+    () => ({enabled:[attemptProfile],authorized:[attemptProfile]}))};
+}
+async function prepared(fixture,name) {
+  const state = await setup(fixture,name), facts = new ResumeFactsService(state.repository);
+  const draft = plain(await facts.createDraft('resume',fromJSON({name:'Synthetic Owner'}),1n,null));
+  const confirmed = plain(await facts.confirm('resume',BigInt(draft.revision),draft.contentRevision));
+  const jobs = await read(state.root,'jobs.json');
+  jobs.metadata.applicationRuns.runs['run-fixture'].selection.factRevision=confirmed.revision;
+  await write(state.root,'jobs.json',jobs);
+  await state.claims.select('job',1n,true);
+  const active = await owner(state), request=event('acquire');
+  const task=(await active.workflow.execute(request,request)).receipt.task;
+  return {...state,...active,task};
+}
+function reviewSession(task) {
+  const form=fromJSON({schemaVersion:1,platformFamily:'greenhouse',observationRevision:7,complete:true,
+    controls:[{id:'resume.file',role:'file',required:true}]});
+  return {status:'review',step:'final_review',readinessInput:{attemptRevision:Number(task.subject.jobRevision),
+    evidenceKind:'agent_attested_current_attempt',observedForm:plain(form),expectedObservationRevision:7,
+    formManifest:plain(makeLiveFormManifest(form,fromJSON(7))),
+    observation:plain(makeLiveReadinessObservation(form,{'resume.file':'accepted'},fromJSON(7),
+      {adapterState:'accessible',uploadCapability:'available',validationErrorControlIds:[],finalControlState:'available'}))}};
+}
+async function reviewed(fixture,name) {
+  const state=await prepared(fixture,name), session=reviewSession(state.task);
+  const done=await state.workflow.execute(event('handoff',state.task,{status:'awaiting_review',session}));
+  await state.workflow.close();
+  return {...state,task:done.receipt.task,session};
+}
+test('owner reviewed restart is explicit, preserves scope, and requires fresh readiness', async () => {
+  const fixture=await nativeFixture();
+  try {
+    const state=await reviewed(fixture,'restart'), resumed=await owner(state);
+    const context=await resumed.workflow.inspect('job');
+    assert.ok(context.guidance.actions.some(action=>action.kind==='restart'));
+    const restart=event('restart',null,{jobRevision:state.task.subject.jobRevision});
+    const before=await snapshot(state.root);
+    await assert.rejects(resumed.workflow.execute(restart),/user_event_required/);
+    assert.deepEqual(await snapshot(state.root),before);
+    const fresh=(await resumed.workflow.execute(restart,restart)).receipt.task;
+    assert.notEqual(fresh.taskId,state.task.taskId);
+    assert.equal(fresh.subject.inputRevision,state.task.subject.inputRevision);
+    assert.notEqual(fresh.subject.jobRevision,state.task.subject.jobRevision);
+    await assert.rejects(resumed.workflow.execute(event('handoff',fresh,{operationId:'stale-review',status:'awaiting_review',session:state.session})));
+    const done=await resumed.workflow.execute(event('handoff',fresh,{operationId:'new-review',status:'awaiting_review',session:reviewSession(fresh)}));
+    assert.equal(done.receipt.outcome,'awaiting_review');
+    assert.equal((await read(state.root,'coordinator.json')).claim,null);
+    await resumed.workflow.close();
+  } finally {await fixture.cleanup();}
+});
+test('owner reviewed restart rejects missing, ambiguous, unrelated, stale and changed-input evidence', async () => {
+  const fixture=await nativeFixture();
+  try {
+    for(const [name,mutate] of [
+      ['missing',jobs=>{jobs.metadata.agentWorkflows.tasks={}; jobs.metadata.agentWorkflows.receipts={};}],
+      ['ambiguous',(jobs,id)=>{jobs.metadata.agentWorkflows.tasks.duplicate={...jobs.metadata.agentWorkflows.tasks[id],taskId:'duplicate'};}],
+      ['unrelated',(jobs,id)=>{jobs.metadata.agentWorkflows.tasks[id].subject.jobId='other';}],
+      ['stale',(jobs,id)=>{jobs.metadata.agentWorkflows.tasks[id].subject.jobRevision='1';}],
+      ['changed-run',driftRun],
+      ['changed-facts',jobs=>{jobs.metadata.applicationRuns.runs['run-fixture'].selection.factRevision++;}],
+    ]) {
+      const state=await reviewed(fixture,name), jobs=await read(state.root,'jobs.json');
+      mutate(jobs,state.task.taskId); jobs.metadata.agentWorkflows.receipts={}; await write(state.root,'jobs.json',jobs);
+      const before=await snapshot(state.root);
+      await assert.rejects(owner(state),/action_unavailable/);
+      assert.deepEqual(await snapshot(state.root),before);
+    }
+  } finally {await fixture.cleanup();}
+});
+test('owner broker loss refuses live claims and recovers expired same task for guarded drift exit', async () => {
+  const fixture=await nativeFixture();
+  try {
+    const state=await prepared(fixture,'expired'); await state.workflow.close();
+    const resumed=await owner(state), recovery=event('recover',state.task);
+    const before=await snapshot(state.root);
+    await assert.rejects(resumed.workflow.execute(recovery,recovery),/live claim cannot be recovered/);
+    assert.deepEqual(await snapshot(state.root),before);
+    const coordinator=await read(state.root,'coordinator.json');
+    coordinator.claim.expiresAt='2026-09-10T12:00:00Z';
+    await write(state.root,'coordinator.json',coordinator);
+    const jobs=await read(state.root,'jobs.json');
+    driftRun(jobs);
+    await write(state.root,'jobs.json',jobs);
+    const recovered=(await resumed.workflow.execute(recovery,recovery)).receipt.task;
+    assert.equal(recovered.taskId,state.task.taskId);
+    assert.equal(recovered.subject.inputRevision,state.task.subject.inputRevision);
+    await assert.rejects(resumed.workflow.execute(event('progress',recovered)),/stale_revision/);
+    const done=await resumed.workflow.execute(event('handoff',recovered,{operationId:'drift-exit',session:pending}));
+    assert.equal(done.receipt.outcome,'needs_info');
+    assert.equal((await read(state.root,'coordinator.json')).claim,null);
+    await resumed.workflow.close();
+  } finally {await fixture.cleanup();}
+});
+
+test('owner restart rechecks input drift after activation without modifying the checkpoint', async () => {
+  const fixture=await nativeFixture();
+  try {
+    const state=await reviewed(fixture,'activation-drift'), resumed=await owner(state);
+    const jobs=await read(state.root,'jobs.json'); driftRun(jobs); await write(state.root,'jobs.json',jobs);
+    const before=await snapshot(state.root), request=event('restart',null,{jobRevision:state.task.subject.jobRevision});
+    await assert.rejects(resumed.workflow.execute(request,request),/stale_revision/);
+    assert.deepEqual(await snapshot(state.root),before);
+    await resumed.workflow.close();
+  } finally {await fixture.cleanup();}
+});

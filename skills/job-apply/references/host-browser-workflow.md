@@ -24,6 +24,16 @@ This object is `context.hostBrowser`. Its actual `nextStep` controls the route: 
 
 Observe the exact current form before acting. Identify controls from the live page using the host's documented methods. Read select options and verify the selected option after changing one; read checkbox state and use the intended checked state without blindly toggling. After either action, inspect conditional fields and revalidate controls affected by rerendering. Preserve unrelated draft fields, tabs and pages. Do not reload to clear uncertainty. Resolve permitted values from canonical fixture facts and answers, compare readbacks privately, and record only value-free session metadata under the [session contract](application.md). An inaccessible known answer is **Browser action required**, not a request to repeat the answer.
 
+Apply [verified field entry](browser.md#verified-field-entry) when a host readback
+is redacted: classify it as unobservable, use a supported current visual comparison
+privately, or leave it unresolved with Browser action required. Redaction alone
+neither proves completion nor justifies retyping. For uploads, prefer the visible
+**Attach** button in the observed Resume/CV group over a hidden file input with the
+same accessible name, arm the documented chooser listener before clicking, and
+verify the accepted upload. A chooser timeout or pending progress is unresolved.
+These observations must precede any report claiming completion; final submission
+remains untouched.
+
 After fresh observation, write a private report file outside Store internals. This exact progress envelope illustrates the shape; substitute the current context's IDs and canonical revisions, and only session fields supported by your observation:
 
 ```json

@@ -51,8 +51,6 @@ export class OwnerClaimBroker {
             value.result.evidenceKind = 'agent_attested';
             value.result.browserAuthority = 'existing_host_tools';
             value.result.finalSubmission = 'manual';
-            if (value.result.guidance)
-                value.result.guidance.actions = value.result.guidance.actions.filter((action) => action.kind !== 'restart');
             if (value.result.hostBrowser) {
                 value.result.hostBrowser.reports = (value.result.guidance?.actions ?? [])
                     .filter((action) => action.kind === 'progress'

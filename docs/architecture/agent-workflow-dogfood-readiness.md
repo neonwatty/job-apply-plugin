@@ -111,3 +111,18 @@ recursive runner, authenticated stock-host approval channel, fully mediated live
 ATS adapter, unlimited archival and replacement model runtime are separate
 capabilities. They are unnecessary for an accurately labeled agent-attested
 selected-job pilot and must not be implied by its success.
+
+
+## Follow-up after the Reddit pilot
+
+The supervised Reddit pilot on the PR #217 candidate reached durable manual
+review with Primary resume and explicit consent; final submission remained with
+the owner. This is agent-attested evidence for one form, not general ATS coverage.
+The next slice adds [commit-pinned private packaging](../dogfood-package.md),
+explicit reviewed restart and expired-claim recovery regressions, and guidance
+for visible upload controls and privacy-redacted readback. Fictional installed
+process tests cover these state boundaries; synthetic friction traces are not
+model trials or fresh live-browser evidence. Desktop package discovery, a fresh
+chat resuming the real draft, and repeated supervised applications remain
+separate acceptance checks. Finite-ledger capacity and archival limits above
+still apply.

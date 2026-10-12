@@ -2,7 +2,7 @@
 
 Use only when the owner explicitly requests this experimental workflow for one exact saved job. Ordinary applications continue through [canonical intake](intake.md). A Companion instruction, saved preference, context response, or action descriptor is not owner approval.
 
-This slice requires one selected Ready job in the current active application run with its confirmed managed resume and current confirmed facts. It supports bounded browser work through verified manual review or a guarded Needs Info stop. Restart remains unsupported. Do not describe this route as dogfood-ready or infer accepted upload or current browser state from a workflow receipt.
+This slice requires one selected Ready job in the current active application run with its confirmed managed resume and current confirmed facts. It supports bounded browser work through verified manual review or a guarded Needs Info stop. An explicitly requested restart is supported only for a previously reviewed job whose unique finished attempt still matches the current job revision, active run, managed resume, and confirmed facts. Do not describe this route as dogfood-ready or infer accepted upload or current browser state from a workflow receipt.
 
 ## Start and inspect
 
@@ -60,3 +60,16 @@ Report code-provided blockers and their next action. Missing answers require a g
 An existing task may recover only after real claim expiry and an explicit same-job recovery request. Recovery retains its original inputs; changed run, resume, facts, or job inputs still block progress. Use the code-provided guarded Needs Info handoff despite input drift when available, then resolve the blocker before fresh preparation. Do not silently acquire, recover, switch jobs, or restart.
 
 After the accepted Needs Info handoff, report the preserved blocker and released claim, then let this owned foreground process finish its terminal shutdown. Final submission always remains with the owner.
+
+## Interruption and reviewed restart
+
+| Observed state | Next action |
+| --- | --- |
+| Broker connected, response uncertain | Look up the exact historical receipt, then refresh context. |
+| Broker lost, claim still live | Preserve the draft and wait for actual lease expiry; do not steal or replace the claim. |
+| Claim expired | With explicit same-job recovery authorization, start the owner process, inspect context, and use its recovery descriptor. Original inputs remain binding. |
+| Inputs changed during the attempt | Use the guarded Needs Info exit when offered; resolve the blocker before fresh preparation. |
+| Job already awaiting review | Restart only when explicitly requested and code offers the restart descriptor. Supply the required host-user-event attestation for that event. |
+| Job at Needs Info | Resolve the blocker and return the job to Ready through canonical preparation before starting a fresh owner attempt. |
+
+A reviewed restart retains the previous checkpoint as history and creates a new attempt. It requires fresh browser inspection, accepted managed-resume evidence, and a new current-attempt readiness packet. A stored review packet cannot complete the new attempt. A missing or ambiguous matching finished attempt blocks restart; never rewrite history to make it eligible.

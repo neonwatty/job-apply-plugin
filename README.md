@@ -679,3 +679,5 @@ The smoke test installs temporary working-tree fixtures under isolated Codex and
 ## Author
 
 Jeremy Watt ([@neonwatty](https://github.com/neonwatty))
+
+For the experimental code-controlled owner workflow, see the [isolated dogfood package guide](docs/dogfood-package.md). It packages an explicit committed revision and keeps host activation and live acceptance as separate checks.

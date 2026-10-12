@@ -1,4 +1,4 @@
-import { activeApplicationJob, applicationPreflight } from '../contracts/workspace/application-policy.js';
+import { activeApplicationJob, applicationPreflight, inspectReviewRestart } from '../contracts/workspace/application-policy.js';
 import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
 import type { ApplicationSnapshot } from '../contracts/workspace/application-policy.js';
 import { ownerResumeControlId } from '../contracts/workspace/owner-workflow.js';
@@ -13,6 +13,7 @@ import type { WorkflowTaskStore } from '../harness/task-store.js';
 import { NativeClaimWorkflowTasks } from '../store/native-claim-workflow-tasks.js';
 import { preparationScope } from '../workflows/applications/prepare-scope.js';
 import { attemptIdentity } from '../workflows/applications/attempt.js';
+import { requireOwnerReviewScope } from './owner-workflow-recovery.js';
 
 async function ready(snapshot: ApplicationSnapshot, jobId: string, status = 'ready'): Promise<void> {
   const job = activeApplicationJob(snapshot, jobId), run = activeApplicationRun(snapshot.jobs);
@@ -73,7 +74,15 @@ export async function createOwnerWorkflowStore(repository: ClaimRepository, jobI
   }) });
   const scope: OwnerWorkflowScope = await tasks.transaction(async tx => {
     const task = selectedTask(tx.ledger, jobId), job = activeApplicationJob(tx.domain.snapshot, jobId);
-    if (!task) await ready(tx.domain.snapshot, jobId);
+    if (!task) {
+      const status = string(get(job, 'status')) === 'awaiting_review' ? 'awaiting_review' : 'ready';
+      await ready(tx.domain.snapshot, jobId, status);
+      if (status === 'awaiting_review') {
+        requireOwnerReviewScope(tx.domain.snapshot, tx.ledger, job, jobId);
+        await inspectReviewRestart(tx.domain.snapshot, jobId, int(get(job, 'revision'))!,
+          () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
+      }
+    }
     return Object.freeze({ jobId, jobRevision: int(get(job, 'revision'))!.toString(),
       inputRevision: task?.subject.inputRevision ?? preparationScope(tx.domain.snapshot, job),
       taskId: task?.taskId ?? null, taskRevision: task?.revision ?? null });
@@ -92,13 +101,13 @@ export async function createOwnerWorkflowStore(repository: ClaimRepository, jobI
     return callback({ ...tx, domain: { ...tx.domain, execute: async (kind, id, revision, token, session, status, saved) => {
       if (id !== jobId) throw new TaskProtocolError('task_conflict');
       if (finished) throw new TaskProtocolError('broker_unavailable');
-      if (kind === 'restart') throw new TaskProtocolError('action_unavailable');
-      if (kind === 'acquire') {
+      if (kind === 'acquire' || kind === 'restart') {
         if (ownedTaskId !== null || task !== null) throw new TaskProtocolError('task_conflict');
         const job = activeApplicationJob(tx.domain.snapshot, jobId);
         if (revision.toString() !== scope.jobRevision || int(get(job, 'revision'))!.toString() !== scope.jobRevision
           || preparationScope(tx.domain.snapshot, job) !== scope.inputRevision) throw new TaskProtocolError('stale_revision');
-        await ready(tx.domain.snapshot, jobId);
+        await ready(tx.domain.snapshot, jobId, kind === 'restart' ? 'awaiting_review' : 'ready');
+        if (kind === 'restart') requireOwnerReviewScope(tx.domain.snapshot, tx.ledger, job, jobId);
       } else if (!task || task.taskId !== ownedTaskId || task.subject.inputRevision !== scope.inputRevision) {
         throw new TaskProtocolError('task_conflict');
       }

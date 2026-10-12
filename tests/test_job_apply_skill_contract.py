@@ -17,7 +17,7 @@ class JobApplySkillContractTests(unittest.TestCase):
             "owner explicitly requests", "one exact saved job", "current active application run",
             "confirmed managed resume", "runtime resolves its packaged native lock",
             "Copy the matching descriptor", "guarded Needs Info handoff", "real claim expiry",
-            "Restart remains unsupported", "Final submission always remains with the owner",
+            "An explicitly requested restart is supported only", "Final submission always remains with the owner",
             "first socket request", "Wait until this context call succeeds", "outcome: awaiting_review",
         ):
             self.assertIn(boundary, owner)
@@ -150,7 +150,7 @@ class JobApplySkillContractTests(unittest.TestCase):
 
     def test_embedded_upload_fallback_verifies_new_form_and_consent(self) -> None:
         for required in (
-            "try its **Attach** button with a fresh listener",
+            "try its actual button with a fresh listener",
             "a click or chooser timeout is not upload proof",
             "company and job identity match",
             "The direct page is a separate form instance",
