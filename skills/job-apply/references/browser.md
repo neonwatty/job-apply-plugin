@@ -44,7 +44,9 @@ Use the fallback only for the blocked control, then return to the visible review
 Follow [bounded host-browser upload](resume-upload.md) for locator preflight,
 immediately handled chooser promises, and observation-driven recovery. Use the
 installed `apps/companion/resume-upload.mjs` helper where local ESM imports are
-supported by the host; it never retries or attests ATS acceptance.
+supported by the host; it never retries or attests ATS acceptance. Its
+`manual_attachment` next action uses the linked decision helper, durable Needs
+Info handoff, scoped owner confirmation, and fresh ATS verification.
 
 For a resume input inside an iframe, inspect the observed Resume/CV group and prefer the visible **Attach** button that opens its file chooser. A tiny or visually hidden file input may also be exposed with the accessible name Attach; distinguish the actual visible button by its element, visibility, and group rather than choosing the first name match. Arm the selected browser's documented file-chooser listener before clicking that visible button. If an initial hidden-input attempt already timed out, inspect the visible control once and try its actual button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
 

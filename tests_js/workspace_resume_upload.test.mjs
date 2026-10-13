@@ -31,7 +31,7 @@ test('chooser rejection while click is pending cannot reset the host kernel', as
     playwright: { waitForEvent() { return Promise.reject(new Error('private diagnostic')); } },
     control: { async click() { await delay(20); } },
   });
-  assert.deepEqual(await uploadManagedResume(f), { outcome: 'chooser_unavailable', next: 'inspect_widget' });
+  assert.deepEqual(await uploadManagedResume(f), { outcome: 'chooser_unavailable', next: 'manual_attachment' });
 });
 
 test('duplicate or missing control never arms a listener or opens a chooser', async () => {

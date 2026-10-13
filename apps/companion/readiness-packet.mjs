@@ -1,3 +1,4 @@
+import { manualAttachmentDecision } from './manual-attachment.mjs';
 import { readFileSync } from 'node:fs';
 import { makeLiveFormManifest, makeLiveReadinessObservation, recomputeClaimReadiness } from '../../runtime/contracts/workspace/claim-session-readiness.js';
 import { fromJSON, serialize } from '../../runtime/contracts/workspace/values.js';
@@ -11,8 +12,10 @@ const fail = () => { throw Error('invalid value-free form observation'); };
 const plain = value => JSON.parse(serialize(value));
 
 export function buildReadinessPacket(input) {
+  const manual = input && Object.hasOwn(input, 'manualAttachment');
   if (!keys(input,['attemptRevision','platformFamily','observationRevision','complete','inventories',
-    'verifiedStates','adapterState','uploadCapability','validationErrorControlIds','finalControlState'])
+    'verifiedStates','adapterState','uploadCapability','validationErrorControlIds','finalControlState',
+    ...(manual ? ['manualAttachment'] : [])])
     || !Number.isSafeInteger(input.attemptRevision) || input.attemptRevision < 1
     || !Number.isSafeInteger(input.observationRevision) || input.observationRevision < 1
     || !platforms.has(input.platformFamily) || input.complete !== true
@@ -43,6 +46,15 @@ export function buildReadinessPacket(input) {
       || (item.state === 'accepted' && controls.get(item.id).role !== 'file')
       || (item.state === 'complete' && controls.get(item.id).role === 'file')) fail();
     controlStates[item.id] = item.state;
+  }
+  if (manual) {
+    const decision = manualAttachmentDecision(input.manualAttachment);
+    const evidence = input.manualAttachment;
+    if (evidence.currentScope.attemptRevision !== input.attemptRevision
+      || evidence.observation.revision !== input.observationRevision
+      || controls.get('resume.file')?.role !== 'file' || controls.get('resume.file')?.required !== true) fail();
+    // Caller-supplied acceptance cannot override an unresolved manual fallback.
+    controlStates['resume.file'] = decision.resumeState;
   }
   if (new Set(input.validationErrorControlIds).size !== input.validationErrorControlIds.length
     || input.validationErrorControlIds.some(id => typeof id !== 'string' || !controls.has(id))) fail();

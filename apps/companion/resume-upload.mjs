@@ -25,14 +25,14 @@ export async function uploadManagedResume({ tab, control, guard }) {
     // while click is still pending. A delayed catch can reset the host REPL.
     pending = tab.playwright.waitForEvent('filechooser', { timeoutMs: 10000 })
       .then(chooser => ({ chooser }), () => ({ chooser: null }));
-  } catch { return result('chooser_unavailable'); }
+  } catch { return result('chooser_unavailable', 'manual_attachment'); }
 
   let clicked = false;
   try { await control.click({ timeoutMs: 5000 }); clicked = true; }
   catch { /* Drain the already-handled listener before returning. */ }
   const { chooser } = await pending;
   if (!clicked) return result('click_failed');
-  if (!chooser) return result('chooser_unavailable');
+  if (!chooser) return result('chooser_unavailable', 'manual_attachment');
   try { await chooser.setFiles([guarded.path]); }
   catch { return result('selection_uncertain'); }
   return result('selection_attempted', 'observe_widget');
