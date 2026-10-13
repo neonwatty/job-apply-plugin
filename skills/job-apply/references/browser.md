@@ -41,6 +41,11 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ### Embedded ATS resume uploads
 
+Follow [bounded host-browser upload](resume-upload.md) for locator preflight,
+immediately handled chooser promises, and observation-driven recovery. Use the
+installed `apps/companion/resume-upload.mjs` helper where local ESM imports are
+supported by the host; it never retries or attests ATS acceptance.
+
 For a resume input inside an iframe, inspect the observed Resume/CV group and prefer the visible **Attach** button that opens its file chooser. A tiny or visually hidden file input may also be exposed with the accessible name Attach; distinguish the actual visible button by its element, visibility, and group rather than choosing the first name match. Arm the selected browser's documented file-chooser listener before clicking that visible button. If an initial hidden-input attempt already timed out, inspect the visible control once and try its actual button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
 
 If the upload guard rejects the path, rerun `resume-resolve` for the selected resume, correct the proposed path and selected revision, then run the guard again. Do not open the chooser until it succeeds. If the chooser fails, `setFiles` returns without an accepted upload, or the ATS remains at an upload progress indicator, treat the upload as unresolved. First rerun the guard with the path and revision actually passed to the chooser. A constructed or stale path is an agent error: correct it from `resume-resolve` and retry once only if the same visible widget still exposes an upload control. If the widget is stuck, preserve the filled draft and do not reload it merely to retry. Inspect the visible widget and browser errors for another specific cause. Do not infer success from `setFiles`, a pending progress bar, or an empty file input. Do not repeatedly reattach the file to a stalled control. Do not blame or ask the owner to change Chrome's extension file-URL permission unless its disabled setting or a specific browser error confirms that cause.

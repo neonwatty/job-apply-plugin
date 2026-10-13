@@ -45,6 +45,10 @@ Report only current observed browser evidence through the exact template in `hos
 
 ## Upload through manual review
 
+Use the [bounded host-browser upload](resume-upload.md) sequence for chooser
+operations, including immediate timeout handling and fresh widget inspection.
+Continue using owner descriptors for all durable state changes.
+
 Resolve the current run's selected canonical managed resume ID and content revision; never substitute another resume or update the retained revision to bypass drift. Privately run `store resume-resolve --id <confirmed-resume-id>` through the installed command client with the same canonical `--root`. Immediately before opening the chooser, run `node "<plugin-root>/apps/companion/resume-upload-guard.mjs" --id <confirmed-resume-id> --expected-revision <selected-resume-revision> --candidate-path <resolved-private-path> --root /absolute/store-root`. Pass the successful guard's returned `path` unchanged to the visible browser's chooser. Never construct the path or use a source file. Observe the ATS's accepted-file state after upload; chooser success alone is not accepted upload. Follow [failed-upload recovery](browser.md) when necessary and preserve a stalled draft.
 
 Accumulate every logical control across all reached pages, including optional and conditional controls, using [current-form readiness](readiness.md) and the installed `readiness-packet.mjs` helper. Retain prior controls after transitions or disappearing upload widgets. This owner route requires the semantic control `resume.file` with `role: file` and `required: true`, verified as `accepted` from the actual selected managed resume upload. Record other `verifiedStates` only from post-entry observations; never generate success states from the inventory. Attest `complete: true` only after inspecting the complete accumulated inventory. Inaccessible, unknown, stale, rejected, or unverified required controls require a guarded Needs Info handoff. Sweep optional blanks as described in application filling; they do not authorize invented answers.
