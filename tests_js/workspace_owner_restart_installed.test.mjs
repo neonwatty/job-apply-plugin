@@ -66,3 +66,32 @@ test('installed owner restart requires explicit approval and fresh review after 
     assert.deepEqual((await fixture.send(first,'receipt')).result.receipt,review.result.receipt);
     assert.deepEqual(await fixture.snapshot(),after);
   });
+
+
+test('installed owner launcher adopts an ordinary broker review with explicit restart and fresh evidence',
+  {timeout:90000},async t=>{
+    const fixture=await ownerReviewFixture({ordinaryReview:true});t.after(fixture.cleanup);
+    const context=await fixture.context();
+    const action=context.result.guidance.actions.find(a=>a.kind==='restart');
+    assert.ok(action);
+    const before=await fixture.snapshot(), old=await fixture.read('sessions/job.json');
+    const request={...action.input,operationId:'adopt-ordinary-review'};
+    assert.equal((await fixture.send(request,'event')).ok,false);
+    assert.deepEqual(await fixture.snapshot(),before);
+    const started=await fixture.send(request,'event',true);
+    assert.equal(started.ok,true,JSON.stringify(started));
+    assert.deepEqual(await fixture.read('sessions/job.json'),old);
+    const current=await fixture.context();
+    const report={...current.result.hostBrowser.reports.find(r=>r.input.outcome==='awaiting_review').input,
+      operationId:'adopted-fresh-review'};
+    assert.equal((await fixture.send({...report,operationId:'old-attempt',session:reviewSession(old.attemptRevision)})).ok,false);
+    report.session=reviewSession(report.jobRevision);
+    assert.equal((await fixture.send(report)).ok,true);
+    await fixture.waitForExit();
+    assert.equal((await fixture.read('coordinator.json')).claim,null);
+    assert.equal((await fixture.read('jobs.json')).jobs.job.status,'awaiting_review');
+    const after=await fixture.snapshot();
+    for(const file of ['profile.json','resumes.json','resume-facts.json'])assert.equal(after[file],before[file]);
+    assert.equal((await fixture.send(report,'receipt')).ok,true);
+    assert.deepEqual(await fixture.snapshot(),after);
+  });

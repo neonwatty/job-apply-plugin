@@ -14,7 +14,7 @@ import {buildReadinessPacket} from '../apps/companion/readiness-packet.mjs';
 
 const source=new URL('../',import.meta.url).pathname;
 /** Private fictional Store copied through the same installed native activation as owner opt-in. */
-export async function ownerReviewFixture() {
+export async function ownerReviewFixture({ordinaryReview=false}={}) {
   const fixture=await nativeFixture();let child,done;
   const cleanup=async()=>{
     if(child&&child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');
@@ -29,6 +29,11 @@ export async function ownerReviewFixture() {
     const jobs=await read(state.root,'jobs.json');
     jobs.metadata.applicationRuns.runs['run-fixture'].selection.factRevision=confirmed.revision;
     await write(state.root,'jobs.json',jobs);await state.claims.select('job',1n,true);
+    if(ordinaryReview) {
+      const acquired=plain(await state.claims.acquire('job',fromJSON('ordinary'),2n));
+      await state.claims.handoff('job',fromJSON(acquired.token),'awaiting_review',
+        fromJSON({...reviewSession(acquired.job.revision),attemptRevision:acquired.job.revision}),BigInt(acquired.job.revision));
+    }
     const directory=await realpath(fixture.root),root=join(directory,'owner-store'),plugin=join(directory,'installed');
     await cp(state.root,root,{recursive:true});
     await rm(join(root,'.native-jobs-fixture'));await rm(join(root,'resume-operation.json'));
@@ -58,8 +63,10 @@ export async function ownerReviewFixture() {
       try{return await call(operation,['--input',path,...attested?['--host-user-event']:[]]);}
       finally{await rm(path,{force:true});}
     };
-    const acquisition={...context.result.guidance.actions.find(a=>a.kind==='acquire').input,operationId:'review-acquire'};
-    assert.equal((await send(acquisition,'event',true)).ok,true);
+    if(!ordinaryReview) {
+      const acquisition={...context.result.guidance.actions.find(a=>a.kind==='acquire').input,operationId:'review-acquire'};
+      assert.equal((await send(acquisition,'event',true)).ok,true);
+    }
     const resume=await invoke([command,'store','--root',root,'resume-resolve','--id','resume']);
     const guard=()=>invoke([join(plugin,'apps/companion/resume-upload-guard.mjs'),'--root',root,
       '--id',resume.id,'--expected-revision',String(resume.revision),'--candidate-path',resume.path]);
