@@ -269,6 +269,16 @@ export function removeReviewedPreparationEvalMatrixAdditions(matrix) {
 }
 
 export function removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOwnership) {
+  // Remove only the exact new dogfood registration; keep the historical digest fixed.
+  const dogfoodTool = 'tools/dogfood-package.mjs';
+  const foundation = matrix.suites.find(suite => suite.id === 'node-foundation-fast');
+  assert.deepEqual(foundation.include, ['tests_js/build-runtime.test.mjs',
+    'tests_js/runtime-support.test.mjs', 'tests_js/dogfood_package.test.mjs']);
+  foundation.include.pop();
+  const dogfoodOwner = matrix.ownership.filter(rule => rule.paths.includes(dogfoodTool));
+  assert.deepEqual(dogfoodOwner, [{ paths: [dogfoodTool, 'tools/probe-installed-runtime.mjs',
+    'tools/run-qa-browser.mjs'], suites: ['node-foundation-fast'] }]);
+  dogfoodOwner[0].paths.shift();
   // Validate only these reviewed additions; the historical matrix digest stays fixed.
   removeReviewedInstalledWorkflowMatrixAdditions(matrix);
   removeReviewedPreparationEvalMatrixAdditions(matrix);
