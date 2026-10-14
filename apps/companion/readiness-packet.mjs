@@ -1,3 +1,4 @@
+import { decideFieldVerification } from './field-verification.mjs';
 import { manualAttachmentDecision } from './manual-attachment.mjs';
 import { readFileSync } from 'node:fs';
 import { makeLiveFormManifest, makeLiveReadinessObservation, recomputeClaimReadiness } from '../../runtime/contracts/workspace/claim-session-readiness.js';
@@ -12,10 +13,11 @@ const fail = () => { throw Error('invalid value-free form observation'); };
 const plain = value => JSON.parse(serialize(value));
 
 export function buildReadinessPacket(input) {
+  const fields = input && Object.hasOwn(input, 'fieldVerifications');
   const manual = input && Object.hasOwn(input, 'manualAttachment');
   if (!keys(input,['attemptRevision','platformFamily','observationRevision','complete','inventories',
     'verifiedStates','adapterState','uploadCapability','validationErrorControlIds','finalControlState',
-    ...(manual ? ['manualAttachment'] : [])])
+    ...(manual ? ['manualAttachment'] : []), ...(fields ? ['fieldVerifications'] : [])])
     || !Number.isSafeInteger(input.attemptRevision) || input.attemptRevision < 1
     || !Number.isSafeInteger(input.observationRevision) || input.observationRevision < 1
     || !platforms.has(input.platformFamily) || input.complete !== true
@@ -46,6 +48,18 @@ export function buildReadinessPacket(input) {
       || (item.state === 'accepted' && controls.get(item.id).role !== 'file')
       || (item.state === 'complete' && controls.get(item.id).role === 'file')) fail();
     controlStates[item.id] = item.state;
+  }
+  if (fields) {
+    if (!Array.isArray(input.fieldVerifications) || input.fieldVerifications.length > controls.size) fail();
+    const seen = new Set();
+    for (const item of input.fieldVerifications) {
+      if (!keys(item, ['id', 'evidence']) || !controls.has(item.id)
+        || controls.get(item.id).role === 'file' || seen.has(item.id)) fail();
+      seen.add(item.id);
+      const decision = decideFieldVerification(item.evidence);
+      // Unknown, masked, or stale evidence overrides caller-supplied completion.
+      controlStates[item.id] = decision.verified ? 'complete' : 'unresolved';
+    }
   }
   if (manual) {
     const decision = manualAttachmentDecision(input.manualAttachment);

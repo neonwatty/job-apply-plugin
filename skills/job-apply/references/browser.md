@@ -77,6 +77,11 @@ An exact current-form approval may cover several identified sensitive saved answ
 
 ### Verified field entry
 
+Use [value-free field verification](field-verification.md) and the installed
+`apps/companion/field-verification.mjs` decision helper to classify current
+readback or private visual comparisons. Masking can never authorize repair;
+only fresh, same-control/form/attempt affirmative evidence verifies completion.
+
 Treat a browser write that returns without an error as an attempted write, not proof
 that the field accepted the value. Apply this bounded loop to every editable control:
 

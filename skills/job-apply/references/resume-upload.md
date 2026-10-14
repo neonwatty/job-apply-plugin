@@ -121,6 +121,49 @@ canonical acceptance and claim release, and mark the visible tab for handoff.
 Do not store the helper input as a new Store document or insert unsupported
 fields into the canonical session. The existing session is the durable pause.
 
+### Help selecting the managed file
+
+After the canonical Needs Info pause is accepted and its claim released, use
+`apps/companion/manual-attachment-guidance.mjs` through the approved local module
+runtime to derive owner-facing guidance from the same evidence:
+
+```js
+const guidance = manualAttachmentGuidance(input, {
+  helpRequested: true,
+  pickerState: 'open', // observed open, observed closed, or unknown
+  platform: 'macos', // macos or other
+  clipboardCapability: 'available', // available or unavailable
+});
+```
+
+Use actual current host capabilities and the owner's request for help. This pure
+helper performs no clipboard, browser, or Store operations and grants no new
+consent. It recomputes the existing manual-attachment decision; scope drift,
+stale evidence, upload progress, or accepted attachments cannot request another
+selection. An unknown picker state requires inspection. An open picker is reused;
+only a freshly observed closed picker gets instructions to open Attach once.
+Never repeat the automatic chooser attempt, change permissions, switch browsers,
+or bypass an app safety check to prepare this assistance.
+
+`preparePrivateClipboard: true` is a preparation request, never proof that a path
+was copied. Honor it only after fresh canonical selection/content checks and a
+successful `resume-upload-guard.mjs` result for this exact current scope. Privately
+copy only the returned managed path through the host's available approved
+clipboard capability. Never substitute a guessed path, original source path,
+filename search result, or another resume. Keep the path out of chat, screenshots,
+logs, and durable receipts. Do not print or echo the path while copying it. If
+scope changed or guard/clipboard preparation fails, stop this assistance and
+resolve that condition; do not claim the clipboard is ready.
+
+After successful preparation, tell the owner the verified path is on the
+clipboard. On macOS, give the helper's steps: use the existing picker (or open
+Attach once if freshly observed closed), press **Command–Shift–G**, then
+**Command–V**, then **Return**, and click **Open**. Ask them to confirm the selected
+resume for this exact draft and leave Submit untouched. When clipboard capability
+is unavailable or the platform differs, use documented host assistance or leave
+selection to the owner; do not invent equivalent shortcuts or capabilities.
+The helper output is value-free, but it is not a new durable state document.
+
 On the owner's reply, follow the canonical recovery/selection route to a current
 attempt before continuing. An explicit reply confirming the intended selected
 resume supplies `ownerConfirmation: { scope: currentScope, confirmed: true }`;
