@@ -80,3 +80,39 @@ After the accepted Needs Info handoff, report the preserved blocker and released
 | Job at Needs Info | Resolve the blocker and return the job to Ready through canonical preparation before starting a fresh owner attempt. |
 
 A reviewed restart retains the previous checkpoint as history and creates a new attempt. It requires fresh browser inspection, accepted managed-resume evidence, and a new current-attempt readiness packet. A stored review packet cannot complete the new attempt. When experimental tasks already exist for this job, a missing or ambiguous matching finished attempt blocks restart; never rewrite history to make it eligible. For a first owner attempt, canonical review adoption preserves the prior session until new progress and requires the same explicit restart approval and fresh readiness evidence.
+
+## Same-chat recovery before continuing
+
+Regular supervised dogfooding uses one owning chat per application. Return to
+that chat for the existing browser draft. A different chat can inspect durable
+state but may have no access to the original browser; an exact URL or old tab ID
+does not prove draft continuity. Do not open, reload, navigate or reconstruct a
+form to make recovery appear successful. If discovery fails, preserve the
+checkpoint and explain that a fresh attempt needs explicit owner authorization.
+
+Use the installed `apps/companion/same-chat-recovery.mjs` exported
+`sameChatRecovery(context, evidence)` after obtaining fresh canonical owner
+context (the command response's `result`). Evidence is exactly
+`{chatScope, draft, observation, formScope}`: chatScope/formScope are
+`same|different|unknown`, draft is `present|missing|unknown`, and observation is
+`current|stale|unknown`. These closed values are host attestations; never pass
+URLs, tab IDs, applicant data or screenshots. Compare form identity privately.
+An inaccessible frame or uncertain document is unknown, not present/current.
+
+Follow the returned `next` decision:
+
+- `return_to_original_chat`: ask the owner to continue there; do not operate a replacement tab.
+- `preserve_checkpoint_request_fresh_attempt`: retain state and obtain an explicit fresh-attempt request before starting another form.
+- `inspect_existing_draft`: rediscover and read the existing tab only, then refresh evidence.
+- `wait_for_claim_expiry`: preserve the draft; do not steal a live claim or replay browser writes.
+- `request_explicit_recovery`: use the current recovery descriptor only with matching owner authorization, then refresh context and reobserve the form.
+- `resolve_workflow_blocker`: follow canonical blockers; reviewed or Needs Info jobs do not silently become active.
+- `guarded_needs_info`: use an available safe-exit descriptor and release the claim before waiting; never fabricate a descriptor.
+- `continue_via_current_descriptors`: recheck current-form consent and resume/input identity, then continue through the existing owner workflow and readiness rules.
+
+Every result denies navigation, browser mutation and submission authority: this
+helper supplies guidance, not a grant. Current descriptors and existing consent
+rules separately govern subsequent work. Even a current same-form observation
+is not a complete readiness packet. Receipt replay proves historical recording
+only. Mark the existing tab for handoff before ending the turn; keep all other
+drafts untouched. Do not persist chat/browser identities in application sessions.

@@ -42,6 +42,7 @@ export function BrowserRecoveryView({ data, loading, error, refresh }: RecoveryV
       </dl>
       <p>Archived actions retain their recorded outcomes. Remaining archive batches are storage capacity, not permission to act.</p>
     </>}
+    <p>For an application draft, continue in its original chat. Saved status cannot confirm that another chat can access the same tab. If the tab is unavailable, preserve the checkpoint and request a fresh attempt explicitly; do not reopen the application link automatically.</p>
     <p className="automation-safety">Refreshing only reads saved status. Review and submit the application yourself on the employer site.</p>
   </section>;
 }

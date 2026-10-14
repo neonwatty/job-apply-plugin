@@ -22,6 +22,6 @@ test('Companion renders exact selected job opt-in and manual review and blocked 
   assert.doesNotMatch(switched, /saved-job-one/u);
   for (const boundary of ['To opt in', 'current application run', 'confirmed managed resume',
     'code-provided actions and blockers', 'verifies the managed resume upload and complete form', 'manual review and submission', 'stops at Needs information',
-    'does not authorize an action']) assert.ok(first.includes(boundary), boundary);
+    'does not authorize an action', 'Resume in the original chat', 'Do not reopen the application link', 'Previously reviewed means historical completion']) assert.ok(first.includes(boundary), boundary);
   assert.doesNotMatch(first, /<button|<form|<input|<a\s/u);
 });
