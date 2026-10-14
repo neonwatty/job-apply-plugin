@@ -1,5 +1,9 @@
 # Minimum path to selected-job owner dogfood
 
+> Historical planning document. For the implemented PR #222 candidate, completed
+> owner pilots and remaining acceptance work, see the current section of
+> [the readiness report](agent-workflow-readiness.md).
+
 Assessment date: 2026-10-12. Source baseline: PR #214,
 `b7fb790129ab0086d78bd21a959208bdd05bc91a`. This scopes future work; it does
 not authorize owner Store access or establish staging readiness. Actual expiry

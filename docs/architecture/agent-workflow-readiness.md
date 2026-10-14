@@ -1,5 +1,75 @@
 # Agent workflow readiness audit
 
+## Current consolidated candidate — 2026-10-13
+
+Integration target: `codex/experimental-agent-workflows`. The cumulative runtime
+candidate is PR #222, commit `5d8c5df40a742f2511092016454ea1967eae24b2`.
+The integration branch advances from `3753b6912f64755b6233469f10d467993ad4a34b`
+by fast-forward, retaining the original commits for PRs #193–#222. No squash,
+rebase, runtime change, Store migration, or staging promotion is part of this
+consolidation. Future fixes should target this experimental branch directly.
+
+### Implemented and supported scope
+
+Code owns proposal validation, canonical task and input bindings, exclusive
+claims, revision conflicts, durable checkpoints, receipt replay, pause/recovery,
+and guarded handoff. The installed owner opt-in route now supports selected-job
+applications through manual review. PRs #216–#222 add owner activation, upload
+composition, pinned packaging, bounded upload attempts, manual attachment,
+reviewed-job restart, picker guidance and masked-field verification.
+
+The host agent still interprets pages, chooses controls, invokes existing browser
+tools and attests observations and user input. Accepted reports are
+`agent_attested`; they do not independently prove browser state or enforce policy
+over arbitrary host tools. Masked readback cannot establish a mismatch or justify
+retyping. Current scoped evidence is required for readiness. Final submission
+remains manual. Extraction, campaigns, protected approval embedding and archival
+have narrower fixture/contract evidence; live selected-job pilots do not validate
+all those capabilities or replace the ordinary application route.
+
+### Evidence and limitations
+
+- Reddit and SentinelOne supervised pilots reached recorded manual-review
+  handoffs. SentinelOne exercised guarded owner restart and manual attachment.
+- PR #222 recorded 29 passing deep suites, both release suites, normal hooks and
+  native plus independent reviews. These are historical candidate results;
+  consolidation gates are recorded separately in the integration receipt.
+- A fresh desktop chat discovered the exact candidate: all 864 installed files
+  matched. It recovered SentinelOne at `awaiting_review` revision 17 without a
+  claim and verified the selected run/resume binding.
+- Exact unchanged original-report lookup returned a finished historical owner
+  task (revision 2), `replayed: true`, `replayScope: report_recording_only`.
+  This establishes historical completion, not current ledger/browser inspection.
+- The fresh chat exposed no prior browser tabs. Original-draft visibility and
+  current browser readiness were not verified. Interrupted live-claim recovery
+  was not exercised in that real pilot; isolated recovery tests are separate.
+- Improved everyday UX, general ATS coverage and cross-platform live acceptance
+  are not established. Earlier paired evaluations had mixed outcomes.
+
+### Remaining acceptance work
+
+1. Retain a cumulative integration-gate receipt for the consolidated candidate.
+2. Establish an explicit fresh-chat browser handoff with current observations;
+   stored state recovery alone does not recover a browser draft.
+3. Exercise interrupted live-claim recovery under a separately authorized,
+   isolated pilot, preserving unrelated drafts and distinguishing lost drafts
+   from recoverable checkpoints.
+4. Repeat bounded supervised applications and fix observed failures. Record
+   friction and unsupported cases before claiming improved UX.
+5. Decide ordinary-route adoption and staging promotion separately. Preserve
+   finite-ledger capacity and compatibility limits; installing an older reader
+   is not a Store-format rollback.
+
+All existing application drafts remain untouched during consolidation. No live
+browser, applicant Store mutation, new application or final submission is needed
+for the integration gates.
+
+## Historical audit at PR #214
+
+The remainder records the earlier baseline. Its future-tense owner-route and
+pilot requirements are superseded by the current status above; its architecture
+map and evidence distinctions remain useful historical context.
+
 Audit updated: 2026-10-12. Source baseline: PR #214,
 `b7fb790129ab0086d78bd21a959208bdd05bc91a`. This is a cumulative source and
 evidence audit, not a review or acceptance result for unfinished expiry/drift work.
