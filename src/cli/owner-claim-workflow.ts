@@ -1,4 +1,6 @@
 import { isAbsolute, join } from 'node:path';
+import { nativeRecoveryContextReader } from '../store/native-recovery-context.js';
+import { ownerRecoveryContext } from '../app/owner-recovery-context.js';
 import { ownerWorkflowReceipt } from '../app/owner-workflow-receipt.js';
 import { ClaimWorkflow } from '../app/claim-workflow.js';
 import { createOwnerWorkflowStore } from '../app/owner-workflow-policy.js';
@@ -16,8 +18,8 @@ import { runAttemptBroker, requestAttempt } from './attempt-broker.js';
 /** Foreground explicit owner activation; clients only contact the existing endpoint. */
 export function parseOwnerClaimOptions(args: string[]) {
   const [command, ...rest] = args;
-  if (!['serve', 'context', 'event', 'receipt', 'host-browser-context', 'host-browser-report'].includes(command ?? '')) throw new Error('invalid command');
-  const context = command === 'context' || command === 'host-browser-context';
+  if (!['serve', 'recovery-context', 'context', 'event', 'receipt', 'host-browser-context', 'host-browser-report'].includes(command ?? '')) throw new Error('invalid command');
+  const context = command === 'recovery-context' || command === 'context' || command === 'host-browser-context';
   const report = command === 'host-browser-report';
   const options = new Map<string, string>();
   let attested = false;
@@ -33,15 +35,17 @@ export function parseOwnerClaimOptions(args: string[]) {
   if ((command === 'event' || command === 'receipt' || report) !== options.has('--input')) throw new Error('invalid input option');
   if (options.has('--input') && !isAbsolute(options.get('--input')!)) throw new Error('explicit input path required');
   if (command === 'serve' && (!attested || !options.get('--job-id'))) throw new Error('explicit owner activation required');
+  if (command === 'recovery-context' && !options.has('--job-id')) throw new Error('exact job required');
   if (options.has('--job-id')) identifier(options.get('--job-id'), 'invalid_arguments');
   return { command: command!, root, nativeLock: artifact, jobId: options.get('--job-id'), input: options.get('--input'), hostUserEvent: attested };
 }
 export async function ownerClaimWorkflow(args: string[]): Promise<unknown> {
   const { command, root, nativeLock: artifact, jobId, input, hostUserEvent: attested } = parseOwnerClaimOptions(args);
-  const context = command === 'context' || command === 'host-browser-context';
+  const context = command === 'recovery-context' || command === 'context' || command === 'host-browser-context';
   const report = command === 'host-browser-report';
   nativeCloneTrees(Buffer.from(await boundedFile(join(root, nativeCloneMarkerName), 1024)));
   const provider = loadPosixFlockProvider(artifact), repository = new NativeJobsRepository(root, provider);
+  if (command === 'recovery-context') return ownerRecoveryContext(nativeRecoveryContextReader(root, provider, jobId!), jobId!);
   await repository.transaction(async () => {});
   if (command === 'receipt') {
     return ownerWorkflowReceipt(repository, JSON.parse(await boundedFile(input!, 131072)));

@@ -46,3 +46,16 @@ test('owner clients never activate or launch a Store and reject fixtures', async
   await assert.rejects(runOwnerCommand(['serve','--root','/private/store','--job-id','job','--host-user-event'], '/plugin', fixture.dependencies));
   assert.equal(fixture.calls.some(([kind])=>kind==='activate'||kind==='execute'), false);
 });
+
+
+test('paused recovery context cannot activate a Store and requires exact job scope', async () => {
+  const p = ports();
+  await runOwnerCommand(['recovery-context','--root','/private/store','--job-id','job'], '/plugin', p.dependencies);
+  assert.equal(p.calls.some(([kind]) => kind === 'activate'), false);
+  for (const owner of ['fixture', null]) {
+    const rejected = ports(owner);
+    await assert.rejects(runOwnerCommand(['recovery-context','--root','/private/store','--job-id','job'], '/plugin', rejected.dependencies));
+    assert.equal(rejected.calls.some(([kind]) => kind === 'activate' || kind === 'execute'), false);
+  }
+  await assert.rejects(runOwnerCommand(['recovery-context','--root','/private/store'], '/plugin', p.dependencies));
+});

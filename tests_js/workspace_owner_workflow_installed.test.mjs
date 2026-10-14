@@ -9,6 +9,7 @@ import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
 import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
 import { setup, snapshot, read, write } from './workspace_durable_claims_support.mjs';
+import { sameChatRecovery } from '../apps/companion/same-chat-recovery.mjs';
 import { packageNativeLock } from '../scripts/smoke/package_native_lock.mjs';
 
 const source = new URL('../', import.meta.url).pathname;
@@ -41,6 +42,8 @@ test('installed owner route explicitly activates private clone and scopes durabl
     catch(e){assert.equal(e.code,2,e.stderr);return JSON.parse(e.stdout);}
   };
   const before=await snapshot(root);
+  assert.equal((await call('recovery-context',['--job-id','job'])).ok,false);
+  assert.deepEqual(await snapshot(root),before);
   assert.equal((await call('serve',['--job-id','job'])).ok,false);
   assert.equal((await call('context',['--job-id','job'])).ok,false);
   assert.deepEqual(await snapshot(root),before);
@@ -62,6 +65,9 @@ test('installed owner route explicitly activates private clone and scopes durabl
   assert.equal((await send({...acquire,jobId:'other'},true)).ok,false);
   assert.equal((await send(acquire)).ok,false);
   assert.equal((await send(acquire,true)).ok,true);
+  const activeSnapshot=await snapshot(root);
+  assert.equal((await call('recovery-context',['--job-id','job'])).ok,false);
+  assert.deepEqual(await snapshot(root),activeSnapshot);
   context=await call('host-browser-context',['--job-id','job']);
   assert.equal((await call('context',['--job-id','other'])).ok,false);
   const base=context.result.hostBrowser.reports.find(a=>a.input.outcome==='progress').input;
@@ -84,6 +90,26 @@ test('installed owner route explicitly activates private clone and scopes durabl
   assert.deepEqual(JSON.parse(after['jobs.json']).jobs.other,JSON.parse(before['jobs.json']).jobs.other);
   await assert.rejects(access(join(root,'.job-apply-attempt.pid')));
   assert.equal((await call('context',['--job-id','job'])).ok,false);
+  const paused=await call('recovery-context',['--job-id','job']);
+  assert.equal(paused.ok,true);
+  assert.equal(paused.result.readOnly,true);
+  assert.equal(paused.result.guidance.selection.status,'needs_info');
+  assert.deepEqual(paused.result.broker,{connected:false,ownsClaim:false});
+  assert.deepEqual(paused.result.guidance.actions,[]);
+  assert.deepEqual(paused.result.hostBrowser.reports,[]);
+  assert.equal(paused.result.guidance.selection.inputsCurrent,false);
+  assert.equal(sameChatRecovery(paused.result,{chatScope:'same',draft:'present',observation:'current',formScope:'same'}).next,'resolve_workflow_blocker');
+  assert.deepEqual(await snapshot(root),after);
+  for(const args of [[],['--job-id','missing'],['--job-id','job','--host-user-event']]) {
+    assert.equal((await call('recovery-context',args)).ok,false);
+    assert.deepEqual(await snapshot(root),after);
+  }
+  const journal=await readFile(join(root,'coordinator-journal.json'));
+  await writeFile(join(root,'coordinator-journal.json'),JSON.stringify({schemaVersion:1,operation:{kind:'unfinished'}}));
+  const unfinished=await snapshot(root);
+  assert.equal((await call('recovery-context',['--job-id','job'])).ok,false);
+  assert.deepEqual(await snapshot(root),unfinished,'inspection must not repair pending journals');
+  await writeFile(join(root,'coordinator-journal.json'),journal);
   const replay=await call('receipt',['--input',file]);
   assert.equal(replay.ok,true);assert.equal(replay.result.replayed,true);
   assert.deepEqual(replay.result.receipt,result.result.receipt);

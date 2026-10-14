@@ -4,7 +4,7 @@ import { isAbsolute, resolve, join } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata, workflowTemporaryPattern } from './native-store-layout.js';
 /** Root checks shared by every native Jobs transaction before touching records. */
-export async function validateNativeJobsRoot(root, read, locked = false, allowMissingJobs = false) {
+export async function validateNativeJobsRoot(root, read, locked = false, allowMissingJobs = false, readOnly = false) {
     if (!isAbsolute(root) || root !== resolve(root) || await realpath(root) !== root)
         throw new JobsError('native fixture root must be a real absolute directory');
     const stat = await lstat(root);
@@ -18,7 +18,9 @@ export async function validateNativeJobsRoot(root, read, locked = false, allowMi
         throw new JobsError('native Jobs cannot open unsupported state or recovery journals');
     await validateNativeStoreMetadata(root, markers[0], await read(markers[0]));
     await read('.store.lock');
-    if (locked)
+    if (locked && readOnly && entries.some(name => workflowTemporaryPattern.test(name)))
+        throw new JobsError('read-only inspection requires completed Store recovery');
+    if (locked && !readOnly)
         await discardWorkflowTemporaries(root, entries);
 }
 /** Only the experimental atomic writer uses these names. Under the Store lock a remaining

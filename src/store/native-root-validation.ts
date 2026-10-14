@@ -7,7 +7,7 @@ import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntri
 
 /** Root checks shared by every native Jobs transaction before touching records. */
 export async function validateNativeJobsRoot(root: string, read: (name: string) => Promise<Buffer>,
-  locked = false, allowMissingJobs = false): Promise<void> {
+  locked = false, allowMissingJobs = false, readOnly = false): Promise<void> {
   if (!isAbsolute(root) || root !== resolve(root) || await realpath(root) !== root)
     throw new JobsError('native fixture root must be a real absolute directory');
   const stat = await lstat(root);
@@ -21,7 +21,9 @@ export async function validateNativeJobsRoot(root: string, read: (name: string) 
     throw new JobsError('native Jobs cannot open unsupported state or recovery journals');
   await validateNativeStoreMetadata(root, markers[0]!, await read(markers[0]!));
   await read('.store.lock');
-  if (locked) await discardWorkflowTemporaries(root, entries);
+  if (locked && readOnly && entries.some(name => workflowTemporaryPattern.test(name)))
+    throw new JobsError('read-only inspection requires completed Store recovery');
+  if (locked && !readOnly) await discardWorkflowTemporaries(root, entries);
 }
 
 /** Only the experimental atomic writer uses these names. Under the Store lock a remaining

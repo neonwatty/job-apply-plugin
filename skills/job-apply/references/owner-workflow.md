@@ -90,6 +90,20 @@ does not prove draft continuity. Do not open, reload, navigate or reconstruct a
 form to make recovery appear successful. If discovery fails, preserve the
 checkpoint and explain that a fresh attempt needs explicit owner authorization.
 
+For a paused Needs Info or awaiting-review job with no owning broker, read fresh
+canonical context without starting a broker:
+
+```bash
+node "<plugin-root>/apps/companion/command.mjs" owner-workflow recovery-context --root /absolute/store-root --job-id exact-saved-job
+```
+
+This command requires an already activated native owner Store. It does not
+activate, prepare, acquire, recover or restart; its actions and reports are empty.
+It reports inputs as unverified and never upgrades historical review to current
+readiness. Resolve Needs Info through canonical preparation before a new attempt;
+a reviewed restart still requires explicit authorization. For an active attempt,
+use the existing broker's `host-browser-context` instead.
+
 Use the installed `apps/companion/same-chat-recovery.mjs` exported
 `sameChatRecovery(context, evidence)` after obtaining fresh canonical owner
 context (the command response's `result`). Evidence is exactly
