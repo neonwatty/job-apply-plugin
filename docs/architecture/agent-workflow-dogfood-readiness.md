@@ -1,7 +1,7 @@
 # Minimum path to selected-job owner dogfood
 
-> Historical planning document. For the implemented PR #222 candidate, completed
-> owner pilots and remaining acceptance work, see the current section of
+> Historical planning document. For the current consolidated candidate, completed
+> same-chat owner pilots and remaining acceptance work, see the current section of
 > [the readiness report](agent-workflow-readiness.md).
 
 Assessment date: 2026-10-12. Source baseline: PR #214,

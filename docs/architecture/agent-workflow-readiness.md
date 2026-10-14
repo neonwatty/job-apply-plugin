@@ -1,6 +1,97 @@
 # Agent workflow readiness audit
 
-## Current consolidated candidate — 2026-10-13
+## Current supervised dogfood assessment — 2026-10-14
+
+**Decision: ready to begin regular, supervised selected-job dogfooding in one
+owning Codex desktop chat per application.** This is an experimental opt-in
+scope, with manual attachment when necessary and owner-only final submission.
+It is not staging promotion, ordinary-route replacement, unattended operation,
+or a claim of general ATS reliability.
+
+Runtime candidate: `a8adbb19f513838a9598ac47e65efaf080e8044c` on
+`codex/experimental-agent-workflows`, installed as the paused-recovery candidate.
+The earlier PR #222 baseline below is historical. Subsequent changes added
+same-chat recovery guidance, Companion guidance, and read-only recovery context
+for paused jobs. This report update changes documentation only.
+
+### What the continuation pilots validated
+
+| Boundary | Observed result | Evidence limit |
+| --- | --- | --- |
+| Partial draft pause | Fictional and live forms retained entered fields across a durable Needs Info handoff; the claim was released and the owned broker exited | Controlled pause, not browser-process death |
+| Recovery before acquisition | Read-only recovery context exposed the paused checkpoint without acquiring; the helper required canonical preparation; exact-revision selection and a fresh owner attempt succeeded | Same owning chat and surviving form only; fresh-chat browser transfer remains unsupported |
+| No duplicate entry | Previously entered contact fields were inspected and reused without retyping, navigation or reload | Host-tool trace and agent observation; no independent live page write counter |
+| Manual attachment | Embedded SentinelOne upload produced no chooser event. The ATS then showed an accepted attachment; code required exact-draft Primary confirmation, saved Needs Info and released the claim before waiting | Automatic embedded upload remains unreliable; filename or chooser timeout alone did not establish identity |
+| Current field verification | Current visual comparisons verified masked contact fields and approved saved-answer selections; masking did not trigger repair | Agent-attested comparisons, not independently authenticated browser evidence |
+| Review completion | Fresh current-attempt inventory covered 17 logical controls, including 12 required controls. All seven readiness assertions passed; durable awaiting_review accepted and claim absent afterward | One live SentinelOne form; optional preferred name, cover letter and voluntary demographics stayed blank |
+| Submission and preservation | No final-action activation; original Reddit and older SentinelOne drafts were not edited, navigated or reloaded and were marked for handoff | Live preservation is scoped host evidence, not a durable browser backup |
+
+The fictional Codex-host pilot reached review with one upload attempt, one
+accepted upload and **zero submission attempts** measured by its local server.
+Its email value was host-masked: nonempty validity, server validation and no
+re-entry were observed, but exact-text comparison was not established. The live
+pilot used fresh visual comparisons instead. Neither trial exercised browser
+reload/loss or a separate chat resuming the browser draft.
+
+The live sequence was: partial entry → Needs Info → read-only recovery →
+canonical selection → fresh owner attempt → remaining fields → attachment
+identity pause → owner confirmation → canonical selection → fresh observation
+and readiness → awaiting_review. Final review used attempt revision 27 and
+committed job revision 28; the broker exited successfully and read-only context
+confirmed no claim. The final action stayed manual throughout.
+
+### Evidence retained locally
+
+The private receipt directory is
+`~/.codex/dogfood-packages/same-chat-continuation-pilot/`:
+
+- `receipt.json`: fictional readiness, terminal report and server counters.
+- `notes.md`: fixture setup, limitations and live approval scope.
+- `live-receipt.json`: live attachment-identity pause and its code decision.
+- `live-review-receipt.json`: accepted final live report and readiness assertions.
+
+These are local evidence references, not portable checked-in fixtures. This
+report intentionally omits applicant values, resume paths and browser identities.
+Prior candidate gate receipts remain historical; this documentation update does
+not claim a new release run. The host/model still interprets pages, selects tools,
+and supplies honest observations and consent attestations. Code owns canonical
+state, input/revision binding, claims, allowed recorded transitions and readiness
+recomputation; it does not intercept every arbitrary host browser action.
+
+### What remains and what to tackle next
+
+1. **Repeat the supported workflow in normal use.** Run a small series of
+   separately approved selected-job applications in their owning chats. Record
+   pauses, owner interventions, upload failures, stale-form cases and review
+   outcomes. One successful live continuation closes this specific acceptance
+   gap, but does not establish repeatability or improved everyday UX.
+2. **Reduce observed integration friction.** The pilot's temporary command client
+   initially put `--root` in the wrong position for different command families;
+   calls were rejected and corrected. One readiness packet used an unsupported
+   capability enum and was rejected before handoff. Prefer documented shared
+   command/packet construction over rebuilding these adapters in each chat.
+   Treat these as agent-side composition friction, not demonstrated Store defects.
+3. **Keep manual attachment a supported stop.** No automatic retry or permission
+   workaround is justified by a missing chooser event. Preserve the draft,
+   release the claim, obtain selected-resume confirmation and reobserve acceptance.
+   Automatic cross-origin chooser reliability is desirable, not a prerequisite
+   for accurately labeled supervised dogfooding.
+4. **Keep recovery limits explicit.** Same-chat continuation is the supported
+   path. Missing or lost browser drafts require a separately approved fresh
+   attempt; durable Store recovery does not recreate the browser. Prior isolated
+   expiry/crash evidence is separate from this controlled continuation pilot.
+5. **Make promotion a separate decision.** Before wider rollout or ordinary-route
+   adoption, identify the exact candidate, run applicable integration/release and
+   review gates, retain receipts, and declare supported hosts and finite-ledger
+   limits. Cross-platform live coverage, broad ATS coverage, archival pressure
+   and authenticated host approval are not established by this pilot.
+
+No further generic state-machine redesign is required before the next bounded
+supervised run. The next practical step is repeated use with recorded friction;
+fix observed blockers before expanding the supported scope. All drafts remain
+preserved and final submission remains with the owner.
+
+## Historical consolidation baseline — 2026-10-13
 
 Integration target: `codex/experimental-agent-workflows`. The cumulative runtime
 candidate is PR #222, commit `5d8c5df40a742f2511092016454ea1967eae24b2`.
