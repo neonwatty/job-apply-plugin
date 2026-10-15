@@ -68,8 +68,16 @@ No live follow-up or installed-owner activation was performed in this pass.
   and SIGKILL before/after publication. No live Store or browser draft was used.
 - Updated `npm run test:release`: both suites passed, including isolated
   Codex/Claude installation, upgrade parity and packaged browser/CLI journeys.
-- Source-size, test-matrix and whitespace checks passed. The final clean
-  serialized aggregate run is pending; the full gate is not yet marked green.
+- Final clean serialized candidate gate passed: all 26 suites, including the
+  historical migration audit, on `b9d4fe991bbcc1ade9709f6a35bc8780ebd298a2`
+  against `origin/staging` (`f95b4947453ad6c6abc9cc0e81c3e443706d4714`).
+  Command: `npm run test:affected -- --base origin/staging --concurrency 1`.
+  Workspace results: 2,415 passed, 27 skipped, zero failures in 666 seconds.
+  Visible-owner-browser checks retain their explicit opt-in and were not run.
+- Source-size, test-matrix and whitespace checks passed. Both implementation
+  checkpoints passed the normal commit hooks. This report update records the
+  completed candidate gates; activation and a live Workday completion pilot
+  remain separate follow-up work.
 
 The next product validation remains a supervised Workday completion pilot.
 Synthetic acceptance does not establish live Workday manual-review completion.
