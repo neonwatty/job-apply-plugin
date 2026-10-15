@@ -23,11 +23,30 @@ This is host-browser fixture evidence, not a replica of Workday internals or
 proof that the live tenant accepts the same technique.
 
 Ten focused verification tests passed, including the requirement that every
-date segment and its associated validation state must agree. Serialized affected and release gates
-are running. Candidate activation and the owner-authorized live retry are pending.
-The live retry must inspect current state first, retain existing counters and
-checkpoints, and stop on a broker rejection or unverified control. It may not
-reset recovery budgets or interpret a candidate update as automatic retry authority.
+date segment and its associated validation state must agree. Candidate
+`5223737f` passed 11 commit-hook suites and both final release suites. The
+migration audit initially rejected the dirty snapshot and passed after commit.
+All 882 installed package files matched the candidate (550 critical files).
+The serialized affected run completed with 25 of 26 suites passing; its sole
+failure was the pre-commit dirty-snapshot migration audit, resolved by the clean
+post-commit rerun. The workspace suite passed 2,421 tests, skipped 27, and failed
+none. The original affected receipt remains marked failed rather than rewritten;
+the separate successful migration rerun supplies the resolved gate evidence.
+The owner-authorized live retry used the existing draft and owner-workflow
+broker. Fresh AX indices, setValue, Tab, and immediate readback verified Work
+Experience 2 From and To date groups, Role Description, and Education To year.
+The incorrect Field of Study selection was removed; no exact supported option
+was visible, so this optional field was left blank under the owner's authority.
+One Save and Continue attempt remained on My Experience and returned generic
+Workday page errors. Owner recovery returned `pause_preserve_draft` with no retry
+reserved. The worker did not refresh or click Save again. The guarded Needs Info
+handoff succeeded at job revision 46 and released the claim.
+
+This validates live date/control correction and conservative verification, not
+Workday save completion. Manual review remains unvalidated. The next separate
+issue is the opaque save/session failure, subject to existing durable recovery
+budgets and preserved-draft rules. All drafts remain preserved; final submission
+was untouched. No budget was reset to obtain another attempt.
 
 ## Dedicated application pilot follow-up — 2026-10-15
 
