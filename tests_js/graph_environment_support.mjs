@@ -163,7 +163,8 @@ async function group1(t) {
   await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   const liveSkillFiles = (await trackedPaths(GRAPH_ROOT)).filter(SKILL_SOURCE_PATH);
-  assert.equal(liveSkillFiles.length, 42);
+  assert.equal(liveSkillFiles.length, 43);
+  assert.ok(liveSkillFiles.includes('skills/job-apply/references/ats-recovery.md'));
   assert.ok(liveSkillFiles.includes('skills/job-apply/references/field-verification.md'));
   assert.ok(liveSkillFiles.includes('skills/job-apply/references/resume-upload.md'));
   assert.ok(liveSkillFiles.includes('skills/job-apply/references/consent-intents.md'));

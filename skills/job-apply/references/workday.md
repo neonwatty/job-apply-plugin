@@ -16,7 +16,14 @@
 
 **Special handling:**
 - Workday dropdowns: Click field → wait → read the visible options → click the supported option
-- Date pickers: Often format-sensitive, try MM/DD/YYYY
+- Date pickers: Inspect the actual month/year or full-date control. Verify the resulting visible date; never assume MM/DD/YYYY. Follow the bounded control fallback in [field verification](field-verification.md).
 - Required fields marked with asterisk or red border after validation
 
 ---
+
+## Bounded recovery and progress evidence
+
+Use [ATS recovery](ats-recovery.md) for opaque save errors, session expiry,
+unsupported controls, and next-page failures. A signed-in header is insufficient
+session evidence. Workday error IDs such as `I|…` are opaque correlation tokens,
+not field diagnoses. Changing IDs never grants another retry.

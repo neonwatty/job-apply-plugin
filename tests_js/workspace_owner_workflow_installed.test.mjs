@@ -34,6 +34,14 @@ test('installed owner route explicitly activates private clone and scopes durabl
   for(const path of ['runtime','native','apps/companion','package.json']) {
     await cp(join(source,path),join(plugin,path),{recursive:true,filter:p=>!p.includes('node_modules')&&!p.includes('/.next')&&!p.includes('/dist')});
   }
+  const recovery = await import(new URL(`file://${join(plugin,'apps/companion/ats-recovery.mjs')}`));
+  assert.equal(recovery.atsRecovery({ats:'workday', draft:'present', observation:'current',
+    session:'unknown', failure:'generic_save', refreshApproved:false},
+    {save:0, afterSignIn:0, refresh:0}).next, 'inspect_session_separate_tab');
+  assert.equal(recovery.questionBatch([{required:true,state:'missing'}],true).next,
+    'guarded_needs_info_then_ask_batch');
+  assert.equal(recovery.applicationProgress({entered:true,verified:true,pageAdvanced:true,
+    persistenceConfirmed:false}).persistence, 'unknown');
   await packageNativeLock(plugin);
   const command=join(plugin,'apps/companion/command.mjs'),file=join(fixture.root,'owner-input.json');
   const env={PATH:'',HOME:fixture.root};

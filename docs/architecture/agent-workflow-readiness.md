@@ -1,6 +1,75 @@
 # Agent workflow readiness audit
 
-## Current supervised dogfood assessment — 2026-10-14
+## Current assessment — 2026-10-15: Workday hardening
+
+**Continue supervised experimental dogfooding; Workday manual-review completion
+remains unvalidated.** The Capital One pilot advanced through questionnaires but
+encountered a next-page failure. One owner-approved refresh returned to sign-in;
+retained draft data was not confirmed. Do not count this as a completed pilot.
+All final submission remains manual. No live drafts were changed by this pass.
+
+### What this round established
+
+- Workday automatic Primary attachment succeeded in this pilot.
+- Custom date controls needed manual correction after bounded entry attempts.
+- Opaque save errors gave no actionable field diagnosis. A separate-tab sign-in
+  followed by retry advanced the original page; a header email was insufficient
+  evidence of session health.
+- Repeated single-question pauses created avoidable interaction overhead.
+- Page advancement did not prove server persistence. Empty Candidate Home did
+  not establish draft loss; refresh did not establish successful recovery.
+
+### Focused implementation
+
+The shared `apps/companion/ats-recovery.mjs` contract selects a separate Workday
+policy in `ats-recovery/workday.mjs`. It bounds generic-save, post-sign-in and
+owner-approved refresh proposals, fails closed for unknown histories, and
+routes missing drafts to an explicit fresh-attempt decision. Unknown ATSs pause
+for diagnosis; add separate policies as evidence warrants.
+
+Page intake batches unresolved questions without inferring answers or consent.
+Progress labels distinguish entered, verified, advanced and persistence-confirmed
+observations. Skill references invoke these helpers; installed-artifact coverage
+checks the exports. Existing broker, revision, resume and readiness gates remain
+authoritative.
+
+**Enforcement limit:** these are deterministic advisory decisions invoked by the
+host agent. Browser evidence and approval remain agent-attested. Retry budgets
+are caller-held, not durable Store counters; missing history pauses. This does
+not yet guarantee retries across host context loss or prevent a host bypassing
+the helper. A durable broker-bound recovery ledger is future work, alongside a
+supervised Workday completion pilot. No live follow-up was run in this pass.
+
+### Acceptance evidence
+
+- Six focused recovery/intake/progress tests passed.
+- Isolated installed-owner acceptance passed, including helper loading and
+  existing claim-release, scoped handoff and unrelated-record preservation.
+- `npm run test:release`: passed both suites (package smoke and documentation
+  links), including isolated Codex/Claude installation and browser/CLI fixtures.
+- Source-size and test-matrix checks passed; skill/policy checks passed.
+- Full affected selection against `origin/staging`: **red**. The clean rerun
+  reported no assertion failures but `node-workspace-other` exceeded its
+  900,000 ms aggregate limit. Initial assertion failures (a split-line prohibition
+  and reference-inventory count) were corrected and passed in the rerun.
+- The late `workspace_workflow*.test.mjs` group passed separately: 53 passed,
+  one optional installed-Codex probe skipped, no failures. This covers the tail
+  left unfinished by the aggregate timeout. Do not interpret split coverage as
+  a green aggregate gate.
+- Clean HEAD baseline workspace suite completed in 785 seconds, below the
+  900-second limit. Its temporary snapshot initially lacked a pinned historical
+  Git object, producing three fixture failures; after supplying history, both
+  affected files passed (14 tests). The timeout was **not reproduced** on this
+  isolated baseline. Candidate runs overlapped other checks, so contention is a
+  possible cause, not a proven diagnosis. A serialized candidate aggregate run
+  remains required before calling the full integration gate green.
+
+Targeted cases cover stale signed-in headers, opaque errors, unsupported dates,
+page-load failure, missing drafts, bounded refresh, batched intake and persistence
+wording. These are synthetic checks, not a live Workday completion result.
+
+
+## Prior supervised dogfood assessment — 2026-10-14
 
 **Decision: ready to begin regular, supervised selected-job dogfooding in one
 owning Codex desktop chat per application.** This is an experimental opt-in

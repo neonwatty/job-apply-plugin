@@ -2,6 +2,8 @@
 
 Read [browser.md](browser.md) before any browser work and [intake.md](intake.md) before acquiring an ordinary job. Retain the same canonical job and managed resume throughout.
 
+Read [ATS recovery and page question batching](ats-recovery.md) before filling or recovering a page.
+
 ### Phase 2: Application Filling
 
 1. **Initialize and load storage** through the bundled `answer-memory` skill. Read `application-run-status`, require the exact job in its current queue, then read only that run's selected resume with `resume-facts-get --resume-id <confirmed-resume-id>`. Verify its confirmed fact and content revisions still match the application run selection, then inspect `node "<plugin-root>/apps/companion/command.mjs" task [--root <resolved-root>] activity --id <job-id>` for resumable work on the exact selected canonical job. Use that fact set for applicant profile fields. For every ordinary application, use the acquired canonical job ID as the application/session ID and the managed resume returned by the private helper. If no suitable managed resume exists, ask the user for a source file, import it with `resume-import`, then return to extraction, owner fact review, and application run setup. Never use `profile.resumePath`, a URL-derived session ID, or a user source path for upload. The authenticated loopback QA replay remains the only synthetic coordinator exception.
