@@ -1,3 +1,4 @@
+import { recoveryState } from '../contracts/workspace/ats-recovery-ledger.js';
 import { claimExpired } from '../contracts/workspace/claims.js';
 import { get, int, object, string } from '../contracts/workspace/values.js';
 import { TaskProtocolError } from '../contracts/workspace/workflow-tasks.js';
@@ -30,6 +31,7 @@ export async function ownerRecoveryContext(repository, jobId, now = () => new Da
                         attemptRevision: int(get(session, 'attemptRevision'))?.toString() ?? null } : null,
                     sessionRequiresObservation: true, actions: [],
                 },
+                recovery: recoveryState(tx.jobs, jobId),
                 hostBrowser: { reports: [] },
             } };
     });

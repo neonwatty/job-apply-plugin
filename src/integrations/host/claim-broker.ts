@@ -6,7 +6,7 @@ import type { Document } from '../../contracts/workspace/values.js';
 import { exact, identifier, record, requireCondition, snapshot } from '../../harness/validation.js';
 
 /** Adapter for the existing private broker transport. The bearer stays inside ClaimWorkflow. */
-export type ClaimWorkflowBrokerPort = Pick<ClaimWorkflow, 'inspect' | 'execute' | 'heartbeat' | 'close'>;
+export type ClaimWorkflowBrokerPort = Pick<ClaimWorkflow, 'inspect' | 'execute' | 'heartbeat' | 'close'> & Partial<Pick<ClaimWorkflow, 'recovery'>>;
 export class WorkflowBroker {
   private timer: ReturnType<typeof setInterval> | undefined;
   constructor(private readonly workflow: ClaimWorkflowBrokerPort, private readonly failed: () => void,
@@ -36,8 +36,12 @@ export class WorkflowBroker {
       return {response:object(fromJSON({ok:true,result}),'response'),complete:false};
     }
     exact(value,['command','event','hostUserEvent'],'invalid_proposal');
-    requireCondition(value.command === 'event' && typeof value.hostUserEvent === 'boolean','invalid_proposal');
-    const result = await this.workflow.execute(value.event,value.hostUserEvent ? value.event : undefined);
+    requireCondition((value.command === 'event' || value.command === 'recovery')
+      && typeof value.hostUserEvent === 'boolean','invalid_proposal');
+    requireCondition(value.command !== 'recovery' || typeof this.workflow.recovery === 'function','invalid_proposal');
+    const result = value.command === 'recovery'
+      ? await this.workflow.recovery!(value.event,value.hostUserEvent ? value.event : undefined)
+      : await this.workflow.execute(value.event,value.hostUserEvent ? value.event : undefined);
     return {response:object(fromJSON({ok:true,result}),'response'),complete:false};
   }
   async close(): Promise<void> {

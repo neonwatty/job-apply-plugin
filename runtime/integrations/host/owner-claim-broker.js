@@ -52,6 +52,16 @@ export class OwnerClaimBroker {
             value.result.browserAuthority = 'existing_host_tools';
             value.result.finalSubmission = 'manual';
             if (value.result.hostBrowser) {
+                const progress = (value.result.guidance?.actions ?? []).find((action) => action.kind === 'progress');
+                value.result.hostBrowser.recovery = {
+                    state: value.result.recovery ?? null, args: ['owner-workflow', 'recovery'],
+                    approvalRequiredFor: ['fresh_draft', 'refresh_once'],
+                    input: progress ? { operationId: null, taskId: progress.input.taskId,
+                        expectedRevision: progress.input.expectedRevision, jobId: progress.input.jobId,
+                        jobRevision: progress.input.jobRevision, recoveryRevision: value.result.recovery?.revision ?? null,
+                        draftId: value.result.recovery?.draftId ?? null } : null,
+                    requiredFields: ['operationId', 'mode', 'evidence'],
+                };
                 value.result.hostBrowser.reports = (value.result.guidance?.actions ?? [])
                     .filter((action) => action.kind === 'progress'
                     || action.kind === 'handoff' && ['needs_info', 'awaiting_review'].includes(action.input.status ?? ''))

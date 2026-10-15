@@ -1,7 +1,10 @@
+import { recoveryRequest, recoveryNeedsApproval } from '../contracts/workspace/ats-recovery.js';
+import { recoveryState } from '../contracts/workspace/ats-recovery-ledger.js';
+import { recoveryFingerprint } from '../workflows/applications/recovery-reservation.js';
 import { browserBinding, browserMutation, requestFingerprint } from '../contracts/workspace/browser-boundary.js';
 import { browserValueGrant, browserValueGrantFingerprint } from '../contracts/workspace/browser-authority.js';
 import { createHash, randomUUID } from 'node:crypto';
-import { activeApplicationJob } from '../contracts/workspace/application-policy.js';
+import { activeApplicationJob, applicationPreflight } from '../contracts/workspace/application-policy.js';
 import { requireClaim } from '../contracts/workspace/claims.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fromJSON, get, int, object, string, JobsError } from '../contracts/workspace/values.js';
@@ -185,6 +188,48 @@ export class ClaimWorkflow {
             return result;
         });
     }
+    /** Durable recovery reservation; host actions remain subject to ordinary consent and readiness. */
+    recovery(raw, hostEvent) {
+        const request = recoveryRequest(raw);
+        const approval = recoveryNeedsApproval(request);
+        if (approval && (this.userEvents || hostEvent === undefined
+            || recoveryFingerprint(recoveryRequest(hostEvent)) !== recoveryFingerprint(request))) {
+            return Promise.reject(new TaskProtocolError('user_event_required'));
+        }
+        return this.serial(() => this.store.transaction(async (tx) => {
+            const capability = this.#capability, task = tx.ledger.tasks[request.taskId];
+            if (this.#closed || !capability || capability.taskId !== request.taskId
+                || capability.jobId !== request.jobId)
+                throw new TaskProtocolError('broker_unavailable');
+            if (!task || tx.ledger.activeTaskId !== request.taskId)
+                throw new TaskProtocolError('task_conflict');
+            requireAttemptTask(task);
+            if (task.status !== 'active' || task.revision !== request.expectedRevision
+                || task.subject.jobId !== request.jobId || task.subject.jobRevision !== request.jobRevision) {
+                throw new TaskProtocolError('stale_revision');
+            }
+            const check = async () => {
+                this.registry.resolve(attemptIdentity, this.access());
+                const job = activeApplicationJob(tx.domain.snapshot, request.jobId);
+                if (int(get(job, 'revision'))?.toString() !== request.jobRevision
+                    || preparationScope(tx.domain.snapshot, job) !== task.subject.inputRevision)
+                    throw new TaskProtocolError('stale_revision');
+                if (get(await applicationPreflight(tx.domain.snapshot, job), 'ready') !== true)
+                    throw new TaskProtocolError('stale_revision');
+                requireClaim(tx.domain.snapshot.coordinator, tx.domain.snapshot.jobs, request.jobId, capability.token, this.now());
+                this.registry.resolve(attemptIdentity, this.access());
+            };
+            await check();
+            if (!tx.domain.reserveRecovery)
+                throw new TaskProtocolError('action_unavailable');
+            const reserved = await tx.domain.reserveRecovery(request, capability.token);
+            if (reserved.changed) {
+                await check();
+                await tx.commit(tx.ledger);
+            }
+            return reserved.result;
+        }));
+    }
     inspect(requestedJobId) {
         if (requestedJobId !== undefined)
             identifier(requestedJobId, 'invalid_arguments');
@@ -205,7 +250,9 @@ export class ClaimWorkflow {
             if (this.userEvents)
                 for (const action of guidance.actions)
                     action.args = action.args.filter(arg => arg !== '--host-user-event');
+            const recoveryJobId = requestedJobId ?? (task && isJobWorkflowTask(task) ? task.subject.jobId : undefined);
             return { task: task ? structuredClone(task) : null, brokerAvailable,
+                recovery: recoveryJobId ? recoveryState(tx.domain.snapshot.jobs, recoveryJobId) : null,
                 broker: { connected: !this.#closed, ownsClaim: brokerAvailable },
                 ...(this.userEvents ? { userEventSource: 'trusted_host' } : {}), guidance };
         }));

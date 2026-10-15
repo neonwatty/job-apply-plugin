@@ -43,6 +43,15 @@ Read [browser and consent](browser.md), [filling and handoff](application.md), a
 
 Report only current observed browser evidence through the exact template in `hostBrowser.reports`, adding only its listed required fields. Historical checkpoints, stored readiness, and action templates are not fresh browser observations. Never fabricate evidence or empty pending fields to satisfy a guard. Keep applicant values, resume paths, claim tokens, and browser state out of chat and durable session summaries.
 
+## ATS recovery reservations
+
+For Workday save, session or page-load failures, use [durable ATS recovery](ats-recovery.md)
+and the current `hostBrowser.recovery` descriptor. The broker owns retry counters;
+never reconstruct them from chat or send replacement counters. A recovery replay
+never authorizes another browser action. The ordinary `receipt` command above
+accepts only events/reports; after recovery socket loss, inspect current recovery
+state and re-observe the draft instead of replaying the browser action.
+
 ## Upload through manual review
 
 Use the [bounded host-browser upload](resume-upload.md) sequence for chooser

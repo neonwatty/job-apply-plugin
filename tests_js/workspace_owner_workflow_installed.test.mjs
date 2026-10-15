@@ -73,6 +73,20 @@ test('installed owner route explicitly activates private clone and scopes durabl
   assert.equal((await send({...acquire,jobId:'other'},true)).ok,false);
   assert.equal((await send(acquire)).ok,false);
   assert.equal((await send(acquire,true)).ok,true);
+  const owned=await call('host-browser-context',['--job-id','job']);
+  const initialize={...owned.result.hostBrowser.recovery.input,operationId:'owner-fresh-draft',mode:'fresh_draft',
+    evidence:{ats:'workday',draft:'present',observation:'current',session:'authenticated',failure:'none',refreshApproved:false}};
+  assert.equal((await send(initialize,false,'recovery')).ok,false);
+  const registered=await send(initialize,true,'recovery');
+  assert.equal(registered.ok,true,JSON.stringify(registered));
+  const retry={...initialize,operationId:'owner-save-retry',mode:'decide',
+    draftId:registered.result.state.draftId,recoveryRevision:registered.result.state.revision,
+    evidence:{...initialize.evidence,failure:'generic_save'}};
+  const reserved=await send(retry,false,'recovery');
+  assert.equal(reserved.result.actionReserved,true);
+  const reservationReplay=await send(retry,false,'recovery');
+  assert.equal(reservationReplay.result.replayed,true);
+  assert.equal(reservationReplay.result.actionReserved,false);
   const activeSnapshot=await snapshot(root);
   assert.equal((await call('recovery-context',['--job-id','job'])).ok,false);
   assert.deepEqual(await snapshot(root),activeSnapshot);
@@ -101,6 +115,7 @@ test('installed owner route explicitly activates private clone and scopes durabl
   const paused=await call('recovery-context',['--job-id','job']);
   assert.equal(paused.ok,true);
   assert.equal(paused.result.readOnly,true);
+  assert.deepEqual(paused.result.recovery,reserved.result.state);
   assert.equal(paused.result.guidance.selection.status,'needs_info');
   assert.deepEqual(paused.result.broker,{connected:false,ownsClaim:false});
   assert.deepEqual(paused.result.guidance.actions,[]);

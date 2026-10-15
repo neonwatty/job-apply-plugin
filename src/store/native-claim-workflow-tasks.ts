@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { requireClaim } from '../contracts/workspace/claims.js';
+import { encodeWorkflowLedger } from '../contracts/workspace/workflow-tasks.js';
+import { reserveRecovery } from '../workflows/applications/recovery-reservation.js';
 import { checkClaimBrowserAuthority } from '../workspace-core/claim-browser-authority.js';
 import { ClaimsService } from '../workspace-core/claims.js';
 import type { ClaimRepository, ClaimTransaction } from '../workspace-core/claims.js';
@@ -15,7 +19,7 @@ export class NativeClaimWorkflowTasks implements WorkflowTaskStore<ClaimWorkflow
     private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {}
   transaction<T>(operation: (tx: WorkflowTransaction<ClaimWorkflowDomain>) => Promise<T>): Promise<T> {
     return this.repository.claimTransaction(async original => {
-      let staged: Document | null = null, committed = false, invoked = false;
+      let staged: Document | null = null, recoveryJobs: Document | null = null, committed = false, invoked = false;
       const unsupported = async (): Promise<never> => { throw new TaskProtocolError('action_unavailable'); };
       const buffered: ClaimTransaction = { ...original, jobs: clone(original.jobs), coordinator: clone(original.coordinator),
         authority: clone(original.authority), sessions: original.sessions.map(clone),
@@ -27,6 +31,14 @@ export class NativeClaimWorkflowTasks implements WorkflowTaskStore<ClaimWorkflow
       const prepared = await original.workflowArchive?.prepare(storedLedger);
       const ledger = prepared?.ledger ?? storedLedger;
       return operation({ ledger, ...(prepared ? { history: prepared.history } : {}), domain: { snapshot: buffered,
+        reserveRecovery: async (request, token) => {
+          if (invoked) throw new TaskProtocolError('action_unavailable');
+          invoked = true;
+          requireClaim(buffered.coordinator,buffered.jobs,request.jobId,token,this.now());
+          const reserved = reserveRecovery(buffered.jobs,request,randomUUID());
+          recoveryJobs = reserved.jobs;
+          return {result:reserved.result,changed:recoveryJobs !== null};
+        },
         checkBrowserAuthority: (request, grant, token) => checkClaimBrowserAuthority(buffered, request, grant, token, this.now),
         execute: async (kind, id, revision, token, session, status, savedSessionFingerprint) => {
           if (invoked) throw new TaskProtocolError('action_unavailable');
@@ -52,7 +64,15 @@ export class NativeClaimWorkflowTasks implements WorkflowTaskStore<ClaimWorkflow
           }
           return service.handoff(id, token, kind === 'cancel' ? 'needs_info' : status!, session, revision);
         } }, commit: async next => {
-        if (committed || !staged) throw new TaskProtocolError('invalid_task_state');
+        if (committed || (!staged && !recoveryJobs)) throw new TaskProtocolError('invalid_task_state');
+        if (recoveryJobs) {
+          committed = true;
+          set(object(get(recoveryJobs,'metadata'),'metadata'),workflowMetadataKey,encodeWorkflowLedger(next));
+          await prepared?.flush();
+          await original.saveJobs(recoveryJobs);
+          return;
+        }
+        if (!staged) throw new TaskProtocolError('invalid_task_state');
         committed = true;
         set(staged, 'workflow', workflowCommit(original.jobs, next));
         await prepared?.flush();

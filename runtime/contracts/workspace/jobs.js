@@ -1,3 +1,4 @@
+import { decodeRecoveryLedger, recoveryMetadataKey } from './ats-recovery-ledger.js';
 import { decodeWorkflowLedger, workflowMetadataKey } from './workflow-tasks.js';
 import { browserOperationsMetadataKey, decodeBrowserOperationLedger } from './browser-operations.js';
 import { PythonText } from "../python-text.js";
@@ -97,6 +98,8 @@ export function validateJobsDocument(value) {
     const jobs = object(get(document, "jobs"), "jobs.jobs");
     const metadata = object(get(document, "metadata"), "jobs.metadata");
     validateApplicationRuns(metadata);
+    if (has(metadata, recoveryMetadataKey))
+        decodeRecoveryLedger(get(metadata, recoveryMetadataKey));
     if (has(metadata, workflowMetadataKey))
         decodeWorkflowLedger(get(metadata, workflowMetadataKey));
     if (has(metadata, browserOperationsMetadataKey))

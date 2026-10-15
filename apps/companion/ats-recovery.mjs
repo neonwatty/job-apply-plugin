@@ -1,36 +1,10 @@
-import { workdayRecovery } from './ats-recovery/workday.mjs';
-
-const choices = {
-  ats: ['workday', 'other'],
-  draft: ['present', 'missing', 'unknown'],
-  observation: ['current', 'stale', 'unknown'],
-  session: ['unknown', 'authenticated', 'signed_out', 'reauthenticated'],
-  failure: ['none', 'field_validation', 'unsupported_control', 'generic_save', 'page_load'],
-};
+import { atsRecovery as preview } from '../../runtime/workflows/applications/ats-recovery-policy.js';
 const invalid = () => { throw Error('invalid ATS recovery input'); };
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
-
-/** Advisory policy only. Budget is scoped to the SAME draft, including across
- * claims and sign-in. Missing budget fails closed: never infer zero after recovery.
- * No browser operations or Store writes occur here. Host evidence is attested.
- */
+/** Advisory preview only. Owner retry actions require a durable broker reservation. */
 export function atsRecovery(evidence, budget) {
-  if (!exact(evidence, [...Object.keys(choices), 'refreshApproved'])
-    || Object.entries(choices).some(([key, values]) => !values.includes(evidence[key]))
-    || typeof evidence.refreshApproved !== 'boolean') invalid();
-  if (budget !== null && (!exact(budget, ['save', 'afterSignIn', 'refresh'])
-    || Object.values(budget).some(n => !Number.isInteger(n) || n < 0 || n > 1))) invalid();
-  let next = 'pause_preserve_draft';
-  if (budget !== null && evidence.observation === 'current' && evidence.ats === 'workday') {
-    next = evidence.draft === 'unknown' ? 'inspect_existing_draft' : workdayRecovery(evidence, budget);
-  }
-  const nextBudget = budget === null ? null : {...budget};
-  const counter = {retry_save_once: 'save', retry_after_sign_in: 'afterSignIn', refresh_once: 'refresh'}[next];
-  // Reserve the action before attempting it; an ambiguous tool result consumes it.
-  if (counter) nextBudget[counter] += 1;
-  return {next, nextBudget, evidenceKind: 'agent_attested',
-    browserMutationAllowed: false, finalSubmissionAllowed: false};
+  try { return preview(evidence, budget); } catch { return invalid(); }
 }
 
 /** Local observation labels are independent; page advancement is not a receipt. */

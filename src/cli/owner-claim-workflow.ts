@@ -18,21 +18,21 @@ import { runAttemptBroker, requestAttempt } from './attempt-broker.js';
 /** Foreground explicit owner activation; clients only contact the existing endpoint. */
 export function parseOwnerClaimOptions(args: string[]) {
   const [command, ...rest] = args;
-  if (!['serve', 'recovery-context', 'context', 'event', 'receipt', 'host-browser-context', 'host-browser-report'].includes(command ?? '')) throw new Error('invalid command');
+  if (!['serve', 'recovery-context', 'context', 'event', 'receipt', 'host-browser-context', 'host-browser-report', 'recovery'].includes(command ?? '')) throw new Error('invalid command');
   const context = command === 'recovery-context' || command === 'context' || command === 'host-browser-context';
   const report = command === 'host-browser-report';
   const options = new Map<string, string>();
   let attested = false;
   for (let index = 0; index < rest.length; index++) {
     const name = rest[index]!;
-    if (name === '--host-user-event' && ['serve', 'event'].includes(command!) && !attested) { attested = true; continue; }
-    const allowed = ['--root', '--native-lock', ...(context || command === 'serve' ? ['--job-id'] : []), ...(command === 'event' || command === 'receipt' || report ? ['--input'] : [])];
+    if (name === '--host-user-event' && ['serve', 'event', 'recovery'].includes(command!) && !attested) { attested = true; continue; }
+    const allowed = ['--root', '--native-lock', ...(context || command === 'serve' ? ['--job-id'] : []), ...(command === 'event' || command === 'receipt' || command === 'recovery' || report ? ['--input'] : [])];
     if (!allowed.includes(name) || options.has(name) || !rest[index + 1]) throw new Error('invalid options');
     options.set(name, rest[++index]!);
   }
   const root = options.get('--root'), artifact = options.get('--native-lock');
   if (!root || !isAbsolute(root) || !artifact || !isAbsolute(artifact)) throw new Error('explicit paths required');
-  if ((command === 'event' || command === 'receipt' || report) !== options.has('--input')) throw new Error('invalid input option');
+  if ((command === 'event' || command === 'receipt' || command === 'recovery' || report) !== options.has('--input')) throw new Error('invalid input option');
   if (options.has('--input') && !isAbsolute(options.get('--input')!)) throw new Error('explicit input path required');
   if (command === 'serve' && (!attested || !options.get('--job-id'))) throw new Error('explicit owner activation required');
   if (command === 'recovery-context' && !options.has('--job-id')) throw new Error('exact job required');
