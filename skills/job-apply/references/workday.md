@@ -27,3 +27,39 @@ Use [ATS recovery](ats-recovery.md) for opaque save errors, session expiry,
 unsupported controls, and next-page failures. A signed-in header is insufficient
 session evidence. Workday error IDs such as `I|…` are opaque correlation tokens,
 not field diagnoses. Changing IDs never grants another retry.
+
+## Segmented dates and selection pills
+
+Use the host's documented accessibility controls first. In Codex, inspect
+`tab.ax.get()` / `write()` and locate the exact section, From/To group and
+Month/Year segment. An AX **stepper (settable)** is not an ordinary textbox.
+For a fresh permitted entry, use `tab.ax.setValue(index, canonicalSegment)` on
+that observed segment, then `tab.ax.pressKey(null, 'Tab')` to commit/blur and
+inspect again. Reacquire the index after every rerender. Compare all segments of
+that date after blur, including an unchanged month when editing a year; require
+no associated Invalid Date error. A year-only education field stays year-only.
+Do not append digits with `pressSequentially` to an unknown existing value.
+
+If setValue is unsupported, inspect before any alternate. Only a current visible
+mismatch and remaining control budget permit one alternate: focus the observed
+segment, select its existing text, replace using the host's documented keyboard
+or paste action, commit and reobserve. Use a calendar only if actually exposed;
+never guess calendar buttons or repeat arrow presses toward an unknown year.
+Exhausted retries remain exhausted across claims and candidate changes. A new
+explicit owner-authorized trial of a tested method is a bounded supervised
+intervention, not a reset of saved recovery counters; if the broker rejects the
+operation, stop and report it. Never auto-retry a failed readback.
+
+For Field of Study, inspect the current selected pill and its visible remove
+button or exposed secondary action. Remove only that wrong selection, verify
+its absence, then search and select the exact supported option and verify the
+new pill after the menu closes. Do not send Delete/Backspace to a container or
+infer success from an empty search box. If removal is unavailable, hand off the
+specific control. Optional fields may be blank, but wrong existing values must
+be corrected or explicitly included in the review blockers.
+
+Use [field verification](field-verification.md) after **each** write, not after a
+batch across unrelated fields. Keep write and observation errors separate.
+`inputValue()` is not in the Codex host locator API; a TypeError from an invented
+method says nothing about whether typing succeeded. Read the current AX state,
+or use a supported screenshot for masked values. Do not bypass redaction.

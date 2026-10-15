@@ -1,6 +1,107 @@
 # Agent workflow readiness audit
 
-## Current assessment — 2026-10-15: Workday hardening
+## Workday control hardening — 2026-10-15
+
+Implemented a value-free `performVerifiedFieldEntry` helper that separates
+write exceptions from readback exceptions. Observation failure never triggers
+another write; only a current, same-scope mismatch can use a remaining alternate.
+The worker had invoked unsupported Codex locator `inputValue()` inside the same
+try/catch as writing, conflating verification failure with entry failure. The
+updated references require documented host APIs, per-field verification, and
+preservation of consumed retry budgets.
+
+The Codex in-app browser exercised `evals/workflows/workday-controls-page.mjs`,
+a fictional loopback form with numeric month/year steppers replaced on blur,
+a removable incorrect selection pill, a searchable replacement option, an
+unrelated draft note, and a submission-attempt counter. AX `setValue` followed
+by Tab and fresh observation corrected the invalid year, changed month while
+preserving year, and filled the education year. The incorrect pill was removed
+through its visible button and the intended option selected. The new helper
+verified the role description. Save and Continue reached fictional manual review;
+the unrelated note stayed intact and the submission counter remained zero.
+This is host-browser fixture evidence, not a replica of Workday internals or
+proof that the live tenant accepts the same technique.
+
+Ten focused verification tests passed, including the requirement that every
+date segment and its associated validation state must agree. Serialized affected and release gates
+are running. Candidate activation and the owner-authorized live retry are pending.
+The live retry must inspect current state first, retain existing counters and
+checkpoints, and stop on a broker rejection or unverified control. It may not
+reset recovery budgets or interpret a candidate update as automatic retry authority.
+
+## Dedicated application pilot follow-up — 2026-10-15
+
+Candidate `7cd56196` was installed and enabled; the coordinator compared all 881
+packaged files with the installed copy and found no mismatches. A dedicated
+`gpt-6-luna` desktop chat was launched with the saved application-model choice.
+Chrome discovery failed before tab access while browser feature-gate loading
+received a Cloudflare response. The owner switched this pilot to the Codex
+in-app browser. The dedicated chat could use that browser but had no original
+chat tabs; it subsequently observed a Not Submitted application in Candidate
+Home after owner sign-in. This does not establish cross-chat draft transfer.
+
+The worker reached My Experience and reported an accepted resume widget and
+completed My Information. These are host observations, not proof of current
+full-form readiness or complete server persistence. The worker used ordinary
+`attempt start/progress/handoff` for that filling pass despite the intended
+experimental owner route. The pass therefore does **not** validate the new
+owner broker or durable retry reservations. Its Needs Info handoff succeeded
+and released the claim. No final submission was performed.
+
+### Improvement backlog from supervised inspection
+
+- **Route consistency:** preserve the explicit experimental route through
+  preparation and reacquisition; detect or prevent silent fallback to ordinary
+  attempt commands. Acceptance should verify the actual broker used.
+- **Partial continuation:** distinguish generic read-only Needs Info guidance
+  from an actual preparation rejection. Permit supported independent work
+  while preserving unresolved manual controls; never claim they were resolved
+  just to reselect a job. This pilot exercised guarded selection and owner-broker
+  reacquisition while retaining the unresolved manual-control checkpoint.
+- **Workday dates:** a split start-year control lost focus during normal fill
+  and the bounded alternate. Test segment-specific entry and immediate readback
+  in a fictional fixture; keep consumed retries consumed on the live draft.
+- **Verification discipline:** avoid batching writes across rerendering controls.
+  A current Field of Study selection was reported inconsistent with confirmed
+  facts. Correct only from fresh same-control evidence and approved facts.
+- **Consolidated handoff:** inventory all unresolved fields and their requiredness
+  before pausing. Optional unknowns may remain blank; mandatory unknowns or
+  unsupported controls must remain explicit blockers, never invented values.
+- **Protocol usability:** the worker misdiagnosed unsupported top-level `--help`
+  as Store initialization failure and initially used incorrect AX click argument
+  shapes. Improve route-specific command guidance and error attribution.
+
+### Bounded continuation outcome
+
+Guarded exact-revision selection succeeded at revision 41, followed by owner
+broker reacquisition for the same draft. The worker could not verify any new
+entries during this continuation. Workday displayed Invalid Date for Work
+Experience 2 → From; Save and Continue was left untouched. The owner workflow
+recorded six browser-control items, returned Needs Info at revision 43, and
+released the claim. This validates preparation and a bounded owner handoff in
+this case, not successful field recovery or end-to-end owner-only execution.
+
+Remaining controls from the worker's handoff:
+
+- Work Experience 2 → From year: visible validation blocker.
+- Work Experience 2 → To month/year: entry failed; requiredness unresolved.
+- Work Experience 2 → Role Description: entry not verified; page marks optional.
+- Education → Field of Study: existing selection conflicts with confirmed facts;
+  replacement failed; page marks optional. Optionality does not make a wrong
+  existing value acceptable for final review.
+- Education → To year: entry failed; requiredness unresolved.
+
+Unknown optional GPA, Skills, and Twitter were left blank. Known facts need not
+be requested again: these failures concern browser interaction and verification.
+The next engineering target is a fictional Workday fixture covering split-date
+steppers and selection pills, with immediate readback and durable retry limits.
+The live draft needs a consolidated manual correction before continuation.
+
+Workday manual-review completion remains unvalidated; no unsupported field is
+counted as complete. Applicant values and browser identifiers are excluded from
+this report. Existing drafts and manual final submission remain preserved.
+
+## Prior acceptance assessment — 2026-10-15: Workday hardening
 
 **Continue supervised experimental dogfooding; Workday manual-review completion
 remains unvalidated.** The Capital One pilot advanced through questionnaires but

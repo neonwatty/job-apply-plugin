@@ -65,3 +65,28 @@ pair each existing non-file control ID with its `evidence`. Do not mark an
 unverified required control complete or reuse an old visual match after a
 rerender. Resume attachments use the separate upload verification contract.
 Final submission always remains manual.
+
+## Separate writing from observing
+
+Use `performVerifiedFieldEntry` from the installed
+`apps/companion/verified-field-entry.mjs` to wrap one permitted field entry with
+host-owned `write` and `observe` callbacks and, only if allowed, one `repair`.
+The `observe` callback performs the private current-control comparison and
+returns the closed evidence above. Supply the existing `repairCount`; this
+helper does not grant authority, acquire claims, or reset durable retry budgets.
+Commit/blur inside `write` where required and inspect all date segments inside
+`observe`. Run it separately for each field and stop on an unverified result.
+
+A write exception can follow a successful edit. Inspect before deciding to
+repair. An observation exception returns `observation_failed` / `reobserve` and
+never triggers another write. Repair only an affirmative current same-scope
+mismatch; masking, stale evidence, and unsupported API methods are not mismatch
+evidence. Use only methods in the active host's documentation. Keep private
+values and raw errors inside callbacks; the returned result is value-free.
+
+For a segmented date, call `verifyDateGroup({ segments, validation })` from the
+same helper after blur. Supply one current closed evidence object per observed
+segment, and `validation: 'clear' | 'invalid' | 'unknown'` for its associated
+validation state. Only all verified segments plus clear validation produce
+`verified: true`. This group check grants no extra repair and must not omit an
+unverified segment to turn a partial date into a successful result.
