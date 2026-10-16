@@ -58,7 +58,9 @@ is not such a request.
 
 Use the canonical `store application-authority-status` and revision-checked
 `application-authority-set` commands in [application automation](application-automation.md)
-after canonical preparation has made the exact job Ready. Bind only that job and
+for the exact Ready, In Progress, or Needs Info job with current run inputs. A
+Needs Info grant records approval only: it never clears blockers, acquires a claim,
+or permits browser actions. Bind only that job and
 use `sensitiveAnswerRefs: []`. Reuse an existing matching unexpired grant; do not
 replace or extend it on compaction, a status check, or a Needs Info pause. A grant
 survives those pauses until expiry, revocation, changed inputs, or accepted review.

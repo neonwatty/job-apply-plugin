@@ -129,14 +129,15 @@ export class ApplicationAuthorityService {
                 throw new JobsError('application authority requires a current managed resume');
             }
             const jobs = object(get(tx.jobs, 'jobs'), 'jobs');
+            const eligibleStatuses = mode === 'autofill_to_review' ? ['ready', 'in_progress', 'needs_info'] : ['ready', 'in_progress'];
             for (const id of orderedIds) {
                 const raw = get(jobs, id);
                 if (raw === null)
                     throw new JobsError('application authority job is unavailable');
                 const job = object(raw, 'job');
-                if (!['ready', 'in_progress'].includes(string(get(job, 'status')))
+                if (get(job, 'deletedAt') !== null || !eligibleStatuses.includes(string(get(job, 'status')))
                     || get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests, tx.jobs), 'ready') !== true) {
-                    throw new JobsError('application authority requires selected Ready or In Progress jobs');
+                    throw new JobsError('application authority requires eligible selected jobs');
                 }
                 const binding = doc({ jobId: id, destinationOrigin: applicationOrigin(get(job, 'normalizedUrl')), resumeId,
                     resumeRevision: null, contentRevision: string(get(selection, 'contentRevision')), factRevision: null });

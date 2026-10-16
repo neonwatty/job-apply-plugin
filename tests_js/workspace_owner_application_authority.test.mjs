@@ -71,3 +71,18 @@ test('installed owner evaluator uses private claim and consumes grant only at ve
   assert.equal(persisted.activeAuthorityId,null);
   assert.equal(Object.values(persisted.authorities)[0].status,'consumed');
 });
+
+
+test('single-job approval may be saved while paused without clearing blockers or granting claimless action',async t=>{
+  const fixture=await nativeFixture();t.after(()=>fixture.cleanup());
+  const state=await setup(fixture,'paused-approval'),workflow=host(state).workflow;t.after(()=>workflow.close());
+  const task=await acquire(state,workflow);await workflow.execute(event('handoff',task));
+  const beforeJob=await read(state.root,'jobs.json'),beforeSession=await read(state.root,'sessions/job.json');
+  const authority=new ApplicationAuthorityService(state.repository,()=>state.clock.now);
+  assert.equal(plain(await authority.set(fromJSON(grant),0n)).mode,'autofill_to_review');
+  assert.deepEqual(await read(state.root,'jobs.json'),beforeJob);
+  assert.deepEqual(await read(state.root,'sessions/job.json'),beforeSession);
+  assert.equal((await read(state.root,'coordinator.json')).claim,null);
+  await assert.rejects(workflow.evaluateApplicationAuthority(evaluation,authority),/broker_unavailable/);
+  await assert.rejects(authority.set(fromJSON({...grant,mode:'campaign_to_review'}),1n));
+});
