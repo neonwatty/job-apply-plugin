@@ -176,6 +176,8 @@ def classify(error: BaseException) -> tuple[str, str]:
         return "invalid_request", "The task request is invalid."
     if STORE is not None and isinstance(error, STORE.StoreError):
         message = str(error)
+        if message.startswith("native_runtime_required:"):
+            return "native_runtime_required", message
         if "owner confirmation" in message or "owner approval" in message:
             return "owner_confirmation_required", "Explicit owner confirmation is required."
         if "revision conflict" in message or "preview is stale" in message:

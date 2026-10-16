@@ -19,6 +19,16 @@ class StoreBase:
         runtime = self._runtime_provider()
         path_type = runtime.get("Path", Path)
         self.root = root.expanduser()
+        # Reject the wrong reader before schema validation or initialization.
+        # Presence is enough: even malformed/dangling markers must fail closed.
+        for name in (".native-store-clone", ".native-jobs-fixture"):
+            marker = self.root / name
+            if marker.exists() or marker.is_symlink():
+                raise StoreError(
+                    "native_runtime_required: use the installed plugin's "
+                    "apps/companion/command.mjs; legacy Python cannot access "
+                    "this Store. Do not repair or downgrade its records."
+                )
         self.profile_path = self.root / "profile.json"
         self.fact_groups_path = self.root / "fact-groups.json"
         self.answers_path = self.root / "answers.json"

@@ -12,6 +12,16 @@ Use the bundled helper for persistent applicant data. Never directly read or edi
 
 Resolve `<plugin-root>` once from this installed skill's path. In Codex, use the catalog path, or `PLUGIN_ROOT` after verifying `apps/companion/command.mjs` and the host's packaged native lock exist. In Claude Code, verify `CLAUDE_PLUGIN_ROOT` the same way. Never assume the working directory is the plugin root or search unrelated user directories.
 
+After compaction, task resumption, or loss of the resolved path, reread this
+installed skill from the host catalog before any Store command. Re-establish the
+absolute installed router path and original Store route. A repository checkout's
+`skills/` or `scripts/job-apply-*.py` is not the installed runtime. Never fall back
+to those Python reference helpers when the native router fails. A
+`native_runtime_required` error means wrong runtime, not damaged applicant data;
+resolve the installed router and retry the read-only context operation there.
+Other errors still require diagnosis; never remove ownership markers, repair
+records, or switch Store roots to make a command pass.
+
 Before **any** Store call, check for an approved loopback URL with `#qa-route=<run-id>.<64-lowercase-hex-token>`. For that route only, read [QA replay](references/qa-replay.md), resolve it before `init`, and pass the resolved `--root` throughout. Failure must never fall back to the real or legacy Store.
 
 For ordinary storage work:

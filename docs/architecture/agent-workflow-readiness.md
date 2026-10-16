@@ -1,5 +1,57 @@
 # Agent workflow readiness audit
 
+## Worker runtime drift during recovery — 2026-10-16
+
+The bolt.new worker reported accepted Primary upload and a guarded Needs Info
+handoff at job revision 4, with its claim released. The owner subsequently
+answered all three pending schedule/LLM-experience questions and authorized
+remembering those answers. After conversation compaction, the worker used the
+repository checkout's legacy Python helpers rather than the activated TypeScript
+plugin and reported an invalid resume proposal record.
+
+The coordinator's installed TypeScript `owner-workflow recovery-context` call
+succeeded, showing Needs Info and no claim. This does not establish corruption
+or justify repairing persistent data. The worker was redirected to the installed
+runtime, the existing owner answers, and same-chat draft recovery. The worker
+then saved and resolved the three scoped answers, verified them in the preserved
+form, and reported manual review with all required controls ready. Primary's
+existing attachment remained accepted without reupload. Demographics and optional
+preferred-name, Twitter, and portfolio fields remained blank; Submit was untouched.
+Track runtime identity preservation across compaction and clearer
+legacy-client rejection as hardening work; do not downgrade the Store or treat
+an incompatible reader's error as proof of damaged data.
+
+## Cross-ATS worker reconnaissance — 2026-10-15
+
+Three dedicated gpt-6-luna chats inspected separate saved jobs. viaPeople and
+TalentHop/Veza reported LinkedIn's “No longer accepting applications” state;
+neither exposed a reachable application form. Their ATS remains unverified.
+The bolt.new worker initially mistook missing direct browser tools for missing
+browser access. After explicit guidance to use the documented host-browser
+bootstrap, it reached an open Greenhouse application without a sign-in gate.
+This is another Greenhouse candidate, not evidence of coverage of a new ATS.
+
+The bolt.new job was absent from the active run and owner startup returned
+`owner_workflow_unavailable`. Canonical preparation resolved that prerequisite:
+the active queue reached revision 8 with existing entries preserved, Primary and
+confirmed facts revision 4 selected, and the job Ready at revision 2. Owner
+context now offers acquire. The worker retained a blank form without acquiring
+a claim, pending bounded current-form approval and exact eligibility answers.
+No application completion or accepted upload is established by reconnaissance.
+
+Improvement backlog from these observations:
+
+- Check listing freshness before launching application workers; retain closed
+  listing evidence separately from canonical job status.
+- Require documented browser bootstrap before declaring host tools unavailable.
+- Make selected-Ready-job/run prerequisites and corrective preparation clearer
+  when owner startup is unavailable; do not bypass the broker or reset budgets.
+- Track observed ATS coverage rather than counting employer chats as platforms.
+
+Only bolt.new is authorized to advance filling in this batch. Other drafts remain
+out of scope; final submission remains manual. These are worker-reported live
+observations, not new automated acceptance-test results.
+
 ## Workday control hardening — 2026-10-15
 
 Implemented a value-free `performVerifiedFieldEntry` helper that separates
