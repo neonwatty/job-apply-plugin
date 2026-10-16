@@ -9,6 +9,19 @@ import { AnswersService } from '../runtime/workspace-core/answers.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 
 // Each oracle runs on a fresh copy: Python and native code never share a writable Store.
+test('legacy task rejects the native fixture while its native client remains usable', async () => {
+  const fixture = await nativeFixture();
+  try {
+    const state = await setup(fixture, 'task-runtime-boundary');
+    const before = await snapshot(state.root);
+    const legacy = await invoke(fixture, state.root, ['snapshot'], { python: true });
+    assert.equal(legacy.code, 2);
+    failure(legacy.value, 'native_runtime_required');
+    assert.equal((await invoke(fixture, state.root, ['snapshot'])).code, 0);
+    assert.deepEqual(await snapshot(state.root), before);
+  } finally { await fixture.cleanup(); }
+});
+
 test('native task wrapper preserves all ten Python command envelopes and owner boundaries', { timeout: 120000 }, async t => {
   const fixture = await nativeFixture();
   try {

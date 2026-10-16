@@ -91,7 +91,9 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   const original = await snapshot(source), provider = loadPosixFlockProvider(fixture.receipt.artifact);
   const nativeRoot = join(root, 'native-writer'), pythonRoot = join(root, 'python-writer');
   await prepareCanonicalStoreClone(source, nativeRoot, provider, fixed);
-  await prepareCanonicalStoreClone(source, pythonRoot, provider, fixed);
+  // The reference remains a separate Python-owned copy of the fictional source.
+  // Preparing it as a native clone would correctly block its legacy CLI.
+  await cp(source, pythonRoot, { recursive: true, preserveTimestamps: true });
   const nativeRoute = await resolveWriterRoute(parseWriterOptions([
     '--writer', 'native-clone', '--root', nativeRoot, '--native-lock', fixture.receipt.artifact,
   ], companionRoot));

@@ -47,7 +47,12 @@ function normalize(value, mutation) {
 }
 export async function parity(fixture, root, args, { mutation = false, ...options } = {}) {
   const oracleRoot = join(fixture.root, `task-python-${++serial}`);
-  await cp(root, oracleRoot, { recursive: true, preserveTimestamps: true });
+  // Reference writers get their own unowned fictional copy; never copy native
+  // ownership authority or remove markers from the source Store.
+  await cp(root, oracleRoot, { recursive: true, preserveTimestamps: true,
+    filter: source => !['.native-store-clone', '.native-jobs-fixture']
+      .some(name => source === join(root, name)),
+  });
   const expected = await invoke(fixture, oracleRoot, args, { ...options, python: true });
   const actual = await invoke(fixture, root, args, options);
   assert.equal(actual.code, expected.code);

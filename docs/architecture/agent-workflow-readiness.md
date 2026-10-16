@@ -1,5 +1,35 @@
 # Agent workflow readiness audit
 
+## Runtime selection hardening and next ATS candidate — 2026-10-16
+
+The legacy Store and task CLIs now reject native-owned roots before schema
+reads or initialization with `native_runtime_required`, pointing to the installed
+TypeScript router without exposing record values. Missing or dangling ownership
+marker targets do not permit fallback. The frozen Python Store implementation is
+unchanged; this is a CLI boundary, not a claim that arbitrary old checkouts or
+direct Python library calls are blocked. Installed Answer Memory and worker
+handoff guidance require re-resolving the catalog skill/router after compaction,
+retaining the original Store route and existing owner decisions.
+
+Verification: 13 task/boundary tests, 10 timestamp/reference tests, eight native
+task parity tests and five writer-rehearsal tests passed. The parity fixtures now
+give Python an isolated unowned copy; native ownership is preserved on the source
+fixture. Both final release suites passed, and the corrected implementation
+commit passed all 11 commit-hook suites. The original serialized affected run
+passed 24 of 26 suites. Its failures were the frozen constructor pin (restored)
+and Python reference fixtures incorrectly carrying native ownership (corrected).
+The original receipt remains failed; focused reruns supply the correction
+evidence. A complete affected-suite rerun on the final revision and a real model
+compaction trial have not been performed. Candidate activation is still pending.
+
+Next candidate: Sequen AI, Staff+ Forward Deployed Research Engineer — Ranking,
+on Ashby. The live application was inspected in a new tab on 2026-10-16 and exposes
+required name, email and resume controls without a sign-in gate. The posting lists
+US remote work and $300k–$350k base salary. Posting date is unknown; specialized
+search/recommendation and data-pipeline qualifications remain to be confirmed.
+No applicant data was entered, no upload was attempted, and the job was not added
+to the active run. All existing drafts remain out of scope; submission is manual.
+
 ## Worker runtime drift during recovery — 2026-10-16
 
 The bolt.new worker reported accepted Primary upload and a guarded Needs Info
