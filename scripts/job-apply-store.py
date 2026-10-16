@@ -334,9 +334,22 @@ def build_parser() -> argparse.ArgumentParser:
     return _cli_parser.build_parser(globals())
 
 
+def require_legacy_runtime(root: Path) -> None:
+    """Reject native ownership before CLI schema reads or initialization."""
+    for name in (".native-store-clone", ".native-jobs-fixture"):
+        marker = root.expanduser() / name
+        if marker.exists() or marker.is_symlink():
+            raise StoreError(
+                "native_runtime_required: use the installed plugin's "
+                "apps/companion/command.mjs; legacy Python cannot access "
+                "this Store. Do not repair or downgrade its records."
+            )
+
+
 def resolve_store(args: argparse.Namespace) -> Store:
     configured = args.root or os.environ.get(STORE_ENV)
     root = Path(configured).expanduser() if configured else Path.home() / ".job-apply"
+    require_legacy_runtime(root)
     legacy = Path(args.legacy_profile).expanduser() if args.legacy_profile else None
     return Store(root, legacy)
 

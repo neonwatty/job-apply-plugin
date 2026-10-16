@@ -83,6 +83,7 @@ def resolve_store(args: argparse.Namespace) -> Any:
     store = store_module()
     configured = args.root or os.environ.get(store.STORE_ENV)
     root = Path(configured).expanduser() if configured else Path.home() / ".job-apply"
+    store.require_legacy_runtime(root)
     return store.Store(root)
 
 
