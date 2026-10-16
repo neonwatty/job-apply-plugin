@@ -4,11 +4,13 @@ import { WorkflowBroker } from './claim-broker.js';
 /** One explicitly activated owner job; transport never starts another broker. */
 export class OwnerClaimBroker {
     workflow;
+    application;
     broker;
     scope;
     currentTaskId = null;
-    constructor(workflow, scope, failed, heartbeatMilliseconds = 60_000) {
+    constructor(workflow, scope, failed, heartbeatMilliseconds = 60_000, application) {
         this.workflow = workflow;
+        this.application = application;
         this.scope = structuredClone(scope);
         this.broker = new WorkflowBroker(workflow, failed, heartbeatMilliseconds);
     }
@@ -20,6 +22,12 @@ export class OwnerClaimBroker {
     }
     async dispatch(request) {
         const scoped = this.scopedRequest(request);
+        const value = record(JSON.parse(serialize(scoped)), 'invalid_proposal');
+        if (value.command === 'authority-evaluate') {
+            requireCondition(Boolean(this.application && this.workflow.evaluateApplicationAuthority), 'action_unavailable');
+            const decision = await this.workflow.evaluateApplicationAuthority(value.evaluation, this.application);
+            return { response: await this.decorate(object(fromJSON({ ok: true, result: { decision } }), 'response')), complete: false };
+        }
         const before = await this.workflow.inspect(this.scope.jobId);
         // Keep identity across a durable commit whose response is lost.
         if (before.task)
@@ -27,7 +35,7 @@ export class OwnerClaimBroker {
         const result = await this.broker.dispatch(scoped);
         const response = JSON.parse(serialize(result.response));
         const status = response.result?.receipt?.task?.status;
-        return { response: this.decorate(result.response), complete: (status === 'finished' || status === 'cancelled')
+        return { response: await this.decorate(result.response), complete: (status === 'finished' || status === 'cancelled')
                 && this.currentTaskId !== null && this.currentTaskId === response.result?.receipt?.task?.taskId };
     }
     scopedRequest(request) {
@@ -39,11 +47,15 @@ export class OwnerClaimBroker {
                 requireCondition(identifier(value.jobId, 'invalid_proposal') === this.scope.jobId, 'invalid_proposal');
             return object(fromJSON({ ...value, jobId: this.scope.jobId }), 'request');
         }
+        if (value.command === 'authority-evaluate') {
+            requireCondition(Object.keys(value).length === 2 && Object.hasOwn(value, 'evaluation'), 'invalid_proposal');
+            return object(fromJSON(value), 'request');
+        }
         const event = record(value.command === 'host-browser-report' ? value.report : value.event, 'invalid_proposal');
         requireCondition(identifier(event.jobId, 'invalid_proposal') === this.scope.jobId, 'invalid_proposal');
         return object(fromJSON(value), 'request');
     }
-    decorate(response) {
+    async decorate(response) {
         const value = JSON.parse(serialize(response));
         if (value.ok && value.result) {
             value.ownerWorkflow = 1;
@@ -51,6 +63,12 @@ export class OwnerClaimBroker {
             value.result.evidenceKind = 'agent_attested';
             value.result.browserAuthority = 'existing_host_tools';
             value.result.finalSubmission = 'manual';
+            if (this.application)
+                value.result.applicationAuthority = {
+                    status: JSON.parse(serialize(await this.application.status())),
+                    evaluationArgs: ['owner-workflow', 'authority-evaluate'], demographics: 'leave_blank',
+                    statusIsPermission: false,
+                };
             if (value.result.hostBrowser) {
                 const progress = (value.result.guidance?.actions ?? []).find((action) => action.kind === 'progress');
                 value.result.hostBrowser.recovery = {

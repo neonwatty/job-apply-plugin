@@ -6,7 +6,7 @@ import type { Document } from '../../contracts/workspace/values.js';
 import { exact, identifier, record, requireCondition, snapshot } from '../../harness/validation.js';
 
 /** Adapter for the existing private broker transport. The bearer stays inside ClaimWorkflow. */
-export type ClaimWorkflowBrokerPort = Pick<ClaimWorkflow, 'inspect' | 'execute' | 'heartbeat' | 'close'> & Partial<Pick<ClaimWorkflow, 'recovery'>>;
+export type ClaimWorkflowBrokerPort = Pick<ClaimWorkflow, 'inspect' | 'execute' | 'heartbeat' | 'close'> & Partial<Pick<ClaimWorkflow, 'recovery' | 'evaluateApplicationAuthority'>>;
 export class WorkflowBroker {
   private timer: ReturnType<typeof setInterval> | undefined;
   constructor(private readonly workflow: ClaimWorkflowBrokerPort, private readonly failed: () => void,

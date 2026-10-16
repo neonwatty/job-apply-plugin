@@ -39,9 +39,57 @@ Receipt lookup reads the existing native Store without activation, a broker, cla
 
 ## Browser evidence and safe exit
 
-Read [browser and consent](browser.md), [filling and handoff](application.md), and [current-form readiness](readiness.md) before interacting with a live form. The owner route supplies no browser tool. Check the exposed host browser tools and read their current documentation; use only documented capabilities within the exact approved scope. Workflow activation does not grant consent to enter applicant data or final submission authority. Preserve post-readiness consent and managed-resume identity boundaries. Reuse the browser, consent, upload, and readiness rules in those references, but while the owner workflow claim is active never fall back to ordinary `attempt` commands or raw claim commands for acquisition, progress, or handoff. Use only the owner workflow descriptors for those mutations.
+Read [browser and consent](browser.md), [filling and handoff](application.md), and [current-form readiness](readiness.md) before interacting with a live form. The owner route supplies no browser tool. Check the exposed host browser tools and read their current documentation; use only documented capabilities within the exact approved scope. Workflow activation alone does not grant consent to enter applicant data or final submission authority. Use the durable approval route below when explicitly authorized; otherwise preserve Guided post-readiness consent. Always preserve managed-resume identity boundaries. Reuse the browser, consent, upload, and readiness rules in those references, but while the owner workflow claim is active never fall back to ordinary `attempt` commands or raw claim commands for acquisition, progress, or handoff. Use only the owner workflow descriptors for those mutations.
 
 Report only current observed browser evidence through the exact template in `hostBrowser.reports`, adding only its listed required fields. Historical checkpoints, stored readiness, and action templates are not fresh browser observations. Never fabricate evidence or empty pending fields to satisfy a guard. Keep applicant values, resume paths, claim tokens, and browser state out of chat and durable session summaries.
+
+## Durable approval through review
+
+An explicit owner request to let this workflow fill one exact application through
+manual review authorizes Autofill to Review for that job's current run and Primary
+(or other explicitly selected managed resume). Explain the bounded scope in a
+non-blocking update: confirmed facts and matching non-sensitive answers, selected
+resume upload, one cleared-field repair and non-final navigation; demographics
+stay blank, unknown answers and new sensitive disclosures/agreements interrupt,
+and submission remains manual. Use a 120-minute grant unless the owner specifies
+another supported duration. This exact request is the approval; do not ask for a
+second confirmation of the same scope. A mere job selection or saved preference
+is not such a request.
+
+Use the canonical `store application-authority-status` and revision-checked
+`application-authority-set` commands in [application automation](application-automation.md)
+after canonical preparation has made the exact job Ready. Bind only that job and
+use `sensitiveAnswerRefs: []`. Reuse an existing matching unexpired grant; do not
+replace or extend it on compaction, a status check, or a Needs Info pause. A grant
+survives those pauses until expiry, revocation, changed inputs, or accepted review.
+Explicit owner stop/pause always stops browser work. Reviewed restarts still need
+explicit restart approval. Broader scope or expiry requires renewed authorization.
+
+After acquisition, the owner broker exposes `applicationAuthority.status` in
+context. This is a projection, not permission to type. Before each coherent action
+group, use the five-field evaluation packet from application automation, add the
+required boolean `includesDemographics: false`, and call:
+
+```bash
+node "<plugin-root>/apps/companion/command.mjs" owner-workflow authority-evaluate --root /absolute/store-root --input /absolute/private-evaluation.json
+```
+
+The packet must describe the actual intended actions and observed interrupts.
+Use `includesDemographics: true` for any intended demographic entry; the owner
+route always denies it. Never include caller job IDs or claim tokens. The broker
+binds its private live claim, rechecks the workflow's inputs and durable grant,
+and returns `result.decision`. Continue only on `authorized: true` covering the
+intended operations. Do not call ordinary `attempt authority-evaluate` while an
+owner broker owns the claim. Unsupported controls or unknown answers still require
+a safe pause; authorization cannot supply missing evidence.
+
+After compaction or resumption, reread the installed skill/router guidance and
+canonical authority status, inspect the preserved draft, resolve genuine blockers,
+and evaluate again through the current owner broker. Do not ask for the same
+current, matching approval again. A response or past decision is never a reusable
+browser capability. A final review handoff consumes Autofill to Review atomically;
+Needs Info preserves it. Current field verification and upload acceptance remain
+required before review.
 
 ## ATS recovery reservations
 

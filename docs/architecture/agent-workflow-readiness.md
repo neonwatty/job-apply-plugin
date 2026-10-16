@@ -1,5 +1,31 @@
 # Agent workflow readiness audit
 
+## Durable owner approval — 2026-10-16
+
+The owner broker now exposes the canonical application-authority projection and
+an `owner-workflow authority-evaluate` command. The broker injects its private
+claim, validates its active workflow/input binding, and reuses the durable
+Autofill to Review evaluator. Host packets cannot supply job IDs or claim tokens.
+The owner route requires a demographic-action attestation and denies demographic
+entry. Unsupported controls, uncertain answers, sensitive-answer scope, destination,
+expiry, revocation, canonical-data drift and final-action guards remain in effect.
+These are agent-attested action evaluations, not interception of every host browser
+call; browser correctness and honest control classification remain model duties.
+
+The installed guidance treats an explicit exact-job request for broad filling
+through review as authorization for a 120-minute single-job grant, with no sensitive
+answer references, unless another duration is specified. Needs Info and compaction
+do not erase or extend it. A reconstructed broker must reacquire canonically and
+reevaluate; historical decisions grant no authority. Accepted review consumes the
+grant atomically. Reviewed restarts and fresh-form recovery retain their guards.
+
+Focused verification: 23 tests passed, including an installed owner command trial,
+Needs Info then reconstructed broker, no live capability before reacquisition,
+revocation, grant expiry, all interrupt flags, demographic denial, caller-field
+injection rejection and grant consumption only at verified review. Serialized
+affected and installed release gates are running; live Sequen resumption is pending
+candidate activation. No existing browser draft was modified during implementation.
+
 ## Runtime selection hardening and next ATS candidate — 2026-10-16
 
 The legacy Store and task CLIs now reject native-owned roots before schema

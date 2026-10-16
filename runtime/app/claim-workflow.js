@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { activeApplicationJob, applicationPreflight } from '../contracts/workspace/application-policy.js';
 import { requireClaim } from '../contracts/workspace/claims.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
-import { fromJSON, get, int, object, string, JobsError } from '../contracts/workspace/values.js';
+import { fromJSON, get, has, int, object, serialize, set, string, JobsError } from '../contracts/workspace/values.js';
 import { isJobWorkflowTask, TaskProtocolError, receiptLimit } from '../contracts/workspace/workflow-tasks.js';
 import { workflowHistory } from '../harness/task-store.js';
 import { runDurableOperation } from '../harness/run.js';
@@ -301,6 +301,39 @@ export class ClaimWorkflow {
             }
             catch { /* Denial exposes no claim, canonical values, or private diagnostics. */ }
             return { authorized, requestFingerprint: fingerprint };
+        });
+    }
+    /** Recheck durable approval using only the broker's private claim, never a caller bearer. */
+    evaluateApplicationAuthority(raw, application) {
+        return this.serial(async () => {
+            const capability = this.#capability;
+            if (this.#closed || !capability)
+                throw new TaskProtocolError('broker_unavailable');
+            const incoming = object(fromJSON(raw), 'evaluation');
+            const fields = ['destinationUrl', 'operations', 'answerRefs', 'sensitiveAnswerRefs', 'interrupts', 'includesDemographics'];
+            if (incoming.size !== fields.length || fields.some(field => !has(incoming, field))) {
+                throw new TaskProtocolError('action_unavailable');
+            }
+            if (get(incoming, 'includesDemographics') !== false) {
+                return { authorized: false, mode: 'guided', reasonCode: 'demographics_leave_blank', interrupt: true };
+            }
+            await this.store.transaction(async (tx) => {
+                const task = tx.ledger.tasks[capability.taskId];
+                if (tx.ledger.activeTaskId !== capability.taskId || !task)
+                    throw new TaskProtocolError('task_conflict');
+                requireAttemptTask(task);
+                const job = activeApplicationJob(tx.domain.snapshot, capability.jobId);
+                if (task.status !== 'active' || task.subject.jobId !== capability.jobId
+                    || task.subject.jobRevision !== int(get(job, 'revision'))?.toString()
+                    || task.subject.inputRevision !== preparationScope(tx.domain.snapshot, job))
+                    throw new TaskProtocolError('stale_revision');
+                this.registry.resolve(attemptIdentity, this.access());
+                requireClaim(tx.domain.snapshot.coordinator, tx.domain.snapshot.jobs, capability.jobId, capability.token, this.now());
+            });
+            const { includesDemographics: _excluded, ...evaluation } = raw;
+            const bound = object(fromJSON({ ...evaluation, jobId: capability.jobId }), 'evaluation');
+            set(bound, 'claimToken', capability.token);
+            return JSON.parse(serialize(await application.evaluate(bound)));
         });
     }
     heartbeat() {

@@ -12,7 +12,10 @@ Use an explicit mode choice in the current request; otherwise read
 which mode to offer and is not authorization. If it is absent or invalid, offer
 Guided.
 
-Before activating Autofill to Review or Campaign to Review, show the owner the mode,
+For the experimental owner route, the exact-job durable approval procedure in
+[owner workflow](owner-workflow.md#durable-approval-through-review) applies; use its
+owner broker evaluator and never ordinary attempt commands. For other routes,
+before activating Autofill to Review or Campaign to Review, show the owner the mode,
 exact jobs, duration, exact sensitive-answer references (or none), and the statement
 that every application stops at final review. Require explicit approval of that
 summary in the current conversation. Do not treat “go ahead,” setup completion, or a

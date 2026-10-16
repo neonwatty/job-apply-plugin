@@ -49,7 +49,9 @@ Store route, workflow route, and manual-submission boundary. These are routing
 hints, not authority or browser evidence. After compaction the worker rereads
 the installed Answer Memory skill and refreshes read-only canonical context
 before any mutation. Never derive the runtime from the task's working directory.
-Preserve existing owner answers and consent scope; compaction alone does not
+For an owner-workflow broad approval, reread canonical application-authority status
+and re-evaluate through the current owner broker before action; a Needs Info pause
+or compaction does not erase the unexpired grant. Preserve existing owner answers and consent scope; compaction alone does not
 require asking for the same approval again. Do not include applicant values,
 claim tokens, resume paths, or browser identities in the handoff.
 
