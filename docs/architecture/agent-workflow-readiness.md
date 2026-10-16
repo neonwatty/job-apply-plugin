@@ -19,12 +19,41 @@ do not erase or extend it. A reconstructed broker must reacquire canonically and
 reevaluate; historical decisions grant no authority. Accepted review consumes the
 grant atomically. Reviewed restarts and fresh-form recovery retain their guards.
 
-Focused verification: 23 tests passed, including an installed owner command trial,
-Needs Info then reconstructed broker, no live capability before reacquisition,
-revocation, grant expiry, all interrupt flags, demographic denial, caller-field
-injection rejection and grant consumption only at verified review. Serialized
-affected and installed release gates are running; live Sequen resumption is pending
-candidate activation. No existing browser draft was modified during implementation.
+Focused verification: 24 tests passed across the owner broker, installed command,
+and application authority suites (14 rerun after the final paused-grant adjustment).
+Single-job approval can now be saved for an eligible Needs Info job without
+changing its job/session, clearing blockers, or creating a claim; Campaign remains
+restricted to Ready/In Progress jobs. Both implementation commits passed all 11
+commit suites. Both release suites passed on the final runtime. Serialized affected
+validation against staging completed with 25/26 suites passed; migration-inventory
+rejected the dirty checkout at startup. The original failed receipt is retained at
+`/tmp/owner-authority-affected.json`; a clean-checkout audit rerun is pending. This
+run overlapped implementation commits and is not a clean final-HEAD run; the final
+paused-grant change has separate focused and release evidence above.
+
+Activated candidate `0d9ee90f6453289e06c57c57309c6cd6c6ab45a3` through the
+supported Codex local marketplace route; all 882 installed file hashes match the
+package receipt. Sequen AI's exact-job Autofill to Review grant is active at
+revision 1, expires `2026-10-16T12:10:47Z`, and names no sensitive answers. The
+worker independently reread its canonical status and installed guidance after
+resumption. Sequen remains Needs Info revision 4, attempt revision 3, with no claim:
+the owner confirmed visual email verification and Primary attachment in the exact
+preserved draft, but the worker's fresh DOM inspection and screenshot still showed
+an empty required Resume field. Email confirmation is accepted; attachment
+acceptance remains unresolved pending reconciliation with the owner. No review
+handoff was recorded and no claim was acquired. The grant itself cleared no
+blocker; all browser drafts remain preserved and submission remains manual.
+
+The live worker compacted during resumption and incorrectly revisited a completed
+bolt.new answer-memory task, widening three existing records from employer/role/ATS
+scope to general at revision 3. Supervision stopped that drift and restored the exact
+original scopes through revision-checked updates to revision 4; values were verified
+unchanged. No browser draft was part of those writes. This is a failed live task-scope
+continuity observation, not proof that durable approval makes model behavior immune
+to compaction. The grant survives storage/broker reload, but unrestricted answer-memory
+commands remain outside the owner broker's exact-job action guard. Future hardening
+should confine worker mutation capabilities and avoid reusing one worker chat for
+unrelated jobs; do not claim unattended dogfood readiness from these tests.
 
 ## Runtime selection hardening and next ATS candidate — 2026-10-16
 
