@@ -91,3 +91,8 @@ The scripts above reproduce the synthetic visual checks without owner data.
 Saved screenshots in `screenshots/` show desktop/mobile attention, collapsed
 navigation, Jobs, extraction review, and empty attention. Session tokens are never
 saved in these documents or screenshots.
+
+The integrated production browser walkthrough and visual checks passed, including
+all five sidebar widths and the newer Settings, Consent defaults, and Accounts
+screens. Independent review identified clipped keyboard tooltips; removing the
+rail’s backdrop filter fixed the issue and a fresh reviewer verified it visually.

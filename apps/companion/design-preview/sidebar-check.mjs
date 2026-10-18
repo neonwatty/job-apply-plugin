@@ -21,6 +21,8 @@ export async function checkSidebar(page, output) {
       assert(Math.abs(samples.at(-1).width-76)<1,`collapsed rail width at ${width}: ${JSON.stringify(samples)}`);
       assert(samples.some(frame=>frame.width>76 && frame.width<238),'width animates');
     }
+    assert.equal(await page.locator('.topbar').evaluate(node=>getComputedStyle(node).backdropFilter),'none',
+      'rail must not create a clipping containing block for fixed tooltip labels');
     await nav.getByRole('button',{name:'Needs Attention',exact:true}).focus();
     await page.waitForTimeout(160);
     assert.equal(await nav.getByRole('button',{name:'Needs Attention',exact:true}).getAttribute('title'),'Needs Attention');
@@ -46,7 +48,8 @@ export async function checkSidebar(page, output) {
   await toggle.click();
   await page.emulateMedia({reducedMotion:'no-preference'});
   await nav.getByRole('button',{name:'Settings',exact:true}).click();
-  const model=page.locator('input:visible').first();
+  await page.getByText('Advanced agent model defaults',{exact:true}).click();
+  const model=page.getByLabel('Codex job search task model',{exact:true});
   await model.fill('sidebar-draft');
   await toggle.click();
   await toggle.click();

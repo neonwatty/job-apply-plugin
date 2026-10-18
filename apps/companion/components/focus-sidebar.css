@@ -50,7 +50,7 @@
   .focus-shell .product-context,.focus-shell .nav-group-label,.focus-shell .workspace-nav { transition:none; }
 }
 /* Reset horizontal-navigation sizing inherited from the shared screen styles. */
-.focus-shell .topbar { z-index:20; }
+.focus-shell .topbar { z-index:20;backdrop-filter:none; }
 .focus-shell .nav-group { display:block; }
 .focus-shell .nav-group-label { display:block;margin-bottom:8px;color:var(--muted); }
 .focus-shell .nav-group-links { align-items:stretch; }

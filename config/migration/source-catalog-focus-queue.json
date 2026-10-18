@@ -8,7 +8,7 @@
     },
     {
       "path": "apps/companion/components/focus-sidebar.css",
-      "sha256": "5bdd8da6ac48d43eb7c4a9938dd6dea066327450f25adbf3e40d39d8df8a3466",
+      "sha256": "c8b019ffec61e64b914ceece0fda83ddd95d00e3087f2004f286d97f644ffffa",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "apps/companion/design-preview/sidebar-check.mjs",
-      "sha256": "6ad14ee579c43fa12215e944cde2377335fec9d91ff0ab051a906954085e4471",
+      "sha256": "c2feb0ee78b9fd04616c2e0050365467cade222dce8706cd67af6f0e450843ff",
       "classification": "unreviewed"
     },
     {
