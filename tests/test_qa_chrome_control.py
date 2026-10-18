@@ -336,7 +336,7 @@ class LauncherCase(ChromeLauncherCase):
                 client.settimeout(0.25)
                 try:
                     client.sendall(b"POST /control HTTP/1.1\r\nHost: 127.0.0.1")
-                except ConnectionResetError:
+                except (ConnectionResetError, BrokenPipeError):
                     # Rejection after accept is also a bounded connection.
                     pass
             time.sleep(0.15)
