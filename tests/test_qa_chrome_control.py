@@ -327,10 +327,18 @@ class LauncherCase(ChromeLauncherCase):
         sockets = []
         try:
             for _ in range(LAUNCHER_MODULE.MAX_CONTROL_CONNECTIONS + 12):
-                client = socket.create_connection(("127.0.0.1", control["port"]), timeout=2)
-                client.settimeout(0.25)
-                client.sendall(b"POST /control HTTP/1.1\r\nHost: 127.0.0.1")
+                try:
+                    client = socket.create_connection(("127.0.0.1", control["port"]), timeout=2)
+                except ConnectionResetError:
+                    # A saturated listener may reject during the TCP handshake.
+                    continue
                 sockets.append(client)
+                client.settimeout(0.25)
+                try:
+                    client.sendall(b"POST /control HTTP/1.1\r\nHost: 127.0.0.1")
+                except ConnectionResetError:
+                    # Rejection after accept is also a bounded connection.
+                    pass
             time.sleep(0.15)
             still_open = 0
             for client in sockets:
