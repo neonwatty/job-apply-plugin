@@ -383,7 +383,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "4fa8cc305d18ac2d374327d391b46bc8a0a0b6443b1ae5d1f64b6ddd66cf267d"
+      "sha256": "6998b6c55b742e8bd754e5402db79beb024a39bba154b0e1cc81be0ac7ad67d7"
     },
     {
       "path": "source-catalog-m01.json",
@@ -399,7 +399,7 @@
     },
     {
       "path": "source-catalog-native-answer-cleanup.json",
-      "sha256": "bbea6835a94210720d07d142995ff439396d349c0692295072699b3bb741a2b4"
+      "sha256": "8d5c5dd703bc293fdb4904320c04e7cf8b8978900089c860741a154e96f20920"
     },
     {
       "path": "source-catalog-native-answer-lifecycle.json",
@@ -415,11 +415,11 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "06fab936baf2a862c4bfcdc197c86fb79d262b00551a0339553b3f6e6f9e781a"
+      "sha256": "3465f952df034d1fb54aabf8524203f43c7228d046c405e1c927c8707f5a5029"
     },
     {
       "path": "source-catalog-native-automation-ux.json",
-      "sha256": "8e5c92953809960c55ed7c4c7f7c1a4f1f660cb93ecc1cb5f6844d612201a5f4"
+      "sha256": "4cc04abfba3bc593487cf37208be7fd83ba0dfd2e54e62bf0614b00f13e9b73a"
     },
     {
       "path": "source-catalog-native-automation.json",
@@ -443,11 +443,11 @@
     },
     {
       "path": "source-catalog-native-extractions.json",
-      "sha256": "9543a3448f122ba5a0de9045f2c862b5895213a1bded0bd806323588c442ecad"
+      "sha256": "98f5e5d7617bff5a01cb7e478fab94b792476ad092055cbc59bb26d1d02b0bf6"
     },
     {
       "path": "source-catalog-native-facts.json",
-      "sha256": "078ddba24abd6dc5dc16ed622abcc7d8473858d88d6098706dd4fbc4a67ccba2"
+      "sha256": "d18116c05978d559d76233d01701ee77c20f92b768552a00d92d9c725ef8cd14"
     },
     {
       "path": "source-catalog-native-grouped-approvals.json",
@@ -455,7 +455,7 @@
     },
     {
       "path": "source-catalog-native-job-transitions.json",
-      "sha256": "b3c81041608a3bf02afad14ec93e204d4610ae502dc36a7828432c45310cdf9d"
+      "sha256": "089f929817eea92361bcda76e6fc7d917dda25aa780ceb2df9ff793efe9a9af9"
     },
     {
       "path": "source-catalog-native-job-trash.json",
@@ -483,11 +483,11 @@
     },
     {
       "path": "source-catalog-native-pending-answers.json",
-      "sha256": "2eb208606dc5216322d2b3f9e64bcb66342a2902b5898d70f1260ea68f1ad33d"
+      "sha256": "3564d6ce59c77ed0ee4596605ec96fdf565a25a6d6f2a8b9cb203fe223cfd37d"
     },
     {
       "path": "source-catalog-native-projections.json",
-      "sha256": "e4ef07bfddb1ad881a8064a2e16c28977d1c2d94412618acabbcbbfc76e518eb"
+      "sha256": "361455617ff86a220afb145d869cb5e03f34ac19a0c6e3cfd92eb1e0107c0ef8"
     },
     {
       "path": "source-catalog-native-qa-replay.json",
@@ -523,7 +523,7 @@
     },
     {
       "path": "source-catalog-react-trash.json",
-      "sha256": "c8184f4346e563d34d1cbfb3d1b83acb129557ac7857c49bb33556c7c0f0d30c"
+      "sha256": "475e1a626834211ae3b70a1d1d47020ed5a31c84f6dc6600687af9fe8fc09e8a"
     },
     {
       "path": "source-catalog-s01.json",
@@ -552,6 +552,10 @@
     {
       "path": "task-receipts.json",
       "sha256": "c6fac4fca25a75d1a56c26538cc767b2b5acb069e59404e8f902f8c755255fea"
+    },
+    {
+      "path": "source-catalog-focus-queue.json",
+      "sha256": "73779f34773b8be1bab1ab7c1e98335de0c67627d46c1212c3c499a1183d67f2"
     }
   ]
 }

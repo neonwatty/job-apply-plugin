@@ -165,7 +165,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await clickCompanionNav(page, 'Resumes');
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
-  await page.getByText('This proposal is complete. No further review is needed.', { exact: true }).waitFor();
+  await page.getByText('Review complete.', { exact: true }).waitFor();
   profile = await document('profile');
   assert.equal(profile.profile.employer.title, 'Engineer');
   assert.equal(profile.profile.concurrentNote, 'Keep this');

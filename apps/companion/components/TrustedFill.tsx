@@ -11,7 +11,7 @@ export function TrustedFill({client,disabled,dirtyChanged}:{client:Client;disabl
   useEffect(()=>{dirtyChanged(dirty||busy);return()=>dirtyChanged(false);},[dirty,busy,dirtyChanged]);
   async function approve(event:React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form=new FormData(event.currentTarget), allowed=form.getAll('allowedOperations').map(String).sort();
-    if (!allowed.length) {setError('Select at least one non-final operation.');return;}
+    if (!allowed.length) {setError('Select at least one field action.');return;}
     setBusy(true);setError('');
     try {
       const value=trustedFillStatus(await client.automationRequest('/api/trusted-fill/approve','POST',{
@@ -20,7 +20,7 @@ export function TrustedFill({client,disabled,dirtyChanged}:{client:Client;disabl
         observedQuestionFingerprint:String(form.get('observedQuestionFingerprint')||'').trim(),observedControlFingerprint:String(form.get('observedControlFingerprint')||'').trim(),
         formFingerprint:String(form.get('formFingerprint')||'').trim(),allowedOperations:allowed,durationMinutes:Number(form.get('durationMinutes'))
       }));
-      setStatus(value);setJobId('jobId' in value?value.jobId:'');setNotice('Exact Trusted Fill packet approved.');setDirty(false);
+      setStatus(value);setJobId('jobId' in value?value.jobId:'');setNotice('Trusted Fill approval saved for these exact fields.');setDirty(false);
     } catch(failure){setError(failure instanceof Error?failure.message:'Unable to approve this packet.');}
     finally{setBusy(false);}
   }
@@ -35,8 +35,8 @@ export function TrustedFill({client,disabled,dirtyChanged}:{client:Client;disabl
     setStatus(value);setNotice('Trusted Fill approval revoked.');
   }catch(failure){setError(failure instanceof Error?failure.message:'Unable to revoke approval.');}finally{setBusy(false);}}
   return <section className="workspace-panel trusted-fill-panel" aria-labelledby="trusted-fill-heading">
-    <div className="workspace-panel-heading"><div><p className="eyebrow">Grounded trusted fill</p><h2 id="trusted-fill-heading">Approve exact non-final field operations</h2></div><span className="automation-state">No final action</span></div>
-    <p className="automation-safety">This inert authority evaluates fingerprints only. It cannot operate a browser, authenticate, accept consent, enter credentials, navigate, or activate Submit, Send, Apply, or any equivalent final control.</p>
+    <div className="workspace-panel-heading"><div><p className="eyebrow">Trusted Fill</p><h2 id="trusted-fill-heading">Approve specific field actions</h2></div><span className="automation-state">No final action</span></div>
+    <p className="automation-safety">This approval checks matching fields only. It cannot control a browser, sign in, accept consent, enter credentials, navigate, or submit an application.</p>
     <form ref={approval} className="automation-form trusted-fill-form" onChange={()=>setDirty(true)} onSubmit={approve}>
       <fieldset disabled={disabled||busy}><legend className="visually-hidden">Trusted Fill approval packet</legend><div className="automation-form-grid">
         <label>Claimed job ID<input name="jobId" required/></label><label>Expected job revision<input name="expectedJobRevision" type="number" min="1" required/></label>

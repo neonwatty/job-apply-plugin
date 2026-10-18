@@ -70,7 +70,7 @@ export async function nativePendingAnswersBrowser(page, root, cli) {
   await panel.getByRole('status').getByText('Rechecking the saved answer…', { exact: true }).waitFor();
   assert.equal(await eligible.getByRole('button', { name: 'Resolve question', exact: true }).count(), 0);
   release();
-  await page.getByText('Pending question resolved. Refresh pending questions to check remaining information.', { exact: true }).waitFor();
+  await page.getByText('Question resolved. Refresh pending questions to check what remains.', { exact: true }).waitFor();
   await page.unroute('**/resolve-pending-answer');
   assert.equal(await page.getByLabel('Question', { exact: true }).count(), 0);
   const updated = JSON.parse(await readFile(sessionPath, 'utf8'));

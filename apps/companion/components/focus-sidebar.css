@@ -1,0 +1,61 @@
+.focus-shell { --rail-width:238px; }
+.focus-shell .topbar { overflow-x:hidden;width:var(--rail-width);transition:width 220ms ease,padding 220ms ease; }
+.focus-shell .companion { margin-left:var(--rail-width);transition:margin-left 220ms ease; }
+.sidebar-toggle { display:flex;align-items:center;gap:10px;align-self:flex-start;margin:0 0 24px;padding:9px 10px;font-size:12px;min-height:42px; }
+.product-context { max-height:180px;opacity:1;overflow:hidden;transition:max-height 220ms ease,opacity 160ms ease; }
+.nav-group-label { max-height:20px;opacity:1;transition:max-height 220ms ease,opacity 160ms ease; }
+.focus-shell .workspace-nav { transition:margin 220ms ease; }
+.sidebar-icon { flex:0 0 20px; }
+.nav-link { position:relative;justify-content:flex-start;gap:10px;min-height:44px; }
+.nav-label { white-space:nowrap;opacity:1;transition:opacity 100ms ease 220ms; }
+.nav-count { margin-left:auto;flex-shrink:0; }
+.focus-shell[data-collapsed=true] { --rail-width:76px; }
+.focus-shell[data-collapsed=true] .topbar { padding-inline:12px; }
+.focus-shell[data-collapsed=true] .sidebar-toggle { padding:9px 14px; }
+.focus-shell[data-collapsed=true] .sidebar-toggle .sidebar-icon { transform:rotate(180deg); }
+.focus-shell[data-collapsed=true] .sidebar-toggle>span,
+.focus-shell[data-collapsed=true] .connection>span:last-child { display:none; }
+.focus-shell[data-collapsed=true] .product-context,
+.focus-shell[data-collapsed=true] .nav-group-label { max-height:0;opacity:0; }
+.focus-shell[data-collapsed=true] .workspace-nav { margin-top:0; }
+.focus-shell[data-collapsed=true] .nav-link { padding:12px 15px; }
+.focus-shell[data-collapsed=true] .nav-count { position:absolute;right:0;top:0;min-width:16px;height:16px;font-size:10px; }
+.focus-shell[data-collapsed=true] .nav-label {
+  position:fixed;left:70px;width:max-content;max-width:250px;padding:8px 12px;
+  background:var(--ink);color:var(--panel);border-radius:6px;z-index:30;
+  opacity:0;pointer-events:none;transition:opacity 120ms ease;
+}
+.focus-shell[data-collapsed=true] .nav-link:hover .nav-label,
+.focus-shell[data-collapsed=true] .nav-link:focus-visible .nav-label { opacity:1; }
+.focus-shell[data-collapsed=true] .connection { justify-content:center; }
+@media(min-width:761px) and (max-width:1100px) {
+  .focus-shell { --rail-width:220px; }
+}
+@media(max-width:760px) {
+  .focus-shell .topbar { width:100%;padding:16px; }
+  .focus-shell .companion { margin-left:0;transition:none; }
+  .sidebar-toggle { align-self:flex-end;margin:0 0 8px; }
+  .focus-shell[data-collapsed=true] .topbar { padding:12px 16px; }
+  .focus-shell[data-collapsed=true] .sidebar-toggle { padding:8px 10px; }
+  .focus-shell[data-collapsed=true] .sidebar-toggle>span { display:inline; }
+  .focus-shell[data-collapsed=true] .workspace-nav { gap:4px;margin:4px 0 0; }
+  .focus-shell[data-collapsed=true] .nav-group { flex:0 1 auto; }
+  .focus-shell[data-collapsed=true] .nav-group-links { gap:2px; }
+  .focus-shell[data-collapsed=true] .nav-link { padding:12px; }
+  .focus-shell[data-collapsed=true] .nav-label { left:16px;top:auto;margin-top:72px; }
+  .focus-shell[data-collapsed=true] .connection { display:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .focus-shell .topbar,.focus-shell .companion,.focus-shell .nav-label,
+  .focus-shell .product-context,.focus-shell .nav-group-label,.focus-shell .workspace-nav { transition:none; }
+}
+/* Reset horizontal-navigation sizing inherited from the shared screen styles. */
+.focus-shell .topbar { z-index:20; }
+.focus-shell .nav-group { display:block; }
+.focus-shell .nav-group-label { display:block;margin-bottom:8px;color:var(--muted); }
+.focus-shell .nav-group-links { align-items:stretch; }
+.focus-shell .workspace-nav { flex-shrink:0;border-top:0; }
+.focus-shell .product-context,.focus-shell .sidebar-toggle { flex-shrink:0; }
+.focus-shell .connection { position:static;width:auto;min-height:0;border:0;border-radius:0;align-self:stretch; }
+@media(max-width:760px) { .focus-shell .nav-group-label { display:none; } }
+.focus-shell .workspace-nav { flex:0 0 auto;align-content:start;align-items:stretch; }

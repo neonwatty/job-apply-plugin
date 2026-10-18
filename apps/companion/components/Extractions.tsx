@@ -108,7 +108,7 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
       if (string(get(next, 'id')) !== id) throw Error('Proposal identity changed. Refresh the proposal list.');
       if (refresh && dirty) {
         setLatest(next);
-        setNotice('Latest comparisons loaded. Your decisions are retained until you choose how to continue.');
+        setNotice('Latest comparisons loaded. Your decisions are retained.');
       } else loadProposal(next);
       setFocusReviewVersion(value => value + 1);
     } catch (failure) {
@@ -133,7 +133,7 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
         const requestId = string(get(record, 'requestId'));
         setFallback(current => current?.requestId === requestId ? null : current);
       }
-      setNotice(action === 'cancel' ? 'Extraction request cancelled.' : 'Extraction requested. An agent can now extract facts from this resume.');
+      setNotice(action === 'cancel' ? 'Extraction request cancelled.' : 'Extraction requested. An agent can now process this resume.');
       await refreshLists();
     } catch (failure) {
       if (version === generation.current && !controller.signal.aborted) {
@@ -247,17 +247,17 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
       <button className="secondary" disabled={busy} onClick={() => void selectProposal(string(get(base, 'id'))!, true)}>Refresh selected proposal</button>
       {stale && <p className="error" role="alert">{staleReasons.map(value => reasonMessage(string(value) ?? '')).join(' ')} Request a new extraction before reviewing it.</p>}
       {latest && <aside className="notice" role="alert">
-        <p>Your decisions are retained. Reapply them to display the latest comparisons, then review each choice and confirm any replacements again.</p>
+        <p>Your decisions are retained. Reapply, review the latest comparisons, and confirm replacements again.</p>
         <button disabled={busy} onClick={() => {
           setChoices(reapplyChoices(choices, latest));
           setBase(latest);
           setLatest(null);
           setConfirmed([]);
-          setNotice('Decisions reapplied to the latest comparisons. Decisions for resolved fields were removed. Review before saving.');
+          setNotice('Decisions reapplied; resolved fields removed. Review before saving.');
         }}>Reapply my decisions</button>
         <button disabled={busy} onClick={() => { if (confirm('Discard your unsaved review decisions?')) loadProposal(latest); }}>Load saved proposal</button>
       </aside>}
-      {string(get(base, 'status')) === 'completed' && <p className="notice">This proposal is complete. No further review is needed.</p>}
+      {string(get(base, 'status')) === 'completed' && <p className="notice">Review complete.</p>}
       {string(get(base, 'status')) === 'superseded' && <p>A newer extraction replaced this proposal. Open the latest proposal to continue.</p>}
       {pendingPaths(base).length > 0 && <form onSubmit={event => { event.preventDefault(); void saveReview(); }}>
         <ExtractionReview proposal={base} choices={choices} confirmed={confirmed} disabled={busy || Boolean(latest) || stale || string(get(base, 'status')) !== 'pending'} change={(pointer, decision) => {

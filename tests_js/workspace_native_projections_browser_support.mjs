@@ -19,10 +19,11 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   await page.getByText(/Showing the last loaded overview/).waitFor({state:'hidden'});
   await page.getByRole('button', {name:'Open Needs Attention',exact:true}).click();
   const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
-  await attention.getByRole('button', {name:`Open job ${jobId}`,exact:true}).waitFor();
+  await attention.getByRole('button', {name:`Review job ${jobId}`,exact:true}).waitFor();
   await attention.getByLabel('Filter by reason').selectOption('expired_agent_attempt');
   await attention.getByText('No jobs match this reason filter.',{exact:true}).waitFor();
   await attention.getByLabel('Filter by reason').selectOption('');
+  await attention.getByRole('button', {name:`Review job ${jobId}`,exact:true}).click();
   await attention.getByRole('button', {name:`Open job ${jobId}`,exact:true}).click();
   const modal = page.locator('dialog.job-drawer');
   await modal.waitFor();
@@ -32,10 +33,10 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.route('**/api/jobs/*/activity',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
   await activity.getByRole('button',{name:'Refresh activity',exact:true}).click();
-  await activity.getByText(/last successful snapshot for this job/).waitFor();
+  await activity.getByText(/last loaded job data/).waitFor();
   await page.unroute('**/api/jobs/*/activity');
   await activity.getByRole('button',{name:'Refresh activity',exact:true}).click();
-  await activity.getByText(/last successful snapshot for this job/).waitFor({state:'hidden'});
+  await activity.getByText(/last loaded job data/).waitFor({state:'hidden'});
   await modal.getByRole('button',{name:'Edit job',exact:true}).click();
   await modal.locator('[name="notes"]').fill('Projection navigation draft');
   page.once('dialog',dialog=>dialog.dismiss());
@@ -44,12 +45,12 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   page.once('dialog',dialog=>dialog.accept());
   await modal.getByRole('button',{name:'Close job details',exact:true}).click();
   await clickCompanionNav(page, 'Needs Attention');
-  await attention.getByRole('button',{name:`Open job ${jobId}`,exact:true}).waitFor();
+  await attention.getByRole('button',{name:`Review job ${jobId}`,exact:true}).waitFor();
   await markReady();
   await attention.getByRole('button',{name:'Refresh attention',exact:true}).click();
-  await attention.getByRole('button',{name:`Open job ${jobId}`,exact:true}).waitFor({state:'hidden'});
+  await attention.getByRole('button',{name:`Review job ${jobId}`,exact:true}).waitFor({state:'hidden'});
   // The preceding Answers walkthrough deliberately retains another unresolved job.
-  await attention.getByRole('button',{name:'Open job pending-browser-job',exact:true}).waitFor();
+  await attention.getByRole('button',{name:'Review job pending-browser-job',exact:true}).waitFor();
   await clickCompanionNav(page, 'Overview');
   await page.getByRole('button',{name:'Open Needs Attention',exact:true}).waitFor();
   return {overview:true,attention:true,activity:true,staleRetry:true,resolvedAttention:true};

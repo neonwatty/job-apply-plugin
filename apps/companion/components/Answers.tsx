@@ -215,7 +215,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
       </li>)}</ul>
     </section>}
     <section className="workspace-panel answers-panel" aria-labelledby="answer-library-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="answer-library-heading">{label}</h2></div>
+      <div className="workspace-panel-heading"><div><p className="eyebrow">Library</p><h2 id="answer-library-heading">{label}</h2></div>
         <form className="answer-filters" onSubmit={event => { event.preventDefault(); void refreshList(); }}>
           <label>Find {label.toLowerCase()}<input type="search" placeholder="Question or alias" value={query} onChange={event => setQuery(event.target.value)} /></label>
           <label>Review status<select aria-label="Review status" value={status} onChange={event => setStatus(event.target.value)}>
@@ -303,7 +303,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
       <AnswerCleanup client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setMergeBusy} onMerged={() => { setBase(null); setDraft(null); setLatest(null); setRemember(false); setInvalid(false); setCreating(false); setNotice('Answers merged.'); setCleanupRevision(value => value + 1); void refreshList(); }} />
       <PendingAnswers client={client} revision={cleanupRevision} disabled={dirty || busy || mergeBusy || pendingBusy} onBusyChanged={setPendingBusy} onOpenAnswer={key => { void select(key); }} onResolved={() => {
         setBase(null); setDraft(null); setLatest(null); setRemember(false); setInvalid(false); setCreating(false);
-        setNotice('Pending question resolved. Refresh pending questions to check remaining information.');
+        setNotice('Question resolved. Refresh pending questions to check what remains.');
         setCleanupRevision(value => value + 1);
         void refreshList();
       }} />

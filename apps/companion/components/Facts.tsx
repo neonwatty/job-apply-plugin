@@ -69,7 +69,7 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
     </aside>}
     {base&&draft&&<section className="workspace-panel facts-panel" aria-labelledby="facts-form-title">
       <div className="workspace-panel-heading">
-        <div><p className="eyebrow">Canonical profile</p><h2 id="facts-form-title">Applicant facts</h2></div>
+        <div><p className="eyebrow">Local profile</p><h2 id="facts-form-title">Applicant facts</h2></div>
         <div className="facts-heading-actions"><p className="facts-revision">Revision {base.revision}</p>
           <button className="secondary" type="button" onClick={()=>setAddOpen(value=>!value)} aria-expanded={addOpen} aria-controls="fact-add-panel">{addOpen?'Close new fact':'Add a fact'}</button></div>
       </div>
@@ -83,7 +83,7 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
           <details><summary>Fact source</summary><pre>{factProvenance(base.provenance,name)}</pre></details>
           <button className="text-action" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>
         </div>)}</div>
-        {addOpen&&<fieldset id="fact-add-panel" className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard profile field or a custom value used during applications.</p>
+        {addOpen&&<fieldset id="fact-add-panel" className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard or custom application field.</p>
           <div className="fact-add-grid"><label>Fact name<input list="fact-names" value={key} onChange={event=>setKey(event.target.value)}/><datalist id="fact-names">{sections.map(name=><option key={name} value={name}/>)}</datalist></label>
           <label>Value type<select value={kind} onChange={event=>setKind(event.target.value)}><option value="text">Text</option><option value="object">Fields</option><option value="array">List</option><option value="boolean">Yes / no</option><option value="number">Number</option><option value="null" disabled={sections.includes(key)}>No value (additional facts)</option></select></label>
           <button className="secondary" type="button" disabled={!key||settingsNames.includes(key)||draft.has(text(key))||(kind==='null'&&sections.includes(key))} onClick={()=>{

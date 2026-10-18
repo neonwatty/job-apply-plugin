@@ -26,7 +26,7 @@ export function transitionBody(job: Job, status: string, closedOutcome = '', use
   });
 }
 export function transitionConfirmation(job: Job, status: TransitionTarget, closedOutcome = ''): string {
-  const local = 'This changes local status only and never submits an application to an employer.';
+  const local = 'This updates local status only; it does not submit the application.';
   if (status === 'applied') return `I confirm that I personally submitted this application. Mark it as applied? ${local}`;
   if (status === 'closed') return `Close this job as ${closedOutcome.replaceAll('_', ' ')}? ${local}`;
   if (status === 'ready') return `Mark this job ready? The workspace will run preflight checks first. ${local}`;

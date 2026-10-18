@@ -68,7 +68,7 @@ export function PendingAnswers({ client, revision, disabled, onBusyChanged, onRe
       onResolved();
     } catch {
       // Neither server errors nor response bodies may expose saved answer values.
-      if (version === generation.current && !controller.signal.aborted) setError('Unable to confirm resolution. Refresh pending questions to check the latest state before trying again.');
+      if (version === generation.current && !controller.signal.aborted) setError('Resolution unconfirmed. Refresh pending questions before retrying.');
     } finally {
       if (version === generation.current) {
         mutationActive.current = false;
