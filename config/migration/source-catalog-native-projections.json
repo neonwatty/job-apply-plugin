@@ -3,12 +3,12 @@
   "sources": [
     {
       "path": "apps/companion/components/JobActivity.tsx",
-      "sha256": "31d86a46e3ece931c79dc4e16456eeb5db1cf962fc62a72854f762b163b166ba",
+      "sha256": "ce3585062efff0bc903aed322ddfcb106dd1a7c21c258e0a23ce642d66f4cd91",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/NeedsAttention.tsx",
-      "sha256": "3c608728861c9c429d1cdd53125d1857db0f6f0b72fc9d728e666a06ba1c7dfd",
+      "sha256": "e166119f7c5c168bb196d582087a07980f13f1f1d2e68bf6cd187f1204758216",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "apps/companion/components/projection-view.ts",
-      "sha256": "c90f9241a81eb657a39eaa54c06b98acf6addb5743540c4ffc592a3f96c6a376",
+      "sha256": "14a8ea5a988b3d30ff00c7e969ea3275b8e219b454dd1fa13d129f698f7206b1",
       "classification": "unreviewed"
     },
     {

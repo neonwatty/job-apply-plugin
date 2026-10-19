@@ -16,7 +16,7 @@ export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Clie
   return <section aria-label="Job activity" style={{minWidth:0,overflowWrap:'anywhere'}}>
     <h3>Job activity</h3><button type="button" onClick={refresh} disabled={loading}>Refresh activity</button>
     {loading && <p role="status">Loading job activity…</p>}
-    {error && <p role="alert">{error} {data && 'Showing the last successful snapshot for this job; it may be stale.'}</p>}
+    {error && <p role="alert">{error} {data && 'Showing the last loaded job data; it may be outdated.'}</p>}
     {data && <>
       <p>Status: {humanize(data.job.status)} · Revision {String(data.job.revision)}</p>
       {data.job.status==='awaiting_review' && data.claim.state==='none' && !error && <>
@@ -42,7 +42,7 @@ export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Clie
           : data.session.optionalUnansweredControlIds.length===0 ? <p>None recorded.</p>
             : <><p>These fields did not block manual review. Check the visible form if you want to answer them.</p>
               <ul>{data.session.optionalUnansweredControlIds.map(id=><li key={id}>{humanize(id).replaceAll('.',' ')}</li>)}</ul></>}
-        <h4>Blockers</h4>{data.session.blockers.length===0 ? <p>No typed blockers recorded.</p> : <ul>{data.session.blockers.map((blocker,index)=><li key={index}>{humanize(blocker.type)}: {humanize(blocker.code)}</li>)}</ul>}
+        <h4>Blockers</h4>{data.session.blockers.length===0 ? <p>No blockers recorded.</p> : <ul>{data.session.blockers.map((blocker,index)=><li key={index}>{humanize(blocker.type)}: {humanize(blocker.code)}</li>)}</ul>}
         <h4>Pending information</h4><p>{data.session.pending.length} pending items · {data.session.approvalCount} current session approvals</p>
         <ul>{data.session.pending.map((field,index)=><li key={index}>Item {index+1} · {humanize(field.fieldClass)} · {humanize(field.state)}. {field.sensitive ? 'Sensitive: separate confirmation required.' : field.eligible ? 'Saved answer eligible for recheck with your confirmation.' : 'Further review required before resolution.'} {field.approved ? 'Current session approval recorded.' : 'No current session approval.'}</li>)}</ul>
         {data.session.pending.length>0 && openAnswers && <button type="button" onClick={openAnswers}>Open Answers</button>}

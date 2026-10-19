@@ -48,7 +48,7 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation, countCha
             return true;
         } catch {
             if (mounted.current && request === generation.current)
-                setError('Trash could not be refreshed. Displayed records may be outdated; actions are disabled until refresh succeeds.');
+                setError('Could not refresh Trash. Records may be outdated; refresh successfully to enable actions.');
             return false;
         } finally {
             if (mounted.current && request === generation.current) setLoading(false);
@@ -107,11 +107,11 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation, countCha
     const limited = (['job', 'resume', 'answer'] as const).some(type => !capabilities[type].restore || !capabilities[type].delete);
     return <section className="trash-workspace" aria-labelledby="trash-title" aria-busy={loading || busy}>
         <header className="workspace-hero">
-            <div className="workspace-hero-copy"><p className="eyebrow">Unified recovery</p><h1 id="trash-title">Trash</h1>
-                <p>Restore or permanently delete one canonical record at a time. Application history and audit evidence are never deleted here.</p></div>
+            <div className="workspace-hero-copy"><p className="eyebrow">Recovery</p><h1 id="trash-title">Trash</h1>
+                <p>Restore or permanently delete individual records. Application history and audit evidence stay intact.</p></div>
             <div className="workspace-hero-actions"><button id="trash-refresh" className="secondary" disabled={loading || busy || selection !== null} onClick={() => { void refresh(); }}>Refresh Trash</button></div>
         </header>
-        {limited && <p className="notice">Some lifecycle actions are not available in this workspace. Only supported actions are enabled.</p>}
+        {limited && <p className="notice">Unavailable actions are disabled in this workspace.</p>}
         <section className="workspace-panel trash-panel" aria-labelledby="trash-list-heading">
             <div className="workspace-panel-heading"><div><p className="eyebrow">Recoverable records</p><h2 id="trash-list-heading">Jobs, resumes, and answers</h2></div>
                 {(snapshot?.total || filter) && <label className="trash-filter">Record type<select value={filter} disabled={busy || selection !== null} onChange={event => setFilter(event.target.value as TrashType | '')}>

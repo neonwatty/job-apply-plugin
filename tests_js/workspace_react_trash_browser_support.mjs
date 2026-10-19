@@ -118,7 +118,7 @@ export async function reactTrashBrowser(page, { origin, headers }) {
     await modal.getByLabel(/Type DELETE JOB/).fill('DELETE JOB');
     await page.route('**/api/trash', route => route.fulfill({ status: 503, body: '{}' }));
     await confirm.click();
-    await workspace.getByRole('alert').filter({ hasText: 'could not be refreshed' }).waitFor();
+    await workspace.getByRole('alert').filter({ hasText: 'Could not refresh Trash' }).waitFor();
     await workspace.getByRole('status').filter({ hasText: 'The change was saved' }).waitFor();
     assert.equal(await card(target).getByRole('button', { name: 'Delete permanently…', exact: true }).isDisabled(), true);
     await page.unroute('**/api/trash');

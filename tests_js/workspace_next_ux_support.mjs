@@ -14,12 +14,11 @@ export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await capture(page, 'mobile-menu.png');
-  assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).getAttribute('aria-expanded'), 'true');
+  await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
+  await capture(page, 'mobile-sidebar.png');
+  assert.equal(await page.getByRole('button', { name: 'Expand sidebar', exact: true }).getAttribute('aria-expanded'), 'false');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
-  await page.keyboard.press('Escape');
-  assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).getAttribute('aria-expanded'), 'false');
+  await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.evaluate(() => scrollTo(0, 0));
   await clickCompanionNav(page, 'Answers');
@@ -52,7 +51,7 @@ export async function nextSetupAndLoading(page, url) {
   await page.getByText('Connection unavailable', { exact: true }).waitFor();
   await page.unroute(boot);
   await page.getByRole('button', { name: 'Retry connection' }).click();
-  await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
+  await page.getByRole('status', { name: 'Local data connected', exact: true }).waitFor();
   await clickCompanionNav(page, 'Overview');
 
   let release;

@@ -89,7 +89,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         if (!requestedJobId || !data || loading || loadError) return;
         const selected = data.jobs.find(job => job.id === requestedJobId);
         if (selected) open(selected);
-        else setError('The selected job is no longer available. Refresh Jobs to check its current state.');
+        else setError('This job is unavailable. Refresh Jobs to check again.');
         jobOpened?.();
     }, [requestedJobId, data, loading, loadError, jobOpened]);
 
@@ -130,7 +130,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     ? previous.jobs.map(job => job.id === saved.id ? saved : job)
                     : [saved, ...(previous?.jobs ?? [])] }));
             setEditor(null);
-            setNotice('Job saved to the canonical store');
+            setNotice('Job saved locally');
             void workspaceChanged?.();
             void refresh();
         } catch (error) {
@@ -238,7 +238,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
             }}
             reapply={() => { setEditor(current => current ? reapply(current) : current); setError(''); }}
             load={() => {
-                if (editor.latest && (!editor.dirty.size || confirm('Discard your draft and load canonical values?'))) {
+                if (editor.latest && (!editor.dirty.size || confirm('Discard your draft and load saved values?'))) {
                     setEditor(openEditor(editor.latest));
                     setError('');
                 }

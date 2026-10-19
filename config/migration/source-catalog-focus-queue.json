@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/focus-queue.css",
+      "sha256": "9b6e239a9ee49d9af05712f3110f51409be7ee6a1fca16a4ec77536ad9980d72",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/focus-sidebar.css",
+      "sha256": "c8b019ffec61e64b914ceece0fda83ddd95d00e3087f2004f286d97f644ffffa",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/design-preview/inspect.mjs",
+      "sha256": "3ac8380bf99249fe8aad548c1c600d98b791fd28494810cd4c7de5d4e2e3be8e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/design-preview/sidebar-check.mjs",
+      "sha256": "c2feb0ee78b9fd04616c2e0050365467cade222dce8706cd67af6f0e450843ff",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/design-preview/start.mjs",
+      "sha256": "9c86e3458f829d567457db305f077da41c29b9cc75c338a460a862c6bde4e822",
+      "classification": "unreviewed"
+    }
+  ]
+}

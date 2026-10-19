@@ -1,6 +1,5 @@
 'use client';
 import { useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react';
-import { createPortal } from 'react-dom';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
 import { Overview } from './Overview';
@@ -18,9 +17,10 @@ import './trash.css';
 import './resume-facts.css';
 import './title-discovery.css';
 import './companion-polish.css';
-import './companion-nav.css';
 import './companion-theme.css';
 import './companion-interactions.css';
+import './focus-queue.css';
+import './focus-sidebar.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
@@ -33,151 +33,26 @@ const refreshAfter: Record<WorkspaceTab,number> = {
     facts:60_000,resumes:60_000,extractions:60_000,answers:60_000,consents:60_000,
     accounts:60_000,automation:60_000,settings:120_000
 };
-type Menu = 'materials'|'more';
-type Props = {
-  tab: WorkspaceTab;
-  navigate: (next: WorkspaceTab) => boolean;
-  nativeWorkspace: boolean;
-  attentionCount?: number;
-  token: string;
-  legacyHref: string;
-  dirty: boolean;
+const paths: Record<string,string> = {
+  attention:'M4 5h16v14H4z M8 9h8 M8 13h5',
+  jobs:'M4 7h16v13H4z M9 7V4h6v3 M4 12h16 M10 12v3h4v-3',
+  overview:'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
+  facts:'M7 4h10v16H7z M10 8h4 M10 12h4 M10 16h2',
+  resumes:'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6',
+  answers:'M4 4h16v12H9l-5 4z M8 8h8 M8 12h5',
+  automation:'M12 3v3 M12 18v3 M3 12h3 M18 12h3 M6 6l2 2 M16 16l2 2 M6 18l2-2 M16 8l2-2 M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  accounts:'M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M4 21v-3a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v3',
+  consents:'M12 3l8 3v6c0 5-8 9-8 9S4 17 4 12V6z M8 12l3 3 5-6',
+  settings:'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6',
+  trash:'M4 6h16 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7',
+  external:'M14 3h7v7 M21 3l-9 9 M10 5H4v15h15v-6',
+  collapse:'M4 4h16v16H4z M9 4v16 M16 9l-3 3 3 3',
 };
-
-function CompanionNav({ tab, navigate, nativeWorkspace, attentionCount, token, legacyHref, dirty }: Props) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<Menu|null>(null);
-  const [activeRect, setActiveRect] = useState<{ x:number;y:number;width:number;height:number }|null>(null);
-  const [indicatorReady, setIndicatorReady] = useState(false);
-  const nav = useRef<HTMLElement|null>(null);
-  const mobileToggle = useRef<HTMLButtonElement|null>(null);
-  const materialsToggle = useRef<HTMLButtonElement|null>(null);
-  const moreToggle = useRef<HTMLButtonElement|null>(null);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const container = nav.current;
-      const active = container?.querySelector<HTMLElement>('[data-nav-active="true"]');
-      if (!container || !active) return;
-      const bounds = container.getBoundingClientRect();
-      const item = active.getBoundingClientRect();
-      setActiveRect({ x:item.left-bounds.left+container.scrollLeft, y:item.top-bounds.top,
-        width:item.width, height:item.height });
-    };
-    measure();
-    const frame = requestAnimationFrame(() => setIndicatorReady(true));
-    window.addEventListener('resize', measure);
-    return () => { cancelAnimationFrame(frame);window.removeEventListener('resize', measure); };
-  }, [tab, nativeWorkspace, attentionCount]);
-
-  useEffect(() => {
-    setMobileOpen(false);
-    setOpenMenu(null);
-  }, [tab]);
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const priorOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    nav.current?.querySelector<HTMLElement>('.nav-link')?.focus();
-    const media = window.matchMedia('(max-width: 1020px)');
-    const onResize = () => { if (!media.matches) setMobileOpen(false); };
-    media.addEventListener('change', onResize);
-    return () => {
-      document.body.style.overflow = priorOverflow;
-      media.removeEventListener('change', onResize);
-    };
-  }, [mobileOpen]);
-  useEffect(() => {
-    if (!mobileOpen && !openMenu) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if ((event.target as Element).closest?.('.mobile-nav-backdrop')) return;
-      if (!nav.current?.contains(event.target as Node) && !mobileToggle.current?.contains(event.target as Node)) {
-        if (mobileOpen) mobileToggle.current?.focus();
-        setMobileOpen(false);
-        setOpenMenu(null);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Tab' && mobileOpen && nav.current) {
-        const links = [...nav.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')]
-          .filter(link => link.getClientRects().length > 0);
-        if (links.length) {
-          const first = links[0]!, last = links[links.length - 1]!;
-          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-        }
-        return;
-      }
-      if (event.key !== 'Escape') return;
-      if (openMenu) {
-        (openMenu === 'materials' ? materialsToggle : moreToggle).current?.focus();
-        setOpenMenu(null);
-      } else if (mobileOpen) {
-        mobileToggle.current?.focus();
-        setMobileOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [mobileOpen, openMenu]);
-
-  const go = (next: WorkspaceTab) => {
-    const changed = navigate(next);
-    setOpenMenu(null);
-    setMobileOpen(false);
-    if (!changed && mobileOpen) mobileToggle.current?.focus();
-  };
-  const link = (target: WorkspaceTab, label: string, active = tab === target, count?: number) =>
-    <button className="nav-link" type="button" aria-label={label} aria-current={active ? 'page' : undefined}
-      data-nav-active={active && ['overview','jobs','attention'].includes(target) ? 'true' : undefined}
-      onClick={() => go(target)}>{label}{count !== undefined && count > 0 && <span className="nav-count" aria-hidden="true">{count}</span>}</button>;
-  const menu = (id: Menu, label: string, active: boolean, toggle: typeof materialsToggle, items: React.ReactNode) =>
-    <div className="nav-menu">
-      <button ref={toggle} className="nav-link nav-menu-toggle" type="button"
-        data-active={active || undefined} data-nav-active={active ? 'true' : undefined}
-        aria-expanded={openMenu === id} aria-controls={`${id}-nav-menu`}
-        onClick={() => setOpenMenu(current => current === id ? null : id)}>{label}<span className="nav-chevron" aria-hidden="true" /></button>
-      <div id={`${id}-nav-menu`} className="nav-popover" hidden={openMenu !== id}>{items}</div>
-    </div>;
-  const materialsActive = ['facts', 'resumes', 'extractions', 'answers', 'consents'].includes(tab);
-  const moreActive = ['automation', 'accounts', 'settings', 'trash'].includes(tab);
-
-  return <>
-    {mobileOpen && createPortal(<button className="mobile-nav-backdrop" type="button" tabIndex={-1}
-      aria-label="Close workspace menu" onClick={() => { setMobileOpen(false); mobileToggle.current?.focus(); }} />, document.body)}
-    <button ref={mobileToggle} className="mobile-nav-toggle" type="button" aria-expanded={mobileOpen}
-      aria-controls="workspace-navigation" onClick={() => { setMobileOpen(value => !value); setOpenMenu(null); }}>
-      <span className="mobile-nav-icon" aria-hidden="true" />Menu
-    </button>
-    <nav ref={nav} id="workspace-navigation" className={`workspace-nav${mobileOpen ? ' is-open' : ''}`}
-      aria-label="Workspace sections">
-      {activeRect && <span className="nav-active-indicator" data-ready={indicatorReady || undefined}
-        style={{width:activeRect.width,height:activeRect.height,transform:`translate3d(${activeRect.x}px,${activeRect.y}px,0)`}}
-        aria-hidden="true" />}
-      {link('overview', 'Overview')}
-      {link('jobs', 'Jobs')}
-      {nativeWorkspace && link('attention', 'Needs Attention', tab === 'attention', attentionCount)}
-      {menu('materials', 'Materials', materialsActive, materialsToggle, <>
-        {link('facts', 'Facts')}
-        {link('resumes', 'Resumes', tab === 'resumes' || tab === 'extractions')}
-        {nativeWorkspace && link('answers', 'Answers')}
-        {nativeWorkspace && link('consents', 'Consent defaults')}
-      </>)}
-      {menu('more', 'More', moreActive, moreToggle, <>
-        {token && !nativeWorkspace && <a className="nav-link" href={legacyHref} onClick={event => {
-          if (dirty && !confirm('Discard unsaved changes?')) event.preventDefault();
-        }}>Open full workspace</a>}
-        {nativeWorkspace && link('automation', 'Automation')}
-        {nativeWorkspace && link('accounts', 'Accounts & Sign-in')}
-        {nativeWorkspace && link('settings', 'Settings')}
-        {link('trash', 'Trash')}
-      </>)}
-    </nav>
-  </>;
+function SidebarIcon({name}:{name:string}) {
+  return <svg className="sidebar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={paths[name] ?? paths.overview}/>
+  </svg>;
 }
 
 export default function Companion() {
@@ -190,6 +65,7 @@ export default function Companion() {
     const [refreshKeys,setRefreshKeys]=useState<Partial<Record<WorkspaceTab,number>>>({});
     const [requestedJob,setRequestedJob]=useState<string|null>(null);
     const [dirty,setDirty]=useState(false);
+    const [collapsed,setCollapsed]=useState(false);
     const [attempt,setAttempt]=useState(0);
     const [shellCounts,setShellCounts]=useState<{attention?:number;trash?:number}>({});
     const content=useRef<HTMLElement|null>(null);
@@ -332,23 +208,59 @@ export default function Companion() {
     }
     useEffect(()=>{void refreshShellCounts();},[refreshShellCounts,tab]);
     useEffect(()=>{document.title=`${tab==='attention'?'Needs Attention':tab==='extractions'?'Resume extraction':tab[0]!.toUpperCase()+tab.slice(1)} · Job Apply Workspace`;},[tab]);
-    const connection=boot?.status==='ready'? 'Canonical store connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…';
-    return <>
+    const connection=boot?.status==='ready'? 'Local data connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…';
+    const navButton=(workspace:WorkspaceTab,label:string,count?:number,active=tab===workspace) => <button className="nav-link" aria-label={label} aria-current={active?'page':undefined} title={collapsed?label:undefined} onClick={() => navigate(workspace)}><SidebarIcon name={workspace}/><span className="nav-label">{label}</span>{count!==undefined&&<span className="nav-count" aria-hidden="true">{count}</span>}</button>;
+    return <div className="focus-shell" data-collapsed={collapsed}>
         <a className="skip-link" href="#workspace-content">Skip to workspace</a>
         <header className="topbar">
-            <div className="topbar-inner">
-                <button className="brand-home" aria-label="Open overview" onClick={() => navigate('overview')}><span className="brand-mark" aria-hidden="true">J</span><span className="brand-name" aria-hidden="true">Job Apply<span>Companion</span></span></button>
-                <CompanionNav tab={tab} navigate={navigate} nativeWorkspace={nativeWorkspace}
-                    attentionCount={shellCounts.attention} token={token} legacyHref={legacyHref} dirty={dirty}/>
-                <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
-                    <span className="connection-dot" aria-hidden="true" />
-                    <span className="connection-label">{connection}</span>
-                </div>
+            <button className="sidebar-toggle" type="button" aria-expanded={!collapsed} aria-controls="workspace-navigation"
+                aria-label={collapsed?'Expand sidebar':'Collapse sidebar'} title={collapsed?'Expand sidebar':'Collapse sidebar'}
+                onClick={()=>setCollapsed(value=>!value)}><SidebarIcon name="collapse"/><span>{collapsed?'Expand':'Collapse'}</span></button>
+            <div className="product-context">
+                <p className="eyebrow">Focus Queue</p>
+                <h1>Job Apply</h1>
+                <p id="workspace-trust-context" className="trust-context">Your data stays local. Only you submit applications.</p>
             </div>
+            <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
+                <span className="connection-dot" aria-hidden="true" />
+                <span>{connection}</span>
+            </div>
+
+            <nav id="workspace-navigation" className="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">
+                <div className="nav-group" role="group" aria-labelledby="nav-group-pipeline">
+                    <span id="nav-group-pipeline" className="nav-group-label">Pipeline</span>
+                    <div className="nav-group-links">
+                        {nativeWorkspace&&navButton('attention','Needs Attention',shellCounts?.attention)}
+                        {navButton('jobs','Jobs')}
+                        {navButton('overview','Overview')}
+                    </div>
+                </div>
+                <div className="nav-group" role="group" aria-labelledby="nav-group-data">
+                    <span id="nav-group-data" className="nav-group-label">Application data</span>
+                    <div className="nav-group-links">
+                        {navButton('facts','Facts')}
+                        {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
+                        {nativeWorkspace&&navButton('answers','Answers')}
+                        {nativeWorkspace&&navButton('consents','Consent defaults')}
+                    </div>
+                </div>
+                <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
+                    <span id="nav-group-controls" className="nav-group-label">Controls</span>
+                    <div className="nav-group-links">
+                        {token&&!nativeWorkspace&&<a className="nav-link" aria-label="Open full workspace" title={collapsed?'Open full workspace':undefined} href={legacyHref} onClick={event => {
+                            if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
+                        }}><SidebarIcon name="external"/><span className="nav-label">Open full workspace</span></a>}
+                        {nativeWorkspace&&navButton('automation','Automation')}
+                        {nativeWorkspace&&navButton('accounts','Accounts & Sign-in')}
+                        {nativeWorkspace&&navButton('settings','Settings')}
+                        {navButton('trash','Trash',nativeWorkspace?shellCounts?.trash:undefined)}
+                    </div>
+                </div>
+            </nav>
         </header>
         <main id="workspace-content" className="companion" ref={content} tabIndex={-1}>
         {nativeWorkspace&&(shellCounts.attention!==undefined||shellCounts.trash!==undefined)&&<p className="visually-hidden" role="status" aria-live="polite">{shellCounts.attention!==undefined&&`${shellCounts.attention} jobs need attention.`} {shellCounts.trash!==undefined&&`${shellCounts.trash} ${shellCounts.trash===1?'record is':'records are'} in Trash.`}</p>}
-        {nativeWorkspace&&<p className="fixture-notice" role="status">{boot?.status==='ready'&&boot.mode==='native-store-clone'?'Local Job Apply Store · Changes you make here are saved locally.':'Synthetic native workspace · Jobs, facts, resumes, extraction reviews, remembered answers, and application activity use isolated canonical data.'}</p>}
+        {nativeWorkspace&&<p className="fixture-notice" role="status">{boot?.status==='ready'&&boot.mode==='native-store-clone'?'Local Job Apply Store · Changes you make here are saved locally.':'Synthetic native workspace · Sample data only.'}</p>}
         {error&&<p role="alert" className="error">
             {error}{' '}
             {token&&<button onClick={() => setAttempt(value => value+1)}>Retry connection</button>}
@@ -364,5 +276,5 @@ export default function Companion() {
             hidden={view!==tab} inert={view!==tab} aria-hidden={view!==tab}>{renderPage(view)}</div>):!error&&<p>Loading workspace…
             </p>}
         </main>
-    </>;
+    </div>;
 }

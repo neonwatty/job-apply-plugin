@@ -27,10 +27,10 @@ export function TrashConfirmation({ item, action, busy, confirm, cancel, opener 
             <h2 id={title}>{action === 'delete' ? 'Confirm permanent deletion' : 'Restore record?'}</h2>
             <p className="trash-confirmation-record"><span>{item.type}</span><strong>{item.label}</strong></p>
             <div id={description}>
-                {action === 'delete' ? <p>This permanently deletes the selected canonical record{item.type === 'resume' ? ' and its managed resume file' : ''}.
+                {action === 'delete' ? <p>This permanently deletes the selected record{item.type === 'resume' ? ' and its managed resume file' : ''}.
                     It does not cascade or erase application history, sessions, or audit evidence.</p> :
-                    <p>This returns the selected record to its library. The server will check its current revision and restore constraints.</p>}
-                <p>{referenceText(item.blockerCounts)}. Reference counts are advisory; the server decides whether this action is allowed.</p>
+                    <p>Restore this record to its library after checking its current revision and restore requirements.</p>}
+                <p>{referenceText(item.blockerCounts)}. References are checked again before this action is allowed.</p>
             </div>
             {action === 'delete' && <label>Type <strong>{deletePhrase(item.type)}</strong> to continue
                 <input ref={input} value={phrase} onChange={event => setPhrase(event.target.value)} autoComplete="off" spellCheck={false} disabled={busy} />

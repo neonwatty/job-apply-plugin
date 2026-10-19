@@ -13,7 +13,7 @@ export function useProjection<T>(client:Client,path:string,parse:(raw:string)=>T
     const timer=setTimeout(()=>{
       if(sequence.current!==version)return;
       controller.abort();
-      setState({client,path,loading:false,error:'The request timed out. Retry to load the latest information.'});
+      setState({client,path,loading:false,error:'Request timed out. Refresh to try again.'});
     },30_000);
     void client.extractionRequest(path,'GET',undefined,controller.signal).then(raw=>{
       if(sequence.current!==version || controller.signal.aborted)return;
@@ -21,7 +21,7 @@ export function useProjection<T>(client:Client,path:string,parse:(raw:string)=>T
       setSnapshot({client,path,value});
       setState({client,path,loading:false,error:''});
     }).catch(()=>{
-      if(sequence.current===version && !controller.signal.aborted) setState({client,path,loading:false,error:'Unable to load the latest information. Retry to refresh.'});
+      if(sequence.current===version && !controller.signal.aborted) setState({client,path,loading:false,error:'Could not load data. Refresh to try again.'});
     }).finally(()=>clearTimeout(timer));
     return ()=>{++sequence.current;clearTimeout(timer);controller.abort();};
   },[client,path,parse,refreshKey,retry]);

@@ -3,12 +3,12 @@
   "sources": [
     {
       "path": "apps/companion/components/Trash.tsx",
-      "sha256": "03d6bcd0e4def75140fd2396b4dfea5d46fd9bd0d9bad877d60e1c5b95e04444",
+      "sha256": "b23928cd087bf8ecbcdb3e17ad84e5d1d7085cefcf25aabcd927e808c38ddf92",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/TrashConfirmation.tsx",
-      "sha256": "ada6c5329e0d0dc455d3f52e41b9b248e2bc5e4155c49b975bf324abd70402fa",
+      "sha256": "c0f3a0f6785f8f06f4d70ad73ae0d8429c5a5e1686c2d0bb1d38aa655174db29",
       "classification": "unreviewed"
     },
     {
