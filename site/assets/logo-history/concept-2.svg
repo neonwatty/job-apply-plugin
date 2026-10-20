@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" role="img" aria-labelledby="title">
+  <title id="title">Job Apply — Open Door</title>
+  <g id="logo">
+  <g id="icon" aria-label="Open Door symbol" transform="translate(8 64) scale(.75)">
+    <path id="door-frame" aria-label="Open doorway" fill="#174c3c" d="M112 416V96h208v128h-48V144H160v272z"/>
+    <path id="open-door" aria-label="Open door leaf" fill="#174c3c" d="M176 160l80 40v216l-80-40z"/>
+    <path id="opportunity-arrow" aria-label="Next opportunity" fill="#db9d2b" d="M288 248h56v-48l80 80-80 80v-48h-56z"/>
+  </g>
+  <g id="wordmark" aria-label="Job Apply wordmark" fill="#174c3c">
+    <text id="brand-name" x="374" y="290" font-family="Georgia, serif" font-size="106" letter-spacing="-4">Job Apply</text>
+  </g>
+  </g>
+</svg>

@@ -5,9 +5,9 @@
   --text: #15181d;
   --muted: #5d6673;
   --line: #d9dee7;
-  --accent: #0891b2;
-  --accent-dark: #065f73;
-  --accent-light: #e0f7fa;
+  --accent: #0000ff;
+  --accent-dark: #0000cc;
+  --accent-light: #e0f2ff;
   --green: #2f9d68;
   --code: #171a20;
   --shadow: 0 24px 70px rgba(20, 30, 50, 0.16);
@@ -534,3 +534,5 @@ pre {
     margin-right: 0;
   }
 }
+
+.brand { color:var(--accent); font-family:Helvetica,Arial,sans-serif; font-weight:800; }

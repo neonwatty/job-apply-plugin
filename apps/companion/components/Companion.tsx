@@ -218,7 +218,7 @@ export default function Companion() {
                 onClick={()=>setCollapsed(value=>!value)}><SidebarIcon name="collapse"/><span>{collapsed?'Expand':'Collapse'}</span></button>
             <div className="product-context">
                 <p className="eyebrow">Focus Queue</p>
-                <h1>Job Apply</h1>
+                <h1 className="job-apply-brand"><img src="/icon.svg" width="36" height="36" alt="" />Job Apply</h1>
                 <p id="workspace-trust-context" className="trust-context">Your data stays local. Only you submit applications.</p>
             </div>
             <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
