@@ -1,6 +1,6 @@
 # Job Apply branding
 
-The selected design is “Rising J — left side lowered” (iteration 27), with the original Helvetica/Arial wordmark. Color: `#174c3c`. Both trimmed ends share a diagonal; the shorter left stem preserves the J reading.
+The selected design is “Rising J — left side lowered” (iteration 27), with the original Helvetica/Arial wordmark. Color: `#0000ff`, matching the Companion Focus Queue / Two blues primary token (`--green`, retained as a legacy variable name). The selection accent is `#0096ff`. Both trimmed ends share a diagonal; the shorter left stem preserves the J reading.
 
 - [Combination mark](../site/assets/job-apply-logo.svg): editable original SVG, including system-font wordmark.
 - [Icon](../site/assets/job-apply-icon.svg): standalone vector for square placements.
@@ -8,7 +8,7 @@ The selected design is “Rising J — left side lowered” (iteration 27), with
 
 The Codex plugin manifest uses the 32px and 512px icon PNGs. The Companion serves its byte-identical icon through Next.js `app/icon.svg`, which also supplies browser-icon metadata. Its header uses this vector beside the original font. The public site and README use the same brand assets. Claude Code’s manifest has no icon field added; its repository branding is visible in the README.
 
-Keep `apps/companion/app/icon.svg` identical to `site/assets/job-apply-icon.svg` when updating the icon. Preserve the accepted path geometry, transparent background, and one-color fill. Use the icon alone at small sizes, never squeeze the full wordmark into a square. The wordmark is live system-font text, so exact typography can vary across machines.
+Keep `apps/companion/app/icon.svg` identical to `site/assets/job-apply-icon.svg` when updating the icon. Preserve the accepted path geometry, transparent background, and one-color fill. The final export was recolored from forest green to the current primary blue; historical concept files and screenshots retain their original colors. Use the icon alone at small sizes, never squeeze the full wordmark into a square. The wordmark is live system-font text, so exact typography can vary across machines.
 
 ## Provenance and reproduction
 
