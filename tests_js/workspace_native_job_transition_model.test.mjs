@@ -13,11 +13,11 @@ const source = await readFile(new URL('../apps/companion/components/job-transiti
 const model = await import(data(emit(source).replaceAll("'./contracts'", JSON.stringify(contracts))));
 const job = { id: 'job-one', revision: 7n, status: 'saved', url: 'https://example.org/job' };
 
-test('targets follow Python transitions without granting direct in_progress authority', () => {
+test('targets include owner completion without granting direct in_progress authority', () => {
   for (const [status, expected] of [
-    ['saved', ['needs_info', 'ready', 'closed']],
-    ['needs_info', ['saved', 'ready', 'closed']],
-    ['ready', ['saved', 'needs_info', 'closed']],
+    ['saved', ['needs_info', 'ready', 'applied', 'closed']],
+    ['needs_info', ['saved', 'ready', 'applied', 'closed']],
+    ['ready', ['saved', 'needs_info', 'applied', 'closed']],
     ['in_progress', ['needs_info', 'awaiting_review', 'closed']],
     ['awaiting_review', ['applied', 'closed']],
     ['applied', ['closed']], ['closed', ['saved']], ['unknown', []], ['__proto__', []],
@@ -27,7 +27,7 @@ test('targets follow Python transitions without granting direct in_progress auth
 
 test('payload binds current revision and rejects unsupported transitions or malformed identity', () => {
   assert.deepEqual(JSON.parse(model.transitionBody(job, 'ready')), { status: 'ready', expectedRevision: 7 });
-  for (const target of ['saved', 'applied', 'in_progress', 'wat'])
+  for (const target of ['saved', 'in_progress', 'wat'])
     assert.throws(() => model.transitionBody(job, target), /transition/i);
   for (const revision of [0n, -1n, 1.5, Number.MAX_SAFE_INTEGER + 1, NaN])
     assert.throws(() => model.transitionBody({ ...job, revision }, 'ready'), /revision/i);
@@ -35,6 +35,11 @@ test('payload binds current revision and rejects unsupported transitions or malf
 });
 
 test('applied requires explicit personal submission confirmation and omits consent elsewhere', () => {
+  for (const status of ['saved', 'needs_info', 'ready', 'awaiting_review']) {
+    const current = { ...job, status };
+    assert.throws(() => model.transitionBody(current, 'applied'), /personally submitted/i);
+    assert.equal(JSON.parse(model.transitionBody(current, 'applied', '', true)).userConfirmed, true);
+  }
   const review = { ...job, status: 'awaiting_review' };
   assert.throws(() => model.transitionBody(review, 'applied'), /personally submitted/i);
   assert.deepEqual(JSON.parse(model.transitionBody(review, 'applied', '', true)), {

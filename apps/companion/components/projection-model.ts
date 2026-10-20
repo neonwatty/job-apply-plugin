@@ -91,14 +91,14 @@ function summary(d: Document | null): SessionSummary {
   };
 }
 export interface AttentionItem {
-  jobId:string; status:string; revision:bigint; reasonCode:AttentionReason; attentionAt:string; missingInformationCount:bigint; session:SessionSummary;
+  company?:string; role?:string; attentionSnoozedUntil?:string; jobId:string; status:string; revision:bigint; reasonCode:AttentionReason; attentionAt:string; missingInformationCount:bigint; session:SessionSummary;
 }
 export function attentionProjection(raw:string): {items:AttentionItem[]} {
   const doc=object(parse(raw),'attention');
   const items=array(doc,'items').map(value=>{
     const item=object(value,'attention item'), reasonCode=str(item,'reasonCode');
     if (!Object.hasOwn(attentionReasons,reasonCode)) throw Error('Invalid attention reason');
-    return {jobId:str(item,'jobId'),status:str(item,'status'),revision:revision(item,'revision'),reasonCode:reasonCode as AttentionReason,
+    return {company:str(item,'company',''),role:str(item,'role',''),attentionSnoozedUntil:str(item,'attentionSnoozedUntil',''),jobId:str(item,'jobId'),status:str(item,'status'),revision:revision(item,'revision'),reasonCode:reasonCode as AttentionReason,
       attentionAt:str(item,'attentionAt'),missingInformationCount:revision(item,'missingInformationCount',0n),session:summary(nullableRecord(get(item,'session')))};
   });
   if (new Set(items.map(item=>item.jobId)).size !== items.length) throw Error('Duplicate attention job');

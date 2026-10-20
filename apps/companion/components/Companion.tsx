@@ -2,6 +2,7 @@
 import { useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
+import { ApplicationsHome } from './ApplicationsHome';
 import { Overview } from './Overview';
 import { Facts } from './Facts';
 import { Jobs } from './Jobs';
@@ -188,9 +189,9 @@ export default function Companion() {
                 refreshKey={refreshKeys[view]??0} onMutation={() => { markStoreChanged(); return refreshShellCounts(); }} countChanged={trashCountChanged}/>;
             case 'automation': return <Automation client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'accounts': return <Automation mode="accounts" client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
-            case 'overview': return <Overview client={client} openJobs={() => navigate('jobs')}
+            case 'overview': return nativeWorkspace ? <ApplicationsHome onMutation={()=>void refreshShellCounts()} client={client} refreshKey={refreshKeys[view]??0} openWorkspace={navigate} openJob={id=>{if(navigate('jobs'))setRequestedJob(id);}}/> : <Overview client={client} openJobs={() => navigate('jobs')}
                 openWorkspace={nativeWorkspace ? navigate : undefined} legacyHref={legacyHref} refreshKey={refreshKeys[view]??0}/>;
-            case 'attention': return <NeedsAttention client={client} refreshKey={refreshKeys[view]??0}
+            case 'attention': return <NeedsAttention onMutation={()=>void refreshShellCounts()} client={client} refreshKey={refreshKeys[view]??0}
                 openJob={id => { if(navigate('jobs'))setRequestedJob(id); }}/>;
             case 'facts': return <Facts client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'resumes': return <Resumes client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
@@ -207,7 +208,7 @@ export default function Companion() {
         }
     }
     useEffect(()=>{void refreshShellCounts();},[refreshShellCounts,tab]);
-    useEffect(()=>{document.title=`${tab==='attention'?'Needs Attention':tab==='extractions'?'Resume extraction':tab[0]!.toUpperCase()+tab.slice(1)} · Job Apply Workspace`;},[tab]);
+    useEffect(()=>{document.title=`${tab==='overview'?'Applications':tab==='jobs'?'Saved jobs':tab==='attention'?'Applications':tab==='extractions'?'Resume extraction':tab[0]!.toUpperCase()+tab.slice(1)} · Job Apply Workspace`;},[tab]);
     const connection=boot?.status==='ready'? 'Local data connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…';
     const navButton=(workspace:WorkspaceTab,label:string,count?:number,active=tab===workspace) => <button className="nav-link" aria-label={label} aria-current={active?'page':undefined} title={collapsed?label:undefined} onClick={() => navigate(workspace)}><SidebarIcon name={workspace}/><span className="nav-label">{label}</span>{count!==undefined&&<span className="nav-count" aria-hidden="true">{count}</span>}</button>;
     return <div className="focus-shell" data-collapsed={collapsed}>
@@ -218,34 +219,33 @@ export default function Companion() {
                 onClick={()=>setCollapsed(value=>!value)}><SidebarIcon name="collapse"/><span>{collapsed?'Expand':'Collapse'}</span></button>
             <div className="product-context">
                 <p className="eyebrow">Focus Queue</p>
-                <h1>Job Apply</h1>
-                <p id="workspace-trust-context" className="trust-context">Your data stays local. Only you submit applications.</p>
+                <h1 className="job-apply-brand"><img src="/icon.svg" width="36" height="36" alt="" />Job Apply</h1>
+                <p id="workspace-trust-context" className="trust-context">Your application workspace.</p>
             </div>
             <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
                 <span className="connection-dot" aria-hidden="true" />
-                <span>{connection}</span>
+                <span>{connection}<br/>Your data stays on this machine.</span>
             </div>
 
             <nav id="workspace-navigation" className="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">
                 <div className="nav-group" role="group" aria-labelledby="nav-group-pipeline">
                     <span id="nav-group-pipeline" className="nav-group-label">Pipeline</span>
                     <div className="nav-group-links">
-                        {nativeWorkspace&&navButton('attention','Needs Attention',shellCounts?.attention)}
-                        {navButton('jobs','Jobs')}
-                        {navButton('overview','Overview')}
+                        {navButton('overview',nativeWorkspace?'Applications':'Overview',shellCounts?.attention)}
+                        {navButton('jobs',nativeWorkspace?'Saved jobs':'Jobs')}
                     </div>
                 </div>
                 <div className="nav-group" role="group" aria-labelledby="nav-group-data">
-                    <span id="nav-group-data" className="nav-group-label">Application data</span>
+                    <details open={['facts','resumes','extractions','answers','consents'].includes(tab)}><summary id="nav-group-data">My information</summary>
                     <div className="nav-group-links">
                         {navButton('facts','Facts')}
                         {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
                         {nativeWorkspace&&navButton('answers','Answers')}
                         {nativeWorkspace&&navButton('consents','Consent defaults')}
-                    </div>
+                    </div></details>
                 </div>
                 <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
-                    <span id="nav-group-controls" className="nav-group-label">Controls</span>
+                    <details open={['automation','accounts','settings','trash'].includes(tab)}><summary id="nav-group-controls">Settings</summary>
                     <div className="nav-group-links">
                         {token&&!nativeWorkspace&&<a className="nav-link" aria-label="Open full workspace" title={collapsed?'Open full workspace':undefined} href={legacyHref} onClick={event => {
                             if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
@@ -254,7 +254,7 @@ export default function Companion() {
                         {nativeWorkspace&&navButton('accounts','Accounts & Sign-in')}
                         {nativeWorkspace&&navButton('settings','Settings')}
                         {navButton('trash','Trash',nativeWorkspace?shellCounts?.trash:undefined)}
-                    </div>
+                    </div></details>
                 </div>
             </nav>
         </header>

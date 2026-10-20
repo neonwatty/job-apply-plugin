@@ -71,12 +71,12 @@ export async function nativeJobsBrowser(buildRoot) {
     });
     await page.goto(startup.url);
     await page.getByText(/Synthetic native workspace/).waitFor();
-    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+    await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Applications"]').getAttribute('aria-current'), 'page');
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
     assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
     await clickCompanionNav(page, 'Needs Attention');
-    await page.getByText('Nothing needs your attention.',{exact:true}).waitFor();
+    await page.getByRole('button', {name:'Add resume',exact:true}).waitFor();
     await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
@@ -104,8 +104,8 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: 'Save job', exact: true }).click();
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.reload();
-    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+    await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Applications"]').getAttribute('aria-current'), 'page');
     await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     await page.getByRole('button', { name: 'Edit job', exact: true }).click();

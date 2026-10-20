@@ -50,6 +50,11 @@
       "path": "src/workspace-core/workspace-projections.ts",
       "sha256": "6a2219c394bb4f03170bea2110e55d30a6bea39a3b6dcccde02bc24de539b0bd",
       "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/ApplicationsHome.tsx",
+      "sha256": "6addb96cf2c9e9359766fed983872f99c935558698ffe0217dd2c7526516e22f",
+      "classification": "unreviewed"
     }
   ]
 }

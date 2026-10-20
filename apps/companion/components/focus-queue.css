@@ -140,3 +140,13 @@ input,select,textarea,.automation-form input,.automation-form select,.automation
 .focus-shell .companion .workspace-hero h1,.focus-shell .overview-hero h1 {
   font:400 clamp(28px,3vw,42px)/1.12 Georgia,serif;letter-spacing:-1px;
 }
+
+.product-context h1.job-apply-brand {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--green);
+  font-family:Helvetica,Arial,sans-serif;
+  font-weight:800;
+}
+.job-apply-brand img { flex:none; }

@@ -128,6 +128,10 @@ function attentionLocked(tx, now) {
         }
         const [code, reasonLabel, guidance] = reasons[reason];
         const row = doc({ jobId: id, status, reasonCode: code, reasonLabel, guidance, missingInformationCount: missing });
+        for (const field of ['company', 'role', 'attentionSnoozedUntil']) {
+            if (label(job, field))
+                set(row, field, get(job, field));
+        }
         set(row, 'revision', get(job, 'revision'));
         set(row, 'priority', get(job, 'priority') ?? integer(0n));
         set(row, 'attentionAt', at);
@@ -160,6 +164,8 @@ async function overviewLocked(tx, now) {
     const hasProfileFacts = hasScopedWorkflow ? hasScopedFacts
         : keys(profile).some(key => !['preferences', 'applicationPreferences', 'agentModelPreferences'].includes(key));
     const attentionJobs = jobs.filter(job => {
+        if (Date.parse(label(job, 'attentionSnoozedUntil')) > Date.parse(now))
+            return false;
         const status = label(job, 'status'), id = label(job, 'id');
         if (['needs_info', 'awaiting_review'].includes(status))
             return true;

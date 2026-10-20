@@ -11,7 +11,7 @@ async function capture(page, name) {
 }
 
 export async function nextSetupAndLoading(page, url) {
-  await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
@@ -25,13 +25,10 @@ export async function nextSetupAndLoading(page, url) {
   assert.equal(await page.evaluate(() => scrollY), 0,
     'workspace navigation moves focus without pulling the page down to main');
   await clickCompanionNav(page, 'Overview');
-  for (const [label, section] of [['Edit Facts', 'facts'], ['Manage Resumes', 'resumes']]) {
-    const control = page.getByRole('button', { name: label, exact: true });
-    await control.waitFor();
-    await control.click();
-    await page.locator(`#workspace-navigation button[aria-label="${section[0].toUpperCase() + section.slice(1)}"][aria-current="page"]`).waitFor({ state: 'attached' });
-    await page.goto(url, { waitUntil: 'networkidle' });
-    await clickCompanionNav(page, 'Overview');
+  for (const label of ['Facts','Resumes']) {
+    await clickCompanionNav(page,label);
+    await page.locator(`#workspace-navigation button[aria-label="${label}"][aria-current="page"]`).waitFor({state:'attached'});
+    await page.goto(url,{waitUntil:'networkidle'});
   }
   // A slow native boot must not override a destination the user chose meanwhile.
   let bootRelease;
@@ -48,7 +45,7 @@ export async function nextSetupAndLoading(page, url) {
   const boot = '**/api/boot';
   await page.route(boot, route => route.fulfill({ status: 503, json: { error: { message: 'Synthetic boot failure' } } }));
   await page.reload();
-  await page.getByText('Connection unavailable', { exact: true }).waitFor();
+  await page.getByRole('status', { name: 'Connection unavailable', exact: true }).waitFor();
   await page.unroute(boot);
   await page.getByRole('button', { name: 'Retry connection' }).click();
   await page.getByRole('status', { name: 'Local data connected', exact: true }).waitFor();
@@ -79,9 +76,9 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await page.getByLabel('Search jobs', { exact: true }).fill('Next synthetic');
   await clickCompanionNav(page, 'Overview');
-  await page.locator('#workspace-navigation button[aria-label="Overview"][aria-current="page"]').waitFor({ state: 'attached' });
+  await page.locator('#workspace-navigation button[aria-label="Applications"][aria-current="page"]').waitFor({ state: 'attached' });
   await clickCompanionNav(page, 'Jobs');
-  await page.locator('#workspace-navigation button[aria-label="Jobs"][aria-current="page"]').waitFor({ state: 'attached' });
+  await page.locator('#workspace-navigation button[aria-label="Saved jobs"][aria-current="page"]').waitFor({ state: 'attached' });
   assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic',
     'returning to Jobs keeps its loaded list and filter');
   await clickCompanionNav(page, 'Overview');
@@ -134,7 +131,7 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Draft survives failed refresh');
   // Navigation refusal preserves the form, including after an unsuccessful save.
   page.once('dialog', prompt => prompt.dismiss());
-  await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.textContent.trim() === 'Overview').click());
+  await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Applications').click());
   assert.equal(await dialog.isVisible(), true);
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

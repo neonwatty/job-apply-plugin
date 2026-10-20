@@ -54,8 +54,8 @@ export async function claimsBrowser(page, { jobId, claimRequests = [] }) {
         await panel.getByText('Claude Code invocation copied.', { exact: true }).waitFor();
 
         await page.reload();
-        await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-        assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+        await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
+        assert.equal(await page.locator('#workspace-navigation button[aria-label="Applications"]').getAttribute('aria-current'), 'page');
         await clickCompanionNav(page, 'Jobs');
         const reloadedPanel = page.getByRole('region', { name: 'Ready-job handoff', exact: true });
         await reloadedPanel.getByRole('button', { name: 'Copy Claude invocation', exact: true }).click();

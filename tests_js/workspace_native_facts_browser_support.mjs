@@ -72,8 +72,8 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   const groups=JSON.parse(await readFile(join(root,'fact-groups.json'),'utf8')).groups;
   assert.deepEqual(Object.values(groups)[0].paths,['/firstName','/phone ']);
   await page.reload();
-  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-  assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+  await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
+  assert.equal(await page.locator('#workspace-navigation button[aria-label="Applications"]').getAttribute('aria-current'), 'page');
   // Reload returns to Overview; navigate explicitly instead of synchronizing on
   // claim traffic that the Companion must never own.
   await clickCompanionNav(page, 'Facts');
