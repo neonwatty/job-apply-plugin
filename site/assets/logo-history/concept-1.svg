@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" role="img" aria-label="Job Apply — a folded application with a confident check">
+  <g id="logo">
+    <g id="icon" transform="translate(70 112)">
+      <path id="application-page" fill="#174c3c" d="M24 0H164L240 76V264Q240 288 216 288H24Q0 288 0 264V24Q0 0 24 0Z"/>
+      <path id="folded-corner" fill="#db9d2b" d="M164 0V52Q164 76 188 76H240Z"/>
+      <path id="confident-check" fill="#f4f3ed" d="M40 157L68 129L105 166L173 98L201 126L105 222Z"/>
+    </g>
+    <g id="wordmark" fill="#174c3c">
+      <text id="brand-name" x="360" y="292" font-family="Georgia, 'Times New Roman', serif" font-size="108" letter-spacing="-4">Job Apply</text>
+    </g>
+  </g>
+</svg>

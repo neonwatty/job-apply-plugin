@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" role="img" aria-label="Job Apply — handshake"><g id="logo"><g id="icon" transform="translate(36 112) scale(.6)"><g id="hands">
+<path id="left-hand" fill="#174c3c" d="M112 190L180 146Q194 138 210 144L260 164L350 254Q364 268 350 282Q340 292 328 286Q338 302 324 314Q312 324 300 316Q306 330 292 340Q278 348 266 338L190 282L150 270Z"/>
+<path id="right-hand" fill="#c88b22" d="M400 190L338 148Q322 138 306 144L266 154Q254 156 244 166L198 210Q184 224 198 238Q212 250 226 238L260 210L344 282L370 266Z"/>
+<path id="thumb-seam" fill="none" stroke="#f4f3ed" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M260 210L226 238Q212 250 198 238Q184 224 198 210L244 166"/>
+<path id="left-cuff" fill="#174c3c" d="M76 176Q68 170 62 182L38 252Q34 262 44 268L100 298Q110 304 116 294L154 216Q160 206 148 200Z"/>
+<path id="right-cuff" fill="#c88b22" d="M436 176Q444 170 450 182L474 252Q478 262 468 268L412 298Q402 304 396 294L358 216Q352 206 364 200Z"/>
+</g></g><g id="wordmark" fill="#174c3c"><text id="brand-name" x="376" y="292" font-family="Helvetica, Arial, sans-serif" font-size="108" font-weight="800" letter-spacing="-4">Job Apply</text></g></g></svg>

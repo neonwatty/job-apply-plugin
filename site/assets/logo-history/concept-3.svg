@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" role="img" aria-label="Job Apply — momentum monogram">
+  <g id="logo">
+    <g id="icon" aria-label="Upward J monogram">
+      <path id="j-body" fill="#174c3c" d="M244 160H320V282C320 350 282 392 216 392C150 392 112 352 112 292H188C188 314 197 326 216 326C235 326 244 312 244 286Z"/>
+      <path id="momentum-step" fill="#db9d2b" d="M180 148V84H320V148H244V184H180Z"/>
+    </g>
+    <g id="wordmark" fill="#174c3c" aria-label="Job Apply wordmark">
+      <text id="brand-name" x="388" y="288" font-family="Helvetica, Arial, sans-serif" font-size="110" font-weight="700" letter-spacing="-5">Job Apply</text>
+    </g>
+  </g>
+</svg>

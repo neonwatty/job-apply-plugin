@@ -37,6 +37,8 @@
       "Review my saved application answers.",
       "Set my job-search preferences."
     ],
-    "brandColor": "#0891B2"
+    "brandColor": "#174C3C",
+    "iconSmall": "./site/assets/job-apply-icon-32.png",
+    "iconLarge": "./site/assets/job-apply-icon-512.png"
   }
 }
