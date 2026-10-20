@@ -1,0 +1,14 @@
+{
+  "approvedAt": "2026-09-01T00:00:00Z",
+  "approvedBy": "qa-owner",
+  "captureMonth": "2026-09",
+  "compilerVersion": "1.1.0",
+  "fixtureId": "greenhouse-form-readiness-v1",
+  "fixtureSha256": "ae1232593dadb806d97b7d43572b2603acd2530847309324b7e5f19a683aad8e",
+  "platformFamily": "greenhouse",
+  "promotedAt": "2026-09-01T00:00:01Z",
+  "recorderVersion": "1.0.0",
+  "scannerVersion": "1.0.0",
+  "schemaVersion": 1,
+  "sourceRecordingSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

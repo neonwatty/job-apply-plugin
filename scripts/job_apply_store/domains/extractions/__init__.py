@@ -1,0 +1,1 @@
+"""Store extractions domain modules."""

@@ -8,7 +8,7 @@
       "name": "job-apply",
       "source": {
         "source": "local",
-        "path": "./"
+        "path": "./dist/plugin"
       },
       "policy": {
         "installation": "AVAILABLE",

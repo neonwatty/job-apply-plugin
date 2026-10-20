@@ -1,3 +1,4 @@
+from scripts.skill_documents import skill_documents
 import importlib.util
 import unittest
 from pathlib import Path
@@ -19,10 +20,9 @@ class FinalActionDocumentationTests(unittest.TestCase):
         self.assertTrue(CHECKER.violations_for_text(text), text)
 
     def test_committed_job_apply_policy_is_accepted(self):
-        skill = (ROOT / "skills" / "job-apply" / "SKILL.md").read_text(
-            encoding="utf-8"
-        )
-        self.assertAccepted(skill)
+        for path, text in skill_documents(ROOT / "skills/job-apply/SKILL.md").items():
+            with self.subTest(path=path):
+                self.assertAccepted(text)
 
     def test_safe_policy_heading_and_blocking_prose_are_accepted(self):
         self.assertAccepted(

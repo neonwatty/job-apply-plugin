@@ -1,0 +1,379 @@
+# GoalBuddy v2 state.yaml
+# Board truth lives here. goal.md is the editable charter; notes/ holds long receipts only.
+
+version: 2
+
+goal:
+  title: "Canonical Job Ingestion"
+  slug: "canonical-job-ingestion"
+  kind: existing_plan
+  tranche: "Deliver and verify one complete canonical human-and-agent job ingestion path."
+  status: done
+  oracle:
+    signal: "A temporary-store CLI walkthrough proves preview, idempotent commit, deterministic conflicts, provenance, and preservation of human edits across human and agent inputs."
+    cadence: "after the Worker package and at final audit"
+    final_proof: "Passing focused and full regression suites plus a receipt containing the successful isolated CLI walkthrough and its expected record outcomes."
+  intake:
+    original_request: "Use Goal Prep to plan the appropriate slice after the durable shared store."
+    interpreted_outcome: "Humans and agents can safely ingest jobs into the same canonical durable records that the CLI and future UX use."
+    input_shape: existing_plan
+    audience: "Job seekers and their supervised application agents"
+    authority: approved
+    proof_type: demo
+    completion_proof: "Automated tests and a clean isolated CLI demo satisfy every oracle condition."
+    likely_misfire: "Ship internal upsert helpers without a usable end-to-end ingestion path, or sprawl into migration, claiming, browser automation, or frontend work."
+    blind_spots_considered:
+      - "URL/source-ID identity conflicts"
+      - "Partial discoveries and readiness"
+      - "Field provenance and human-edit precedence"
+      - "Preview/commit drift and concurrent writes"
+      - "Legacy Markdown migration"
+    existing_plan_facts:
+      - "The shared-workspace spec and durable-store primitives are already committed and pushed on codex/shared-job-workspace."
+      - "The selected next slice is canonical ingestion."
+      - "Completion requires automated tests plus a CLI demo."
+      - "Historical Markdown migration is explicitly excluded."
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  planning_is_not_completion: true
+  queued_required_worker_blocks_completion: true
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
+  exact_human_approval_can_terminal_wait: true
+  preserve_and_validate_existing_plan: true
+  intake_misfire_must_be_audited: true
+  goal_pressure_requires_oracle: true
+  no_completion_on_weak_proof: true
+  slice_policy:
+    max_consecutive_tiny_tasks: 2
+    prefer_vertical_slices: true
+    judge_picks_largest_safe_slice: true
+    worker_completes_whole_slice: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+visual_board:
+  selected: local
+  local:
+    status: live
+    url: "http://goalbuddy.localhost:41737/canonical-job-ingestion/"
+    command: "node /Users/neonwatty/.codex/plugins/cache/goalbuddy/goalbuddy/0.4.3/skills/goal-prep/surfaces/local-goal-board/scripts/local-goal-board.mjs --goal /Users/neonwatty/Desktop/job-apply-plugin/docs/goals/canonical-job-ingestion"
+
+active_task: null
+
+tasks:
+  - id: T001
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Validate the existing canonical-ingestion plan against the current durable-store contracts and specify the largest safe useful Worker package."
+    inputs:
+      - "docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md"
+      - "scripts/job-apply-store.py"
+      - "tests/test_job_apply_store.py"
+      - "skills/job-search/SKILL.md"
+    constraints:
+      - "Read-only; do not implement."
+      - "Preserve the agreed tranche and explicit non-goals."
+      - "Resolve identity, precedence, provenance, preview/commit, and compatibility ambiguities before writes."
+    expected_output:
+      - "Validated ingestion contract and decision"
+      - "Exact Worker objective"
+      - "Exact allowed_files"
+      - "Focused and regression verify commands"
+      - "Stop conditions and deferred work"
+    receipt:
+      result: done
+      decision: approved
+      full_outcome_complete: false
+      rationale: "Approved as one vertical CLI-integration slice, provided T002 adopts the contract below. The store already supplies atomic writes, locking, URL normalization, revisions, partial saved jobs, and JSON commands. The missing outcome is a previewed bulk upsert that resolves URL/source identity deterministically, protects human fields, records inspectable provenance, and replaces the Markdown queue handoff in job-search. Preview tokens must bind the normalized input and current jobs document; commit must revalidate under the existing global store lock and perform at most one jobs.json replacement. Claiming, migration, browser changes, and UX remain separate milestones."
+      worker_package:
+        objective: "Implement the complete canonical ingestion path with job-upsert-preview and job-upsert-commit CLI commands. Both accept --origin human|agent and an input object containing a jobs array. Preview performs no durable mutation and returns per-item create, update, noop, conflict, or invalid decisions plus an opaque token. Commit requires that token, replans under the store lock, rejects drift, and atomically applies all actionable records in one jobs.json replacement. Fresh preview plus repeated commit must be a no-op. Connect job-search's confirmed queue action to this path while retaining timestamped Markdown only as a compatibility artifact."
+        allowed_files:
+          - scripts/job-apply-store.py
+          - tests/test_job_apply_store.py
+          - skills/job-search/SKILL.md
+        verify:
+          - "python3 -m unittest -v tests.test_job_apply_store.StoreTests.test_job_upsert_preview_commit_cli_walkthrough tests.test_job_apply_store.StoreTests.test_job_upsert_identity_conflicts_are_deterministic tests.test_job_apply_store.StoreTests.test_job_upsert_preserves_human_edits_and_records_provenance tests.test_job_apply_store.StoreTests.test_job_upsert_preview_is_non_mutating_and_rejects_drift tests.test_job_apply_store.StoreTests.test_job_upsert_partial_records_remain_saved"
+          - "python3 -m unittest -v tests.test_job_apply_store"
+          - "python3 -m unittest discover -s tests -v"
+          - "bash scripts/smoke-plugin.sh"
+          - "Run the approved isolated mktemp-backed CLI walkthrough and record the oracle evidence."
+        stop_if:
+          - "Implementation requires changing the existing URL normalizer or rewriting normalizedUrl values in existing records."
+          - "Provenance cannot be added backward-compatibly inside the existing provenance object while treating missing or unrecognized field provenance as human-authoritative."
+          - "A URL identity and a (normalized source, sourceId) identity resolve to different records; report a conflict and do not invent a merge rule."
+          - "Preview requires initialization, lock-file creation, timestamp updates, or any other durable mutation after the baseline store has been initialized."
+          - "The workflow requires files outside allowed_files, a new schema version, destructive migration, or browser automation changes."
+          - "Focused verification fails twice because of changes introduced by this slice."
+      evidence:
+        - "docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md:43-59"
+        - "docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md:160-171"
+        - "scripts/job-apply-store.py:214-232,446-518,1190-1256,1340-1396"
+        - "tests/test_job_apply_store.py:356-402,844-885"
+        - "skills/job-search/SKILL.md:243-328"
+      parallel_safety:
+        safe: false
+        reason: "Store implementation, tests, and job-search instructions define one coupled public contract."
+      blocked_tasks: []
+      missing_evidence:
+        - "T002 must supply implementation, focused and regression results, and the isolated CLI walkthrough."
+      required_board_updates:
+        - "Activate T002 as the sole active task; leave T999 queued."
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: medium
+    objective: "Implement the complete canonical ingestion path with job-upsert-preview and job-upsert-commit CLI commands. Both accept --origin human|agent and an input object containing a jobs array. Preview performs no durable mutation and returns per-item create, update, noop, conflict, or invalid decisions plus an opaque token. Commit requires that token, replans under the store lock, rejects drift, and atomically applies all actionable records in one jobs.json replacement. Fresh preview plus repeated commit must be a no-op. Connect job-search's confirmed queue action to this path while retaining timestamped Markdown only as a compatibility artifact."
+    inputs:
+      - "T001 receipt"
+      - "docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md"
+      - "Existing job store and job-search contracts"
+    constraints:
+      - "Implement the approved identity, precedence, provenance, preview/commit, and compatibility contract exactly."
+      - "Do not add legacy Markdown migration, global agent claiming, browser automation changes, or frontend code."
+    expected_output:
+      - "Usable CLI preview and commit path for manual and structured agent inputs"
+      - "Job-search guidance connected to the canonical ingestion path"
+      - "Automated coverage for identity, no-op replay, conflicts, partial records, precedence, provenance, and non-mutating preview"
+      - "Isolated temporary-store CLI walkthrough receipt satisfying the oracle"
+    allowed_files:
+      - "scripts/job-apply-store.py"
+      - "tests/test_job_apply_store.py"
+      - "skills/job-search/SKILL.md"
+    verify:
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store.StoreTests.test_job_upsert_preview_commit_cli_walkthrough test_job_apply_store.StoreTests.test_job_upsert_identity_conflicts_are_deterministic test_job_apply_store.StoreTests.test_job_upsert_preserves_human_edits_and_records_provenance test_job_apply_store.StoreTests.test_job_upsert_preview_is_non_mutating_and_rejects_drift test_job_apply_store.StoreTests.test_job_upsert_partial_records_remain_saved"
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+      - "python3 -m unittest discover -s tests -v"
+      - "bash scripts/smoke-plugin.sh"
+      - "Run an isolated mktemp-backed CLI walkthrough: init; human URL-only preview and commit; agent enrichment preview and commit; human role edit; conflicting agent replay; fresh replay showing only noops; job-get and job-list inspection. Record tokens, summaries, stable job IDs, final status, preserved human role, agent-added fields, and per-field provenance in the Worker receipt."
+    stop_if:
+      - "Implementation requires changing the existing URL normalizer or rewriting normalizedUrl values in existing records."
+      - "Provenance cannot be added backward-compatibly inside the existing provenance object while treating missing or unrecognized field provenance as human-authoritative."
+      - "A URL identity and a (normalized source, sourceId) identity resolve to different records; report a conflict and do not invent a merge rule."
+      - "Preview requires initialization, lock-file creation, timestamp updates, or any other durable mutation after the baseline store has been initialized."
+      - "The workflow requires files outside allowed_files, a new schema version, destructive migration, or browser automation changes."
+      - "Focused verification fails twice because of changes introduced by this slice."
+    contract:
+      identity:
+        - "Use the existing normalize_job_url result unchanged as one identity."
+        - "Use (source.strip().lower(), sourceId.strip()) as a second identity only when both values exist."
+        - "If URL and source identity resolve to the same active record, merge into that record."
+        - "If they resolve to different records, multiple records, a trashed record, or an existing record with incompatible non-empty identity fields, return conflict with zero mutation for that item."
+        - "Plan duplicate batch entries against an in-memory simulated document so identical entries collapse deterministically and differing entries conflict."
+        - "Generate deterministic opaque IDs for new ingestion records so preview can report the eventual ID."
+      precedence:
+        - "New jobs always start as saved; ingestion never changes status, closedOutcome, resumeId, or deletion state."
+        - "Empty or absent incoming metadata never clears a stored value."
+        - "Human input may replace enrichable metadata and must stamp human provenance."
+        - "Agent input may fill empty fields or replace fields whose current provenance is agent-authored."
+        - "Agent input must preserve fields with human provenance; a non-empty field lacking recognized provenance is treated as human-authored."
+        - "Existing job-create and job-update calls default to human origin and must stamp changed fields accordingly; an explicit agent origin uses the same lower-authority merge rules."
+      provenance:
+        - "Store current field provenance under JSON-pointer keys in the existing provenance object."
+        - "Each managed entry records origin (human or agent), observation source (manual or the normalized job source), and updatedAt."
+        - "Preserve unknown provenance keys for version-1 compatibility."
+        - "Do not retain an unbounded observation history or duplicate full job snapshots."
+      preview_commit:
+        - "Preview validates each item and returns counts and stable per-item decisions without changing any store file."
+        - "The preview token hashes canonical input, origin, and the exact jobs-document snapshot."
+        - "Commit acquires the existing store lock, reloads jobs.json, verifies the token, and fails closed on drift before mutation."
+        - "Conflicting or invalid items remain unchanged; actionable items are committed together with one atomic jobs.json replacement."
+        - "If every item is noop, commit must not rewrite jobs.json."
+      compatibility:
+        - "Preserve existing job-create, job-get, job-list, job-update, transition, trash, restore, and delete behavior and JSON output."
+        - "Job-search continues terminal and timestamped Markdown output, maps only supported canonical fields into structured ingestion, previews before asking for confirmation, and commits only after confirmation."
+        - "application_queue.md is no longer the authoritative queue handoff; score, connections, hiring-manager details, and other unsupported search-only fields remain in the compatibility report for this slice."
+    receipt:
+      result: done
+      changed_files:
+        - scripts/job-apply-store.py
+        - tests/test_job_apply_store.py
+        - skills/job-search/SKILL.md
+      commands:
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store.StoreTests.test_job_upsert_preview_commit_cli_walkthrough test_job_apply_store.StoreTests.test_job_upsert_identity_conflicts_are_deterministic test_job_apply_store.StoreTests.test_job_upsert_preserves_human_edits_and_records_provenance test_job_apply_store.StoreTests.test_job_upsert_preview_is_non_mutating_and_rejects_drift test_job_apply_store.StoreTests.test_job_upsert_partial_records_remain_saved"
+          status: pass
+          result: "5 tests passed"
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          status: pass
+          result: "42 tests passed"
+        - command: "python3 -m unittest discover -s tests -v"
+          status: pass
+          result: "330 tests passed"
+        - command: "bash scripts/smoke-plugin.sh"
+          status: pass
+          result: "Plugin validation and isolated Claude Code/Codex installation passed"
+        - command: "mktemp-backed CLI walkthrough: init; human preview/commit; agent enrichment preview/commit; human role edit; conflicting agent preview; fresh replay preview/commit; job-get; job-list"
+          status: pass
+          result: "Oracle evidence captured"
+      summary: "Implemented canonical human/agent bulk ingestion with deterministic identity resolution, per-item decisions, provenance-aware precedence, non-mutating previews, drift-bound tokens, locked replanning, and one atomic replacement. Direct create/update commands now stamp provenance and support agent precedence. Job-search previews structured agent input before confirmation and treats timestamped Markdown as compatibility output. Focused, store, full regression, smoke, and isolated CLI evidence all pass."
+      deviations:
+        - "The PM replaced the original unittest module paths with repository-compatible PYTHONPATH=tests equivalents after the environment resolved an unrelated installed tests package. No tests/__init__.py was added."
+      note: notes/T002-worker-oracle-evidence.md
+      remaining_blockers: []
+      verification_attempts: 2
+      stopped_because: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Audit the completed ingestion workflow against the full goal oracle and explicit non-goals."
+    inputs:
+      - "T001 and T002 receipts"
+      - "Current diff"
+      - "Fresh focused and full-suite verification"
+      - "Isolated CLI walkthrough evidence"
+    constraints:
+      - "Read-only; do not implement."
+      - "Reject completion if the result is only internal helpers rather than a usable ingestion workflow."
+      - "Reject completion if repeat ingestion duplicates jobs or lower-authority data overwrites human edits."
+      - "Reject completion if preview mutates state, conflicts are ambiguous, provenance is not inspectable, or existing CLI behavior regresses."
+      - "Do not require excluded migration, claiming, browser automation, or frontend work."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "Oracle-by-oracle evidence map"
+      - "Missing evidence or exact next safe task when not complete"
+    receipt:
+      result: done
+      decision: not_complete
+      full_outcome_complete: false
+      rationale: "The canonical ingestion workflow and core oracle pass, including idempotency, deterministic conflicts, provenance, human precedence, job-search handoff, 330 tests, and smoke checks. Completion is blocked by a material untested CRUD regression: default human job-update silently ignores explicit null or empty values for optional fields, so humans cannot clear shared data through the edit surface. Restore direct human update semantics without weakening agent precedence, then reaudit."
+      worker_package:
+        objective: "Restore backward-compatible direct human job-update semantics while retaining the new ingestion and agent-precedence guarantees. For the default human origin, apply explicit null and empty values to optional editable fields, preserve non-URL string values as supplied, continue validating and normalizing URL changes, increment revisions for real changes, and stamp changed-field human provenance including clears. Preserve the formerly supported explicit provenance patch behavior without allowing agent-origin updates to replace human provenance. Agent-origin empty values must remain non-destructive. Add regression tests and rerun focused ingestion, store, full-suite, and smoke verification."
+        allowed_files:
+          - scripts/job-apply-store.py
+          - tests/test_job_apply_store.py
+        verify:
+          - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store.StoreTests.test_job_update_human_can_clear_optional_fields test_job_apply_store.StoreTests.test_job_update_human_preserves_validation_and_string_values test_job_apply_store.StoreTests.test_job_upsert_preserves_human_edits_and_records_provenance test_job_apply_store.StoreTests.test_job_upsert_preview_commit_cli_walkthrough"
+          - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          - "python3 -m unittest discover -s tests -v"
+          - "bash scripts/smoke-plugin.sh"
+        stop_if:
+          - "Restoring human clearing semantics would permit agent-origin null or empty values to clear human-authored data."
+          - "The fix changes ingestion identity, preview-token, conflict, or atomic commit behavior."
+          - "The fix requires a schema migration or files outside allowed_files."
+          - "Focused verification fails twice for reasons introduced by the correction."
+      note: notes/T999-first-final-audit.md
+      evidence:
+        - "Core ingestion oracle passed with fresh focused tests, 330 repository tests, smoke validation, and isolated walkthrough evidence."
+        - "Default human job-update did not apply notes=None or description='' and left the record at revision 1."
+      blocked_tasks: []
+      missing_evidence:
+        - "Passing proof that default human job-update can explicitly clear optional fields while agent-origin empty values remain non-destructive."
+        - "A fresh final audit after the compatibility correction."
+      required_board_updates:
+        - "Activate T003, then schedule T004 as a fresh final audit."
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: medium
+    objective: "Restore backward-compatible direct human job-update semantics while retaining the new ingestion and agent-precedence guarantees. For the default human origin, apply explicit null and empty values to optional editable fields, preserve non-URL string values as supplied, continue validating and normalizing URL changes, increment revisions for real changes, and stamp changed-field human provenance including clears. Preserve the formerly supported explicit provenance patch behavior without allowing agent-origin updates to replace human provenance. Agent-origin empty values must remain non-destructive. Add regression tests and rerun focused ingestion, store, full-suite, and smoke verification."
+    inputs:
+      - "T999 receipt"
+      - "Current T002 implementation and tests"
+    constraints:
+      - "Correct only the audited direct-update compatibility regression."
+      - "Do not weaken ingestion identity, preview, drift, atomicity, or agent precedence."
+    expected_output:
+      - "Human direct updates can explicitly clear optional fields and stamp human provenance."
+      - "Agent empty inputs remain non-destructive."
+      - "Focused, store, full-suite, and smoke verification all pass."
+    allowed_files:
+      - "scripts/job-apply-store.py"
+      - "tests/test_job_apply_store.py"
+    verify:
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store.StoreTests.test_job_update_human_can_clear_optional_fields test_job_apply_store.StoreTests.test_job_update_human_preserves_validation_and_string_values test_job_apply_store.StoreTests.test_job_upsert_preserves_human_edits_and_records_provenance test_job_apply_store.StoreTests.test_job_upsert_preview_commit_cli_walkthrough"
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+      - "python3 -m unittest discover -s tests -v"
+      - "bash scripts/smoke-plugin.sh"
+    stop_if:
+      - "Restoring human clearing semantics would permit agent-origin null or empty values to clear human-authored data."
+      - "The fix changes ingestion identity, preview-token, conflict, or atomic commit behavior."
+      - "The fix requires a schema migration or files outside allowed_files."
+      - "Focused verification fails twice for reasons introduced by the correction."
+    receipt:
+      result: done
+      changed_files:
+        - scripts/job-apply-store.py
+        - tests/test_job_apply_store.py
+      commands:
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store.StoreTests.test_job_update_human_can_clear_optional_fields test_job_apply_store.StoreTests.test_job_update_human_preserves_validation_and_string_values test_job_apply_store.StoreTests.test_job_upsert_preserves_human_edits_and_records_provenance test_job_apply_store.StoreTests.test_job_upsert_preview_commit_cli_walkthrough"
+          status: pass
+          result: "4 tests passed"
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          status: pass
+          result: "44 tests passed"
+        - command: "python3 -m unittest discover -s tests -v"
+          status: pass
+          result: "332 tests passed"
+        - command: "bash scripts/smoke-plugin.sh"
+          status: pass
+          result: "Plugin validation and isolated Claude Code/Codex installation passed"
+        - command: "git diff --check"
+          status: pass
+          result: "No whitespace errors"
+      summary: "Restored direct human update compatibility: explicit nulls and empty strings now clear optional fields, non-URL strings retain supplied whitespace, URL changes remain validated and normalized, real changes increment revisions, and clears receive human provenance. Human provenance patches retain former replacement behavior, while agent provenance patches and empty agent values are ignored. Canonical ingestion behavior and agent precedence remain covered and green."
+      deviations: []
+      remaining_blockers: []
+      verification_attempts: 1
+      stopped_because: null
+  - id: T004
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Perform a fresh final audit of canonical ingestion and direct human-update compatibility against the unchanged goal oracle."
+    inputs:
+      - "All prior receipts"
+      - "T003 correction receipt"
+      - "Current diff and fresh verification"
+    constraints:
+      - "Read-only; do not implement."
+      - "Require explicit proof that human clears work and agent empty values remain non-destructive."
+      - "Reconfirm the full ingestion oracle and explicit non-goals."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "Oracle-by-oracle evidence map"
+      - "Missing evidence or exact next safe task when not complete"
+    receipt:
+      result: done
+      decision: complete
+      full_outcome_complete: true
+      rationale: "Complete. The repository now provides a usable human-and-agent canonical ingestion workflow through public preview and commit CLI commands, with deterministic identities, drift-bound tokens, atomic commits, idempotent replay, inspectable provenance, and human-authoritative precedence. Job-search uses this shared queue after confirmation while retaining Markdown only as compatibility output. The audited CRUD regression is corrected: human null and empty clears persist with provenance, while agent empty values remain non-destructive. Fresh focused tests, all 332 repository tests, plugin installation smoke checks, diff validation, and the isolated temporary-store walkthrough satisfy the unchanged oracle without entering migration, claiming, browser automation, or frontend scope."
+      worker_package: null
+      evidence:
+        - "Usable workflow: public job-upsert-preview and job-upsert-commit commands accept human or agent structured inputs, and job-search previews exact canonical changes before requesting commit confirmation."
+        - "Non-mutating preview and drift safety: focused coverage verifies unchanged file bytes and mtimes, no preview-created lock file, token binding to input and jobs.json, and rejection without mutation after store drift."
+        - "Idempotency: the isolated CLI walkthrough and focused subprocess test show one stable job ID, one final record, a fresh replay noop, and committed=false without rewriting jobs.json."
+        - "Deterministic conflicts: URL/source-ID cross-record ambiguity and differing duplicate batch identities return explicit conflict decisions without invented merges."
+        - "Human precedence and inspectable provenance: agent enrichment preserves human-authored values and JSON-pointer entries expose origin, observation source, and update time."
+        - "Direct human-update compatibility: null and empty optional-field clears persist with revision and provenance; agent-origin empty patches remain non-destructive."
+        - "Partial records stay saved; invalid metadata cannot advance application status."
+        - "Fresh 332-test repository suite, focused tests, plugin smoke checks, and git diff --check all passed."
+        - "Functional scope excludes legacy migration, global claiming, application browser automation, and frontend work."
+      blocked_tasks: []
+      missing_evidence: []
+      required_board_updates:
+        - "Mark the canonical-job-ingestion goal complete and do not queue another Worker."
+checks:
+  dirty_fingerprint: "clean on codex/shared-job-workspace at prep"
+  last_verification:
+    result: "baseline reported green before prep; execution must rerun"
+    task: null
+    commands:
+      - "python3 -m unittest discover -s tests -v"
+      - "bash scripts/smoke-plugin.sh"

@@ -1,0 +1,14 @@
+{
+  "approvedAt": "2026-09-01T00:00:00Z",
+  "approvedBy": "qa-owner",
+  "captureMonth": "2026-09",
+  "compilerVersion": "1.1.0",
+  "fixtureId": "workday-form-readiness-v1",
+  "fixtureSha256": "5605494320c6edad98a856c632aa23dbc36045055102f73db1e9982d4ed802c6",
+  "platformFamily": "workday",
+  "promotedAt": "2026-09-01T00:00:01Z",
+  "recorderVersion": "1.0.0",
+  "scannerVersion": "1.0.0",
+  "schemaVersion": 1,
+  "sourceRecordingSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+}
