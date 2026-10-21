@@ -47,7 +47,6 @@ const paths: Record<string,string> = {
   settings:'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6',
   trash:'M4 6h16 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7',
   external:'M14 3h7v7 M21 3l-9 9 M10 5H4v15h15v-6',
-  collapse:'M4 4h16v16H4z M9 4v16 M16 9l-3 3 3 3',
 };
 function SidebarIcon({name}:{name:string}) {
   return <svg className="sidebar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -213,15 +212,18 @@ export default function Companion() {
     const navButton=(workspace:WorkspaceTab,label:string,count?:number,active=tab===workspace) => <button className="nav-link" aria-label={label} aria-current={active?'page':undefined} title={collapsed?label:undefined} onClick={() => navigate(workspace)}><SidebarIcon name={workspace}/><span className="nav-label">{label}</span>{count!==undefined&&<span className="nav-count" aria-hidden="true">{count}</span>}</button>;
     return <div className="focus-shell" data-collapsed={collapsed}>
         <a className="skip-link" href="#workspace-content">Skip to workspace</a>
-        <header className="topbar">
+        <header className="workspace-brandbar">
             <button className="sidebar-toggle" type="button" aria-expanded={!collapsed} aria-controls="workspace-navigation"
                 aria-label={collapsed?'Expand sidebar':'Collapse sidebar'} title={collapsed?'Expand sidebar':'Collapse sidebar'}
-                onClick={()=>setCollapsed(value=>!value)}><SidebarIcon name="collapse"/><span>{collapsed?'Expand':'Collapse'}</span></button>
-            <div className="product-context">
-                <p className="eyebrow">Focus Queue</p>
-                <h1 className="job-apply-brand"><img src="/icon.svg" width="36" height="36" alt="" />Job Apply</h1>
-                <p id="workspace-trust-context" className="trust-context">Your application workspace.</p>
-            </div>
+                onClick={()=>setCollapsed(value=>!value)}><img src="/icon.svg" width="36" height="36" alt="" />
+                <svg className="sidebar-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={collapsed?'M9 6l6 6-6 6':'M15 6l-6 6 6 6'}/>
+                </svg>
+            </button>
+            <span className="job-apply-brand">Job Apply</span>
+            <p id="workspace-trust-context" className="visually-hidden">Your application workspace.</p>
+        </header>
+        <aside className="topbar" aria-label="Workspace sidebar">
             <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
                 <span className="connection-dot" aria-hidden="true" />
                 <span>{connection}<br/>Your data stays on this machine.</span>
@@ -236,7 +238,7 @@ export default function Companion() {
                     </div>
                 </div>
                 <div className="nav-group" role="group" aria-labelledby="nav-group-data">
-                    <details open={['facts','resumes','extractions','answers','consents'].includes(tab)}><summary id="nav-group-data">My information</summary>
+                    <details open={['facts','resumes','extractions','answers','consents'].includes(tab)}><summary id="nav-group-data" className="nav-summary" aria-label="My information" title={collapsed?'My information':undefined}><SidebarIcon name="facts"/><span>My information</span></summary>
                     <div className="nav-group-links">
                         {navButton('facts','Facts')}
                         {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
@@ -245,7 +247,7 @@ export default function Companion() {
                     </div></details>
                 </div>
                 <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
-                    <details open={['automation','accounts','settings','trash'].includes(tab)}><summary id="nav-group-controls">Settings</summary>
+                    <details open={['automation','accounts','settings','trash'].includes(tab)}><summary id="nav-group-controls" className="nav-summary" aria-label="Settings" title={collapsed?'Settings':undefined}><SidebarIcon name="settings"/><span>Settings</span></summary>
                     <div className="nav-group-links">
                         {token&&!nativeWorkspace&&<a className="nav-link" aria-label="Open full workspace" title={collapsed?'Open full workspace':undefined} href={legacyHref} onClick={event => {
                             if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
@@ -257,7 +259,7 @@ export default function Companion() {
                     </div></details>
                 </div>
             </nav>
-        </header>
+        </aside>
         <main id="workspace-content" className="companion" ref={content} tabIndex={-1}>
         {nativeWorkspace&&(shellCounts.attention!==undefined||shellCounts.trash!==undefined)&&<p className="visually-hidden" role="status" aria-live="polite">{shellCounts.attention!==undefined&&`${shellCounts.attention} jobs need attention.`} {shellCounts.trash!==undefined&&`${shellCounts.trash} ${shellCounts.trash===1?'record is':'records are'} in Trash.`}</p>}
         {nativeWorkspace&&<p className="fixture-notice" role="status">{boot?.status==='ready'&&boot.mode==='native-store-clone'?'Local Job Apply Store · Changes you make here are saved locally.':'Synthetic native workspace · Sample data only.'}</p>}
