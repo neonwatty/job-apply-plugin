@@ -35,6 +35,8 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const generation = useRef(0);
     const listGeneration = useRef(0);
     const previousRefreshKey = useRef(refreshKey);
+    const openCurrent = useRef(open);
+    openCurrent.current = open;
 
     async function refresh() {
         refreshRequest.current?.abort();
@@ -86,12 +88,24 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         return () => dirtyChanged(false);
     }, [editor, busy, transitionBusy, dirtyChanged]);
     useEffect(() => {
-        if (!requestedJobId || !data || loading || loadError) return;
-        const selected = data.jobs.find(job => job.id === requestedJobId);
-        if (selected) open(selected);
-        else setError('This job is unavailable. Refresh Jobs to check again.');
-        jobOpened?.();
-    }, [requestedJobId, data, loading, loadError, jobOpened]);
+        if (!requestedJobId) return;
+        const controller = new AbortController();
+        const version = generation.current;
+        // Attention actions can advance a job revision while the Jobs view is hidden.
+        // Resolve against the current record instead of opening the cached list row.
+        void client.job(requestedJobId, controller.signal).then(selected => {
+            if (!controller.signal.aborted) {
+                if (version === generation.current) openCurrent.current(selected);
+                jobOpened?.();
+            }
+        }).catch(failure => {
+            if (!controller.signal.aborted) {
+                setError(failure instanceof Error ? failure.message : 'This job is unavailable.');
+                jobOpened?.();
+            }
+        });
+        return () => controller.abort();
+    }, [requestedJobId, client]);
 
     function open(job: Job | null) {
         if (mutation.current || transitionBusy) return;

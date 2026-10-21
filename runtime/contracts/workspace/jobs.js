@@ -8,7 +8,7 @@ export const ingestFields = new Set([
     "url", "source", "sourceId", "role", "company", "location", "workplaceType",
     "employmentType", "compensation", "description", "ats", "priority", "notes", "lastCheckedAt",
 ]);
-export const patchFields = new Set([...ingestFields, "resumeId", "provenance"]);
+export const patchFields = new Set([...ingestFields, "resumeId", "provenance", "attentionSnoozedUntil"]);
 export const createFields = new Set([...patchFields, "id", "status", "closedOutcome"]);
 const recordFields = new Set([...createFields, "normalizedUrl", "legacySources", "revision",
     "createdAt", "updatedAt", "deletedAt", "inputSelection"]);
@@ -47,6 +47,10 @@ export function validateJob(key, value) {
     }
     else if (outcome !== null)
         throw new JobsError("open job cannot have a closed outcome");
+    const snooze = get(record, 'attentionSnoozedUntil');
+    if (snooze !== null && (!string(snooze) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(string(snooze))
+        || !Number.isFinite(Date.parse(string(snooze)))))
+        throw new JobsError('invalid attention snooze timestamp');
     const priority = has(record, "priority") ? int(get(record, "priority")) : 0n;
     if (priority === null || priority < 0n || priority > 5n)
         throw new JobsError("job priority must be an integer from 0 to 5");

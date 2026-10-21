@@ -48,7 +48,13 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     await page.getByRole('button', { name: 'Replace hidden answer', exact: true }).waitFor();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).count(), 0);
     assert.equal(await page.getByRole('button', { name: 'Replace hidden answer', exact: true }).isDisabled(), true);
-    await page.getByRole('button', { name: 'Reveal sensitive value', exact: true }).click();
+    await page.locator('dialog.answer-detail-drawer').getByRole('button', { name: 'Show value', exact: true }).click();
+    await page.locator('dialog.answer-detail-drawer .detail-drawer-summary').getByText('synthetic-private-value',{exact:true}).waitFor();
+    assert.equal(await page.getByLabel('Answer value', {exact:true}).count(),0);
+    await page.getByRole('button', {name:'Hide value',exact:true}).click();
+    await page.locator('dialog.answer-detail-drawer .detail-drawer-summary').getByText('Sensitive value hidden',{exact:true}).waitFor();
+    await page.locator('dialog.answer-detail-drawer').getByRole('button', {name:'Show value',exact:true}).click();
+    await page.getByRole('button', {name:'Edit answer',exact:true}).click();
     await page.getByLabel('Answer value', { exact: true }).waitFor();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'synthetic-private-value');
     await page.getByLabel('Answer value', { exact: true }).fill('changed-private-value');

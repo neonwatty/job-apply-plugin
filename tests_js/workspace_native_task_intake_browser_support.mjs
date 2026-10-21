@@ -70,7 +70,7 @@ export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
     await clickCompanionNav(page, 'Overview');
-  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
     assert.equal(navigationPrompts, 0);
     return { cliIntakeVisible: true, duplicateNoop: true, humanProvenancePreserved: true,
       redactedSnapshotAgreement: true, reload: true, cleanNavigation: true, narrowViewport: true };

@@ -75,7 +75,7 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   assert.equal(conflict.committed, false);
   assert.equal(await readDocument(), humanUrlBytes, 'human-owned URL conflicts leave Jobs unchanged');
   await clickCompanionNav(page, 'Overview');
-  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
   return { discoveryReadOnly: true, previewReadOnly: true, cliCommitVisible: true,
     humanProvenancePreserved: true, sourceLocatorRefreshed: true, humanUrlConflict: true, staleTokenRejected: true };
 }

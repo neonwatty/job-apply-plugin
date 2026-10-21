@@ -50,13 +50,21 @@
       "kind": "browser",
       "export": "handoffActionLabels",
       "node": "UIF",
-      "sources": ["apps/companion/components/projection-model.ts"],
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
       "effects": "unclassified",
       "scenarios": {
-        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
-        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
-        "concurrency": "unverified", "interruption": "unverified",
-        "recovery": "unverified", "platform": "unverified"
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
       }
     },
     {
@@ -64,13 +72,21 @@
       "kind": "browser",
       "export": "handoffChecklistLabels",
       "node": "UIF",
-      "sources": ["apps/companion/components/projection-model.ts"],
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
       "effects": "unclassified",
       "scenarios": {
-        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
-        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
-        "concurrency": "unverified", "interruption": "unverified",
-        "recovery": "unverified", "platform": "unverified"
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
       }
     },
     {
@@ -234,6 +250,28 @@
       "node": "UIF",
       "sources": [
         "apps/companion/components/projection-view.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/ApplicationsHome.tsx:ApplicationsHome",
+      "kind": "browser",
+      "export": "ApplicationsHome",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/ApplicationsHome.tsx"
       ],
       "effects": "unclassified",
       "scenarios": {

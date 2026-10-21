@@ -6,9 +6,9 @@ import type { ClaimRepository } from './claims.js';
 import { preflightJobRecord } from './job-preflight.js';
 
 const transitions: Readonly<Record<string, readonly string[]>> = {
-  saved: ['needs_info', 'ready', 'closed'],
-  needs_info: ['saved', 'ready', 'in_progress', 'closed'],
-  ready: ['saved', 'needs_info', 'in_progress', 'closed'],
+  saved: ['needs_info', 'ready', 'applied', 'closed'],
+  needs_info: ['saved', 'ready', 'in_progress', 'applied', 'closed'],
+  ready: ['saved', 'needs_info', 'in_progress', 'applied', 'closed'],
   in_progress: ['needs_info', 'awaiting_review', 'closed'],
   awaiting_review: ['in_progress', 'applied', 'closed'],
   applied: ['closed'],
@@ -44,6 +44,7 @@ export class JobTransitionsService {
       }
       const updated = copy(current);
       set(updated, 'status', text(status));
+      if (get(updated, 'attentionSnoozedUntil') !== null) set(updated, 'attentionSnoozedUntil', null);
       set(updated, 'closedOutcome', status === 'closed' ? closedOutcome : null);
       set(updated, 'revision', integer(expectedRevision + 1n));
       set(updated, 'updatedAt', text(this.now()));
