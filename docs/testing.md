@@ -1,44 +1,16 @@
-# Testing locally
+# Testing the TypeScript release
 
-Use the smallest tier that answers the question, while keeping the specialized
-commands in `package.json` for focused diagnosis.
+The production plugin and required validation use Node.js 22 or newer. Required
+checks do not discover, install, or execute CPython. Supported packaged targets
+are macOS arm64 and Linux x64; Windows reference tests do not establish native
+Windows support. The shipped C/Swift adapters retain their platform checks.
 
-Run `npm ci` in a fresh development checkout. TypeScript is a pinned development
-dependency, not an installed-plugin dependency. `npm run typecheck` checks the
-shadow scaffold; `npm run build:runtime` updates its one-to-one checked-in ESM
-output, and `npm run build:check` rejects missing, changed, stale, mapped or
-oversized output. Build errors leave the previous runtime intact; stale files
-require explicit review/removal. Ordinary installed command and Companion routes
-use the TypeScript runtime; Python remains a development reference oracle.
+Run `npm ci` at the repository root. Install Chromium for browser checks with
+`npx playwright install chromium` (CI uses `--with-deps`).
 
-Install the staged commit and outgoing push hooks with `npm run hooks:install`.
-See the [local hook protocol](local-testing-protocol.md) for escalation and
-24-hour deep-validation receipt reuse.
-
-## Next.js Companion on Mac
-
-Run `npm ci` at the repository root; the root lockfile includes the
-`apps/companion` workspace. The library checks above remain separate from the
-React application's DOM/JSX configuration. Run `npm run companion:typecheck`
-for that application; the fast and full tiers include it.
-
-For a local production build, run `npm run companion:build`, then
-`npm run companion:start -- --root /absolute/path/to/test-store`.
-The build also assembles the standalone application. For development, use
-`npm run companion:dev -- --root /absolute/path/to/test-store`. Start through
-these launchers so the Next application receives its owned workspace server URL
-and authentication configuration. Use an isolated Store for development checks.
-
-The launcher supervises both local services. The ordinary launcher activates the
-native TypeScript Store writer through the process-owned switch and forwards API
-requests to that server. Python launchers remain in the development repository
-for reference comparisons. Checkout validation and standalone application
-validation do not replace installed-plugin smoke tests.
-
-## Supported tiers
+## Required tiers
 
 ```text
-npm run check:size
 npm run test:fast
 npm run test:affected -- --base origin/staging
 npm run test:full
@@ -46,157 +18,110 @@ npm run test:platform
 npm run test:release
 ```
 
-- `test:fast` is the default pre-commit check. It covers source policy, matrix
-  integrity, documentation safety, runner behavior, and inexpensive Python
-  contracts, plus strict TypeScript checking, reproducible build contracts and
-  runtime-probe tests. Network link checks remain in the release tier.
-- `test:affected` adds every suite that owns committed, staged, unstaged, or
-  untracked paths. Renames select both names. A global or unknown path safely
-  selects the complete deterministic tier.
-- `test:full` runs every portable Python and Node test file exactly once across
-  bounded concurrent shards.
-- `test:platform` runs the applicable OS-specific contract suite. Suites for
-  other operating systems are reported as skipped.
-- `test:release` runs package smoke and network link checks. The smoke harness
-  covers isolated Claude/Codex installs, Codex upgrades, packaged browser/API
-  walkthroughs, privacy assertions, and recursive critical-file byte parity.
+- Fast runs TypeScript/Companion checking, reproducible-build tests, source-size
+  policy, workflow auditing, matrix integrity, and runner tests.
+- Affected selects required suites for committed and local changes. Ownership is
+  deliberately conservative during this cutover: unknown/global changes select
+  the full deterministic tier. It never selects Python reference suites.
+- Full runs the recurring native unit, Store/CLI, browser, and applicable native
+  platform checks. The reference-test inventory explicitly classifies remaining
+  historical tests; new test files cannot silently escape classification.
+- Platform runs applicable native adapter and activation checks. Other platforms
+  are recorded as skipped, not certified as supported.
+- Release runs production dependency auditing (blocking high/critical advisories),
+  link checks, and the Node package harness, including source-only
+  Companion build, isolated Codex/Claude installation, cache replacement, native
+  CLI/browser journeys, critical-byte parity, and restart durability.
 
-## Local live-agent acceptance
+The production Companion regressions exercise Jobs-to-Answers navigation, resume
+metadata refresh races, explicit fact conflict/discard handling, invalid numeric
+drafts, and exact numeric preservation through native Store writes. They use
+fictional disposable Stores and headless Chromium. `npm run audit:dependencies`
+can also run the release dependency check directly; it needs npm registry access.
 
-`npm run test:agent-local` is an explicit local-only acceptance test; it is not a deterministic tier and exits immediately when `CI` is set. It runs three fresh, sequential, ephemeral `codex exec` subagents with `gpt-5.6-luna` by default. Use `npm run test:agent-local -- --trials 1` for a single diagnostic pass, `--model <available-model>` for an intentional local override, or `--keep` to retain successful local fixtures.
+Pass `--receipt /absolute/path/result.json` for a value-free suite receipt and
+`--concurrency N` to bound parallelism. Receipts report failed checks as failed.
 
-Each trial creates a new ignored directory below `.workflows/local`, installs the plugin into a fresh temporary Codex home, initializes a Store containing only committed fictional data and an `example.invalid` destination, and gives an ephemeral subagent a fixed protocol that invokes the installed `$job-apply:job-apply` skill. The subagent uses the installed public router to inspect and select the exact Ready job, start its detached attempt, grant Campaign to Review for that job, and perform the remaining Store and attempt operations. It runs with approvals disabled and `danger-full-access` for this isolated local installed-router and socket journey; the fixture contains no real data or destination, the prompt prohibits network/browser use, and a before/after source fingerprint rejects repository changes. The subagent must receive one authorized value-free decision, complete four synthetic non-final operations, stop at final review, and commit `awaiting_review`. A machine oracle then requires an untouched final action, the exact `job-started`/`reviewed` history, no bearer in the decision, and no repository source-state change. Successful fixtures are deleted; failed fixtures are preserved for diagnosis.
+Required runners install a Node subprocess guard and PATH shims that reject
+Python/uv execution. An accidental interpreter dependency fails rather than
+silently skipping a test. Source-policy and package tooling are Node programs.
+The guard preserves Node's callback and promisified child-process contracts.
 
-This test consumes live model capacity and can vary with the locally configured Codex model. Repeatability comes from the committed prompt, output schema, fixture, isolated Store, ordered action adapter, and closed oracle—not from accepting prose self-reports. Three consecutive clean trials are the local acceptance bar.
+## One-time historical Python Store migration acceptance
 
-## Core workflow evidence audit
+Before releasing the TypeScript transition, run:
 
-`npm run audit:core-workflows` is the primary account-free audit. It validates
-all committed workflow YAML, requires one registry row per workflow, verifies
-that referenced local files exist, and checks the registry's surface names,
-copy-only handoff literals, placement declarations, and evidence-lane labels
-for internal consistency. Its JSON output reports separate counts for
-deterministic local, installed-host, supervised replay, and current-live ATS
-evidence. A green result proves registry integrity and workflow schema validity;
-it does not establish that an arbitrary referenced file semantically covers its
-workflow, inspect the rendered Companion, or rerun historical host or replay
-receipts. The mapped tests and packaged walkthroughs provide that behavioral
-correspondence.
+```text
+npm run test:migration-once
+```
 
-The audit prefers the optional source-pinned `@lineagehq/workflows` runner when
-it is available. Credential-free clean installs use the exact public
-`@neonwatty/agent-workflows@0.1.0` validation baseline instead. Before invoking
-either runner, the audit checks the workflow schema and semantic validator
-against hashes recorded from source commit
-`1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225`; contract drift fails closed.
+This explicit command needs Python and Git history. It extracts the actual
+v1.1.0 implementation at `07f18ee3c8854df74746492c7a4728fcdf302ff5`, creates
+fictional profile, answers, history and session records through that release,
+then invokes the candidate's public TypeScript router. It checks original-file
+bytes in the active Store and retained backup, native writes across independent
+CLI restarts, and explicit rollback. Only after native writers exit does it
+verify that the historical release can read the restored Store.
 
-The optional installed-host lane is `npm run test:agent-local -- --trials 1`.
-It requires an available authenticated Codex host and executes the installed
-skill and public router against fictional local data. Record it as unrun when
-that host capability is unavailable. There is no credential-free current-live
-ATS command: such a lane must run only under its separately approved supervised
-protocol. The registry records one narrowly scoped Pinterest Greenhouse
-review-only observation from 2026-09-29, while aggregate live coverage remains
-`unverified`. Closed replay and synthetic readiness catalogs never upgrade that
-status.
+The manual-only **Historical Python Store Migration** workflow runs this check
+on Linux and macOS and retains its JSON receipt. It has no PR, push, or scheduled
+trigger and is not part of PR gate. Record acceptance against the final release
+candidate; an earlier dirty-checkout receipt does not certify a later commit.
 
-On macOS, `npm run test:qa-browser` resolves the evidence-bound CPython patches
-3.12.13, 3.13.13, and 3.14.4. It asks an already-installed `uv` for each exact
-local interpreter, then accepts the corresponding PATH alias only when its full
-version matches. Discovery never installs or downloads Python. Process-local
-shims expose the selected executables as `python3`, `python3.12`, `python3.13`,
-and `python3.14`, so default and explicit profile tests use the same reviewed
-identities. The command fails before testing if any patch is unavailable or
-mismatched; it does not accept Homebrew 3.12.14 or the Xcode CPython 3.9 shim.
-Other platforms retain their existing interpreter selection. The same macOS process resolves
-`SDKROOT` and Clang with `/usr/bin/xcrun`; the native witness requires that exact
-SDK and the independently fingerprinted compiler before exercising real flock
-contention and unlock operations.
+`test/fixtures/python-store-v1.1.0` is fictional state captured from that pinned
+implementation. Recurring required migration regression tests read it directly
+with TypeScript, without running Python. `--capture-fixture` explicitly regenerates
+it during historical acceptance; review fixture changes as contract changes.
+The historical release did not have the later managed-resume/job Store features;
+those remain covered by current native Store and Companion suites.
 
-Pass `--receipt path/to/receipt.json` to record selection, status, and elapsed
-milliseconds. Receipts intentionally omit commands, output, and environment
-variables. Pass `--concurrency N` to lower the default bounded concurrency.
-Each suite has a 15-minute process timeout and separate 2 MiB stdout/stderr
-limits. Node test files remain serial within each parallel shard until repeated
-evidence supports raising their internal concurrency.
+## Optional historical comparisons
 
-## Ownership and fallback
+`npm run test:reference` retains the historical matrix in
+`config/reference-test-matrix.json` for development diagnosis. It may require
+specific CPython builds and old implementation contracts. It is not a required
+release gate and does not establish current platform or live ATS acceptance.
+The former CPython 3.13 atomic-write oracle timeout is outside required CI;
+a demonstrated TypeScript persistence defect remains a release issue.
 
-`config/test-matrix.json` is the source of truth. The checker rejects missing
-suite references, nonexistent repository command paths, unowned executable or
-test paths, and any duplicate or omitted deterministic test file. Changing the
-matrix, runner, package scripts, lockfile, or workflows selects the full tier.
-Production ownership is initially conservative and heuristic; affected mode is
-local selection evidence, not yet an affected-safe CI gate.
+## Companion development
 
-Affected selection is initially local evidence, not proof that CI shadowing is
-complete. Activation still requires two weeks of selection shadowing with zero
-omitted failures; an omitted failure requires correcting ownership and restarting
-the observation window. Performance limits remain targets until enough warm
-local and CI receipts exist to calculate percentiles.
+Use `npm run companion:build`, then
+`npm run companion:start -- --root /absolute/path/to/private/test-store`.
+For development, use `npm run companion:dev -- --root /absolute/path/to/private/test-store`.
+The root must be private and owned; its canonical owned parent may allow group
+or other read/search permissions, but may not allow group/other writes. The
+launcher preserves the parent's permissions. Use disposable Stores for testing.
 
-## Parallel implementation and verification
+A source-only marketplace installation uses npm and registry access to assemble
+Companion on first launch. Later launches reuse the standalone build. Runtime
+and packaging checks do not authorize visible account tests on the owner's
+browser. Live-browser/native account observations retain separate explicit opt-in.
 
-Use the extracted module boundaries for bounded assignments: Store domain
-subtrees in `scripts/job_apply_store/domains/`, workspace server/domain modules
-in `scripts/job_apply_workspace/`, browser libraries/features in `workspace/`,
-and smoke helpers in `scripts/smoke/`. The Store CLI contract covers 99 commands.
-Compatibility adapters preserve live replacement seams and root-local loading;
-changes there require facade, startup, and loader checks as well as domain tests.
+## CI and local hooks
 
-Each parallel worker owns explicit files and focused tests in an isolated
-worktree. One integration owner controls shared facade/bootstrap composition,
-test-matrix ownership, package scripts, workflows, and installed inventories.
-Workers report immutable revisions and test receipts; an independent reviewer
-checks each result. Run broader deterministic and package verification at
-integration points, repeating it only after relevant changes or failures.
+Validate Plugin runs policy, classification, native unit/CLI/browser shards,
+macOS source/adapter checks, and installed-package checks for both supported
+platform targets. PR gate requires all selected jobs to succeed. Release
+Validation also checks installed packages on Linux and macOS. Nightly runs the
+same native full tier. Repository rulesets must separately require PR gate;
+a workflow's existence alone does not enforce merge protection.
 
-TypeScript migration uses the same ownership rules, but its runtime/platform
-launch gate remains unresolved. Differential writers must use separate cloned
-Stores. Python and TypeScript must never write the same live Store; read-only
-tests must also detect initialization, repair, and recovery side effects.
+Install local hooks with `npm run hooks:install`. Hooks use the native required
+matrix and Node environment identity; Python is not a local prerequisite.
+Historical consumer-graph evidence remains available for reference maintenance,
+but it cannot add Python tests to the required plan.
 
-## Timing interpretation
+Production code lives under `src/`, checked-in output under `runtime/`, and the
+React app under `apps/companion/`. Python trees are historical reference code.
+Preserve exact revisions, selective writes, user provenance, browser drafts,
+managed-resume identity, consent, and human-only final submission.
 
-Runner summaries are measurements from that invocation only. The modernization
-targets are fast p95 at most 30 seconds, affected p95 at most 90 seconds, and
-full CI p95 at most five minutes. Do not describe a single run as a percentile
-or as completion of the CI observation window.
-
-## Staging and CI validation
-
-The checked-in **Validate Plugin** workflow runs for pushes to `main` and
-`staging`, pull requests targeting either branch, and manual dispatch. It always
-runs the full deterministic shards while recording affected selection in shadow
-mode. The aggregate `PR gate` requires every selected Linux, macOS, Windows,
-browser, package, policy, and classification job. The separate **Release
-Validation** workflow runs installed-package validation for pushes to `main`
-and `staging`, version tags, and manual dispatch.
-
-The `classify` job records affected-suite selection in shadow mode but does not
-skip full shards, and `PR gate` rejects any failed, cancelled, skipped, or
-missing selected job. The former duplicate sequential validation lane and its
-planned 20-PR observation window were retired after matrix equivalence was
-established; `docs/legacy-validation-retirement.md` records that decision.
-
-Required Windows and deterministic macOS contracts run on pull requests targeting
-either `main` or `staging`.
-Visible live-browser/native observations are advisory in the scheduled or
-manual nightly workflow. Release installation evidence runs nightly and for
-staging/main, version tags, and manual dispatch. No CI timing percentile or
-observation-window completion is claimed yet; current timings are individual
-local measurements.
-
-## Portable and historical interpreter evidence
-
-The Linux workspace CI job provisions CPython 3.12, 3.13 and 3.14 and runs fresh
-codepoint-JSON differential observations, including interpreter/module provenance.
-These comparisons do not grant historical migration acceptance to a new build.
-
-`native-frozen-reference-profiles` remains in the full and platform tiers on
-Darwin. It runs the unchanged S08 acceptance test against the exact recorded
-macOS ARM64 interpreter/stdlib/native-module hashes; missing or different builds
-fail that native gate. The Linux workspace suite excludes this host-bound test
-and includes the separate portable comparison instead. Frozen receipts and their
-strict checks are unchanged. A green portable CI run does not certify replay of
-historical native acceptance; local deep verification retains that requirement.
+Core workflow auditing validates registry consistency and schema validity; it
+does not prove live agent or ATS behavior. The live-agent command
+`npm run test:agent-local` remains explicit, consumes model capacity, and runs
+only against fictional local data. Each of its three trials installs the plugin into a fresh temporary Codex home
+and invokes the installed `$job-apply:job-apply` skill. The agent uses the installed public router to
+select the exact fictional Ready job, start its detached attempt, grant bounded
+review-only authority, and finish at final review with zero final actions. Current live ATS evidence remains the narrow
+Pinterest Greenhouse observation; broader current-form coverage is unverified.

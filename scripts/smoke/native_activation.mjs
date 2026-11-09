@@ -57,12 +57,7 @@ async function request(running, method, path, value) {
 }
 
 try {
-  for (const name of ['python', 'python3']) {
-    await execute(name, ['--version'], { env: nativeEnv, timeout: 1000 }).then(
-      () => { throw new Error('Python is unexpectedly available on the installed artifact PATH'); },
-      error => { if (error.code !== 'ENOENT') throw error; },
-    );
-  }
+  if ((await readdir(emptyPath)).length) throw new Error('Native runtime PATH must be empty');
   const input = join(work, 'job.json');
   await writeFile(input, JSON.stringify({ id: 'native-only-job', url: 'https://example.invalid/native', role: 'Native Engineer' }));
   await execute(process.execPath, [command, 'store', '--root', store, 'job-create', '--input', input], { cwd: installed, env: nativeEnv, timeout: 20000 });

@@ -36,6 +36,9 @@ function groupAlive(child) {
     catch (error) {
         if (error.code === 'ESRCH')
             return false;
+        // A denied probe cannot prove exit. Keep waiting, with the existing deadline.
+        if (error.code === 'EPERM')
+            return true;
         throw error;
     }
 }
@@ -71,7 +74,7 @@ class WriterOwnershipLease {
         ]);
         if (!isAbsolute(active) || active !== resolve(active) || canonicalParent !== parent
             || !parentMetadata?.isDirectory() || parentMetadata.isSymbolicLink()
-            || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o077
+            || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o022
             || (activeMetadata && (canonicalActive !== active || !activeMetadata.isDirectory() || activeMetadata.isSymbolicLink()
                 || activeMetadata.uid !== process.getuid?.() || activeMetadata.mode & 0o077))) {
             throw new Error('writer ownership Store is invalid');

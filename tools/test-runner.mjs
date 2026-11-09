@@ -8,9 +8,10 @@ import { collectChanges, trackedPaths } from "./test-runner/git.mjs";
 import { loadMatrix, selectAffected, tierSuites, validateMatrix } from "./test-runner/matrix.mjs";
 import { buildReceipt, writeReceipt } from "./test-runner/receipt.mjs";
 import { qaHostEnvironment } from "./run-qa-browser.mjs";
+import { requiredEnvironment } from "./ci/required-environment.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const VALID_TIERS = new Set(["fast", "affected", "full", "platform", "release"]);
+const VALID_TIERS = new Set(["fast", "affected", "full", "platform", "release", "reference"]);
 
 function usage(message) {
   if (message) process.stderr.write(`${message}\n`);
@@ -47,13 +48,13 @@ export async function main(argv = process.argv.slice(2)) {
   } catch (error) {
     return usage(error.message);
   }
-  const [matrix, tracked] = await Promise.all([loadMatrix(ROOT), trackedPaths(ROOT)]);
+  const [matrix, tracked] = await Promise.all([loadMatrix(ROOT, options.tier === "reference" ? "config/reference-test-matrix.json" : "config/test-matrix.json"), trackedPaths(ROOT)]);
   const errors = validateMatrix(matrix, tracked);
   if (errors.length) {
     process.stderr.write(`${errors.join("\n")}\n`);
     return 2;
   }
-  let selection = { suiteIds: tierSuites(matrix, options.tier), fallbackReason: null };
+  let selection = { suiteIds: tierSuites(matrix, options.tier === "reference" ? "full" : options.tier), fallbackReason: null };
   if (options.tier === "affected") {
     const changes = await collectChanges(ROOT, options.base);
     selection = { ...changes, ...selectAffected(matrix, tracked, changes.changedPaths) };
@@ -61,8 +62,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const suitesById = new Map(matrix.suites.map((suite) => [suite.id, suite]));
   const suites = selection.suiteIds.map((id) => suitesById.get(id));
-  const needsEvidenceBoundHost = ["affected", "full", "platform"].includes(options.tier);
-  const host = needsEvidenceBoundHost ? qaHostEnvironment() : { environment: process.env, cleanup: () => {} };
+  const host = options.tier === "reference" ? qaHostEnvironment() : await requiredEnvironment();
   let results;
   try {
     results = await executeSuites(ROOT, suites, tracked, {
@@ -70,7 +70,7 @@ export async function main(argv = process.argv.slice(2)) {
       environment: host.environment,
     });
   } finally {
-    host.cleanup();
+    await host.cleanup();
   }
   const receipt = buildReceipt(selection, results);
   if (options.receipt) await writeReceipt(ROOT, options.receipt, receipt);

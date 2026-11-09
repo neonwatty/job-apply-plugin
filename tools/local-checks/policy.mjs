@@ -1,6 +1,13 @@
 import { selectAffected } from '../test-runner/matrix.mjs';
 
 export function selectLocalPlan(matrix, tracked, paths, { tag = false, closure, mode = 'push' } = {}) {
+  if (matrix.runtime === 'typescript') {
+    const selection = selectAffected(matrix, tracked, paths);
+    const light = matrix.suites.filter(suite => suite.tiers.includes('fast'));
+    const heavy = mode === 'commit' ? [] : matrix.suites.filter(suite => !light.includes(suite)
+      && (selection.suiteIds.includes(suite.id) || tag || mode === 'deep'));
+    return { light, heavy, native: [], reasons: ['TypeScript required suites; historical reference closure is optional'] };
+  }
   const fast = matrix.suites.filter((suite) => suite.tiers.includes('fast'));
   const light = new Map(fast.map((suite) => [suite.id, suite]));
   light.set('local-build', { id: 'local-build', kind: 'command', command: ['npm', 'run', 'build:check'] });

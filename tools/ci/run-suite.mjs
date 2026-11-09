@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { executeSuites } from "../test-runner/execute.mjs";
 import { trackedPaths } from "../test-runner/git.mjs";
 import { loadMatrix, validateMatrix } from "../test-runner/matrix.mjs";
+import { requiredEnvironment } from "./required-environment.mjs";
 import { buildReceipt, writeReceipt } from "../test-runner/receipt.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -18,7 +19,10 @@ export async function main(argv = process.argv.slice(2)) {
   if (errors.length) throw new Error(errors.join("\n"));
   const suite = matrix.suites.find((item) => item.id === suiteId);
   if (!suite) throw new Error(`unknown suite: ${suiteId}`);
-  const results = await executeSuites(ROOT, [suite], tracked, { concurrency: 1 });
+  const host = await requiredEnvironment();
+  let results;
+  try { results = await executeSuites(ROOT, [suite], tracked, { concurrency: 1, environment: host.environment }); }
+  finally { await host.cleanup(); }
   const receipt = buildReceipt({ suiteIds: [suiteId], fallbackReason: null }, results);
   if (receiptPath) await writeReceipt(ROOT, receiptPath, receipt);
   return receipt.status === "passed" ? 0 : 1;

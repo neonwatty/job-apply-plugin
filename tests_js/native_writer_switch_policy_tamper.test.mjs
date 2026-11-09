@@ -1,3 +1,4 @@
+import { legacyStoreFixture } from './legacy_store_fixture_support.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
@@ -13,19 +14,12 @@ import { withExclusiveFileLock } from '../runtime/store/exclusive-file-lock.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 
 const execute = promisify(execFile);
-const python = `
-import sys,importlib.util
-from pathlib import Path
-spec=importlib.util.spec_from_file_location('switch_reference','scripts/job-apply-store.py')
-m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-m.utc_now=lambda:'${now}'
-s=m.Store(Path(sys.argv[1]));s.initialize()
-`;
+
 
 async function setup(t) {
   const fixture = await nativeFixture(); t.after(fixture.cleanup);
   const root = await realpath(fixture.root), active = join(root, 'store'), candidate = `${active}.native-candidate`;
-  await execute('python3', ['-c', python, active]);
+  await legacyStoreFixture(active);
   const provider = loadPosixFlockProvider(fixture.receipt.artifact);
   const policy = new FinalActionPolicyService(active, deterministicOptions(provider));
   await policy.activate(campaignInput); await policy.revoke(); await policy.activate(campaignInput);
@@ -115,7 +109,7 @@ test('rollback holds both policy locks until retained and Python roots are in pl
 test('activation serializes creation of a previously absent policy tree', { timeout: 60000 }, async t => {
   const fixture = await nativeFixture(); t.after(fixture.cleanup);
   const parent = await realpath(fixture.root), active = join(parent, 'store'), candidate = `${active}.native-candidate`;
-  await execute('python3', ['-c', python, active]);
+  await legacyStoreFixture(active);
   const provider = loadPosixFlockProvider(fixture.receipt.artifact);
   await prepareCanonicalStoreClone(active, candidate, provider, now);
   let mutation;

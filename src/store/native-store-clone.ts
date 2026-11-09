@@ -20,11 +20,11 @@ const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', '
 const directories = new Set(['resume-files', 'sessions']);
 const options = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 
-async function privateDirectory(path: string, label: string): Promise<void> {
+async function privateDirectory(path: string, label: string, parent = false): Promise<void> {
   const canonical = await realpath(path).catch(() => null);
   const metadata = await lstat(path).catch(() => null);
   if (canonical !== path || !metadata?.isDirectory() || metadata.isSymbolicLink()
-    || metadata.uid !== process.getuid?.() || metadata.mode & 0o077) throw new JobsError(`${label} must be private and owned`);
+    || metadata.uid !== process.getuid?.() || metadata.mode & (parent ? 0o022 : 0o077)) throw new JobsError(`${label} has unsafe permissions or ownership`);
 }
 
 async function privateBytes(path: string, limit = 32 * 1024 * 1024): Promise<Buffer> {
@@ -149,7 +149,7 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
   if (![source, target].every(path => isAbsolute(path) && path === resolve(path)) || source === target
     || await realpath(dirname(target)).catch(() => null) !== dirname(target)) throw new JobsError('canonical clone paths are invalid');
   await privateDirectory(source, 'canonical clone source');
-  await privateDirectory(dirname(target), 'canonical clone target parent');
+  await privateDirectory(dirname(target), 'canonical clone target parent', true);
   let created = false;
   try {
     await withExclusiveFileLock(join(source, '.store.lock'), async () => {

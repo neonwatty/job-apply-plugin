@@ -57,10 +57,11 @@ async function locked(active, options, callback) {
     const parent = dirname(active);
     const canonical = await realpath(parent).catch(() => null), metadata = await lstat(parent).catch(() => null);
     if (canonical !== parent || !metadata?.isDirectory() || metadata.isSymbolicLink()
-        || metadata.uid !== process.getuid?.() || metadata.mode & 0o077)
-        throw new JobsError('writer switch parent must be private and owned');
+        || metadata.uid !== process.getuid?.() || metadata.mode & 0o022)
+        throw new JobsError('writer switch parent must be owned and not writable by others');
     return withExclusiveFileLock(join(parent, `.${basename(active)}.writer-switch.lock`), async () => callback(), {
-        provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000),
+        provider: options.provider, pathProfile: '3.12', preserveParentPermissions: true,
+        signal: options.signal ?? AbortSignal.timeout(30_000),
     });
 }
 /** Atomically selects a prepared native clone by directory entry, retaining the Python Store for rollback. */

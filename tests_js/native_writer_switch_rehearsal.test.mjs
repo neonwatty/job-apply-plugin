@@ -1,3 +1,4 @@
+import { legacyStoreFixture } from './legacy_store_fixture_support.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
@@ -14,20 +15,12 @@ import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
 
 const execute = promisify(execFile), fixed = '2026-09-14T12:00:00Z';
-const python = `
-import sys,importlib.util
-from pathlib import Path
-spec=importlib.util.spec_from_file_location('switch_reference','scripts/job-apply-store.py')
-m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-m.utc_now=lambda:'${fixed}'
-s=m.Store(Path(sys.argv[1]));s.initialize()
-s.create_job({'id':'python-job','url':'https://example.invalid/python','role':'Python Engineer'})
-`;
+
 
 async function setup(t) {
   const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
   const root = await realpath(fixture.root), active = join(root, 'store'), candidate = `${active}.native-candidate`;
-  await execute('python3', ['-c', python, active]);
+  await legacyStoreFixture(active, { job: { id: 'python-job', url: 'https://example.invalid/python', role: 'Python Engineer' }, now: fixed });
   const provider = loadPosixFlockProvider(fixture.receipt.artifact);
   await prepareCanonicalStoreClone(active, candidate, provider, fixed);
   return { root, active, candidate, provider };

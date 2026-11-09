@@ -52,6 +52,8 @@ function groupAlive(child: ChildProcess): boolean {
   try { process.kill(-(child.pid as number), 0); return true; }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    // A denied probe cannot prove exit. Keep waiting, with the existing deadline.
+    if ((error as NodeJS.ErrnoException).code === 'EPERM') return true;
     throw error;
   }
 }
@@ -90,7 +92,7 @@ class WriterOwnershipLease {
     ]);
     if (!isAbsolute(active) || active !== resolve(active) || canonicalParent !== parent
       || !parentMetadata?.isDirectory() || parentMetadata.isSymbolicLink()
-      || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o077
+      || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o022
       || (activeMetadata && (canonicalActive !== active || !activeMetadata.isDirectory() || activeMetadata.isSymbolicLink()
         || activeMetadata.uid !== process.getuid?.() || activeMetadata.mode & 0o077))) {
       throw new Error('writer ownership Store is invalid');

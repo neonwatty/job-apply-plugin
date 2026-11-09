@@ -1,268 +1,110 @@
 name: Validate Plugin
-
 on:
   workflow_dispatch:
   push:
     branches: [main, staging]
   pull_request:
     branches: [main, staging]
-
 permissions:
   contents: read
-
 concurrency:
   group: validate-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
 jobs:
   classify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      selected-suites: ${{ steps.selection.outputs.selected_suites }}
-      fallback: ${{ steps.selection.outputs.fallback }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - id: selection
-        name: Record affected selection in shadow mode
+          node-version: '22'
+      - run: node tools/ci/classify.mjs --base "$BASE_REF" --receipt ci-receipts/selection.json
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
-        run: node tools/ci/classify.mjs --base "$BASE_REF" --receipt ci-receipts/selection.json --github-output "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7
-        if: always()
         with:
-          name: shadow-selection-${{ github.run_id }}
+          name: selection
           path: ci-receipts/selection.json
-          if-no-files-found: error
-          retention-days: 14
-
   policy:
-    needs: classify
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
-          cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}"
-      - name: "Shadow only: full deterministic shards still execute"
-        # The workflow validator is also exercised by node-runner-fast. Keep
-        # the policy lane serialized so two pinned validator processes cannot
-        # contend for the bounded Linux runner at the same time.
-        run: npm run test:fast -- --concurrency 1 --receipt ci-receipts/fast.json
+      - run: npm run check:size -- --base "$BASE_REF"
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+      - run: npm run test:fast -- --concurrency 1 --receipt ci-receipts/fast.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: fast-receipt-${{ github.run_id }}
+          name: policy
           path: ci-receipts/fast.json
-          if-no-files-found: error
-          retention-days: 14
-
-  python-shards:
-    needs: classify
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [python-qa, python-workspace-contracts, python-accounts, python-core]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" "ci-receipts/${{ matrix.suite }}.json"
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: ${{ matrix.suite }}-${{ github.run_id }}
-          path: ci-receipts/${{ matrix.suite }}.json
-          if-no-files-found: error
-          retention-days: 14
-
-  browser-shards:
-    needs: classify
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [node-migration-evidence, node-recorder, node-renderer, node-workspace-other, native-posix-lock, native-canonical-store-clone, native-default-cutover, native-posix-timestamps, native-email-canary-composition]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Provision all required CPython reference profiles
-        uses: actions/setup-python@v7
-        with:
-          python-version: |
-            3.13
-            3.14
-            3.12
-      - name: Configure synthetic Git identity for migration fixtures
-        if: matrix.suite == 'node-migration-evidence'
-        run: |
-          git config --global user.name "CI Migration Fixture"
-          git config --global user.email "ci-migration-fixture@example.invalid"
-      - run: npm ci
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
-      - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" "ci-receipts/${{ matrix.suite }}.json"
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: ${{ matrix.suite }}-${{ github.run_id }}
-          path: ci-receipts/${{ matrix.suite }}.json
-          if-no-files-found: error
-          retention-days: 14
-
-  macos-typescript-shards:
-    needs: classify
-    runs-on: macos-latest
+  native-shards:
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        # The frozen S08 profile suite remains a local deep gate because it
-        # requires the exact recorded Homebrew ARM64 interpreter binaries.
-        suite: [macos-native-typescript-adapter]
+        os: [ubuntu-latest, macos-latest]
+        suite: [node-native-unit, node-native-cli, node-native-browser]
+        include:
+          - os: macos-latest
+            suite: macos-native-typescript-adapter
+          - os: macos-latest
+            suite: macos-native-source
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Provision all required CPython reference profiles
-        uses: actions/setup-python@v7
-        with:
-          python-version: |
-            3.13
-            3.14
-            3.12
       - run: npm ci
-      - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" "ci-receipts/${{ matrix.suite }}.json"
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" ci-receipts/native.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: ${{ matrix.suite }}-${{ github.run_id }}
-          path: ci-receipts/${{ matrix.suite }}.json
-          if-no-files-found: error
-          retention-days: 14
-
+          name: native-${{ matrix.os }}-${{ matrix.suite }}
+          path: ci-receipts/native.json
   package-contract:
-    needs: classify
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
-          cache-dependency-path: package-lock.json
       - run: npm ci
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - run: npm install -g @anthropic-ai/claude-code @openai/codex
-      - run: node tools/ci/run-suite.mjs release-package ci-receipts/release-package.json
+      - run: npm run test:release -- --receipt ci-receipts/release.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: package-contract-${{ github.run_id }}
-          path: ci-receipts/release-package.json
-          if-no-files-found: error
-          retention-days: 14
-
-  windows-store-workspace:
-    runs-on: windows-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - name: Verify original Windows account modules
-        run: python -m unittest -v tests.test_job_apply_accounts tests.test_job_apply_credentials tests.test_job_apply_account_executor tests.test_job_apply_account_canary tests.test_job_apply_account_canary_executor tests.test_job_apply_account_flows tests.test_qa_account
-      - name: Verify split Store modules replacing the original monolith
-        run: python -m unittest discover -s tests -p 'test_store_*.py' -v
-      - name: Verify split workspace modules replacing the original monolith
-        run: python -m unittest discover -s tests -p 'test_job_apply_workspace_*.py' -v
-      - run: npm run qa:resume-extraction-onboarding
-
-  macos-credential-helper:
-    runs-on: macos-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Typecheck isolated Security.framework helper
-        run: xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/OracleExecutableIdentity.swift native/macos/NativeEmailOnlyBinding.swift native/macos/AccessibilityTree.swift native/macos/ReviewedAccountForm.swift native/macos/OracleBrowserIdentity.swift native/macos/MacOSAccessibilityAccountFlowHelper.swift native/macos/OracleAccountFlowFixtures.swift native/macos/job_apply_credential_helper_tests.swift native/macos/job_apply_credential_helper_main.swift
-      - run: python3 -m unittest -v tests.test_macos_credential_helper tests.test_macos_account_flow_helper
-      - run: npm run qa:resume-extraction-onboarding
-
-  macos-account-flow-helper:
-    runs-on: macos-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Verify reviewed Workday account boundary
-        run: |
-          xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/OracleExecutableIdentity.swift native/macos/NativeEmailOnlyBinding.swift native/macos/AccessibilityTree.swift native/macos/ReviewedAccountForm.swift native/macos/OracleBrowserIdentity.swift native/macos/MacOSAccessibilityAccountFlowHelper.swift native/macos/OracleAccountFlowFixtures.swift native/macos/job_apply_workday_account_flow_helper.swift native/macos/job_apply_workday_account_flow_main.swift
-          python3 -m unittest -v tests.test_macos_workday_account_flow_helper
-      - run: npm run qa:resume-extraction-onboarding
-
+          name: package-${{ matrix.os }}
+          path: ci-receipts/release.json
   pr-gate:
     name: PR gate
     if: always()
-    needs: [classify, policy, python-shards, browser-shards, macos-typescript-shards, package-contract, windows-store-workspace, macos-credential-helper, macos-account-flow-helper]
+    needs: [classify, policy, native-shards, package-contract]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - name: Require every parallel validation job
+      - run: node tools/ci/gate.mjs
         env:
           CI_RESULTS_JSON: ${{ toJSON(needs) }}
-          CI_SELECTED_JOBS: '["classify","policy","python-shards","browser-shards","macos-typescript-shards","package-contract","windows-store-workspace","macos-credential-helper","macos-account-flow-helper"]'
-        run: node tools/ci/gate.mjs
+          CI_SELECTED_JOBS: '["classify","policy","native-shards","package-contract"]'

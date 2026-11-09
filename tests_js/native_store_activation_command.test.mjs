@@ -51,24 +51,6 @@ test('ordinary native command activates a fresh Store and then serves Store and 
   assert.equal(imported.stdout.includes(resumePath), false);
 });
 
-test('ordinary native command clones and activates existing Python state without modifying rollback bytes', { timeout: 60_000 }, async t => {
-  const fixture = await installed(t), input = join(fixture.home, 'job.json');
-  await writeFile(input, '{"id":"python-job","role":"Existing job","url":"https://example.invalid/python-job"}', { mode: 0o600 });
-  const python = spawnSync('python3', [join(fixture.plugin, 'scripts/job-apply-store.py'), '--root', fixture.root, 'job-create', '--input', input],
-    { cwd: fixture.plugin, encoding: 'utf8' });
-  // The minimal installed fixture deliberately omits Python; initialize the existing Store from the repository helper.
-  if (python.status !== 0) {
-    const source = join(repository, 'scripts/job-apply-store.py');
-    const created = spawnSync('python3', [source, '--root', fixture.root, 'job-create', '--input', input], { cwd: repository, encoding: 'utf8' });
-    assert.equal(created.status, 0, created.stderr);
-  }
-  const before = await readFile(join(fixture.root, 'jobs.json'));
-  const listed = run(fixture, 'store', ['--root', fixture.root, 'job-list']);
-  assert.equal(listed.status, 0, listed.stderr); assert.equal(JSON.parse(listed.stdout)[0].id, 'python-job');
-  assert.deepEqual(await readFile(join(`${fixture.root}.python-rollback`, 'jobs.json')), before);
-  assert.equal(JSON.parse(await readFile(join(fixture.root, '.native-store-clone'), 'utf8')).mode, 'canonical-store-clone');
-});
-
 test('paths and absent policy status remain non-creating reads', { timeout: 60_000 }, async t => {
   const fixture = await installed(t);
   const paths = run(fixture, 'store', ['paths']); assert.equal(paths.status, 0, paths.stderr);
@@ -93,4 +75,73 @@ test('ordinary command accepts an explicitly initialized native QA fixture witho
   const rejected = run(fixture, 'store', ['--root', fixture.root, 'profile-inspect']);
   assert.equal(rejected.status, 2);
   assert.match(rejected.stderr, /activation failed/);
+});
+
+test('activation accepts owned read/searchable parents without changing their permissions', { timeout: 60_000 }, async t => {
+  const fixture = await installed(t);
+  const { chmod, stat } = await import('node:fs/promises');
+  for (const mode of [0o700, 0o750, 0o755]) {
+    const parent = join(fixture.home, `parent-${mode}`); await mkdir(parent, { mode }); await chmod(parent, mode);
+    const root = join(parent, 'store');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = run(fixture, 'store', ['--root', root, 'init']);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal((await stat(parent)).mode & 0o777, mode);
+      assert.equal((await stat(root)).mode & 0o777, 0o700);
+    }
+  }
+  for (const mode of [0o770, 0o777]) {
+    const parent = join(fixture.home, `unsafe-${mode}`); await mkdir(parent); await chmod(parent, mode);
+    const root = join(parent, 'store');
+    assert.equal(run(fixture, 'store', ['--root', root, 'init']).status, 2);
+    await assert.rejects(realpath(root), { code: 'ENOENT' });
+  }
+});
+
+test('public initialization imports the selected legacy profile and preserves an existing canonical profile', async t => {
+  const fixture = await installed(t), selected = join(fixture.home, 'selected.json');
+  const defaultLegacy = join(fixture.home, '.claude-job-profile.json');
+  await mkdir(dirname(defaultLegacy), { recursive: true });
+  await writeFile(defaultLegacy, '{"name":"Wrong default"}', { mode: 0o600 });
+  await writeFile(selected, '{"name":"Selected applicant"}', { mode: 0o600 });
+  const args = ['--root', fixture.root, '--legacy-profile', selected, 'init'];
+  assert.equal(run(fixture, 'store', args).status, 0);
+  const profile = JSON.parse(await readFile(join(fixture.root, 'profile.json'), 'utf8'));
+  assert.equal(profile.profile.name, 'Selected applicant');
+  await writeFile(selected, '{"name":"Later legacy edit"}', { mode: 0o600 });
+  assert.equal(run(fixture, 'store', args).status, 0);
+  assert.deepEqual(JSON.parse(await readFile(join(fixture.root, 'profile.json'), 'utf8')), profile);
+});
+
+test('attempt equals and abbreviated roots activate only the selected Store', async t => {
+  const fixture = await installed(t);
+  for (const option of ['--root=', '--roo=']) {
+    const selected = join(fixture.home, `selected-${option.length}`);
+    const result = run(fixture, 'attempt', [`${option}${selected}`, 'heartbeat']);
+    assert.equal(result.status, 2, result.stderr || result.stdout);
+    assert.equal(JSON.parse(result.stdout).error.code, 'attempt_unavailable');
+    assert.equal(JSON.parse(await readFile(join(selected, '.native-store-clone'), 'utf8')).mode, 'canonical-store-clone');
+    await assert.rejects(realpath(fixture.root), { code: 'ENOENT' });
+    await assert.rejects(realpath(`${fixture.root}.python-rollback`), { code: 'ENOENT' });
+  }
+});
+
+test('invalid attempt options preserve the native JSON envelope without activating any Store', async t => {
+  const fixture = await installed(t);
+  const selected = join(fixture.home, 'selected-invalid');
+  const result = run(fixture, 'attempt', [`--root=${selected}`, 'heartbeat', '--unknown']);
+  assert.equal(result.status, 2);
+  assert.equal(JSON.parse(result.stdout).error.code, 'invalid_invocation');
+  assert.equal(result.stderr, '');
+  await assert.rejects(realpath(fixture.root), { code: 'ENOENT' });
+  await assert.rejects(realpath(selected), { code: 'ENOENT' });
+});
+
+test('paths with an explicit legacy source remains non-creating', async t => {
+  const fixture = await installed(t), selected = join(fixture.home, 'legacy.json');
+  await writeFile(selected, '{"name":"Synthetic legacy"}', { mode: 0o600 });
+  const result = run(fixture, 'store', ['--legacy-profile', selected, 'paths']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).legacyProfile, selected);
+  await assert.rejects(realpath(fixture.root), { code: 'ENOENT' });
 });

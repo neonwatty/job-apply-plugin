@@ -1,0 +1,30 @@
+name: Historical Python Store Migration (one-time acceptance)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  historical-migration:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - name: Verify pinned historical v1.1.0 Store migration and explicit rollback
+        run: node tools/python-store-migration-once.mjs > migration-receipt.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: historical-migration-${{ matrix.os }}
+          path: migration-receipt.json

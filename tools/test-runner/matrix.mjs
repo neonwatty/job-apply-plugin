@@ -66,7 +66,8 @@ export function validateMatrix(matrix, tracked) {
   for (const item of inventory) {
     const owned = matrix.suites.some((suite) => filesBySuite.get(suite.id).includes(item))
       || (matrix.ownership ?? []).some((rule) => matches(item, rule.paths))
-      || matches(item, matrix.globalPaths ?? []);
+      || matches(item, matrix.globalPaths ?? [])
+      || (matrix.referenceTests ?? []).some(entry => entry.path === item);
     if (!owned) errors.push(`unowned executable/test path: ${item}`);
   }
   const tests = tracked.filter((item) => matches(item, matrix.fullInventory?.include ?? []));
@@ -76,7 +77,15 @@ export function validateMatrix(matrix, tracked) {
       if (counts.has(item)) counts.set(item, counts.get(item) + 1);
     }
   }
+  const references = new Map();
+  for (const entry of matrix.referenceTests ?? []) {
+    if (!entry || typeof entry.path !== 'string' || typeof entry.reason !== 'string' || !entry.reason.trim()
+      || references.has(entry.path) || !trackedSet.has(entry.path)) errors.push('invalid or duplicate reference test classification');
+    references.set(entry?.path, entry?.reason);
+  }
   for (const [item, count] of counts) {
+    if (count === 0 && references.has(item)) continue;
+    if (count && references.has(item)) errors.push(`required and reference test overlap: ${item}`);
     if (count !== 1) errors.push(`full inventory count ${count} for ${item}`);
   }
   return errors;
