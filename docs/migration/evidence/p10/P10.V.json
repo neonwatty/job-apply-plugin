@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/p10/approved-dag.json",
+    "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd"
+  },
+  "package": {
+    "id": "P10",
+    "parentNode": "CI",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "config/test-matrix.json",
+      "tests_js/test-runner-selection.test.mjs",
+      "tests_js/reference_suite_support.mjs",
+      "docs/migration/evidence/p10/implementation.md",
+      "docs/migration/evidence/p10/implementation-audit.json",
+      "docs/migration/evidence/p10/approved-dag.json",
+      "docs/migration/evidence/p10/P10.I.json",
+      "docs/migration/evidence/p10/P10.V.json",
+      "docs/migration/evidence/p10/transition.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "5434e1249be56287df2b03aa92d0261cd3806d6b93968b20031e32b95af74358",
+  "auditContract": {
+    "path": "docs/migration/evidence/p10/implementation-audit.json",
+    "sha256": "0b7507564430b5708cbb3958896536ae13ab5f619c6bd7a1e7c76adb922a0652"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "e216b30b0b1d08c16fbdd97a0570c84523b83c59",
+  "inputs": [
+    {
+      "path": ".gitignore",
+      "sha256": "ca96d5296019cd001c61c3ace3bb6be6a54976c2db880cca87f92facc14e5ee0"
+    },
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "b60ca8f373fe3468888db5f774d45010d0540612d1236101023795ad4c428069"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/reference-consumers.json",
+      "sha256": "534703d4ffbf5d5d25490c7ace99e68ebfc3bf124efaf1a344f523cb9e7d4361"
+    },
+    {
+      "path": "docs/migration/evidence/p10/approved-dag.json",
+      "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd"
+    },
+    {
+      "path": "docs/migration/evidence/p10/implementation-audit.json",
+      "sha256": "0b7507564430b5708cbb3958896536ae13ab5f619c6bd7a1e7c76adb922a0652"
+    },
+    {
+      "path": "docs/migration/evidence/p10/implementation-spec.json",
+      "sha256": "fa9775bb5a391ca0e966aed3ab846c228d06db9a5067d3bc93ead436c10a0e29"
+    },
+    {
+      "path": "docs/migration/evidence/p10/implementation.md",
+      "sha256": "6b36562b3db9a7595206f7fbd02ad0203a08976cf5b8e51a561354b11eba5357"
+    },
+    {
+      "path": "docs/migration/evidence/s04/S04.R.json",
+      "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-vectors.json",
+      "sha256": "5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a"
+    },
+    {
+      "path": "docs/migration/evidence/s05/S05.R.json",
+      "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-baselines.json",
+      "sha256": "e693a5105ffe3e1efb56b4fe6d7e942704e8c81fc73c4dcc9ecc1a8c7ef82ced"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-vectors.json",
+      "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "tests_js/local_checks_graph_support.mjs",
+      "sha256": "1f7ba40d5d50f9441afc64a50d2299971abd291b5f235de3d4f01fd670229897"
+    },
+    {
+      "path": "tests_js/test-runner-selection.test.mjs",
+      "sha256": "648aa5c18777f407921fa144c9cde7e6dc26a149576c64d1da21b9827d2590b5"
+    },
+    {
+      "path": "tools/local-checks/consumer-graph.mjs",
+      "sha256": "3a90057166e8ce16170cb5552876c1ca636428ac6bf8404df645424c72ab44ca"
+    },
+    {
+      "path": "tools/local-checks/focused-closure.mjs",
+      "sha256": "42bbbb7be63d9104b454d0c381c77ac0858592fa7aa5494977a4f4725c5d846a"
+    },
+    {
+      "path": "tools/local-checks/focused-contracts.mjs",
+      "sha256": "c063a91a57808ff046aaaf1f690bed5238544d7b5b0a8851b160812b27fa10ce"
+    },
+    {
+      "path": "tools/local-checks/graph-syntax.mjs",
+      "sha256": "a16da353c3ec030521765f68d4510d31231bcba0b68b01260b64b0f09b18b305"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/test-runner/execute.mjs",
+      "sha256": "ba8bbdfdfb2c6569e639351d00ce7eccae8fd8c0655b9053baebb52f69750568"
+    },
+    {
+      "path": "tools/test-runner/git.mjs",
+      "sha256": "78097d57073dc0ab2057f783e467b9af2720738e8c9a8b73e96caa919f6f07bf"
+    },
+    {
+      "path": "tools/test-runner/matrix.mjs",
+      "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+    },
+    {
+      "path": "tools/test-runner/patterns.mjs",
+      "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+    },
+    {
+      "path": "tools/test-runner/process.mjs",
+      "sha256": "b9eea8bec5e3bb21a4bcb820c83414b798b7f25c336b1b639c2f179ca0c13d17"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "p10.matrix-isolation",
+      "requirementIds": [
+        "p10.reference-process-isolation",
+        "p10.reference-input-fanout"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "testNames": [
+        "affected selection unions owners and selects a changed test itself",
+        "global and unknown changes fail closed to the full tier",
+        "real shared Python helpers select every consuming shard",
+        "real production paths conservatively include cross-language consumers",
+        "matrix validation rejects omissions and duplicate full inventory",
+        "name-status parsing preserves both rename paths and deletions",
+        "git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths",
+        "P03 graph follows runtime type support and literal child-process dependencies",
+        "P03 graph rejects unresolved relevant imports and missing owned targets",
+        "P03 graph re-evaluates newly added consumers from the immutable subject",
+        "P03 graph binds source and emitted module identities without duplicate consumers",
+        "P10 reference suites isolate S04 and S05 without changing process output limits",
+        "P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p10/logs/P10-matrix-isolation.tap"
+    }
+  ],
+  "artifacts": [],
+  "id": "P10.V",
+  "role": "independent-review"
+}

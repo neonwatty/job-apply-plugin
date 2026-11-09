@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "id": "S01.I",
+  "role": "implementation-or-gate",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "S01",
+    "parentNode": "I",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "src/contracts/python-object.ts",
+      "src/contracts/python-object-legacy.ts",
+      "runtime/contracts/python-object.js",
+      "runtime/contracts/python-object-legacy.js",
+      "tests_js/python_object_ts.test.mjs",
+      "tests_js/python_object_ts_support.mjs",
+      "docs/migration/evidence/s01/implementation-audit.json",
+      "docs/migration/evidence/s01/S01.I.json",
+      "docs/migration/evidence/s01/S01.V.json",
+      "config/migration/source-catalog-s01.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [
+      "runtime/contracts/python-object.js",
+      "runtime/contracts/python-object-legacy.js"
+    ],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "57fed38691e764e621a462ebceedda88df8f548b6edcc6865b657c6fd7a7cdf6",
+  "auditContract": {
+    "path": "docs/migration/evidence/s01/implementation-audit.json",
+    "sha256": "7edb6b052014a34081b1caaddca0d698c745c89716f25f13db64384700fe1576"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "f3b90ba9e6a867c2f2bf853ec59798d12858ea11",
+  "inputs": [
+    {
+      "path": "docs/migration/evidence/s01/implementation-audit.json",
+      "sha256": "7edb6b052014a34081b1caaddca0d698c745c89716f25f13db64384700fe1576"
+    },
+    {
+      "path": "docs/migration/remaining/s01-implementation.md",
+      "sha256": "126558fc7a4c7e1e299b9a5eb53e1d78b890b2232d2571be086034c36e433122"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "tests_js/python_text_ts.test.mjs",
+      "sha256": "c278910ac938782dbfea8f049235d5a6bcfb32d4fc9ebe1f46d93d5129308585"
+    },
+    {
+      "path": "tools/contracts/python-object/reference.py",
+      "sha256": "9538767aa71e347c3d9c39165ab364869c11bd8d7994fa3b4801d1893372dbc9"
+    },
+    {
+      "path": "tests_js/python_object_reference.test.mjs",
+      "sha256": "d53a6e27ab07fad36bfd82bc015994a4b915c639e6f4709afd28d0d8964b4dbd"
+    },
+    {
+      "path": "docs/migration/python-object-reference.md",
+      "sha256": "2b918a6a8977b3d5484e1690e82ca832c373e53fcf104741773758e5ec7a7ed9"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "s01.implementation.python-object",
+      "requirementIds": [
+        "s01.audit.python-object-implementation"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_object_ts.test.mjs"
+      ],
+      "testNames": [
+        "S01 content-equal keys retain first identity and insertion order",
+        "S01 literal pair scalar lone empty and NUL keys remain distinct",
+        "S01 deletion returns presence and reinsertion preserves dictionary order",
+        "S01 missing lookup differs from present null and undefined",
+        "S01 opaque values retain numeric shared and cyclic identity",
+        "S01 entry snapshots protect structure while retaining value references",
+        "S01 runtime key validation cannot forge content identity",
+        "S01 legacy Map ingress preserves representable keys and value identity",
+        "S01 legacy Map egress rejects lossy pairs without source mutation",
+        "S01 large keys avoid argument-spread limits and retain exact lookup"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s01/logs/S01-IV-python-object-implementation.tap"
+    }
+  ],
+  "artifacts": []
+}

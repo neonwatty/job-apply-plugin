@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "S05.domain3.R",
+  "previousDag": {
+    "path": "docs/migration/evidence/s05-domain-v3/reference-dag.json",
+    "sha256": "4a0e8f9022f8a47d719f83d211f86a7fee5331182cd23e20e14a91c03a3a96b2",
+    "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+  },
+  "originalManifest": {
+    "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+    "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916",
+    "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+  },
+  "dependencies": [
+    "P00.V",
+    "S05.R",
+    "M02.V",
+    "S04.V",
+    "P12.V",
+    "M01.V",
+    "U01.R",
+    "U02.R",
+    "P03.retry2.V"
+  ],
+  "prerequisiteReceipts": [
+    {
+      "id": "P00.V",
+      "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+    },
+    {
+      "id": "S05.R",
+      "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+    },
+    {
+      "id": "M02.V",
+      "sha256": "a953288b93e03dde8d6d7f05a1980ed4ceee081d41c267fead57c1ed1176bad1"
+    },
+    {
+      "id": "S04.V",
+      "sha256": "c308d9f21efcb704215f9e78fb1a5aaf3dc597204282600238547e5936a70f1d"
+    },
+    {
+      "id": "P12.V",
+      "sha256": "ec247a75c7a3544e39e8b3114455002a5eeaa7a8f987645856bce959b6f8abe9"
+    },
+    {
+      "id": "M01.V",
+      "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+    },
+    {
+      "id": "U01.R",
+      "sha256": "dc447d50c8b26c1be1381134f3017f1161231564d667f4a1eb8d7d595ec489f2"
+    },
+    {
+      "id": "U02.R",
+      "sha256": "e77d63779f755df00e58cfb66674f9d3494e22c3b292e24abe3178dac01d33dd"
+    },
+    {
+      "id": "P03.retry2.V",
+      "sha256": "bf8967b20ce30e7541f93eeeb4697ce5603b2aeae397701b57e60f5a8c31d43b"
+    }
+  ],
+  "candidateHashes": {
+    "task": "S05.domain3.R",
+    "files": [
+      {
+        "path": "tools/contracts/point-path-domain/reference.py",
+        "sha256": "2580ea18f09f6b1950e8824a0692f27c298adec77fef7a2e3159f044d889799e"
+      },
+      {
+        "path": "tools/contracts/point-path-domain/fixtures.py",
+        "sha256": "e2cc816f3dd3bda5a4595a762c15b52e85a981bb8bd62811cb279a423c1bcff0"
+      },
+      {
+        "path": "tools/contracts/point-path-domain/support.py",
+        "sha256": "49b3c22ecf792354f8b4ad42a6bc990a93cb3a36b46d3c2cd8384a7a8f8dfa92"
+      },
+      {
+        "path": "tests_js/resume_modified_at_reference.test.mjs",
+        "sha256": "aee7183a79dd4bc4edbed70adbcbb964ebaf0a8f10d14274b32e679f05b07b40"
+      },
+      {
+        "path": "tests_js/point_paths_domain_support.mjs",
+        "sha256": "2687af23349e267f65a7a741938185f9da24aab7a7e3e75d77f132f032df0863"
+      },
+      {
+        "path": "config/test-matrix.json",
+        "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+      },
+      {
+        "path": "tests_js/point_paths_reference.test.mjs",
+        "sha256": "adadd2a0a89ee3d687041b76a277d1d42da94011898ceb627b15ccc24b1995f8"
+      },
+      {
+        "path": "tools/migration/evidence-io.mjs",
+        "sha256": "b515ab42b60270fd8282af1bf01a9b44b3de6a909ff9e6f892110d02ab2eb5d6"
+      },
+      {
+        "path": "tests_js/migration_task_loader.test.mjs",
+        "sha256": "2c2cf66310e73883d2417b4c5dc5d929da4fa879d98837326962271437f5d106"
+      }
+    ]
+  },
+  "loaderInputs": [
+    "tests_js/migration_task_loader.test.mjs",
+    "tests_js/migration_task_support.mjs",
+    "tools/migration/evidence-io.mjs",
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/load-task-lineage.mjs",
+    "tools/migration/packages.mjs",
+    "tools/migration/requirements.mjs",
+    "tools/migration/tap-evidence.mjs",
+    "tools/migration/task-handoffs.mjs",
+    "tools/migration/task-lineage.mjs",
+    "tools/migration/task-manifests.mjs",
+    "tools/migration/task-metadata.mjs",
+    "tools/migration/task-receipts.mjs",
+    "tools/migration/test-bindings.mjs"
+  ],
+  "reason": "Preserve all existing Store reference and registration witnesses while owning the bounded immutable Git cache correction and its loader regression; retire the uncommitted predecessor without fabricating an attempt.",
+  "cachePolicy": {
+    "frontier": "All seventeen accepted holders of the two cache/test paths are ancestors of accepted P03.retry2.V.",
+    "budgetBasis": "180000 ms and 1 MiB follow the established P03.retry2 cell ceiling; the fifteen-name loader cell is new, not an inherited witness.",
+    "source": "Only bounded immutable Git cache recency and positive-only rev-list ancestry acceleration change; retain established bounds, conservative fallback and immutable Git semantics. Existing two cells retain commands, names, requirements, environments, reporters and budgets; only fresh log paths change."
+  }
+}

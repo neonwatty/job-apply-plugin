@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: literal test bindings require node:test imports and nonempty direct declarations
+ok 1 - literal test bindings require node:test imports and nonempty direct declarations
+  ---
+  duration_ms: 4.503625
+  type: 'test'
+  ...
+# Subtest: malformed syntax and duplicate declared test IDs cannot bind requirements
+ok 2 - malformed syntax and duplicate declared test IDs cannot bind requirements
+  ---
+  duration_ms: 0.6405
+  type: 'test'
+  ...
+# Subtest: platform literal bindings select only the explicitly supplied finite branch in source order
+ok 3 - platform literal bindings select only the explicitly supplied finite branch in source order
+  ---
+  duration_ms: 2.402458
+  type: 'test'
+  ...
+# Subtest: platform literal bindings preserve no-context behavior and reject unsupported syntax
+ok 4 - platform literal bindings preserve no-context behavior and reject unsupported syntax
+  ---
+  duration_ms: 1.853541
+  type: 'test'
+  ...
+# Subtest: platform literal bindings reject shadowed process and node test identities
+ok 5 - platform literal bindings reject shadowed process and node test identities
+  ---
+  duration_ms: 1.491333
+  type: 'test'
+  ...
+# Subtest: platform literal bindings reject process mutation and escaped process aliases
+ok 6 - platform literal bindings reject process mutation and escaped process aliases
+  ---
+  duration_ms: 3.254333
+  type: 'test'
+  ...
+# Subtest: platform literal bindings match the three frozen S08 platform declarations
+ok 7 - platform literal bindings match the three frozen S08 platform declarations
+  ---
+  duration_ms: 16.349
+  type: 'test'
+  ...
+# Subtest: current inventory discovery uses explicit current platform without changing no-context consumers
+ok 8 - current inventory discovery uses explicit current platform without changing no-context consumers
+  ---
+  duration_ms: 64.413416
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 270.446583

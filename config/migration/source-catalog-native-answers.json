@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/workspace/answers.ts",
+      "sha256": "efa837cb825230ba4ec40182443cb661a8a3a20f0c3d7b58363b8746f83cbe57",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answers.ts",
+      "sha256": "7b312a28e8fdea8c33f0f6d383293834d02ff3c299f604755ca861dc4695e5ab",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answers-http.ts",
+      "sha256": "30d649ad758884a0eb8b15f6b3a1db1a34c8a5f32a22a84ddf2fff6e9389024f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-answers.ts",
+      "sha256": "ccea06a5cb3f5619e961a150139db56ea18a7163bf52d017e20a4318b96dee24",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answers.js",
+      "sha256": "8b0881ce6bee817a6bd14f1eee77292af78a54b94c159669a512b612e1a9257b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answers.js",
+      "sha256": "d89eb973a6cbb13acf3c358d3ed3f037a27871b8860b36cfc08af1b68e6b269f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answers-http.js",
+      "sha256": "e641bd36bcec5e86417efd32c3ad93ebfdf72c97a9b9faec05dce7e89c1b0a80",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-answers.js",
+      "sha256": "0f4b59cb4f882873c5505b237e91fc70c675fdb7fc59a00c747a960680f0c0c1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Answers.tsx",
+      "sha256": "66e7338aa64428ea65f2f187401090327237f173f192e89a5e6e1b6eaa960aa1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/DetailDrawer.tsx",
+      "sha256": "d30718b8721bb646282d83d2d78a6e4642fc6da50efb747c7c4b721a9f36b940",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/answer-fields.tsx",
+      "sha256": "0ad9066961f3fec5bacdb2c081b336d40b3da8a9f14f00bef816c44e0bb74074",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/answer-model.ts",
+      "sha256": "6aafec65fd3b1207d5b42f88698efcbaef0b81e7e16793a4754c1a78c199d605",
+      "classification": "unreviewed"
+    }
+  ]
+}

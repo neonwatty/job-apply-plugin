@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "status": "external freeze proposal only; not activated or accepted",
+  "inputRevision": "4463385449dddd340d347836895c0850a2f0919d",
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "coordinator": "root",
+  "physicalLineLimit": 500,
+  "scope": "Mac dogfood milestone only; no broad release or clean-host acceptance",
+  "requiredHost": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "macOSVersion": "26.4.1",
+    "macOSBuild": "25E253",
+    "nodeVersion": "22.22.3",
+    "unicodeVersion": "17.0"
+  },
+  "deferred": [
+    "Linux/Windows native qualification",
+    "other Mac OS/CPU/runtime versions",
+    "clean-host/offline customer installation",
+    "browser and native account integrations",
+    "physical durability and release deployment"
+  ],
+  "forbiddenEdits": [
+    "config/test-matrix.json",
+    "tools/migration/tap-evidence.mjs",
+    "all accepted S04 source/test/reference files"
+  ],
+  "authority": "User explicitly requested Mac-priority change now and continued core conversion. Qualify only the actual local milestone; preserve deferred release obligations.",
+  "id": "P02-mac-dogfood-proposal",
+  "assignmentIds": [
+    "P02.I",
+    "P02.V"
+  ],
+  "dependencies": {
+    "P02.I": [
+      "P00.V"
+    ],
+    "P02.V": [
+      "P02.I",
+      "P01.V"
+    ]
+  },
+  "workerAllowedFiles": [
+    "tools/migration/local-mac-host.mjs",
+    "tests_js/runtime-support.test.mjs",
+    "docs/migration/local-mac-milestone.md"
+  ],
+  "coordinatorProposedFiles": [
+    "docs/migration/evidence/p02/mac-dogfood-audit.json",
+    "docs/migration/evidence/p02/mac-dogfood-spec.json",
+    "docs/migration/evidence/p02/P02.I.json",
+    "docs/migration/evidence/p02/P02.V.json"
+  ],
+  "apis": [
+    "collectLocalMacHost(): Promise<LocalMacHostIdentity>",
+    "validateLocalMacHost(identity: unknown): void",
+    "assertLocalMacHostUnchanged(before: LocalMacHostIdentity, after: LocalMacHostIdentity): void"
+  ],
+  "outputSchema": {
+    "schemaVersion": 1,
+    "scope": "mac-dogfood",
+    "platform": "darwin",
+    "arch": "arm64",
+    "macOS": {
+      "version": "26.4.1",
+      "build": "25E253"
+    },
+    "node": {
+      "requested": "process.execPath",
+      "resolved": "absolute real executable path",
+      "sha256": "SHA256 actual executable bytes",
+      "version": "22.22.3",
+      "unicode": "17.0"
+    },
+    "python": [
+      {
+        "alias": "one of python3, python3.12, python3.13, python3.14 in that order",
+        "resolved": "absolute sys.executable realpath matching resolved PATH alias",
+        "sha256": "SHA256 actual executable bytes",
+        "version": "actual CPython patch version",
+        "implementation": "CPython",
+        "profile": "3.12|3.13|3.14; explicit aliases must match suffix",
+        "filesystemEncoding": "utf-8",
+        "filesystemErrors": "surrogateescape"
+      }
+    ],
+    "compiler": {
+      "requested": "clang",
+      "resolved": "xcrun --find clang resolved absolute path",
+      "sha256": "SHA256 executable bytes",
+      "version": "exact bounded clang --version stdout"
+    },
+    "deferred": [
+      "Linux/Windows native qualification",
+      "other Mac OS/CPU/runtime versions",
+      "clean-host/offline customer installation",
+      "browser and native account integrations",
+      "physical durability and release deployment"
+    ]
+  },
+  "schemaRules": [
+    "All records closed; exact four aliases; full patch versions preserved and compared. Default alias must resolve to a supported explicit profile. No environment values, user data, browser paths or credentials.",
+    "Identity comparison is exact structural equality including binary paths/hashes and alias mappings; no timestamps in comparable identity.",
+    "Read/hash executables before and after version probes; fail if replaced or changed. Reprobe alias resolution before and after collection. Collect actual OS with /usr/bin/sw_vers -productVersion and -buildVersion; mismatch fails.",
+    "Use fixed argv, shell:false, bounded output. Resolve Python PATH aliases to executable files; execute alias and resolved binary with -I -B fixed probe and compare self-reported realpath/version. Do not invoke arbitrary caller commands.",
+    "Outside the required host: collector fails. The required positive identity test explicitly skips on a nonmatching frozen host; it must never replace the positive witness with a passing rejection assertion. Strict zero-skip evidence capture therefore forbids P02 acceptance outside the frozen host. Missing expected aliases or tools on a matching host are failures, not skips."
+  ],
+  "cells": [
+    {
+      "id": "p02.mac-dogfood.identity",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/runtime-support.test.mjs"
+      ],
+      "testNames": [
+        "missing, timed out and inaccessible runtimes return the same closed receipt",
+        "stable versions distinguish availability from provisional launch compatibility",
+        "malformed, prerelease, noisy and oversized output never reaches receipts",
+        "probe uses a fixed version-only command with bounded execution and no shell",
+        "unsupported platform or architecture cannot be mistaken for proven support",
+        "P02 Mac dogfood scope preserves deferred release qualification",
+        "P02 local Mac identity binds actual executables and rejects drift"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p02/logs/mac-dogfood.tap"
+    }
+  ],
+  "budgets": {
+    "probeTimeoutMs": 10000,
+    "probeMaxOutputBytes": 65536,
+    "rationale": "Retains existing 2000ms runtime-probe fixture bounds. New Python alias probe uses existing S04 10000ms subprocess ceiling; fixed four aliases and direct-path cross-checks fit 120s cell budget. Compiler probes are fixed and bounded; no install/download.",
+    "collectionTimeoutMs": 20000
+  },
+  "inputs": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84",
+      "revision": "4463385449dddd340d347836895c0850a2f0919d"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38",
+      "revision": "4463385449dddd340d347836895c0850a2f0919d"
+    },
+    {
+      "path": "docs/migration/remaining-migration-plan.md",
+      "sha256": "3f551f6572979aaa3034f1355111c01b7f640b07d5d15b059e7f3f71d5620941",
+      "revision": "4463385449dddd340d347836895c0850a2f0919d"
+    },
+    {
+      "path": "docs/migration/remaining/task-catalog.md",
+      "sha256": "1c4d15506c83fec978d6c57971c3c761ae4b9831326ede9bacf09c352c95bb16",
+      "revision": "4463385449dddd340d347836895c0850a2f0919d"
+    },
+    {
+      "path": "tests_js/runtime-support.test.mjs",
+      "sha256": "957c0366df840824c128ac781253750ee700135d88942d4fa99e7ce0246e3d67",
+      "revision": "4463385449dddd340d347836895c0850a2f0919d"
+    },
+    {
+      "path": "tools/probe-installed-runtime.mjs",
+      "sha256": "e8392feafae186cf9d4bff7cc7ab91e5f250b0400a0f9c7aea6c0bd81a809a75",
+      "revision": "4463385449dddd340d347836895c0850a2f0919d"
+    }
+  ],
+  "overlaps": "Neither existing owned test nor its imported runtime probe appears in any current task-manifest allowed_files/inputs. Matrix and migration agreement are immutable inputs only."
+}

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "p00-bootstrap-audit",
+  "assignmentIds": [
+    "P00.I",
+    "P00.V"
+  ],
+  "allowed_files": [
+    "tools/migration/check.mjs",
+    "tools/migration/check-remaining-plan.mjs",
+    "tests_js/migration_inventory.test.mjs",
+    "tests_js/migration_remaining_plan.test.mjs",
+    "docs/migration/remaining/plan.json",
+    "docs/migration/remaining/task-catalog.md",
+    "docs/migration/remaining/packages.mmd",
+    "docs/migration/remaining/agent-tasks.mmd",
+    "docs/migration/remaining/agent-tasks.json",
+    "config/migration/nodes.json",
+    "docs/migration/evidence/bootstrap/p00-audit.json",
+    "docs/migration/evidence/bootstrap/P00.I.json",
+    "docs/migration/evidence/bootstrap/P00.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p00.audit.migration_inventory",
+    "p00.audit.migration_remaining_plan"
+  ],
+  "cells": [
+    {
+      "id": "p00.migration_inventory",
+      "requirementIds": [
+        "p00.audit.migration_inventory"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_inventory.test.mjs"
+      ],
+      "testNames": [
+        "consistent inventory is not migration acceptance",
+        "deleting, adding or altering inventory records cannot silently shrink coverage",
+        "source edits, additions, deletions and renames require reconciliation",
+        "unknown owners, duplicate identities, missing sources and malformed methods fail",
+        "cycles and unknown dependencies fail",
+        "persisted artifacts and journal variants require valid paths, types and document bindings",
+        "invented passing, skipped or inapplicable evidence cannot close a cell",
+        "source discovery includes new runtime and boundary files, excludes test fixture data",
+        "real checkout detects untracked modules and source drift without changing files"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P00-migration_inventory.tap"
+    },
+    {
+      "id": "p00.migration_remaining_plan",
+      "requirementIds": [
+        "p00.audit.migration_remaining_plan"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_remaining_plan.test.mjs"
+      ],
+      "testNames": [
+        "remaining plan covers canonical families and every assignment reaches final conversion",
+        "remaining plan rejects cycles, unknown dependencies, detached tasks and authority expansion",
+        "remaining plan cannot hide removed canonical families or malformed tasks",
+        "published catalog and graphs match the machine-readable plan"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P00-migration_remaining_plan.tap"
+    }
+  ],
+  "artifacts": []
+}

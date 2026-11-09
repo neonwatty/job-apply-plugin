@@ -1,0 +1,776 @@
+TAP version 13
+# Subtest: push broad selection refuses before running commands and cleans its snapshot
+ok 1 - push broad selection refuses before running commands and cleans its snapshot
+  ---
+  duration_ms: 209.403209
+  type: 'test'
+  ...
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.218125
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.224084
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.219208
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.226083
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.2345
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 139.36175
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.258417
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 30.824
+# Local deep checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-6HiO6u/.git/local-checks
+# Reusing portable local validation for 666f88a7cc93; native obligations run freshly.
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.240083
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.222792
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.228375
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.2255
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.225417
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 139.797
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.25075
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 29.658416
+# Local push checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-6HiO6u/.git/local-checks
+# Subtest: deep receipt is reusable only for the same target and base
+ok 2 - deep receipt is reusable only for the same target and base
+  ---
+  duration_ms: 1019.239875
+  type: 'test'
+  ...
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.215917
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.210291
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.215334
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.206583
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.217084
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 137.914792
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.315792
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 31.44925
+# Subtest: failed deep result is preserved but never reused by push
+ok 3 - failed deep result is preserved but never reused by push
+  ---
+  duration_ms: 560.561959
+  type: 'test'
+  ...
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.214625
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.223375
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.22075
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.22175
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.233916
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 143.092083
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.25525
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 32.746
+# Local deep checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-GWWtNu/.git/local-checks
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.235708
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.238542
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.224584
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.218458
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.216333
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 143.258708
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.236083
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 31.199584
+# Local deep checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-GWWtNu/.git/local-checks
+# Subtest: P03 actual snapshot discovery detects new consumers before cache reuse
+ok 4 - P03 actual snapshot discovery detects new consumers before cache reuse
+  ---
+  duration_ms: 1089.976
+  type: 'test'
+  ...
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [synthetic-broad]
+# [synthetic-broad]
+# [synthetic-broad]   \\t
+# [synthetic-broad] part[synthetic-broad]
+# [synthetic-broad]
+# [synthetic-broad] err
+# ial
+# [synthetic-broad] last
+#  tail
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.230667
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.230083
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.231292
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.241166
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.226
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 145.662042
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.2655
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 31.748958
+# Local deep checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-3kAbyO/.git/local-checks
+# Reusing portable local validation for 604cda046492; native obligations run freshly.
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.2605
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.240792
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.244708
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.247959
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.233125
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 146.247334
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.298292
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 32.304417
+# Local push checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-3kAbyO/.git/local-checks
+# Reusing portable local validation for 604cda046492; native obligations run freshly.
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.241666
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.235291
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.226958
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.227333
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.229333
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 148.624
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] not ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.25275
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   location: '/private/var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/job-apply-local-checks-VpxcJ1/checkout/tests_js/posix_timestamps.test.mjs:2:1'
+# [native-posix-timestamps]   failureType: 'testCodeFailure'
+# [native-posix-timestamps]   error: 'fresh native failed'
+# [native-posix-timestamps]   code: 'ERR_TEST_FAILURE'
+# [native-posix-timestamps]   stack: |-
+# [native-posix-timestamps]     TestContext.<anonymous> (file:///private/var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/job-apply-local-checks-VpxcJ1/checkout/tests_js/posix_timestamps.test.mjs:2:160)
+# [native-posix-timestamps]     Test.runInAsyncScope (node:async_hooks:214:14)
+# [native-posix-timestamps]     Test.run (node:internal/test_runner/test:1047:25)
+# [native-posix-timestamps]     Test.start (node:internal/test_runner/test:944:17)
+# [native-posix-timestamps]     startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 0
+# [native-posix-timestamps] \# fail 1
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 32.286125
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [local-dependent-unit] TAP version 13
+# [local-dependent-unit] \# Subtest: direct behavior
+# [local-dependent-unit] not ok 1 - direct behavior
+# [local-dependent-unit]   ---
+# [local-dependent-unit]   duration_ms: 0.236959
+# [local-dependent-unit]   type: 'test'
+# [local-dependent-unit]   location: '/private/var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/job-apply-local-checks-rhhc7X/checkout/tests_js/direct.test.mjs:3:1'
+# [local-dependent-unit]   failureType: 'testCodeFailure'
+# [local-dependent-unit]   error: 'mutant'
+# [local-dependent-unit]   code: 'ERR_TEST_FAILURE'
+# [local-dependent-unit]   stack: |-
+# [local-dependent-unit]     TestContext.<anonymous> (file:///private/var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/job-apply-local-checks-rhhc7X/checkout/tests_js/direct.test.mjs:3:56)
+# [local-dependent-unit]     Test.runInAsyncScope (node:async_hooks:214:14)
+# [local-dependent-unit]     Test.run (node:internal/test_runner/test:1047:25)
+# [local-dependent-unit]     Test.start (node:internal/test_runner/test:944:17)
+# [local-dependent-unit]     startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+# [local-dependent-unit]   ...
+# [local-dependent-unit] 1..1
+# [local-dependent-unit] \# tests 1
+# [local-dependent-unit] \# suites 0
+# [local-dependent-unit] \# pass 0
+# [local-dependent-unit] \# fail 1
+# [local-dependent-unit] \# cancelled 0
+# [local-dependent-unit] \# skipped 0
+# [local-dependent-unit] \# todo 0
+# [local-dependent-unit] \# duration_ms 32.642917
+# [local-dependent-integration] TAP version 13
+# [local-dependent-integration] \# Subtest: child behavior
+# [local-dependent-integration] not ok 1 - child behavior
+# [local-dependent-integration]   ---
+# [local-dependent-integration]   duration_ms: 58.632708
+# [local-dependent-integration]   type: 'test'
+# [local-dependent-integration]   location: '/private/var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/job-apply-local-checks-rhhc7X/checkout/tests_js/child.test.mjs:3:1'
+# [local-dependent-integration]   failureType: 'testCodeFailure'
+# [local-dependent-integration]   error: 'child failed'
+# [local-dependent-integration]   code: 'ERR_TEST_FAILURE'
+# [local-dependent-integration]   stack: |-
+# [local-dependent-integration]     TestContext.<anonymous> (file:///private/var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/job-apply-local-checks-rhhc7X/checkout/tests_js/child.test.mjs:3:218)
+# [local-dependent-integration]     Test.runInAsyncScope (node:async_hooks:214:14)
+# [local-dependent-integration]     Test.run (node:internal/test_runner/test:1047:25)
+# [local-dependent-integration]     Test.start (node:internal/test_runner/test:944:17)
+# [local-dependent-integration]     startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+# [local-dependent-integration]   ...
+# [local-dependent-integration] 1..1
+# [local-dependent-integration] \# tests 1
+# [local-dependent-integration] \# suites 0
+# [local-dependent-integration] \# pass 0
+# [local-dependent-integration] \# fail 1
+# [local-dependent-integration] \# cancelled 0
+# [local-dependent-integration] \# skipped 0
+# [local-dependent-integration] \# todo 0
+# [local-dependent-integration] \# duration_ms 90.73675
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.249959
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.224541
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.233334
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.214
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.219583
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 144.5625
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.251042
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 30.117583
+# Subtest: P03 actual selected consumer failures skips and missing results cannot satisfy cached acceptance
+ok 5 - P03 actual selected consumer failures skips and missing results cannot satisfy cached acceptance
+  ---
+  duration_ms: 2035.406667
+  type: 'test'
+  ...
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.237333
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.217458
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.215208
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.230875
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.239791
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 139.942208
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.239167
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 31.059459
+# Local deep checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-VZBFEo/.git/local-checks
+# [local-build]
+# [local-build] > build:check
+# [local-build] > node -e "process.exit(0)"
+# [local-build]
+# [native-posix-lock] TAP version 13
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 1 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.250209
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 2 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.224542
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 3 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.218833
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 4 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.222
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] \# Subtest: owned native substitute
+# [native-posix-lock] ok 5 - owned native substitute
+# [native-posix-lock]   ---
+# [native-posix-lock]   duration_ms: 0.236541
+# [native-posix-lock]   type: 'test'
+# [native-posix-lock]   ...
+# [native-posix-lock] 1..5
+# [native-posix-lock] \# tests 5
+# [native-posix-lock] \# suites 0
+# [native-posix-lock] \# pass 5
+# [native-posix-lock] \# fail 0
+# [native-posix-lock] \# cancelled 0
+# [native-posix-lock] \# skipped 0
+# [native-posix-lock] \# todo 0
+# [native-posix-lock] \# duration_ms 139.56225
+# [native-posix-timestamps] TAP version 13
+# [native-posix-timestamps] \# Subtest: owned native substitute
+# [native-posix-timestamps] ok 1 - owned native substitute
+# [native-posix-timestamps]   ---
+# [native-posix-timestamps]   duration_ms: 0.2485
+# [native-posix-timestamps]   type: 'test'
+# [native-posix-timestamps]   ...
+# [native-posix-timestamps] 1..1
+# [native-posix-timestamps] \# tests 1
+# [native-posix-timestamps] \# suites 0
+# [native-posix-timestamps] \# pass 1
+# [native-posix-timestamps] \# fail 0
+# [native-posix-timestamps] \# cancelled 0
+# [native-posix-timestamps] \# skipped 0
+# [native-posix-timestamps] \# todo 0
+# [native-posix-timestamps] \# duration_ms 33.352917
+# Local deep checks passed; 5 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-consumer-graph-VZBFEo/.git/local-checks
+# Subtest: P03 actual dirty owner and merge snapshots bind the exact tested dependency graph
+ok 6 - P03 actual dirty owner and merge snapshots bind the exact tested dependency graph
+  ---
+  duration_ms: 1038.856584
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6127.952417

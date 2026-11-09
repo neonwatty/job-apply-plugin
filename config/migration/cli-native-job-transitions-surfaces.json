@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-transition",
+      "kind": "cli",
+      "command": "job-transition",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-job-transitions.ts",
+        "src/workspace-core/job-transitions.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

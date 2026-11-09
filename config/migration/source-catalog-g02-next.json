@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/app/layout.tsx",
+      "sha256": "07f9bcf3d97892fc7a3cf44706e5d9272dbf2bdb51d80e5e657ae30421bfa4f1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/app/page.tsx",
+      "sha256": "037084751239820e9d715d869f7d94a4de534566a21868ee5a0a50f4b5d1490c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/ApplicationSettings.tsx",
+      "sha256": "f1aec73e65f66181d901891b76384effa4223b1bbbde52280b543a05c0e9bac6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Companion.tsx",
+      "sha256": "34fbfeeb5caca82935083cf97a59effec83bdc77fc0a140e952b1df8dda9af35",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/JobEditor.tsx",
+      "sha256": "d500865c2cbed27994d64f7c256b64571e161b138d1d7d160f896a1b6fb5ea71",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Jobs.tsx",
+      "sha256": "84cc44e8bb470602b4cc2ed22f885b990af1a1cccff6758d1d5d2e39dc93232b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Overview.tsx",
+      "sha256": "a463f6dca9f063570d2f4707db02ca2d594fde1856ecd767d814645bdd46fe65",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Resumes.tsx",
+      "sha256": "7275ed683bbac559be0b4e6eabb98e655d0c60ededb076b7451a9d221e4fbded",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/application-preferences-model.ts",
+      "sha256": "4cbc76b041404a46a51f76f387ec47833f5dc71c4a239ec53fcd8f0ee5892137",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/agent-model-preferences-model.ts",
+      "sha256": "62566a6ad6bf2fe306a6be6bd14b6c57e00979ef9a5e469d9885deaf4a3d281c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/client.ts",
+      "sha256": "3e3d6cb4c19ce8c2c38c0d5aa372098529c973893a5e2c32bb1338af4364fad8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/companion.css",
+      "sha256": "e8a240adfad4f73f4e4b659e2975266ebd6c91b0216610e2c971726f2c8f4591",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/contracts.ts",
+      "sha256": "0d55d459d36d7725c1386b2215854cff99e154b176dc6af50939443b87e0af35",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/job-editor-state.ts",
+      "sha256": "f6c4e24cec24767e5be28e0e35bf972b9f35ce2df62cdead4909d7d20c464b98",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/launch.mjs",
+      "sha256": "ee9eb73626288c81cfdb6d45e8c76372eacf10393503a484efefcd2e7c7207f5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/next-env.d.ts",
+      "sha256": "1862ac4bbbc5192d4bf562161df66ea547ed3e67173100656ab606ae9797db2b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/next.config.ts",
+      "sha256": "99da814503644fb0c168da17c8498750c8cececa4b34aa3c8c91965020e34c1c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/package-standalone.mjs",
+      "sha256": "8323782ed36afc74afc5c6fd54ffa3d16e67cfd2c3f41d899965928ae3bf37b4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/package.json",
+      "sha256": "52cee55a3ef38cbc2e80b88a4eb862cce31f013fa9acdab23d5f137f20d1b486",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/proxy.ts",
+      "sha256": "b2e344a889335ed889702deabbd621b67b813f5cfaf23531c054c514a7a6069f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/assets.ts",
+      "sha256": "ee099839071fb6ead661fa5161c035a9effdbeaedb9913465b8270e502664fd4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/config.ts",
+      "sha256": "c0703fd0b644d66bca671026efc88ea606535a0f919961e6e6c26987696a10a2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/forward.ts",
+      "sha256": "e0b68229a4df63c20c07143cb1f683931f1c582e2e739dd1f2fb6a6bbac285b0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/routes.ts",
+      "sha256": "9b17f43f83f6ba0d0dca662780be4136bf5361aaa9388846409c2adde289644a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/supervise.mjs",
+      "sha256": "fb2a8998fbb57a24363293cd72ef53b22363063823980be83ffa0116c9e212fc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/writer-route.mjs",
+      "sha256": "3d6ced9074323f6f4b0d39f202c090a98ad3c113c05c98492b814f85b1d3ab61",
+      "classification": "unreviewed"
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/m01/approved-dag.json",
+    "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+  },
+  "package": {
+    "id": "M01",
+    "parentNode": "UI0",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "src/workspace-ui/lib/automation-request.ts",
+      "runtime/workspace-ui/lib/automation-request.js",
+      "tests_js/workspace_helpers.test.mjs",
+      "config/migration/source-catalog-m01.json",
+      "docs/migration/evidence/m01/approved-dag.json",
+      "docs/migration/evidence/m01/implementation-spec.json",
+      "docs/migration/evidence/m01/implementation.md",
+      "docs/migration/evidence/m01/implementation-audit.json",
+      "docs/migration/evidence/m01/M01.I.json",
+      "docs/migration/evidence/m01/M01.V.json",
+      "docs/migration/evidence/m01/transition.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [
+      "runtime/workspace-ui/lib/automation-request.js"
+    ],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "a82dbd6729991a43aabb15a4a8dbcb0818924b2ad919868ebe15931deabdbb00",
+  "auditContract": {
+    "path": "docs/migration/evidence/m01/implementation-audit.json",
+    "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "d762db9e806c4bc572b29189641cb4f6336ec5aa",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/m01/approved-dag.json",
+      "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+    },
+    {
+      "path": "docs/migration/evidence/m01/implementation-audit.json",
+      "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+    },
+    {
+      "path": "docs/migration/evidence/m01/implementation-spec.json",
+      "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+    },
+    {
+      "path": "docs/migration/evidence/m01/implementation.md",
+      "sha256": "5d34a262a2b528c5779db2181cddc50265761009bd47a845907519de22f72bef"
+    },
+    {
+      "path": "docs/migration/evidence/remaining-helpers-progress.json",
+      "sha256": "ff89352f5dd86311a5d8b761ccaa53b0d05b9f72a7097daeaa530c59f55fac5d"
+    },
+    {
+      "path": "docs/migration/remaining-helper-package.md",
+      "sha256": "8a07b34b5e935d63feeb01a24ffffc5766bfa536edfb20a60a84fcc7034841c1"
+    },
+    {
+      "path": "docs/migration/remaining-helper-reference.md",
+      "sha256": "f65addce9c6db1e1c951b47ee5b234e472c17af8bd4b8a8daf5130637de6d88f"
+    },
+    {
+      "path": "docs/migration/remaining/task-catalog.md",
+      "sha256": "1c4d15506c83fec978d6c57971c3c761ae4b9831326ede9bacf09c352c95bb16"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "scripts/check-source-size.py",
+      "sha256": "df742cd09fae4f559e0515874c4f7fa2728fdcd3304211f16d1aa324df6ba8d8"
+    },
+    {
+      "path": "tests_js/workspace_helpers.test.mjs",
+      "sha256": "513455a71eb4599618f174c4958c55ae1d0a8ce1c11e77628f1feb2c96fd787c"
+    },
+    {
+      "path": "tests_js/workspace_owner_beta.test.mjs",
+      "sha256": "a5bf6fc3b3f5ab2648a9dbb7d33279f9780b7ac7c15c9a5b53c398d49e041145"
+    },
+    {
+      "path": "tests_js/workspace_test_support.mjs",
+      "sha256": "f64c9e0c4291bf4c019693835c29322a80fe6559f14b047bdddf536d97e70082"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "8692ab07646f4ba377c47533362f4103f333a4bc06a273cd7c5f0ff74d0fd495"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "workspace/app.js",
+      "sha256": "4a50101e09cf0b5c70480074beae1ca193dffb16817d8ac8612c089c866b41c4"
+    },
+    {
+      "path": "workspace/bootstrap.js",
+      "sha256": "cab93d10769a32bd01991b1965dd1d0daa3d7ad0e2c8a20f4c2f1fcd193d690e"
+    },
+    {
+      "path": "workspace/features/activity.js",
+      "sha256": "ea68a9c2dd6880438229b5bb965c35c5b8235b36dc77df39b69dcc3b5ff8844e"
+    },
+    {
+      "path": "workspace/features/answers.js",
+      "sha256": "0e52d101f15a2453f2dfb75030224e0629a023d0d3532fd59255e23d61c75ad1"
+    },
+    {
+      "path": "workspace/features/automation.js",
+      "sha256": "e85037840fce9a20f7aa07c612c634dc6e8593bc970a6c40342f0787a55bffd3"
+    },
+    {
+      "path": "workspace/features/bindings.js",
+      "sha256": "a71d9196946c76b510b7347b8349dc8282ebb4d1b4e5e44412a56ced7b561f05"
+    },
+    {
+      "path": "workspace/features/facts.js",
+      "sha256": "3bcf4565f20237d03260ee0500bb4c6fed0a4917a35486551962ba99f301aabd"
+    },
+    {
+      "path": "workspace/features/jobs.js",
+      "sha256": "dfc365a7eb2be0afbce3859e1fba012329cf84371c67b200fc28ac5b84199a2b"
+    },
+    {
+      "path": "workspace/features/navigation.js",
+      "sha256": "1bf514de76dd7edad2cc3f17e962b2b425f6f89558abdc0a875a8783c84574f0"
+    },
+    {
+      "path": "workspace/features/overview.js",
+      "sha256": "d65133c691d5a1cc66ef863d60672ef32a967140e40c821eaf13ff193995246d"
+    },
+    {
+      "path": "workspace/features/resumes.js",
+      "sha256": "d2003cae799cceb859c0f1120473c7df4c13182f3c3ab7692dd119f81b242607"
+    },
+    {
+      "path": "workspace/features/trash.js",
+      "sha256": "36e114dfdc85f9ee98b8624043adf1de26591d51a6d776d035bdc703c005ffb3"
+    },
+    {
+      "path": "workspace/lib/api.js",
+      "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+    },
+    {
+      "path": "workspace/lib/dom.js",
+      "sha256": "9c366cc6b5e5bbab2c6b74db36f45445ea533c20086e29eebd02e6cce5a0e78e"
+    },
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+    },
+    {
+      "path": "workspace/lib/state.js",
+      "sha256": "f726687cb368d1238d0e9bd6c287dee9313631c51d43363441febbb966b16218"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "m01.requests.node",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_helpers.test.mjs"
+      ],
+      "testNames": [
+        "unified Trash helpers filter types and require exact type-specific phrases",
+        "unified Trash helpers ignore stale success and failure side effects",
+        "fragment token is decoded without accepting unrelated URL data",
+        "fragment token survives a same-tab reload without remaining in the URL",
+        "API client authenticates in memory and surfaces revision conflicts",
+        "Facts save retry policy is bounded and limited to revision conflicts",
+        "jobs filter by status and human-visible fields",
+        "form values become a supported Store patch",
+        "resume tag drafts are trimmed without inventing durable browser state",
+        "resume assignment copy uses canonical projection counts",
+        "resume refresh results stay bound to their requested Active or Trash view",
+        "extraction request view is honest and closed for every state",
+        "proposal groups keep deterministic order and unknown paths visible",
+        "status actions preserve guarded ready, acquire, and applied boundaries",
+        "M01 employer account requests preserve revision checks, coercion and explicit clear",
+        "M01 Trusted Fill approval packets preserve field order, copying and coercion failures",
+        "M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/m01/logs/M01-requests.tap",
+      "requirementIds": [
+        "m01.employer",
+        "m01.approval",
+        "m01.revoke"
+      ]
+    }
+  ],
+  "artifacts": [],
+  "id": "M01.I",
+  "role": "implementation-or-gate"
+}

@@ -1,0 +1,135 @@
+{
+  "status": "external draft; no phases before accepted P11",
+  "taskIds": [
+    "P12.I",
+    "P12.V"
+  ],
+  "allowed_files": [
+    "config/test-matrix.json",
+    "tests_js/test-runner-selection.test.mjs",
+    "tests_js/graph_environment_support.mjs",
+    "docs/migration/evidence/p12/implementation.md",
+    "docs/migration/evidence/p12/implementation-spec.json",
+    "docs/migration/evidence/p12/implementation-audit.json",
+    "docs/migration/evidence/p12/approved-dag.json",
+    "docs/migration/evidence/p12/P12.I.json",
+    "docs/migration/evidence/p12/P12.V.json",
+    "docs/migration/evidence/p12/transition.json"
+  ],
+  "assignments": [
+    {
+      "id": "P12.I",
+      "package": "P12",
+      "role": "implementation-or-gate",
+      "dependencies": [
+        "P11.V",
+        "P10.V",
+        "P03.retry2.V"
+      ]
+    },
+    {
+      "id": "P12.V",
+      "package": "P12",
+      "role": "independent-review",
+      "dependencies": [
+        "P12.I",
+        "P01.V"
+      ]
+    }
+  ],
+  "requirements": [
+    "p12.isolated-baseline-environment",
+    "p12.inherited-context-fallback"
+  ],
+  "cells": [
+    {
+      "id": "p12.graph-environment",
+      "requirementIds": [
+        "p12.isolated-baseline-environment",
+        "p12.inherited-context-fallback"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "testNames": [
+        "affected selection unions owners and selects a changed test itself",
+        "global and unknown changes fail closed to the full tier",
+        "real shared Python helpers select every consuming shard",
+        "real production paths conservatively include cross-language consumers",
+        "matrix validation rejects omissions and duplicate full inventory",
+        "name-status parsing preserves both rename paths and deletions",
+        "git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths",
+        "P03 graph follows runtime type support and literal child-process dependencies",
+        "P03 graph rejects unresolved relevant imports and missing owned targets",
+        "P03 graph re-evaluates newly added consumers from the immutable subject",
+        "P03 graph binds source and emitted module identities without duplicate consumers",
+        "P10 reference suites isolate S04 and S05 without changing process output limits",
+        "P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage",
+        "P12 immutable graph proof isolates fixture environment while inherited overrides fail closed"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p12/logs/P12-graph-environment.tap"
+    }
+  ],
+  "artifacts": [],
+  "matrixChange": {
+    "operation": "append exact ownership row only",
+    "paths": [
+      "tests_js/graph_environment_support.mjs"
+    ],
+    "suites": [
+      "node-runner-fast"
+    ]
+  },
+  "gateRefinement": {
+    "id": "T05.I",
+    "appendDependency": "P12.V",
+    "preserveExistingDependencies": true
+  },
+  "scope": "No production analyzer/env API or guard changes, no source pins renewed, no reference changes. Existing thirteen names/assertions preserved through bounded extraction; one explicit environment witness added.",
+  "workerProtocol": {
+    "argv": [
+      "ABSOLUTE_HELPER_PATH",
+      "--p12-worker",
+      "TOKEN"
+    ],
+    "tokens": {
+      "runtime-dependencies": "P03 graph follows runtime type support and literal child-process dependencies",
+      "unresolved-inputs": "P03 graph rejects unresolved relevant imports and missing owned targets",
+      "immutable-consumers": "P03 graph re-evaluates newly added consumers from the immutable subject",
+      "source-emitted-identities": "P03 graph binds source and emitted module identities without duplicate consumers",
+      "inherited-context": "P12 explicit controlled override refusal only; does not satisfy a P03 positive group"
+    },
+    "dispatch": "Require argv[1] resolves to own helper file and exactly two following arguments. Unknown/missing/extra tokens exit2 before work. Import does not dispatch.",
+    "perInvocation": {
+      "timeoutMs": 20000,
+      "maxOutputBytes": 65536,
+      "stderr": "must be empty on success"
+    },
+    "positiveSuccess": {
+      "schemaVersion": 1,
+      "token": "exact requested one of four group tokens",
+      "status": "passed",
+      "assertionGroup": "exact corresponding original literal name",
+      "cleanupComplete": true
+    },
+    "inheritedContextSuccess": {
+      "schemaVersion": 1,
+      "token": "inherited-context",
+      "status": "passed",
+      "assertionGroup": "P12 inherited override refusal",
+      "cleanupComplete": true,
+      "bounded": false,
+      "reason": "Unproved runner environment override"
+    },
+    "output": "Exactly one newline-terminated JSON object with exactly the defined keys. No extra records/text or partial result; parent checks token/group, shape, exit0 and empty stderr. Any assertion/cleanup error produces nonzero exit and never success.",
+    "mapping": "Each of four original P03 literal callbacks invokes only its matching token and validates that exact group result. Extract all corresponding original assertions including meaningful negative cases; immutable-consumers retains strict all-six proof and caller/driver/native/inspection mutations. Do not accept a common generic success for different names.",
+    "inheritedContext": "Sibling process uses same safe allowlist/owned npm config setup plus literal npm_config_prefix=/p12-unproved-prefix. No arbitrary env JSON/command parameter; it actually calls production discovery and checks required reason plus unbounded empty-change selection. Parent live discovery remains untouched and separate.",
+    "budget": "Four group invocations and one inherited-context invocation maximum in one serial14-name capture; each≤20s and64KiB, aggregate below180s/1MiB including setup. No retry loops; timeout fails."
+  }
+}

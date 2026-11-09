@@ -1,0 +1,8 @@
+{
+  "currentLiveAtsStatus": "unverified",
+  "evidenceKind": "hand-authored-synthetic",
+  "fixtureId": "greenhouse-form-readiness-v1",
+  "fixtureSha256": "0c0396aaa93152f5a58ef592d0d18c1047ff9ca993789be86bc6cf1f916d1551",
+  "platformFamily": "greenhouse",
+  "schemaVersion": 1
+}

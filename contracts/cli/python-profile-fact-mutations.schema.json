@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "corpus",
+    "clock",
+    "cases",
+    "secretCanaryAbsent"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "corpus": {
+      "const": "python-profile-fact-mutations-v1"
+    },
+    "clock": {
+      "const": "2026-09-05T00:00:00Z"
+    },
+    "cases": {
+      "type": "array",
+      "prefixItems": [
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-merge"},"args":{"const":["profile-patch","--input","-","--expected-revision","1","--source","user"]},"input":{"const":{"identity":{"name":"Synthetic Person","city":"Example"}}},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":["profile.json"]},"observedWrites":{"const":["profile.json"]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":1,"maxItems":1}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-nested-delete"},"args":{"const":["profile-patch","--input","-","--expected-revision","2","--source","user"]},"input":{"const":{"identity":{"city":null}}},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":["profile.json"]},"observedWrites":{"const":["profile.json"]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":1,"maxItems":1}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-pointer-escaping"},"args":{"const":["profile-patch","--input","-","--expected-revision","1","--source","user"]},"input":{"const":{"a/b~c":"Synthetic"}},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":["profile.json"]},"observedWrites":{"const":["profile.json"]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":1,"maxItems":1}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-noop"},"args":{"const":["profile-patch","--input","-","--expected-revision","2","--source","user"]},"input":{"const":{"identity":{"name":"Synthetic Person","city":"Example"}}},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-revision-conflict"},"args":{"const":["profile-patch","--input","-","--expected-revision","1","--source","user"]},"input":{"const":{"identity":{"name":"<secret-canary>"}}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-provenance-conflict"},"args":{"const":["profile-patch","--input","-","--expected-revision","2","--source","agent"]},"input":{"const":{"identity":{"name":"<secret-canary>"}}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-empty-input"},"args":{"const":["profile-patch","--input","-","--expected-revision","1","--source","user"]},"input":{"const":{}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"profile-nonobject-input"},"args":{"const":["profile-patch","--input","-","--expected-revision","1","--source","user"]},"input":{"const":["<secret-canary>"]},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-create"},"args":{"const":["fact-group-create","--input","-"]},"input":{"const":{"label":" Identity ","paths":["/identity/name","/identity/city"]}},"exitCode":{"const":0},"uuidCalls":{"const":1},"nonceCalls":{"const":0},"expectedWrites":{"const":["fact-groups.json"]},"observedWrites":{"const":["fact-groups.json"]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":1,"maxItems":1}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-update"},"args":{"const":["fact-group-update","--id","00000000000000000000000000000001","--input","-","--expected-revision","1"]},"input":{"const":{"label":"Contact","paths":["/identity/name"],"order":10}},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":["fact-groups.json"]},"observedWrites":{"const":["fact-groups.json"]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":1,"maxItems":1}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-noop"},"args":{"const":["fact-group-update","--id","00000000000000000000000000000001","--input","-","--expected-revision","1"]},"input":{"const":{"label":"Identity"}},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-update-conflict"},"args":{"const":["fact-group-update","--id","00000000000000000000000000000001","--input","-","--expected-revision","9"]},"input":{"const":{"label":"<secret-canary>"}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-delete"},"args":{"const":["fact-group-delete","--id","00000000000000000000000000000001","--expected-revision","1"]},"input":{"const":null},"exitCode":{"const":0},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":["fact-groups.json"]},"observedWrites":{"const":["fact-groups.json"]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":false},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":1,"maxItems":1}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-delete-conflict"},"args":{"const":["fact-group-delete","--id","00000000000000000000000000000001","--expected-revision","9"]},"input":{"const":null},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-delete-missing"},"args":{"const":["fact-group-delete","--id","00000000000000000000000000000001","--expected-revision","1"]},"input":{"const":null},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-duplicate-label"},"args":{"const":["fact-group-create","--input","-"]},"input":{"const":{"label":"IDENTITY","paths":["/other"]}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-invalid-pointer"},"args":{"const":["fact-group-create","--input","-"]},"input":{"const":{"label":"Synthetic","paths":["<secret-canary>"]}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-invalid-order"},"args":{"const":["fact-group-update","--id","00000000000000000000000000000001","--input","-","--expected-revision","1"]},"input":{"const":{"order":true}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}},
+        {"type":"object","additionalProperties":false,"required":["scenario","args","input","exitCode","uuidCalls","nonceCalls","expectedWrites","observedWrites","untouchedEntriesUnchanged","rejectedStateUnchanged","stdout","stderr","effects"],"properties":{"scenario":{"const":"group-unknown-field"},"args":{"const":["fact-group-create","--input","-"]},"input":{"const":{"label":"Synthetic","paths":["/x"],"secret":"<secret-canary>"}},"exitCode":{"const":2},"uuidCalls":{"const":0},"nonceCalls":{"const":0},"expectedWrites":{"const":[]},"observedWrites":{"const":[]},"untouchedEntriesUnchanged":{"const":true},"rejectedStateUnchanged":{"const":true},"stdout":{"type":"string"},"stderr":{"type":"string"},"effects":{"type":"array","items":{"$ref":"#/$defs/effect"},"minItems":0,"maxItems":0}}}
+      ],
+      "items": false,
+      "minItems": 19,
+      "maxItems": 19
+    },
+    "secretCanaryAbsent": {
+      "const": true
+    }
+  },
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "before",
+        "after",
+        "mtimeChanged",
+        "modeContract"
+      ],
+      "properties": {
+        "path": {
+          "enum": [
+            "profile.json",
+            "fact-groups.json"
+          ]
+        },
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        },
+        "mtimeChanged": {
+          "const": true
+        },
+        "modeContract": {
+          "const": "0600-on-posix-unverified-on-windows"
+        }
+      }
+    }
+  }
+}

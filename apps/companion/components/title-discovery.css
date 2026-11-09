@@ -1,0 +1,9 @@
+.title-discovery { margin-block: 1.5rem; }
+.title-discovery-review { display: grid; gap: 1rem; }
+.title-discovery-review label { display: grid; gap: .35rem; }
+.title-discovery-review textarea { width: 100%; }
+.title-discovery-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.title-discovery-choice { border: 1px solid var(--line); border-radius: .65rem; padding: .8rem; margin-block: .5rem; }
+.title-discovery-choice label:first-child { display: flex; align-items: center; gap: .5rem; }
+.title-discovery-choice p { overflow-wrap: anywhere; }
+.title-discovery-source, .title-discovery-preview { border-left: .2rem solid var(--green); padding: .5rem 1rem; background: var(--surface); }

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://job-apply.local/contracts/cli/python-read-corpus.schema.json",
+  "title": "Python Store read contract corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "corpus", "source", "fixture", "inventory", "cases", "redaction"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "corpus": { "const": "python-store-read-v1" },
+    "source": { "const": "python-store-cli" },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "clock", "noncePolicy"],
+      "properties": {
+        "kind": { "const": "synthetic-empty-store" },
+        "clock": { "const": "2026-09-05T00:00:00Z" },
+        "noncePolicy": { "const": "not-used-by-captured-reads" }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "commands", "captured", "pending"],
+      "properties": {
+        "total": { "const": 98 },
+        "commands": { "type": "array", "minItems": 98, "maxItems": 98, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "captured": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "pending": { "type": "integer", "minimum": 0, "maximum": 98 }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario", "command", "args", "exitCode", "stdout", "stderr", "storeUnchanged"],
+        "properties": {
+          "scenario": { "enum": ["initialized-empty", "corrupt-profile", "future-profile"] },
+          "command": { "type": "string", "minLength": 1 },
+          "args": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "exitCode": { "enum": [0, 2] },
+          "stdout": {},
+          "stderr": { "type": "string" },
+          "storeUnchanged": { "type": "boolean" },
+          "rejectionImmutability": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bytesUnchanged", "mtimeNsUnchanged"],
+            "properties": {
+              "bytesUnchanged": { "const": true },
+              "mtimeNsUnchanged": { "const": true }
+            }
+          }
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secretCanaryAbsent", "absolutePathsAbsent", "checkedSurfaces"],
+      "properties": {
+        "secretCanaryAbsent": { "const": true },
+        "absolutePathsAbsent": { "const": true },
+        "checkedSurfaces": { "const": ["stdout", "stderr", "fixture-descriptors", "artifact"] }
+      }
+    }
+  }
+}

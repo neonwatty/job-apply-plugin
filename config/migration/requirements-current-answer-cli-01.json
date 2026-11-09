@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "ANS-current-answer-cli-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:answer-get",
+        "cli:src/cli/native-jobs.ts:answer-find",
+        "cli:src/cli/native-jobs.ts:answer-list",
+        "cli:src/cli/native-jobs.ts:answer-put",
+        "cli:src/cli/native-jobs.ts:answer-update",
+        "cli:src/cli/native-jobs.ts:answer-trash",
+        "cli:src/cli/native-jobs.ts:answer-restore",
+        "cli:src/cli/native-jobs.ts:answer-delete"
+      ],
+      "family": "ANS",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/answers/mutations.py",
+          "sha256": "8c3bda12fb8a40b646cec6196dbbe2e85cc2a530b88c6c22a85b5d625605ac79"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_answer_cli_parity.test.mjs",
+          "testId": "native answer CLI matches Python lifecycle and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_answer_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "ANS-current-answer-cli-missing",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:answer-get"
+      ],
+      "family": "ANS",
+      "category": "missing",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/answers/mutations.py",
+          "sha256": "8c3bda12fb8a40b646cec6196dbbe2e85cc2a530b88c6c22a85b5d625605ac79"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_answer_cli_parity.test.mjs",
+          "testId": "native answer CLI matches Python lifecycle and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_answer_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "ANS-current-answer-cli-privacy",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:answer-put",
+        "cli:src/cli/native-jobs.ts:answer-get",
+        "cli:src/cli/native-jobs.ts:answer-reveal"
+      ],
+      "family": "ANS",
+      "category": "privacy",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/answers/mutations.py",
+          "sha256": "8c3bda12fb8a40b646cec6196dbbe2e85cc2a530b88c6c22a85b5d625605ac79"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_answer_cli_parity.test.mjs",
+          "testId": "native answer CLI matches Python privacy, conflicts and invalid writes",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_answer_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "ANS-current-answer-cli-conflict",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:answer-update"
+      ],
+      "family": "ANS",
+      "category": "conflict",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/answers/mutations.py",
+          "sha256": "8c3bda12fb8a40b646cec6196dbbe2e85cc2a530b88c6c22a85b5d625605ac79"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_answer_cli_parity.test.mjs",
+          "testId": "native answer CLI matches Python privacy, conflicts and invalid writes",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_answer_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "ANS-current-answer-cli-invalid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:answer-put"
+      ],
+      "family": "ANS",
+      "category": "invalid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/answers/mutations.py",
+          "sha256": "8c3bda12fb8a40b646cec6196dbbe2e85cc2a530b88c6c22a85b5d625605ac79"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_answer_cli_parity.test.mjs",
+          "testId": "native answer CLI matches Python privacy, conflicts and invalid writes",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_answer_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    }
+  ]
+}

@@ -8,24 +8,33 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 
 | Skill | Description |
 |-------|-------------|
-| `job-apply:job-apply` | Fill out job applications automatically using your resume |
+| `job-apply:job-apply` | Prepare application fields from your resume and stop before final submission |
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
-| `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
+| `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
+| `job-apply:account-setup` | Classify supported account flows and manage only redacted metadata; passwords, email values, verification codes, and live sign-in remain outside the skill |
+| `job-apply:job-search` | Research current jobs across LinkedIn, Hacker News, and Twitter/X using saved titles and demonstrated skills |
+| `job-apply:saved-jobs` | Read and filter canonical saved jobs without changing them |
+| `job-apply:job-title-discovery` | Research related job titles with visible job-board evidence and return reviewable suggestions without changing saved preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
+| `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
+The [workflow map](skills/answer-memory/references/workflow-map.md) shows how first use, job search, and one application move between these skills and the shared Store.
+
+Application filling has three owner-selected modes: Guided, Autofill to Review for one exact job, and Campaign to Review for a bounded application-run queue. Every mode stops at the final review page; Submit, Send, Apply, authentication, verification, and legal consent remain manual. Higher modes are expiring, revocable grants bound to current job, run, destination, resume, facts, answer revisions, and a live attempt claim.
 
 ## Features
 
 ### Job Apply (`job-apply:job-apply`)
-- **One-time profile setup**: Extract your information from a resume (PDF, DOCX, or TXT)
-- **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday, with current forms unverified
+- **Resume-specific facts**: Extract facts from each managed PDF, DOCX, or TXT resume and confirm them under that resume
+- **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday. One Pinterest Greenhouse form reached review in Chrome; broader current-form coverage remains unverified.
 - **Visible browser automation**: Codex Browser/Chrome or Claude in Chrome fills forms in a session you can see and control
-- **Smart field mapping**: Automatically matches your profile to form fields
+- **Smart field mapping**: Uses the chosen resume's confirmed facts for applicant fields
 - **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
 - **Resumable progress**: Saves application step metadata and answer references without copying answer values
+- **Ready-job handoff**: Confirms the exact job, resume, and fact revision in chat, then claims that input-bound job with a recoverable lease and hands it to needs-info or final review
 - **Manual submission**: Stops at final review so only you can click Submit or Send
-- **Resume storage**: Profile saved locally for reuse across applications
+- **Local resume library**: Files and versioned facts remain together in the private Store
 
 ### Answer Memory (`job-apply:answer-memory`)
 - **One local contract**: All Job Apply skills use the same bundled storage helper
@@ -36,10 +45,25 @@ Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 
 ### Job Search (`job-apply:job-search`)
 - **Preference-based search**: Searches for the titles, salary range, remote options, and time range you saved
+- **Background-aware search**: Uses approved titles as seeds and demonstrated skills and experience to find relevant roles with different titles while honoring your filters
+- **Source research**: The host researches each source directly or coordinates permitted source workers, and reports partial or unavailable sources
+- **Search model default**: Saves a search-only model preference for an owner-requested Codex desktop task or permitted Claude Code workers in `profile.agentModelPreferences`; the application model stays separate. A saved model does not launch a task or change the current task's model.
 - **Connection insights**: Finds jobs at companies where you have connections
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Multi-source discovery**: Searches LinkedIn, Hacker News Who's Hiring, and Twitter/X
 - **Results saved**: Full search results saved to the shared `~/.claude-job-searches/` compatibility directory as Markdown
+
+### Saved Jobs (`job-apply:saved-jobs`)
+- **Canonical list**: Shows active Store jobs with status `saved`, including their exact IDs and links
+- **Requested filters**: Filters returned records by company, role, location, source, or text without changing the Store
+- **Read-only workflow**: Does not search sites, import reports, change status, or start an application
+
+### Job Title Discovery (`job-apply:job-title-discovery`)
+- **Evidence-backed options**: Explore core, adjacent, and stretch titles using visible LinkedIn Jobs listings when available
+- **Owner control**: Review the result packet before choosing titles; discovery never changes saved preferences
+- **Clear limitations**: Login, blocked, unavailable, and empty source states are reported explicitly
+
+In Companion, open Facts → Search preferences → Discover related titles. Enter role interests or exclusions, copy the Codex or Claude Code invocation, and run it in that host. Paste the returned JSON packet into Companion to inspect evidence, edit or select titles, and preview the exact saved set. Canceling or retrying research writes nothing. After confirmation, Companion saves only approved target titles to the canonical profile; Job Search then uses those titles. The page copies an invocation but does not launch an agent. See the [workflow map](skills/answer-memory/references/workflow-map.md) for conflict and source-limitation branches.
 
 ### Job Preferences (`job-apply:job-preferences`)
 - **Reusable search settings**: Save target titles, salary floor, remote preference, exclusion patterns, and time range
@@ -47,6 +71,19 @@ Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 - **Selective updates**: Change individual preferences while preserving the rest
 
 ## Requirements
+
+The installed plugin runs on **Node.js 22 or newer** on **macOS Apple Silicon
+(arm64)** or **Linux x64**. Make `node` available to the host's launch environment;
+the plugin includes a native lock addon, not a Node interpreter. Windows and other
+architectures are not supported by this release. Python is not required.
+
+For a source-only marketplace install, the first Companion launch also needs npm
+and package-registry access to install pinned dependencies and build the local
+server. Later launches reuse that build until the plugin is refreshed.
+
+See the [TypeScript transition guide](docs/typescript-transition.md) for features
+added since the Python release, upgrade steps, backup/recovery boundaries, and
+pre-merge acceptance checks.
 
 Choose either supported host:
 
@@ -66,6 +103,17 @@ codex plugin add job-apply@neonwatty-plugins
 
 Start a new Codex task after installation, then invoke `$job-apply:job-apply`.
 
+When testing an unreleased branch, first check out the exact commit in an isolated
+worktree and pass that worktree's absolute path to `codex plugin marketplace add`.
+After installing, confirm that `codex plugin list --json` selects the manifest's
+version directory and start a new Codex task. This keeps branch tests tied to one
+explicit candidate instead of a previously cached package with the same version.
+
+The first Companion launch after a source-only marketplace install builds its
+local standalone server from the pinned npm lockfile before opening the workspace.
+This requires npm and package-registry access; later launches reuse the build
+until the plugin is refreshed.
+
 ### Claude Code
 
 ```bash
@@ -81,21 +129,26 @@ The examples below use Codex syntax. In Claude Code, replace the leading `$` wit
 
 ### First Time Setup
 
-1. Invoke the skill:
+1. Save your application-flow preferences:
+   ```
+   $job-apply:application-setup
+   ```
+
+2. Invoke the application skill:
    ```
    $job-apply:job-apply
    ```
 
-2. Provide your resume path when prompted:
+3. Provide your resume path when prompted:
    ```
    ~/Documents/resume.pdf
    ```
 
-3. Review and confirm extracted profile information
+4. Review and confirm the facts extracted for that specific resume in Companion. When the draft is ready, open the optional local Companion with `$job-apply:job-workspace` in Codex or `/job-apply:job-workspace` in Claude Code. It is bundled with the plugin and starts only when requested; you can defer opening it until fact review.
 
 ### Applying to Jobs
 
-Once your profile is set up:
+Once a resume's facts are confirmed:
 
 1. Invoke the skill:
    ```
@@ -107,13 +160,13 @@ Once your profile is set up:
    https://www.linkedin.com/jobs/view/123456789
    ```
 
-3. Watch as the agent fills the application from your reviewed local profile
+3. Confirm the exact resume and its facts with the agent once for an application run, then manage the run's queue and watch each application fill from that fact set
 
-4. Inspect the final review page and the field summary, then click Submit or Send yourself if everything is correct
+4. Inspect the final review page and field summary. The assistant stops before final submission; only you may decide whether to complete it manually on the third-party site.
 
 ### Searching for Jobs
 
-First run `$job-apply:job-preferences` to save your search preferences. Then use `$job-apply:job-search` to search LinkedIn, Hacker News, and Twitter/X and rank matching jobs:
+Use `$job-apply:job-preferences` to save reusable criteria, or provide criteria directly to `$job-apply:job-search`. The host researches LinkedIn, Hacker News, and Twitter/X and shows matching jobs:
 
 1. Set or update your preferences:
    ```
@@ -135,25 +188,75 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
    - Sources: LinkedIn, HN, Twitter
    ```
 
-4. Review ranked results, including:
-   - Jobs with hiring managers listed (highest priority)
-   - Jobs with 1st-degree connections
-   - Matching Hacker News and Twitter/X opportunities
+4. Review results ordered by observed posting date. Unknown facts and source gaps are marked. Connections and hiring managers are shown when observed, without changing the ordering. Select exact jobs if you want them added to the canonical Store; the agent previews those changes and commits only after you confirm that preview.
 
 Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
+To retrieve jobs already saved in the canonical Store, invoke `$job-apply:saved-jobs`. It reads through the TypeScript CLI and can filter fields in the returned records; search reports are not the saved-job list.
+
+### Local Companion Workspace
+
+The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **Needs Attention**, **Facts**, **Resumes**, **Answers**, **Automation**, **Accounts & Sign-in**, **Settings**, and unified **Trash** navigation, plus the selected job's contextual **Application Activity** view. All are backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
+
+```bash
+node apps/companion/launch.mjs
+```
+
+The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. Its services reuse the Node interpreter that launched it; the plugin does not bundle or download Node. The workspace requires no Python runtime, account, telemetry, or separate database. A missing standalone build needs npm and registry access as described above.
+
+Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
+
+For a Ready job, use the copy-only handoff on **Overview** or **Jobs** for the host you already use. These are static, separately labelled commands; the workspace does not detect a host, run a command, embed a terminal, interpolate credentials, or acquire an application claim:
+
+```text
+Codex:       $job-apply:job-apply
+Claude Code: /job-apply:job-apply
+```
+
+The agent acquires the Ready job from the canonical Store. Watch durable progress in **Application Activity** and use **Needs Attention** for missing information, human review, expired claims, or interrupted attempts. The agent stops before final submission; only you may submit on the third-party site.
+
+Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If read-only startup validation recognizes an unavailable, corrupt, or future-version Store, the server fails closed: it serves only the static workspace and sanitized recovery status, blocks canonical reads and mutations, and exposes no canonical values, filesystem paths, or raw exceptions to the browser. It does not automatically repair, downgrade, or overwrite the Store. If initialization itself fails after validation, startup aborts instead of presenting a degraded no-mutation claim. Stop the workspace, preserve the Store directory, and restore a known-good backup or use the matching Job Apply version.
+
+Use **Jobs** to manage the opportunity queue and **Resumes** to manage private files and review each resume's own facts. The separate **Facts** surface maintains the legacy applicant-wide profile and preferences, including saved path groups. Use **Answers** to search reusable answers to application questions, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library.
+
+In **Resumes**, an import or replacement requests extraction by default unless you opt out. You can create, cancel, and retry extraction requests. **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. **Copy agent handoff** copies exactly `Use the Job Apply resume workflow to process extraction request <request-id>.`, containing only that static invocation and the opaque request ID. That agent privately reads the exact managed resume, attempts completion once, and removes temporary candidate data. Review or edit the resulting draft under that resume, then confirm its exact revision. Before an application, confirm the job, chosen resume, and its facts with the agent in chat.
+
+Use the top-level **Trash** view to see deterministic redacted projections and exact counts for trashed jobs, resumes, and answers. Restore and permanent delete use the same canonical Store helpers as the CLI and require the record's exact revision. Permanent deletion is always one record at a time in an accessible identity-bound dialog and requires the exact type-specific phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. Deleting a managed resume permanently deletes its managed file with the canonical resume record; other record types remove only the selected canonical record. No deletion cascades or erases application history, sessions, or audit evidence. Live claims, nonterminal job sessions, resume references, answer references, duplicate active identities, and stale revisions produce distinct redacted explanations without automatic retry or disclosure of linked identifiers. CLI users can select only trashed jobs or resumes with `job-list --trashed-only` and `resume-list --trashed-only`; answers retain `answer-list --include-trashed --trashed-only`.
+
+Duplicate answers can be merged only by explicitly selecting an accepted winner. Both records must have the same exact scope and current revisions. The winner keeps its value, sensitivity consent, source/provenance, and confirmation metadata; the source value is removed, its normalized question and aliases transfer, and its value-free observation metadata is combined. Active session references are rewritten through the crash-recoverable coordinator while append-only history remains unchanged and resolves through a permanent flattened, value-free redirect. Derived-key and redirect fallback never crosses the record's current exact scope; an observation fails safely when an old stable key is occupied at another scope. Redirect targets remain active and cannot be trashed.
+
+Answer aggregate lists never contain values. Sensitive values are also absent from get, find, and mutation responses and are displayed only after an explicit Reveal action. A changed sensitive value is retained only with fresh field-specific consent. Existing-answer writes use exact revisions; concurrent observations only add counts/timestamps and never replace canonical fields; permanent deletion is blocked by either a session or append-only history reference.
+
+Every mutation of an existing resume or proposal checks the target record's exact revision. Import is a new-record operation protected by ID/content uniqueness rather than an expected revision. Making a resume default checks the selected resume revision, then atomically advances any prior default as part of the compound change; it does not separately require the prior default's revision. If CLI or agent work changes a target record, the browser does not retry or overwrite it: only metadata fields actually edited in the browser remain as drafts, while untouched fields refresh from the canonical record; selected files also stay in place until you explicitly refresh and reapply them. Proposal review can decide a subset of pending paths; accepted values refresh Facts with user provenance. If accepting a child path would replace an existing scalar or array ancestor, the review discloses that ancestor and its current value and requires a separate confirmation of the exact replacement scope. Aggregate lists never contain resume bytes, file identities, or extracted values, and content requests require the in-memory workspace token and are returned with no-store and fixed content types.
+
+The workspace never runs an application, reads arbitrary filesystem paths, parses, writes, generates, or tailors resume content, authors extraction proposals, or activates Submit, Send, Apply, or another third-party final action. It has no cloud sync or browser-owned durable catalog. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
 
 ## Compatibility and Verification Status
 
-The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. Live end-to-end ATS acceptance is tracked separately; individual flows remain unverified and may drift as sites change.
+Run the credential-free workflow audit from the repository root:
+
+```bash
+npm run audit:core-workflows
+```
+
+It validates every committed Agent Workflow with the pinned runner, requires one
+registry row per workflow, and checks each row's Companion surfaces, CLI entry
+points, tests, and evidence sources. Its evidence summary keeps deterministic
+local, installed-host, supervised replay, and current-live ATS proof separate.
+It does not launch an agent, browser, account flow, or ATS. See
+[`docs/testing.md`](docs/testing.md#core-workflow-evidence-audit) before running
+the optional installed-host lane; current-live ATS proof remains a separately
+authorized supervised activity.
+
+The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. A [single Pinterest Greenhouse form reached manual review on 2026-09-29](docs/dogfooding/2026-09-29-pinterest-greenhouse-live-review.md); that agent-attested observation does not establish general Greenhouse acceptance or coverage of the other ATS families. Forms may drift as sites change. The Greenhouse, Rippling, and Workday readiness catalogs remain hand-authored synthetic schema fixtures, not recorder-derived replay evidence.
 
 | Platform | URL Pattern | Default browser path | Verification status |
 |----------|-------------|----------------------|---------------------|
 | LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Greenhouse | `boards.greenhouse.io/*`, `job-boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; Pinterest review-only observation on 2026-09-29; broader flow unverified |
 | Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
-| Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
+| Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
 
 ## Profile Storage
 
@@ -162,18 +265,38 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 ```text
 ~/.job-apply/
   profile.json
+  fact-groups.json
   answers.json
+  jobs.json
+  resumes.json
+  resume-facts.json            # per-resume fact versions, created on first scoped draft
+  resume-files/
+  resume-extractions.json       # created on first extraction proposal
+  resume-extraction-journal.json # created on first extraction proposal
   applications.jsonl
+  coordinator.json
+  coordinator-journal.json
   sessions/
     <application-id>.json
 ```
 
 | File | Purpose |
 |------|---------|
-| `profile.json` | Resume facts and job-search preferences |
-| `answers.json` | Reusable answers with confirmation, source, scope, and sensitivity state |
+| `profile.json` | Legacy applicant-wide facts and job-search preferences |
+| `resume-facts.json` | Draft and confirmed fact histories keyed by managed resume |
+| `fact-groups.json` | Revisioned saved views that organize canonical profile paths without owning or deleting facts |
+| `answers.json` | Revisioned reusable answers with confirmation, source, scope, sensitivity, and trash state |
+| `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |
+| `resumes.json` | Versioned resume metadata, labels, defaults, digests, and file observations |
+| `resume-files/` | Private managed copies of imported PDF, DOCX, and UTF-8 TXT resumes |
+| `resume-extractions.json` | Private revisioned extraction candidates, baselines, conflicts, decisions, and supersession state (lazy) |
+| `resume-extraction-journal.json` | Private write-ahead recovery for atomic profile/proposal commits (lazy) |
 | `applications.jsonl` | Minimal append-only application lifecycle events |
+| `coordinator.json` | One global, recoverable 300-second application-agent claim |
+| `coordinator-journal.json` | Value-free idempotent roll-forward record for lifecycle handoffs |
 | `sessions/*.json` | Resumable workflow metadata and answer-key references |
+
+The coordinator files are created only when the ready-job claim workflow is first used. Ordinary URL applications are first ingested as canonical jobs and use the same canonical job ID for selection, claims, sessions, activity, and review handoff. Authenticated loopback QA replay is the only synthetic exception.
 
 These files can include sensitive personal information such as:
 
@@ -189,12 +312,55 @@ Protect the directory like a resume. Do not attach its files to issues or share 
 
 ```bash
 chmod 700 ~/.job-apply
-chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/applications.jsonl
+chmod 700 ~/.job-apply/resume-files
+chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl ~/.job-apply/coordinator.json ~/.job-apply/coordinator-journal.json
+# If extraction proposals have been created:
+chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-journal.json
 ```
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
-All plugin skills access this data through the bundled `scripts/job-apply-store.py` helper. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
+Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. Installed production routes require no Python interpreter and have no Python fallback. A source-checkout installation can retain historical Python reference files; those files are not production entrypoints. See [runtime closure status](docs/migration/python-runtime-closure.md).
+
+All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
+
+The packaged native `task` surface is the ordinary agent-facing job protocol. `snapshot` returns one redacted Store-owned overview/jobs/attention view; `activity --id <job-id>` returns value-free activity for one exact canonical job. `intake --input <private-json>` atomically resolves or creates exactly one active job without returning its URL or the Store's upsert token. After the owner explicitly chooses a displayed job, `select --id <job-id> --expected-revision <revision> --owner-confirmed` rechecks preflight and marks it Ready, or returns a stable no-op when that exact revision is already Ready. `semantic-lookup` recomputes deterministic candidates and bounded reuse policy from current canonical answers without returning answer values. `approval-preview` and `approval-approve` preserve current-use, remember, policy-mode, and use-authority decisions per opaque field reference. `cleanup-preview` never mutates; `cleanup-approve` requires the exact current preview plus explicit owner confirmation. All failures are stable machine-readable JSON; identity conflicts, trashed matches, stale revisions, unavailable jobs, failed policy, and failed preflight stop before browser work.
+
+The packaged native `attempt` surface uses a detached broker scoped to one Store and exact selected attempt. A short `start` client launches the broker, acquires the exact Ready job and revision, returns the redacted application inputs, and exits; no launcher, stdin stream, terminal, or conversational process stays attached. A separate `restart-review` launcher is available only after the owner explicitly confirms that one exact `awaiting_review` application was not submitted. It requires the exact job revision, complete same-job review evidence with no pending work, no global claim, and a fresh current managed-resume preflight. It atomically advances that same job once to `in_progress`, creates one 300-second claim, records one value-free restart event, and preserves prior review-session bytes until claim-gated progress. Modern sessions still require their complete 1.3.2 review envelope. A one-time legacy rebuild is permitted only when `attemptRevision`, `readiness`, and `browserHandoff` are all structurally absent from a `review`/`final_review` session with no pending work, the latest same-job event is `reviewed`/`awaiting_review`, and no prior restart exists. It records `legacy-review-rebuild`; partial, explicit-null, malformed, or contradictory envelopes fail without mutation. Legacy readiness remains unknown, so the rebuilt attempt must observe the visible form and provide fresh current-attempt readiness and browser handoff before returning to review. Restart never treats reviewed work as Ready or grants browser/final-action authority. The broker retains claim authority only in memory, heartbeats automatically, and accepts later stateless `heartbeat`, value-free `progress`, and `handoff` clients through its OS-user-restricted Store socket. It cannot switch jobs, Stores, revisions, owners, or claims. Its argv, environment, JSON responses, diagnostics, and durable files never carry the raw claim authority. An `awaiting_review` handoff succeeds only when the Store recomputes a complete `agent_attested_current_attempt` readiness report whose attempt revision matches the acquired revision, its complete current-form inventory and recomputed manifest agree, every assertion passes, no unresolved work remains, and final action remains untouched. Customized required controls can be attested in the live inventory. Missing, stale, or inaccessible required controls make the review handoff fail closed; the broker retains the claim until a separate valid handoff or claim expiry. This is an agent attestation over a closed observation, not independent browser provenance proof; the owner must still inspect and submit the visible form. Repository replay evidence is deliberately insufficient. A bounded `needs_info` handoff may instead retain only allowlisted typed blocker codes and a closed browser-handoff state; neither session form retains question text, answers, credentials, URLs, paths, tab IDs, or browser state.
+
+Version 1.3.0 is the first package identity containing this human-attention contract. Version 1.3.2 adds the explicit owner-confirmed-not-submitted review restart, and 1.3.3 adds only the fail-closed, one-time legacy review-rebuild compatibility branch. Version 1.3.4 integrates the macOS employer-account seam and labels a verified known-data entry failure as **Browser action required** rather than missing information. Version 1.3.5 adds the durable human-requested resume-extraction and grouped review workflow. None of these versions changes final-action or applied-status authority. Session additions are optional and revisioned within the existing schema: older v1 sessions remain readable, while the next coordinator write replaces legacy question/role/company/URL copies with value-free blocker, readiness, approval, and browser-handoff projections. Validation remains non-mutating on corrupt or future documents, and coordinator journal recovery remains the only crash roll-forward path.
+
+When an exact managed attempt is blocked by a referenced non-sensitive question, send a value-free `needs_info` handoff so the broker releases the claim and exits, then inspect `activity --id <job-id>`. Edit and accept the answer in Companion's canonical Answers library and explicitly resolve that pending reference against the exact job, session, and answer revisions shown there. The Store rechecks all three revisions under its lock, removes only that pending reference, and never copies the answer value into the session, journal result, history, activity, or diagnostics. The job stays in Needs Attention while another blocker remains; with no blockers it becomes Ready only after preflight. Use the returned exact Ready revision with a fresh `start` client, which creates a fresh broker acquisition for the same canonical job; the assigned/default managed resume binding and resumable session continue through the next `job-started` and `reviewed` handoff. Missing, inferred, declined, sensitive, or stale answers fail closed without retry. Refresh and review canonical state; browser drafts are not overwritten. This flow opens no portal and performs no final action.
+
+New resume records import a private managed copy rather than retaining the source
+path. Imports accept PDF, DOCX, and UTF-8 TXT files up to 10 MiB, reject duplicate
+content (including copies in trash), and keep stable resume IDs across byte
+replacement. Existing path-based records remain readable and are never rewritten
+implicitly; use the CLI's explicit `resume-adopt` operation to copy one into managed
+storage under its existing ID. File and metadata transitions roll back together on
+failure. The local workspace receives a redacted resume projection without source
+paths, managed filenames, original filenames, or digests.
+
+Ready-job acquisition rechecks the assigned or default resume. Managed-file digest
+or observation drift blocks acquisition before any claim, job transition, journal,
+or history change. For backward compatibility, changed legacy external records keep
+their preflight warning behavior until they are explicitly adopted.
+
+Trusted local application workflows use `resume-resolve` (optionally with `--id`)
+to obtain the verified private path of an active managed resume. This path-bearing
+result is for local agent file upload only; workspace APIs and aggregate views remain
+redacted. A legacy external record must be explicitly adopted before it can resolve.
+
+Resume extraction remains agent-produced structured data; the store does not parse,
+edit, generate, or tailor resumes. A proposal is bound to the managed resume's
+current revision and digest plus the profile revision the agent inspected. Creation
+automatically fills only absent or null facts that are not protected by human
+provenance. Existing values—including blanks, arrays, and empty objects—and
+human-cleared facts remain explicit conflicts. Human review is revisioned per path,
+accepted extracted values become user-provenanced facts, and unrelated paths may
+remain pending. A private write-ahead journal makes profile-plus-proposal commits
+recoverable after interruption. Replaced, trashed, deleted, missing, or byte-changed
+resumes make bound proposals stale.
 
 Only matching, non-sensitive `confirmed` answers may be reused without asking. Inferred and missing answers require review. Sensitive answers are reconfirmed before every use and are stored only when you separately ask Job Apply to remember that specific value.
 
@@ -219,12 +385,45 @@ Each file contains:
 - Search parameters (keywords, location, filters)
 - List of jobs with full details
 - Connection and hiring manager information
-- Priority ranking
+- Source availability, observed result ordering, and inspection limits
+
+### Guided legacy job migration
+
+The helper can selectively import the documented numbered job entries from
+regular `search-*.md` files directly under `~/.claude-job-searches/`. It does
+not read `application_queue.md`, arbitrary paths, nested directories, or
+symlinks. Undocumented Markdown variants are not imported, and the helper never
+modifies report files.
+
+Preview candidate jobs without importing them or changing report files. Complete the [upgrade steps](docs/typescript-transition.md) first: the public router can initialize or activate the Store even for a preview command:
+
+```bash
+node apps/companion/command.mjs store legacy-jobs-preview
+```
+
+Invalid entries remain visible with a reason. Preview chosen valid `itemId`
+values by repeating `--select`, then commit only after reviewing that exact
+selected preview:
+
+```bash
+node apps/companion/command.mjs store legacy-jobs-preview \
+  --select <item-id> --select <item-id>
+```
+
+Use `legacy-jobs-commit` with the identical ordered selection and the selected
+preview's confirmation token; `legacy-jobs-commit --help` shows the token option.
+
+Commit fails closed if the selection, any discovered report, parsed payload, or
+canonical job store changed. Imported records carry value-free migration
+provenance. Migration can create jobs, fill empty fields, and refresh
+migration-authored fields; it never overwrites nonempty human- or agent-authored
+values. The canonical job store is authoritative after import; Markdown export,
+mutation, and two-way sync are not supported.
 
 ## Safety Features
 
 - **Never handles credentials** - Pauses for you to complete login, password, CAPTCHA, or MFA steps
-- **Never creates accounts** - Pauses so you can decide whether to create an account yourself
+- **Account handling stays explicit** - Ordinary flows pause. Reviewed Greenhouse application URLs need no account; a private macOS Workday seam remains disabled unless you separately approve one exact one-shot canary.
 - **Never submits applications** - Stops at final review, summarizes entered fields, and leaves Submit or Send for you
 - **Never enters payment info** - Skips premium features
 - **Confirms sensitive questions** - Salary, visa status, etc.
@@ -254,6 +453,14 @@ Before posting, remove names, email addresses, phone numbers, resume content, cr
 MIT License - See [LICENSE](LICENSE) for details.
 
 ## Replay QA (developers)
+
+The capture and promotion tools below are optional repository development tools.
+Some use the historical Python reference implementation; they are excluded from
+the installed plugin and from required TypeScript CI. Running them does not prove
+live ATS support or authorize use of the owner's browser. The isolated reference
+oracle `npm run qa:unified-task-spine` also needs Python and Playwright; it uses
+only synthetic data and emits a value-free report. Use the
+[required testing tiers](docs/testing.md) for release validation.
 
 Replay fixtures are built from a tightly controlled, private recording and checked in only after they have been reduced to a generic semantic model. Follow these policies:
 
@@ -447,24 +654,21 @@ Run the deterministic checks, then prepare a supervised advisory replay through 
 ```bash
 npm ci
 npx playwright install --with-deps chromium
-python3 -m unittest discover -s tests -v
-npm run test:qa-screening
-npm run test:qa-browser
-bash scripts/smoke-plugin.sh
-bash scripts/check-links.sh
+npm run test:affected -- --base origin/staging
+npm run test:release
 git diff --check
-python3 scripts/qa-replay.py prepare --fixture linkedin-easy-apply-screening-2026-08-v1 --scenario linkedin-screening
-python3 scripts/qa-replay.py started --run-id GENERATED_RUN_ID
-python3 scripts/qa-replay.py reviewed --run-id GENERATED_RUN_ID
-python3 scripts/qa-replay.py evaluate --run-id GENERATED_RUN_ID
+node runtime/cli/native-qa-replay.js prepare --fixture linkedin-easy-apply-screening-2026-08-v1 --scenario linkedin-screening
+node runtime/cli/native-qa-replay.js started --run-id GENERATED_RUN_ID
+node runtime/cli/native-qa-replay.js reviewed --run-id GENERATED_RUN_ID
+node runtime/cli/native-qa-replay.js evaluate --run-id GENERATED_RUN_ID
 ```
 
-`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `python3 scripts/qa-replay.py resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the existing store helper. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `python3 scripts/qa-replay.py cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
+`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `node runtime/cli/native-qa-replay.js resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the native Store. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `node runtime/cli/native-qa-replay.js cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
 
 The committed `linkedin-screening` review lane remains wholly synthetic and requires zero final-action activations. A second repeatable loopback verifier exercises the high-risk Auto-submit state machine at the policy-coupled activation boundary, including actual review-only refusal, kill/expiry and concurrency races, forged/stale/prompt/redirect denial, all runtime stops, redaction, one-winner success with independent confirmation, and terminal one-retry uncertainty:
 
 ```bash
-python3 scripts/qa-replay.py verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json
+node runtime/cli/native-qa-replay.js verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json
 ```
 
 That verifier uses only `127.0.0.1`, a private per-run capability, opaque identities, and redacted reports. It does not contact LinkedIn, authenticate, use applicant data, or authorize a live action. A real canary remains a separate audited and exactly approved step.
@@ -473,20 +677,24 @@ That verifier uses only `127.0.0.1`, a private per-run capability, opaque identi
 
 Contributions welcome! Please open an issue or PR on GitHub.
 
-Before opening a PR, run the same deterministic checks used by CI:
+Before opening a PR, use the [TypeScript testing tiers](docs/testing.md):
 
 ```bash
 npm ci
-npx playwright install --with-deps chromium
-python3 -m unittest discover -s tests -v
-npm run test:qa-screening
-npm run test:qa-browser
-bash scripts/smoke-plugin.sh
-bash scripts/check-links.sh
+npx playwright install chromium
+npm run test:affected -- --base origin/staging
+npm run test:release
 git diff --check
 ```
 
-The smoke test installs temporary working-tree fixtures under isolated Codex and Claude Code configuration directories and removes them on exit. It does not alter your normal host configuration.
+Required CI uses Node.js 22 or newer without CPython. The TypeScript transition
+also has a separate, manual one-time check that creates a Store using the actual
+historical Python release and verifies migration and rollback. See
+`npm run test:migration-once` in the testing guide. Historical Python differential
+checks remain optional development diagnostics.
+
+Package smoke tests use isolated Codex/Claude configuration directories and
+fictional Stores, then remove their fixtures on exit.
 
 ## Author
 

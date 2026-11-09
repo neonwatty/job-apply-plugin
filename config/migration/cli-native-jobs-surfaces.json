@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:fixture-init",
+      "kind": "cli",
+      "command": "fixture-init",
+      "node": "I",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-create",
+      "kind": "cli",
+      "command": "job-create",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-get",
+      "kind": "cli",
+      "command": "job-get",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-list",
+      "kind": "cli",
+      "command": "job-list",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-update",
+      "kind": "cli",
+      "command": "job-update",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs-server.ts:serve",
+      "kind": "cli",
+      "command": "serve",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

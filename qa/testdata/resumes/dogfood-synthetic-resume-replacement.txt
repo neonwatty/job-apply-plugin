@@ -1,0 +1,18 @@
+SYNTHETIC DOGFOOD RESUME — REPLACEMENT
+
+Jordan Example
+jordan.example@example.invalid
+
+SUMMARY
+Software engineer focused on local-first TypeScript products, accessibility, and reliable workflows.
+
+EXPERIENCE
+Staff Software Engineer, Example Systems, 2022-2026
+- Built privacy-preserving services and accessible user interfaces.
+- Led reproducible testing, restart recovery, and durable state validation.
+
+EDUCATION
+Example University, Bachelor of Science in Computer Science, 2022
+
+SKILLS
+TypeScript, React, Node.js, testing, accessibility, local-first architecture

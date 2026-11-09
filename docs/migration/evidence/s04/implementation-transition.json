@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "S04.implementation-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p12/approved-dag.json",
+    "sha256": "eca63c82bdb2b582f5abd5a4c8cccaaaa1961a50a16f59956db0379848d6150c",
+    "revision": "738a8748ab53a048fbe1fb4908d9b9f139e78625"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/s04/implementation-dag.json",
+    "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79",
+    "revision": "fd43d510f2e657b4897f924c2dd406f4552ee8ab"
+  },
+  "retirements": [],
+  "additions": [],
+  "refinements": [
+    {
+      "id": "S04.V",
+      "beforeDependencies": [
+        "S04.I",
+        "P01.V"
+      ],
+      "afterDependencies": [
+        "S04.I",
+        "P01.V",
+        "P05.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Make the existing native-evidence requirement explicit before freezing S04 validation; no native gate is waived."
+}

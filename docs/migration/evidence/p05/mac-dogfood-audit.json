@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "p05-mac-dogfood-audit",
+  "assignmentIds": [
+    "P05.I",
+    "P05.V"
+  ],
+  "allowed_files": [
+    "tools/migration/local-mac-required-cells.mjs",
+    "tests_js/posix_flock.test.mjs",
+    "docs/migration/evidence/p05/mac-dogfood-spec.json",
+    "docs/migration/evidence/p05/mac-dogfood.md",
+    "docs/migration/evidence/p05/mac-dogfood-audit.json",
+    "docs/migration/evidence/p05/P05.I.json",
+    "docs/migration/evidence/p05/P05.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p05.mac.native",
+    "p05.mac.required"
+  ],
+  "cells": [
+    {
+      "id": "p05.mac-dogfood.required-native",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/posix_flock.test.mjs"
+      ],
+      "testNames": [
+        "native nonblocking flock binds descriptors, validates arguments and preserves kernel ownership",
+        "P05 required cells reject skipped nested malformed and incomplete evidence",
+        "P05 local Mac native addon binds compiler and actual owned kernel operations",
+        "P05 local Mac persistence cells preserve all frozen witnesses and raw output"
+      ],
+      "timeoutMs": 480000,
+      "maxOutputBytes": 8388608,
+      "logPath": "docs/migration/evidence/p05/logs/mac-dogfood.tap",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "requirementIds": [
+        "p05.mac.required",
+        "p05.mac.native"
+      ]
+    }
+  ],
+  "artifacts": []
+}

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "p07-reference-audit",
+  "assignmentIds": [
+    "P07.R"
+  ],
+  "allowed_files": [
+    "docs/migration/evidence/p07/reference-audit.json",
+    "docs/migration/evidence/p07/P07.R.json",
+    "docs/migration/evidence/p07/reference.md"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p07.reference.audit.migration_task_manifests",
+    "p07.reference.audit.migration_task_receipts",
+    "p07.reference.audit.migration_task_metadata"
+  ],
+  "cells": [
+    {
+      "id": "P07.R.migration_task_manifests",
+      "requirementIds": [
+        "p07.reference.audit.migration_task_manifests"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-R-migration_task_manifests.tap"
+    },
+    {
+      "id": "P07.R.migration_task_receipts",
+      "requirementIds": [
+        "p07.reference.audit.migration_task_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-R-migration_task_receipts.tap"
+    },
+    {
+      "id": "P07.R.migration_task_metadata",
+      "requirementIds": [
+        "p07.reference.audit.migration_task_metadata"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_metadata.test.mjs"
+      ],
+      "testNames": [
+        "P06 coordinator catalog and review lock evolve through actual activation and receipt snapshots",
+        "P06 metadata evolution cannot conceal source edits or unrelated shard changes",
+        "P06 frozen metadata identities and historical evidence remain immutable",
+        "P06 actual dependency-linked hook snapshots support the complete registered product lifecycle"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-R-migration_task_metadata.tap"
+    }
+  ],
+  "artifacts": []
+}

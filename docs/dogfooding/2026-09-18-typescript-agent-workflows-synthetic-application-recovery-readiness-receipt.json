@@ -1,0 +1,187 @@
+{
+  "schema": "job-apply-agent-workflows-synthetic-application-recovery-readiness/v1",
+  "date": "2026-09-18",
+  "status": "candidate-v3-fixture-control-implemented-fresh-proof-blocked",
+  "repository": {
+    "branch": "codex/application-recovery-fixture-control",
+    "baseRef": "origin/staging",
+    "baseCommit": "4c760ef1396da0f4a49678394341f4c80c84d56f"
+  },
+  "workflow": {
+    "path": ".workflows/workflows/job-apply.synthetic-application-recovery.workflow.yaml",
+    "candidateRevision": 3,
+    "workflowFileSha256": "e32a2d7ed11334e4c6787a0c70708402c4865013854e6c81beb3d4db7ef94beb",
+    "workflowSourceHash": "sha256:1f5d5f9f7b0e9953a74e9a07caecbab0ac59fdfa977d2a4cf1c81d9af3569d1e",
+    "desktopEffectiveHash": "sha256:c0529ddebe2da6bc6cb97339d13827ac25b385df1b14816058b19ec000308edc",
+    "mobileEffectiveHash": "sha256:c3e2c610107ca042efc35fe842b65bafd27265ead21eba9481509787bda712e0",
+    "stepCount": 11,
+    "platforms": {
+      "desktop-web": {
+        "width": 1440,
+        "height": 900
+      },
+      "mobile-web": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    "externalSubmissionPermitted": false,
+    "finalActionPermitted": false
+  },
+  "fixtures": [
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-job.json",
+      "sha256": "4090877989997ae911796b43bd4e8de5eaf8d75eb25680570575895671399efc"
+    },
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-profile.json",
+      "sha256": "e7f68576a126f4a47a9187e4a50f45df121591dc10da33422e83503d7793fc0d"
+    },
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-resume.json",
+      "sha256": "23bba329895aefa0b3f024c9beaab36ca2124a99e0f4b49bbc17aeaa88c0c601"
+    },
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-resume.txt",
+      "sha256": "f8d2276290949fac6ce28e53ee00dd8d6103e171200dec508aa33f9646515e7f"
+    },
+    {
+      "path": ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs",
+      "sha256": "983a7be19a227dbf4d051ec5b814b58e301dc793c5012f5eb11c7d3811f50e89"
+    },
+    {
+      "path": ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/fixture-control.mjs",
+      "sha256": "b58e0c8a5cfdfe19a46b38dedbcf5ef864b392439fff28c911f8c4327c071e25"
+    },
+    {
+      "path": "qa/fixtures/greenhouse-form-readiness-v1/fixture.json",
+      "sha256": "ae1232593dadb806d97b7d43572b2603acd2530847309324b7e5f19a683aad8e"
+    }
+  ],
+  "repair": {
+    "rootCause": "Runner index.json and runs were written into the native product Store. Native Store allowlist validation correctly rejected those foreign entries before the first job save.",
+    "orchestration": {
+      "journeyRoot": ".workflows/local/application-recovery-<fresh-id>",
+      "runnerStore": "<journey-root>/runner-store",
+      "productStore": "<journey-root>/product-store",
+      "productRollback": "<journey-root>/product-store.python-rollback",
+      "legacyProfile": "<journey-root>/no-legacy-profile.json"
+    },
+    "hardGate": "host-preflight.mjs performs no writes and returns the versioned job-apply.fixture-control capability only after the committed adapter successfully probes fixture hashes and the verified native lock. Handoff additionally requires the exact private local journey, synthetic product marker, fictional profile, managed resume bytes, single ready job, expected revision, empty claim, and prior local blocked history.",
+    "fixtureControl": "The adapter injects only a committed fictional Greenhouse readiness simulation into the isolated product Store. It does not visit or attest a real employer or ATS form, use a real account, contact an employer, or invoke the human-only final action.",
+    "priorFailedRunsReusable": false
+  },
+  "workflowsRuntime": {
+    "package": "@lineagehq/workflows",
+    "version": "0.1.0",
+    "sourceCommit": "1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225",
+    "agentServiceSha256": "a8e2fa9907b1de285cc22b61aa8d88abfe28678fc2a5b831d943580d159b449d",
+    "packageLockSha256": "2a39856f479e8cc813055e7fdb3ee0b0852796dde3305041c6b38db3d409ad2b",
+    "sourceCheckoutEdited": false
+  },
+  "existingDogfoodReviewed": [
+    "docs/dogfooding/2026-09-17-typescript-application-tranche.md",
+    "docs/dogfooding/2026-09-17-typescript-application-tranche-receipt.json",
+    "docs/dogfooding/2026-09-17-typescript-owner-control-plane-tranche.md",
+    "docs/dogfooding/2026-09-17-typescript-owner-control-plane-tranche-receipt.json",
+    "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness.md",
+    "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"
+  ],
+  "exploratoryUiInspection": {
+    "scope": "Disposable local fixture Store outside Agent Workflows; this is design evidence, not runner training evidence.",
+    "desktop": {
+      "viewport": "1440x900",
+      "observedLocalTransitions": [
+        "saved-to-needs_info",
+        "needs_info-to-saved",
+        "ready-to-in_progress",
+        "in_progress-to-awaiting_review"
+      ],
+      "manualBoundary": {
+        "status": "awaiting_review",
+        "readiness": "ready",
+        "browserHandoff": "ready_for_owner",
+        "finalReviewRequired": true,
+        "typedBlockers": 0,
+        "pendingItems": 0,
+        "markAppliedVisibleAndUntouched": true
+      }
+    },
+    "mobile": {
+      "viewport": "390x844",
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "attentionQueueShowedAwaitingReview": true,
+      "ownerSubmissionGuidanceVisible": true
+    },
+    "employerOrAtsOpened": false,
+    "employerContacted": false,
+    "externalSubmissionAttempted": false,
+    "finalActionActivated": false,
+    "disposableStoreMovedToTrash": true
+  },
+  "validation": {
+    "workflowDoctor": "passed",
+    "manifest": "passed without warnings",
+    "desktopResolution": "passed",
+    "mobileResolution": "passed",
+    "sourceSize": "passed",
+    "separatedStoreRegression": {
+      "status": "passed",
+      "tests": 4,
+      "proof": "Host preflight probes the actual adapter without mutation; synthetic-only handoff succeeds with a private in-process claim and no final action; foreign paths and non-fictional profile data stop before mutation; runner metadata stays outside the native Store."
+    },
+    "fixtureControlAffectedGate": {
+      "status": "failed-before-commit",
+      "selectedSuites": 25,
+      "fixtureControlRelevantFailure": false,
+      "observedHostAndSnapshotFailures": [
+        "migration-inventory requires a clean exact committed snapshot",
+        "native-posix-lock requires SDKROOT to match the fixed xcrun SDK; its isolated test passed when SDKROOT was set to that path",
+        "native-frozen-reference-profiles rejects the unreviewed host CPython 3.12.14 patch"
+      ],
+      "nativeDefaultCutover": { "tests": 92, "passed": 92, "failed": 0 },
+      "nodeWorkspaceOther": { "tests": 1897, "passed": 1871, "failed": 0, "skipped": 26 },
+      "cleanExactSubjectInventory": "inventory-consistent"
+    },
+    "focusedLifecycleTests": {
+      "status": "passed",
+      "tests": 34,
+      "failed": 0
+    },
+    "repositoryAffectedGate": {
+      "status": "failed-before-commit",
+      "selectedSuites": 25,
+      "passedSuites": 23,
+      "workflowRelevantFailure": false,
+      "reasons": [
+        "migration-inventory rejects the intentionally dirty pre-commit snapshot with 'Historical audit requires a clean current snapshot'",
+        "native-frozen-reference-profiles rejects the host CPython 3.12.14 patch because it is not yet listed as a reviewed patch"
+      ],
+      "nodeWorkspaceOther": {
+        "tests": 1897,
+        "passed": 1871,
+        "failed": 0,
+        "skipped": 26
+      },
+      "nativeDefaultCutover": {
+        "tests": 90,
+        "passed": 90,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "cleanPostCommitMigrationInventory": "inventory-consistent",
+    "runCreated": false,
+    "trainingEvidenceCreated": false,
+    "browserRunnerEvidenceCreated": false
+  },
+  "trainingGate": {
+    "status": "blocked",
+    "observationOnlyApprovalDefect": "Resolved by source commit 1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225; the focused runner regression permits strictly observation-only proposals without human approval and still gates UI mutations mislabeled as observation-only.",
+    "requiredRuntimeChange": "Satisfied by the installed immutable Workflows source commit and focused regression verification.",
+    "fixtureControlReadiness": "Implemented locally and probed from real native-lock and fixture availability; generic native CLI availability alone is never the capability. The probe is not proof of a browser or screenshot capability.",
+    "authorization": "No live training or replay occurred in this repair. Before a future fresh proof, a new host must complete fresh-agent discovery, establish an owner-private local parent and absent unique journey root, run the no-write preflight, register only the returned exact capability contract, independently prove browser and screenshot capabilities, and receive explicit owner approval. Invalidated/failed runs are not reusable."
+  }
+}

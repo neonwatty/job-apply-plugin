@@ -1,0 +1,153 @@
+TAP version 13
+# Subtest: raw application and harness contracts are deterministic on the current interpreter
+ok 1 - raw application and harness contracts are deterministic on the current interpreter
+  ---
+  duration_ms: 56.275791
+  type: 'test'
+  ...
+# Subtest: exact reference provenance and error text: python3.12
+ok 2 - exact reference provenance and error text: python3.12 # SKIP python3.12 unavailable; no parity claimed
+  ---
+  duration_ms: 1.196917
+  type: 'test'
+  ...
+# Subtest: exact reference provenance and error text: python3.13
+ok 3 - exact reference provenance and error text: python3.13
+  ---
+  duration_ms: 34.667333
+  type: 'test'
+  ...
+# {"provenance":{"implementation":"CPython","python":"3.13.13","unicode":"15.1.0","intMaxStrDigits":4300,"recursionLimit":1000},"profileKnown":true,"applicationMismatches":[],"interpreterDifferences":["error-wording","unicode-0x1ccd6"],"expectedProfileMismatches":[]}
+# Subtest: exact reference provenance and error text: python3.14
+ok 4 - exact reference provenance and error text: python3.14
+  ---
+  duration_ms: 32.462375
+  type: 'test'
+  ...
+# {"provenance":{"implementation":"CPython","python":"3.14.4","unicode":"16.0.0","intMaxStrDigits":4300,"recursionLimit":1000},"profileKnown":true,"applicationMismatches":[],"interpreterDifferences":[],"expectedProfileMismatches":[]}
+# Subtest: the original 18 diagnostic request strings survive byte for byte
+ok 5 - the original 18 diagnostic request strings survive byte for byte
+  ---
+  duration_ms: 2.048125
+  type: 'test'
+  ...
+# Subtest: numeric spelling, duplicate keys, malformed JSON and non-finite behavior are frozen
+ok 6 - numeric spelling, duplicate keys, malformed JSON and non-finite behavior are frozen
+  ---
+  duration_ms: 0.1125
+  type: 'test'
+  ...
+# Subtest: harness input, depth and output limits remain distinct from application contracts
+ok 7 - harness input, depth and output limits remain distinct from application contracts
+  ---
+  duration_ms: 0.1425
+  type: 'test'
+  ...
+# Subtest: closed envelopes, fixed synthetic inputs and privacy-safe outputs are enforced
+ok 8 - closed envelopes, fixed synthetic inputs and privacy-safe outputs are enforced
+  ---
+  duration_ms: 0.891625
+  type: 'test'
+  ...
+# Subtest: comparisons report exact interpreter differences and never hide application changes
+ok 9 - comparisons report exact interpreter differences and never hide application changes
+  ---
+  duration_ms: 0.547666
+  type: 'test'
+  ...
+# Subtest: capture rejects uncontrolled options and Python driver rejects arguments and stdin
+ok 10 - capture rejects uncontrolled options and Python driver rejects arguments and stdin
+  ---
+  duration_ms: 49.754833
+  type: 'test'
+  ...
+# Subtest: candidate capture refuses overwrite, repository aliases and caller Store roots
+ok 11 - candidate capture refuses overwrite, repository aliases and caller Store roots
+  ---
+  duration_ms: 737.182166
+  type: 'test'
+  ...
+# Subtest: single numeric token grammar rejects whitespace, junk and alternate spellings
+ok 12 - single numeric token grammar rejects whitespace, junk and alternate spellings
+  ---
+  duration_ms: 1.198709
+  type: 'test'
+  ...
+# Subtest: integer identity, digit limits and signed zero are exact
+ok 13 - integer identity, digit limits and signed zero are exact
+  ---
+  duration_ms: 0.835959
+  type: 'test'
+  ...
+# Subtest: fixed finite scope formatting remains required without versioned executables
+ok 14 - fixed finite scope formatting remains required without versioned executables
+  ---
+  duration_ms: 0.205208
+  type: 'test'
+  ...
+# Subtest: integer digit configuration rejects invalid limits
+ok 15 - integer digit configuration rejects invalid limits
+  ---
+  duration_ms: 0.063084
+  type: 'test'
+  ...
+# Subtest: independent numeric oracle from python3
+ok 16 - independent numeric oracle from python3
+  ---
+  duration_ms: 118.900583
+  type: 'test'
+  ...
+# {"implementation":"cpython","python":"3.14.4","unicode":"16.0.0","intMaxStrDigits":4300,"seed":1511506142,"cases":5788,"repeatedProfile":false}
+# Subtest: python3 reference rejects caller arguments and stdin
+ok 17 - python3 reference rejects caller arguments and stdin
+  ---
+  duration_ms: 35.099875
+  type: 'test'
+  ...
+# Subtest: independent numeric oracle from python3.12
+ok 18 - independent numeric oracle from python3.12 # SKIP python3.12 executable unavailable; version parity not established by this alias
+  ---
+  duration_ms: 1.117542
+  type: 'test'
+  ...
+# Subtest: python3.12 reference rejects caller arguments and stdin
+ok 19 - python3.12 reference rejects caller arguments and stdin # SKIP python3.12 executable unavailable
+  ---
+  duration_ms: 1.036
+  type: 'test'
+  ...
+# Subtest: independent numeric oracle from python3.13
+ok 20 - independent numeric oracle from python3.13
+  ---
+  duration_ms: 110.299084
+  type: 'test'
+  ...
+# {"implementation":"cpython","python":"3.13.13","unicode":"15.1.0","intMaxStrDigits":4300,"seed":1511506142,"cases":5788,"repeatedProfile":false}
+# Subtest: python3.13 reference rejects caller arguments and stdin
+ok 21 - python3.13 reference rejects caller arguments and stdin
+  ---
+  duration_ms: 35.539625
+  type: 'test'
+  ...
+# Subtest: independent numeric oracle from python3.14
+ok 22 - independent numeric oracle from python3.14
+  ---
+  duration_ms: 114.202625
+  type: 'test'
+  ...
+# {"implementation":"cpython","python":"3.14.4","unicode":"16.0.0","intMaxStrDigits":4300,"seed":1511506142,"cases":5788,"repeatedProfile":true}
+# Subtest: python3.14 reference rejects caller arguments and stdin
+ok 23 - python3.14 reference rejects caller arguments and stdin
+  ---
+  duration_ms: 35.611916
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 3
+# todo 0
+# duration_ms 980.281

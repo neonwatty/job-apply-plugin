@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: S02.I decoder matches all 82 frozen byte outcomes
+ok 1 - S02.I decoder matches all 82 frozen byte outcomes
+  ---
+  duration_ms: 1.889667
+  type: 'test'
+  ...
+# Subtest: S02.I detection preserves BOM precedence and zero-byte inference
+ok 2 - S02.I detection preserves BOM precedence and zero-byte inference
+  ---
+  duration_ms: 0.35325
+  type: 'test'
+  ...
+# Subtest: S02.I UTF-8 surrogatepass preserves Python codepoint identity
+ok 3 - S02.I UTF-8 surrogatepass preserves Python codepoint identity
+  ---
+  duration_ms: 0.750916
+  type: 'test'
+  ...
+# Subtest: S02.I UTF-16 combines only encoded adjacent surrogate pairs
+ok 4 - S02.I UTF-16 combines only encoded adjacent surrogate pairs
+  ---
+  duration_ms: 0.170584
+  type: 'test'
+  ...
+# Subtest: S02.I UTF-32 preserves surrogate units and unsigned range failures
+ok 5 - S02.I UTF-32 preserves surrogate units and unsigned range failures
+  ---
+  duration_ms: 0.205417
+  type: 'test'
+  ...
+# Subtest: S02.I decoding errors preserve object bytes offsets reasons and messages
+ok 6 - S02.I decoding errors preserve object bytes offsets reasons and messages
+  ---
+  duration_ms: 0.258959
+  type: 'test'
+  ...
+# Subtest: S02.I Buffer views and owned error bytes resist caller mutation
+ok 7 - S02.I Buffer views and owned error bytes resist caller mutation
+  ---
+  duration_ms: 6.512458
+  type: 'test'
+  ...
+# Subtest: S02.I invalid JavaScript inputs fail before byte decoding
+ok 8 - S02.I invalid JavaScript inputs fail before byte decoding
+  ---
+  duration_ms: 0.381208
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 53.7245

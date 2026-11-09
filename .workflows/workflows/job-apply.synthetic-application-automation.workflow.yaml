@@ -1,0 +1,136 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-application-automation
+  name: Synthetic Campaign to Review boundary
+  description: >-
+    Exercise one live local agent against a fictional isolated application,
+    require it to distinguish a saved Campaign preference from live authority,
+    activate an explicitly approved exact scope, reach final review, and prove
+    that the final action remains untouched.
+  lifecycle: candidate
+  candidateRevision: 3
+  tags: [application, automation, campaign, local-only, synthetic]
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
+
+target:
+  app: job-apply-plugin
+  baseUrl: https://automation-review.example.invalid/application
+  supportedPlatforms:
+    - id: local-agent
+      adapterCapability: shell
+      viewport: default-desktop
+  identity:
+    requirement: anonymous
+    note: >-
+      Anonymous means no real applicant or external account identity is used.
+      The local agent operates only on the committed fictional fixture; no real
+      applicant, employer, account, credential, or ATS is permitted.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    A new owner-private directory under .workflows/local contains the committed
+    fictional fixture, a separate initialized Store, one Ready job, a configured
+    Campaign to Review preference, no live authority grant, and an untouched
+    synthetic form.
+  constraints:
+    - Run locally only; CI must reject this workflow.
+    - >-
+      Use ephemeral codex exec with approvals disabled. The local acceptance
+      process needs danger-full-access so the subagent can reach the detached
+      broker's owner-private Unix socket; the fixture contains only fictional
+      data and a source fingerprint rejects repository changes.
+    - Do not open a browser, use network search, or navigate to any external site.
+    - Do not edit repository source files.
+    - Use only hosts under example.invalid and only the generated isolated Store.
+    - Never invoke the synthetic Submit application action.
+  preflightCapabilities:
+    - shell
+
+execution:
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
+  onUnexpectedState: fail
+  environmentChange: block-run
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 8
+    maxDurationSecondsPerStep: 120
+
+evidencePolicy:
+  default: [closed-state-oracle]
+  onFailure: [preserve-isolated-journey]
+  retainVerifiedDownloads: false
+
+optionalStateHandlers: []
+
+steps:
+  - id: acquire-bound-attempt
+    name: Acquire the one synthetic job
+    action: The dispatched subagent uses the installed public router to start the detached attempt with the prepared exact revision before performing any application operation.
+    expected:
+      - Exactly one local claim exists.
+      - No claim token is returned in durable output or agent result.
+    evidence:
+      - closed-state-oracle
+  - id: activate-approved-mode
+    name: Turn the saved preference into exact live authority
+    dependsOn: [acquire-bound-attempt]
+    action: >-
+      The subagent reads the Campaign to Review preference, verifies the live
+      authority is Guided at revision zero, and activates the current owner's
+      explicit approval for the one synthetic job, 120 minutes, and no
+      sensitive answer references.
+    expected:
+      - The saved preference alone is never treated as authority.
+      - Exactly one scoped Campaign to Review grant becomes active.
+      - The grant still requires final review and cannot authorize submission.
+    evidence:
+      - closed-state-oracle
+  - id: authorize-operations
+    name: Evaluate the bounded application actions
+    dependsOn: [activate-approved-mode]
+    action: Send the committed value-free evaluation packet through the attempt broker.
+    expected:
+      - Campaign to Review authorizes the four non-final operations.
+      - The decision contains no applicant values or claim bearer.
+    evidence:
+      - closed-state-oracle
+  - id: fill-to-review
+    name: Complete the fictional form
+    dependsOn: [authorize-operations]
+    action: Apply each authorized synthetic operation in its declared order.
+    expected:
+      - The synthetic form reaches final_review.
+      - Submit application remains untouched.
+    evidence:
+      - closed-state-oracle
+  - id: durable-handoff
+    name: Hand off for manual review
+    dependsOn: [fill-to-review]
+    action: Use the attempt broker to commit the prepared awaiting_review packet.
+    expected:
+      - The job is awaiting_review and the claim is released.
+      - History contains job-started and reviewed, with no submitted or applied event.
+      - Campaign authority remains active but has no Ready job.
+    evidence:
+      - closed-state-oracle
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - Stop the detached attempt broker even when the journey fails.
+      - Remove a passing isolated journey unless the owner requested retention.
+      - Preserve a failed isolated journey for local diagnosis without exposing its paths in durable evidence.

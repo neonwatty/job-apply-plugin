@@ -1,0 +1,150 @@
+import { lstat, readlink, stat } from "node:fs/promises";
+import { filesystemDecode, filesystemEncode } from "./posix-path-bytes.js";
+
+export type PythonPathProfile = "3.12" | "3.13" | "3.14";
+
+export interface PosixPathIO {
+  lstat(path: string): Promise<{ isSymbolicLink(): boolean }>;
+  readlink(path: string): Promise<string>;
+  stat(path: string): Promise<unknown>;
+  cwd(): string;
+}
+
+export class PathLoopError extends Error {
+  constructor() {
+    super("Symlink loop during path resolution");
+    this.name = "RuntimeError";
+  }
+}
+
+export function validatePathProfile(profile: PythonPathProfile): void {
+  if (!["3.12", "3.13", "3.14"].includes(profile)) {
+    throw new RangeError("Unsupported Python path profile");
+  }
+}
+
+/** Python PurePosixPath construction, retaining parent components and // anchor. */
+export function constructPosixPath(base: string, child: string): string {
+  const raw = child.startsWith("/") || !base ? child : `${base}${base.endsWith("/") ? "" : "/"}${child}`;
+  const anchor = raw.startsWith("//") && !raw.startsWith("///") ? "//" : raw.startsWith("/") ? "/" : "";
+  const parts = raw.split("/").filter((part) => part !== "" && part !== ".");
+  return anchor + parts.join("/") || ".";
+}
+
+export function posixParent(path: string): string {
+  const normalized = constructPosixPath("", path);
+  if (normalized === "/" || normalized === "//" || normalized === ".") return normalized;
+  const separator = normalized.lastIndexOf("/");
+  if (separator < 0) return ".";
+  if (separator === 0) return "/";
+  if (separator === 1 && normalized.startsWith("//")) return "//";
+  return normalized.slice(0, separator);
+}
+
+function nativePath(path: string): Buffer {
+  const encoded = filesystemEncode(path);
+  if (encoded.includes(0)) {
+    const error = new Error("embedded null byte");
+    error.name = "ValueError";
+    throw error;
+  }
+  return encoded;
+}
+
+const nativeIO: PosixPathIO = {
+  lstat: (path) => lstat(nativePath(path)),
+  stat: (path) => stat(nativePath(path)),
+  async readlink(path) {
+    const bytes = await readlink(nativePath(path), { encoding: "buffer" });
+    return filesystemDecode(bytes);
+  },
+  cwd: () => process.cwd(),
+};
+
+function isOSFailure(error: unknown): boolean {
+  return error instanceof Error && "errno" in error && typeof error.errno === "number";
+}
+
+/** Non-strict parent resolution; missing/non-directory components remain lexical. */
+export async function resolvePosixPath(
+  path: string,
+  profile: PythonPathProfile,
+  io: PosixPathIO = nativeIO,
+): Promise<string> {
+  validatePathProfile(profile);
+  if (io === nativeIO && process.platform === "win32") {
+    throw new Error("Native Windows path resolution is not supported by this inert POSIX adapter");
+  }
+  const seen = new Map<string, string | null>();
+
+  async function walk(initial: string, remainder: string): Promise<{ path: string; unresolved: boolean }> {
+    let current = remainder.startsWith("/") ? "/" : initial;
+    const parts = remainder.split("/");
+    for (let index = 0; index < parts.length; index += 1) {
+      const part = parts[index]!;
+      if (!part || part === ".") continue;
+      if (part === "..") {
+        current = current.slice(0, current.lastIndexOf("/")) || "/";
+        continue;
+      }
+      const candidate = `${current === "/" ? "" : current}/${part}`;
+      let isLink: boolean;
+      try {
+        isLink = (await io.lstat(candidate)).isSymbolicLink();
+      } catch (error) {
+        if (!isOSFailure(error)) throw error;
+        current = candidate;
+        continue;
+      }
+      if (!isLink) {
+        current = candidate;
+        continue;
+      }
+      const prior = seen.get(candidate);
+      if (prior === null) {
+        if (profile === "3.12") {
+          return { path: `${candidate}/${parts.slice(index + 1).join("/")}`, unresolved: true };
+        }
+        current = candidate;
+        continue;
+      }
+      if (prior !== undefined) {
+        current = prior;
+        continue;
+      }
+      let target: string;
+      try {
+        target = await io.readlink(candidate);
+      } catch (error) {
+        if (profile === "3.12" || !isOSFailure(error)) throw error;
+        current = candidate;
+        continue;
+      }
+      seen.set(candidate, null);
+      const resolved = await walk(current, target);
+      current = resolved.path;
+      if (resolved.unresolved) {
+        return { path: `${current}/${parts.slice(index + 1).join("/")}`, unresolved: true };
+      }
+      seen.set(candidate, current);
+    }
+    return { path: current, unresolved: false };
+  }
+
+  const resolved = await walk(path.startsWith("/") ? "/" : io.cwd(), path);
+  const normalized: string[] = [];
+  for (const part of resolved.path.split("/")) {
+    if (part === "..") normalized.pop();
+    else if (part && part !== ".") normalized.push(part);
+  }
+  const result = `/${normalized.join("/")}`;
+  if (profile === "3.12") {
+    try {
+      await io.stat(result);
+    } catch (error) {
+      if (!isOSFailure(error)) throw error;
+      if ((error as NodeJS.ErrnoException).code === "ELOOP") throw new PathLoopError();
+    }
+  }
+  return result;
+}

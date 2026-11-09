@@ -1,0 +1,3917 @@
+{
+  "waveId": "core-paths-ui-u01-implementation",
+  "repository": "/Users/neonwatty/.codex/worktrees/e3db/job-apply-plugin",
+  "inputRevision": "31f93e421b1ea36df1e41fe55e85e4049e2fcd60",
+  "dag": {
+    "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+    "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8",
+    "revision": "48e83ca0715c975b56436e78e14e4e1aa47f1584"
+  },
+  "reason": "Accept the next inert Mac core TypeScript modules against preserved original behavior and focused local evidence.",
+  "package": {
+    "id": "U01",
+    "assignmentIds": [
+      "U01.I",
+      "U01.V"
+    ],
+    "dependenciesByTask": {
+      "U01.I": [
+        "P00.V",
+        "U01.R"
+      ],
+      "U01.V": [
+        "U01.I",
+        "P01.V"
+      ]
+    },
+    "workerAllowedFiles": [
+      "runtime/workspace-ui/lib/activity-view.js",
+      "runtime/workspace-ui/lib/answer-view.js",
+      "runtime/workspace-ui/lib/profile-view.js",
+      "runtime/workspace-ui/lib/resume-view.js",
+      "runtime/workspace-ui/lib/trash-view.js",
+      "src/workspace-ui/lib/activity-view.ts",
+      "src/workspace-ui/lib/answer-view.ts",
+      "src/workspace-ui/lib/profile-view.ts",
+      "src/workspace-ui/lib/resume-view.ts",
+      "src/workspace-ui/lib/trash-view.ts",
+      "tests_js/workspace_activity_helpers_ts.test.mjs",
+      "tests_js/workspace_answer_helpers_ts.test.mjs",
+      "tests_js/workspace_helpers_browser_ts.test.mjs",
+      "tests_js/workspace_profile_helpers_ts.test.mjs",
+      "tests_js/workspace_resume_view_ts.test.mjs",
+      "tests_js/workspace_trash_view_ts.test.mjs"
+    ],
+    "inputs": [
+      {
+        "path": ".source-size-baseline.json",
+        "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+      },
+      {
+        "path": "config/test-matrix.json",
+        "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+      },
+      {
+        "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+        "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3"
+      },
+      {
+        "path": "docs/migration/evidence/m01/M01.I.json",
+        "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+      },
+      {
+        "path": "docs/migration/evidence/m01/M01.V.json",
+        "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+      },
+      {
+        "path": "docs/migration/evidence/m01/implementation-audit.json",
+        "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+      },
+      {
+        "path": "docs/migration/evidence/m01/implementation-spec.json",
+        "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+      },
+      {
+        "path": "docs/migration/evidence/m01/logs/M01-requests.tap",
+        "sha256": "f2777c22e2d5c30e09814a96d89f7be56afeda98615604b2ed90b5bc710de8f2"
+      },
+      {
+        "path": "docs/migration/evidence/remaining-helpers-focused.tap",
+        "sha256": "2854b6678d0454f995f7664a5f219f40fd16ec3576a11839d91d37c1f2ea2749"
+      },
+      {
+        "path": "docs/migration/evidence/remaining-helpers-progress.json",
+        "sha256": "ff89352f5dd86311a5d8b761ccaa53b0d05b9f72a7097daeaa530c59f55fac5d"
+      },
+      {
+        "path": "docs/migration/evidence/trash-helper-7fa2687.json",
+        "sha256": "a33ade714166fb3a8239aaf5f503f68efe0c7722d26f44f268a57b66e6f34a2a"
+      },
+      {
+        "path": "docs/migration/evidence/trash-helper-7fa2687.tap",
+        "sha256": "2ea4f426588fac127abdb780318801efebec0724e1d4c70f74e60b8a0a6061cd"
+      },
+      {
+        "path": "docs/migration/evidence/u01-reference/U01.R.json",
+        "sha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42"
+      },
+      {
+        "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+        "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+      },
+      {
+        "path": "docs/migration/evidence/u01-reference/reference-plan.md",
+        "sha256": "c9911976541cd7ade1a6d417f730acdb7e582d4fc977ea910012348956778396"
+      },
+      {
+        "path": "docs/migration/evidence/u01-reference/reference-spec.json",
+        "sha256": "d24dafa72ff44c9a69ad36c4fa2a38aaab8c33df6cb59c0b89b7a166aca9ffd9"
+      },
+      {
+        "path": "docs/migration/remaining-helper-reference.md",
+        "sha256": "f65addce9c6db1e1c951b47ee5b234e472c17af8bd4b8a8daf5130637de6d88f"
+      },
+      {
+        "path": "docs/migration/trash-helper-reference.md",
+        "sha256": "7ea83fc4e4ad314d9334f34f40fcfa305244bbd50a0a7e943ab97217e070cffe"
+      },
+      {
+        "path": "package-lock.json",
+        "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+      },
+      {
+        "path": "package.json",
+        "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+      },
+      {
+        "path": "runtime/workspace-ui/lib/activity-view.js",
+        "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+      },
+      {
+        "path": "runtime/workspace-ui/lib/answer-view.js",
+        "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573"
+      },
+      {
+        "path": "runtime/workspace-ui/lib/automation-request.js",
+        "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+      },
+      {
+        "path": "runtime/workspace-ui/lib/profile-view.js",
+        "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe"
+      },
+      {
+        "path": "runtime/workspace-ui/lib/resume-view.js",
+        "sha256": "c6cedcfe438c68e02275da36f06e4eaca5b2212275fc3ce9b898343f7a9c586a"
+      },
+      {
+        "path": "runtime/workspace-ui/lib/trash-view.js",
+        "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836"
+      },
+      {
+        "path": "src/workspace-ui/lib/activity-view.ts",
+        "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105"
+      },
+      {
+        "path": "src/workspace-ui/lib/answer-view.ts",
+        "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01"
+      },
+      {
+        "path": "src/workspace-ui/lib/automation-request.ts",
+        "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84"
+      },
+      {
+        "path": "src/workspace-ui/lib/profile-view.ts",
+        "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0"
+      },
+      {
+        "path": "src/workspace-ui/lib/resume-view.ts",
+        "sha256": "5aa051a8e22bc217977f61ba15176ea6e5cbc1672752a0cfc48ba89c1fc725ab"
+      },
+      {
+        "path": "src/workspace-ui/lib/trash-view.ts",
+        "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb"
+      },
+      {
+        "path": "tests_js/workspace_activity_helpers_reference.test.mjs",
+        "sha256": "f952f5e334b1309d0a48134af45bce1541d0989a0d7c1cadda848ba3c8721648"
+      },
+      {
+        "path": "tests_js/workspace_activity_helpers_ts.test.mjs",
+        "sha256": "5befdfa638ded9b1bdb6dfb779e5700c06f3fbb9b68dfde16ef04776d993315c"
+      },
+      {
+        "path": "tests_js/workspace_answer_helpers_reference.test.mjs",
+        "sha256": "e8a9477ad6ada0d71ee411bacf4764d15de2bcf5b65aa1462301d2b5e4a327f9"
+      },
+      {
+        "path": "tests_js/workspace_answer_helpers_ts.test.mjs",
+        "sha256": "b4998e1006fb0de5c8d7c5baba58bdba7e37d8dbf4bf9ef358c48d8bb8d15038"
+      },
+      {
+        "path": "tests_js/workspace_helpers.test.mjs",
+        "sha256": "752391347ac67ab2624ab3b5ad7297f6e12c618de8f5502fefa2d3636780bb4e"
+      },
+      {
+        "path": "tests_js/workspace_helpers_browser_ts.test.mjs",
+        "sha256": "3f9048a2205f28bc43478019ea446c8dba692d3ecb0b734f2fee5c8f7318c18d"
+      },
+      {
+        "path": "tests_js/workspace_infrastructure_reference_support.mjs",
+        "sha256": "91a69f3e8267076e31ee705546018965ec32b342fcb65f443426864913a62810"
+      },
+      {
+        "path": "tests_js/workspace_profile_helpers_reference.test.mjs",
+        "sha256": "030cd5825218c8e881b847b6e5a5e288d2eda1a95ca5cd6ee56b621949735bc7"
+      },
+      {
+        "path": "tests_js/workspace_profile_helpers_ts.test.mjs",
+        "sha256": "1a696737ffb9c71c56d12d380bca6de683448d56ee22055baf7efeb90da0a516"
+      },
+      {
+        "path": "tests_js/workspace_resume_view_ts.test.mjs",
+        "sha256": "cb883289a95f02e56790d4ea577dc77d52a0d072f99e16cfcece52d025dad0a1"
+      },
+      {
+        "path": "tests_js/workspace_test_support.mjs",
+        "sha256": "f64c9e0c4291bf4c019693835c29322a80fe6559f14b047bdddf536d97e70082"
+      },
+      {
+        "path": "tests_js/workspace_trash_reference.test.mjs",
+        "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+      },
+      {
+        "path": "tests_js/workspace_trash_view_ts.test.mjs",
+        "sha256": "69ca6f67d55e4b46a054d647997c10dd0e641d46a84857d4134171cb549a3756"
+      },
+      {
+        "path": "tsconfig.json",
+        "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+      },
+      {
+        "path": "workspace/app.js",
+        "sha256": "4a50101e09cf0b5c70480074beae1ca193dffb16817d8ac8612c089c866b41c4"
+      },
+      {
+        "path": "workspace/bootstrap.js",
+        "sha256": "cab93d10769a32bd01991b1965dd1d0daa3d7ad0e2c8a20f4c2f1fcd193d690e"
+      },
+      {
+        "path": "workspace/features/activity.js",
+        "sha256": "ea68a9c2dd6880438229b5bb965c35c5b8235b36dc77df39b69dcc3b5ff8844e"
+      },
+      {
+        "path": "workspace/features/answers.js",
+        "sha256": "0e52d101f15a2453f2dfb75030224e0629a023d0d3532fd59255e23d61c75ad1"
+      },
+      {
+        "path": "workspace/features/automation.js",
+        "sha256": "e85037840fce9a20f7aa07c612c634dc6e8593bc970a6c40342f0787a55bffd3"
+      },
+      {
+        "path": "workspace/features/bindings.js",
+        "sha256": "a71d9196946c76b510b7347b8349dc8282ebb4d1b4e5e44412a56ced7b561f05"
+      },
+      {
+        "path": "workspace/features/facts.js",
+        "sha256": "3bcf4565f20237d03260ee0500bb4c6fed0a4917a35486551962ba99f301aabd"
+      },
+      {
+        "path": "workspace/features/jobs.js",
+        "sha256": "dfc365a7eb2be0afbce3859e1fba012329cf84371c67b200fc28ac5b84199a2b"
+      },
+      {
+        "path": "workspace/features/navigation.js",
+        "sha256": "1bf514de76dd7edad2cc3f17e962b2b425f6f89558abdc0a875a8783c84574f0"
+      },
+      {
+        "path": "workspace/features/overview.js",
+        "sha256": "d65133c691d5a1cc66ef863d60672ef32a967140e40c821eaf13ff193995246d"
+      },
+      {
+        "path": "workspace/features/resumes.js",
+        "sha256": "d2003cae799cceb859c0f1120473c7df4c13182f3c3ab7692dd119f81b242607"
+      },
+      {
+        "path": "workspace/features/trash.js",
+        "sha256": "36e114dfdc85f9ee98b8624043adf1de26591d51a6d776d035bdc703c005ffb3"
+      },
+      {
+        "path": "workspace/lib/api.js",
+        "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+      },
+      {
+        "path": "workspace/lib/dom.js",
+        "sha256": "9c366cc6b5e5bbab2c6b74db36f45445ea533c20086e29eebd02e6cce5a0e78e"
+      },
+      {
+        "path": "workspace/lib/helpers.js",
+        "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+      },
+      {
+        "path": "workspace/lib/state.js",
+        "sha256": "f726687cb368d1238d0e9bd6c287dee9313631c51d43363441febbb966b16218"
+      }
+    ],
+    "cells": [
+      {
+        "id": "U01-reference-workspace_activity_helpers_reference",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_activity_helpers_reference.test.mjs"
+        ],
+        "testNames": [
+          "activity reference: job filter preserves identity/order and status short circuit",
+          "activity reference: transition and readiness maps preserve inherited lookup behavior",
+          "activity reference: revision policies retain integer checks, ties and reference returns",
+          "activity reference: signatures and announcements preserve field selection and ordered copy",
+          "activity reference: attention signatures preserve order and blocker special-case exactness",
+          "activity reference: owner next-step copy and prototype lookups remain observable"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_activity_helpers_reference.tap",
+        "requirementIds": [
+          "u01.filterJobs",
+          "u01.transitionsFor",
+          "u01.canMarkReadyFrom",
+          "u01.shouldUseActivityResponse",
+          "u01.newestCanonicalJob",
+          "u01.activitySignature",
+          "u01.activityAnnouncement",
+          "u01.attentionMembershipSignature",
+          "u01.attentionAnnouncement",
+          "u01.attentionMissingInformationText",
+          "u01.attentionBlockerSummary",
+          "u01.ownerBetaNextStep"
+        ]
+      },
+      {
+        "id": "U01-reference-workspace_answer_helpers_reference",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_answer_helpers_reference.test.mjs"
+        ],
+        "testNames": [
+          "answer reference: consent and summary retain truthiness and precedence",
+          "answer reference: identity and request gates preserve strict comparison and short circuits",
+          "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+          "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_answer_helpers_reference.tap",
+        "requirementIds": [
+          "u01.answerNeedsFreshConsent",
+          "u01.answerSummary",
+          "u01.canRevealAnswer",
+          "u01.canRefreshAnswerDraft",
+          "u01.canApplyAnswerReveal",
+          "u01.canApplyAnswerDialogResponse",
+          "u01.canApplyAnswerDialogMutation",
+          "u01.answerApiPath",
+          "u01.sameAnswerScope"
+        ]
+      },
+      {
+        "id": "U01-reference-workspace_profile_helpers_reference",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_profile_helpers_reference.test.mjs"
+        ],
+        "testNames": [
+          "profile reference: form patch fixes fields and preserves priority coercion",
+          "profile reference: pointers decode escapes, own keys and primitive boxing",
+          "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+          "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+          "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+          "profile reference: provenance selects longest ancestor or sorted descendant summary",
+          "profile reference: tags retain duplicates, order and String coercion",
+          "U01 resume reference preserves counts and default copy",
+          "U01 resume reference preserves extraction precedence and malformed projections",
+          "U01 resume reference preserves grouping coercion and strict response identity",
+          "U01 resume reference preserves accessor order and thrown identities"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_profile_helpers_reference.tap",
+        "requirementIds": [
+          "u01.formPatch",
+          "u01.pointerValue",
+          "u01.patchForPaths",
+          "u01.conflictingPaths",
+          "u01.summarizeProvenance",
+          "u01.tagsFromInput",
+          "u01.resumeAssignmentText",
+          "u01.extractionRequestView",
+          "u01.proposalGroupForPath",
+          "u01.shouldUseResumeResponse"
+        ]
+      },
+      {
+        "id": "U01-reference-workspace_trash_reference",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_trash_reference.test.mjs"
+        ],
+        "testNames": [
+          "trash-reference: delete phrases retain falsy defaults and String coercion",
+          "trash-reference: filtering preserves order, item identity and strict type matching",
+          "trash-reference: missing collections and malformed elements keep existing behavior",
+          "trash-reference: blockers sum integers only without clamping negatives",
+          "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+          "trash-reference: revision conflict takes precedence without consulting other fields",
+          "trash-reference: presentation functions leave frozen caller records unchanged"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_trash_reference.tap",
+        "requirementIds": [
+          "u01.typedDeletePhrase",
+          "u01.filterTrashItems",
+          "u01.trashBlockerText",
+          "u01.lifecycleErrorText"
+        ]
+      },
+      {
+        "id": "U01-differential-workspace_activity_helpers_ts",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_activity_helpers_ts.test.mjs"
+        ],
+        "testNames": [
+          "activity gates retain absent job results and suppress unchanged queue membership",
+          "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+          "activity TS preserves custom callbacks/returns, access order and thrown errors",
+          "activity TS retains array/record identities and avoids mutating frozen inputs"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_activity_helpers_ts.tap",
+        "requirementIds": [
+          "u01.filterJobs",
+          "u01.transitionsFor",
+          "u01.canMarkReadyFrom",
+          "u01.shouldUseActivityResponse",
+          "u01.newestCanonicalJob",
+          "u01.activitySignature",
+          "u01.activityAnnouncement",
+          "u01.attentionMembershipSignature",
+          "u01.attentionAnnouncement",
+          "u01.attentionMissingInformationText",
+          "u01.attentionBlockerSummary",
+          "u01.ownerBetaNextStep"
+        ]
+      },
+      {
+        "id": "U01-differential-workspace_answer_helpers_ts",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_answer_helpers_ts.test.mjs"
+        ],
+        "testNames": [
+          "answer request gates reject stale selections, keys, sequences and generations exactly",
+          "answer TS covers all nine reference exports across ordinary and coercive inputs",
+          "answer TS preserves getter access order, short circuits and coercion errors",
+          "answer TS scope retains JS JSON semantics, getter order, toJSON and failures"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_answer_helpers_ts.tap",
+        "requirementIds": [
+          "u01.answerNeedsFreshConsent",
+          "u01.answerSummary",
+          "u01.canRevealAnswer",
+          "u01.canRefreshAnswerDraft",
+          "u01.canApplyAnswerReveal",
+          "u01.canApplyAnswerDialogResponse",
+          "u01.canApplyAnswerDialogMutation",
+          "u01.answerApiPath",
+          "u01.sameAnswerScope"
+        ]
+      },
+      {
+        "id": "U01-differential-workspace_profile_helpers_ts",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_profile_helpers_ts.test.mjs"
+        ],
+        "testNames": [
+          "profile helpers preserve errors for absent patch entries and drafts",
+          "profile TS covers six exports with fixed ordinary and coercive cases",
+          "profile TS preserves getter/coercion and custom iteration behavior",
+          "profile TS preserves patch alias mutation, failure boundaries and provenance identity"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_profile_helpers_ts.tap",
+        "requirementIds": [
+          "u01.formPatch",
+          "u01.pointerValue",
+          "u01.patchForPaths",
+          "u01.conflictingPaths",
+          "u01.summarizeProvenance",
+          "u01.tagsFromInput"
+        ]
+      },
+      {
+        "id": "U01-differential-workspace_resume_view_ts",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_resume_view_ts.test.mjs"
+        ],
+        "testNames": [
+          "inert resume view module exposes exactly the four existing helpers",
+          "assignment text retains exact counts, pluralization and noninteger defaults",
+          "extraction view preserves every state's exact user-facing response",
+          "proposal grouping preserves known groups and existing path coercion",
+          "resume responses require both the same request and the same view without coercion",
+          "pure helpers leave caller projections unchanged",
+          "U01 resume differential preserves getters and coercion order",
+          "U01 resume differential preserves original thrown identity and short circuits"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_resume_view_ts.tap",
+        "requirementIds": [
+          "u01.resumeAssignmentText",
+          "u01.extractionRequestView",
+          "u01.proposalGroupForPath",
+          "u01.shouldUseResumeResponse"
+        ]
+      },
+      {
+        "id": "U01-differential-workspace_trash_view_ts",
+        "environmentId": "node-local",
+        "reporter": "node-tap13",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_trash_view_ts.test.mjs"
+        ],
+        "testNames": [
+          "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+          "trash TS preserves property access and coercion order including propagated errors",
+          "trash TS preserves filtering identities, order, sparse semantics and callback access",
+          "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged"
+        ],
+        "timeoutMs": 30000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_trash_view_ts.tap",
+        "requirementIds": [
+          "u01.typedDeletePhrase",
+          "u01.filterTrashItems",
+          "u01.trashBlockerText",
+          "u01.lifecycleErrorText"
+        ]
+      },
+      {
+        "id": "U01-browser",
+        "command": [
+          "node",
+          "--test",
+          "tests_js/workspace_helpers_browser_ts.test.mjs"
+        ],
+        "testNames": [
+          "helper browser contract: emitted modules load and preserve browser-native behavior"
+        ],
+        "reporter": "node-tap13",
+        "timeoutMs": 60000,
+        "maxOutputBytes": 1048576,
+        "logPath": "docs/migration/evidence/ui/logs/U01-browser.tap",
+        "environmentId": "node-local",
+        "requirementIds": [
+          "u01.answerNeedsFreshConsent",
+          "u01.answerSummary",
+          "u01.canRevealAnswer",
+          "u01.canRefreshAnswerDraft",
+          "u01.canApplyAnswerReveal",
+          "u01.canApplyAnswerDialogResponse",
+          "u01.canApplyAnswerDialogMutation",
+          "u01.answerApiPath",
+          "u01.sameAnswerScope",
+          "u01.filterJobs",
+          "u01.transitionsFor",
+          "u01.canMarkReadyFrom",
+          "u01.shouldUseActivityResponse",
+          "u01.newestCanonicalJob",
+          "u01.activitySignature",
+          "u01.activityAnnouncement",
+          "u01.attentionMembershipSignature",
+          "u01.attentionAnnouncement",
+          "u01.attentionMissingInformationText",
+          "u01.attentionBlockerSummary",
+          "u01.ownerBetaNextStep",
+          "u01.formPatch",
+          "u01.pointerValue",
+          "u01.patchForPaths",
+          "u01.conflictingPaths",
+          "u01.summarizeProvenance",
+          "u01.tagsFromInput",
+          "u01.resumeAssignmentText",
+          "u01.extractionRequestView",
+          "u01.proposalGroupForPath",
+          "u01.shouldUseResumeResponse",
+          "u01.typedDeletePhrase",
+          "u01.filterTrashItems",
+          "u01.trashBlockerText",
+          "u01.lifecycleErrorText"
+        ]
+      }
+    ],
+    "emittedFiles": [
+      "runtime/workspace-ui/lib/activity-view.js",
+      "runtime/workspace-ui/lib/answer-view.js",
+      "runtime/workspace-ui/lib/profile-view.js",
+      "runtime/workspace-ui/lib/resume-view.js",
+      "runtime/workspace-ui/lib/trash-view.js"
+    ],
+    "parentNode": "UI0",
+    "author": "timestamp_tests",
+    "reviewer": "hooks_audit",
+    "freezeAfter": [
+      "U01.R"
+    ],
+    "inputAdditionsAtFreeze": [
+      "tests_js/workspace_profile_helpers_reference.test.mjs",
+      "docs/migration/evidence/ui/U01-reference.md"
+    ],
+    "candidateFiles": [
+      {
+        "path": "tests_js/workspace_resume_view_ts.test.mjs",
+        "candidatePath": "/Users/neonwatty/.codex/migration-recovery/e3db-core-paths-ui-20260908/u01-implementation-candidate/tests_js/workspace_resume_view_ts.test.mjs",
+        "sha256": "0bdc1c6e1dec865e5ebb60dc6e168061f0a3722bc55fdce54a962c77523a585d",
+        "physicalLines": 166
+      }
+    ],
+    "coverage": [
+      {
+        "export": "answerNeedsFreshConsent",
+        "requirementId": "u01.answerNeedsFreshConsent",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: consent and summary retain truthiness and precedence",
+            "line": 5
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "line": 16
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "answerSummary",
+        "requirementId": "u01.answerSummary",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: consent and summary retain truthiness and precedence",
+            "line": 5
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "canRevealAnswer",
+        "requirementId": "u01.canRevealAnswer",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: consent and summary retain truthiness and precedence",
+            "line": 5
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "canRefreshAnswerDraft",
+        "requirementId": "u01.canRefreshAnswerDraft",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "line": 20
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "line": 16
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "canApplyAnswerReveal",
+        "requirementId": "u01.canApplyAnswerReveal",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "line": 20
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "line": 16
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "canApplyAnswerDialogResponse",
+        "requirementId": "u01.canApplyAnswerDialogResponse",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "line": 20
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "line": 16
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "canApplyAnswerDialogMutation",
+        "requirementId": "u01.canApplyAnswerDialogMutation",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "line": 20
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "line": 16
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "answerApiPath",
+        "requirementId": "u01.answerApiPath",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+            "line": 36
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+            "line": 66
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "sameAnswerScope",
+        "requirementId": "u01.sameAnswerScope",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+            "testName": "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence",
+            "line": 46
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "line": 44
+          },
+          {
+            "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+            "testName": "answer TS scope retains JS JSON semantics, getter order, toJSON and failures",
+            "line": 89
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "filterJobs",
+        "requirementId": "u01.filterJobs",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: job filter preserves identity/order and status short circuit",
+            "line": 5
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+            "line": 87
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "transitionsFor",
+        "requirementId": "u01.transitionsFor",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: transition and readiness maps preserve inherited lookup behavior",
+            "line": 18
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+            "line": 87
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "canMarkReadyFrom",
+        "requirementId": "u01.canMarkReadyFrom",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: transition and readiness maps preserve inherited lookup behavior",
+            "line": 18
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "shouldUseActivityResponse",
+        "requirementId": "u01.shouldUseActivityResponse",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: revision policies retain integer checks, ties and reference returns",
+            "line": 31
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity gates retain absent job results and suppress unchanged queue membership",
+            "line": 18
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "newestCanonicalJob",
+        "requirementId": "u01.newestCanonicalJob",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: revision policies retain integer checks, ties and reference returns",
+            "line": 31
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity gates retain absent job results and suppress unchanged queue membership",
+            "line": 18
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+            "line": 87
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "activitySignature",
+        "requirementId": "u01.activitySignature",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: signatures and announcements preserve field selection and ordered copy",
+            "line": 45
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "activityAnnouncement",
+        "requirementId": "u01.activityAnnouncement",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: signatures and announcements preserve field selection and ordered copy",
+            "line": 45
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "attentionMembershipSignature",
+        "requirementId": "u01.attentionMembershipSignature",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "line": 58
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "attentionAnnouncement",
+        "requirementId": "u01.attentionAnnouncement",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "line": 58
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity gates retain absent job results and suppress unchanged queue membership",
+            "line": 18
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "attentionMissingInformationText",
+        "requirementId": "u01.attentionMissingInformationText",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "line": 58
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "attentionBlockerSummary",
+        "requirementId": "u01.attentionBlockerSummary",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "line": 58
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "ownerBetaNextStep",
+        "requirementId": "u01.ownerBetaNextStep",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+            "testName": "activity reference: owner next-step copy and prototype lookups remain observable",
+            "line": 75
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "line": 37
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "line": 65
+          },
+          {
+            "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+            "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+            "line": 87
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "formPatch",
+        "requirementId": "u01.formPatch",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: form patch fixes fields and preserves priority coercion",
+            "line": 5
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+            "line": 28
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+            "line": 48
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "pointerValue",
+        "requirementId": "u01.pointerValue",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: pointers decode escapes, own keys and primitive boxing",
+            "line": 19
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+            "line": 28
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+            "line": 48
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "patchForPaths",
+        "requirementId": "u01.patchForPaths",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+            "line": 31
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+            "line": 46
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile helpers preserve errors for absent patch entries and drafts",
+            "line": 14
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+            "line": 28
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+            "line": 48
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves patch alias mutation, failure boundaries and provenance identity",
+            "line": 64
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "conflictingPaths",
+        "requirementId": "u01.conflictingPaths",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+            "line": 56
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile helpers preserve errors for absent patch entries and drafts",
+            "line": 14
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+            "line": 28
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves patch alias mutation, failure boundaries and provenance identity",
+            "line": 64
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "summarizeProvenance",
+        "requirementId": "u01.summarizeProvenance",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: provenance selects longest ancestor or sorted descendant summary",
+            "line": 66
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+            "line": 28
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+            "line": 48
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves patch alias mutation, failure boundaries and provenance identity",
+            "line": 64
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "tagsFromInput",
+        "requirementId": "u01.tagsFromInput",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "profile reference: tags retain duplicates, order and String coercion",
+            "line": 78
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+            "line": 28
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+            "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+            "line": 48
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "resumeAssignmentText",
+        "requirementId": "u01.resumeAssignmentText",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves counts and default copy",
+            "status": "required new original-only fixed witness"
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves accessor order and thrown identities",
+            "status": "required new original accessor/error witness"
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "inert resume view module exposes exactly the four existing helpers",
+            "line": 10
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "assignment text retains exact counts, pluralization and noninteger defaults",
+            "line": 16
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "pure helpers leave caller projections unchanged",
+            "line": 104
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves getters and coercion order",
+            "line": 118,
+            "status": "candidate passes; not yet canonical"
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves original thrown identity and short circuits",
+            "line": 143,
+            "status": "candidate passes; not yet canonical"
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "extractionRequestView",
+        "requirementId": "u01.extractionRequestView",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves extraction precedence and malformed projections",
+            "status": "required new original-only fixed witness"
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves accessor order and thrown identities",
+            "status": "required new original accessor/error witness"
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "inert resume view module exposes exactly the four existing helpers",
+            "line": 10
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "extraction view preserves every state's exact user-facing response",
+            "line": 39
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "pure helpers leave caller projections unchanged",
+            "line": 104
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves getters and coercion order",
+            "line": 118,
+            "status": "candidate passes; not yet canonical"
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves original thrown identity and short circuits",
+            "line": 143,
+            "status": "candidate passes; not yet canonical"
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "proposalGroupForPath",
+        "requirementId": "u01.proposalGroupForPath",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves grouping coercion and strict response identity",
+            "status": "required new original-only fixed witness"
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves accessor order and thrown identities",
+            "status": "required new original accessor/error witness"
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "inert resume view module exposes exactly the four existing helpers",
+            "line": 10
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "proposal grouping preserves known groups and existing path coercion",
+            "line": 66
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "pure helpers leave caller projections unchanged",
+            "line": 104
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves getters and coercion order",
+            "line": 118,
+            "status": "candidate passes; not yet canonical"
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves original thrown identity and short circuits",
+            "line": 143,
+            "status": "candidate passes; not yet canonical"
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "shouldUseResumeResponse",
+        "requirementId": "u01.shouldUseResumeResponse",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves grouping coercion and strict response identity",
+            "status": "required new original-only fixed witness"
+          },
+          {
+            "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+            "testName": "U01 resume reference preserves accessor order and thrown identities",
+            "status": "required new original accessor/error witness"
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "inert resume view module exposes exactly the four existing helpers",
+            "line": 10
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "resume responses require both the same request and the same view without coercion",
+            "line": 87
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "pure helpers leave caller projections unchanged",
+            "line": 104
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves getters and coercion order",
+            "line": 118,
+            "status": "candidate passes; not yet canonical"
+          },
+          {
+            "file": "tests_js/workspace_resume_view_ts.test.mjs",
+            "testName": "U01 resume differential preserves original thrown identity and short circuits",
+            "line": 143,
+            "status": "candidate passes; not yet canonical"
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "typedDeletePhrase",
+        "requirementId": "u01.typedDeletePhrase",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: delete phrases retain falsy defaults and String coercion",
+            "line": 7
+          },
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+            "line": 107
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+            "line": 26
+          },
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS preserves property access and coercion order including propagated errors",
+            "line": 45
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "filterTrashItems",
+        "requirementId": "u01.filterTrashItems",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: filtering preserves order, item identity and strict type matching",
+            "line": 22
+          },
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: missing collections and malformed elements keep existing behavior",
+            "line": 43
+          },
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+            "line": 107
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS preserves filtering identities, order, sparse semantics and callback access",
+            "line": 94
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "trashBlockerText",
+        "requirementId": "u01.trashBlockerText",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: blockers sum integers only without clamping negatives",
+            "line": 60
+          },
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+            "line": 107
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+            "line": 26
+          },
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS preserves property access and coercion order including propagated errors",
+            "line": 45
+          },
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged",
+            "line": 126
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      },
+      {
+        "export": "lifecycleErrorText",
+        "requirementId": "u01.lifecycleErrorText",
+        "originalAssertions": [
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+            "line": 79
+          },
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: revision conflict takes precedence without consulting other fields",
+            "line": 96
+          },
+          {
+            "file": "tests_js/workspace_trash_reference.test.mjs",
+            "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+            "line": 107
+          }
+        ],
+        "differentialAssertions": [
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+            "line": 26
+          },
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS preserves property access and coercion order including propagated errors",
+            "line": 45
+          },
+          {
+            "file": "tests_js/workspace_trash_view_ts.test.mjs",
+            "testName": "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged",
+            "line": 126
+          }
+        ],
+        "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+      }
+    ],
+    "receiptBindingPolicy": "No prospective R receipt pins. Root binds only actual accepted R manifests/evidence/receipts, real implementation activation revision, independently approved subject, and refreshed inputs after prerequisite acceptance.",
+    "inputsStatus": "Provisional old source closure only; mandatory refresh after R acceptance and, for U02, after U01.V. These input hashes are not a ready-to-activate frozen manifest.",
+    "freshEvidencePolicy": {
+      "implementation": "Capture exact frozen cells on actual new activation subject, with current emitted bytes and accepted original fixtures. Preserve full raw outputs and strict exact test identities.",
+      "review": "Independent reviewer reruns required frozen cells and verifies source/runtime reproducibility and actual hashes; no reuse of old test timestamps as fresh evidence.",
+      "browser": "Synthetic isolated headless browser required; pending until coordinated slot; not counted as passed."
+    },
+    "packageId": "U01",
+    "directory": "docs/migration/evidence/u01-core-port",
+    "prerequisiteReceipts": [
+      {
+        "id": "P00.V",
+        "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+      },
+      {
+        "id": "U01.R",
+        "sha256": "dc447d50c8b26c1be1381134f3017f1161231564d667f4a1eb8d7d595ec489f2"
+      },
+      {
+        "id": "P01.V",
+        "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+      }
+    ],
+    "auditIdsByTask": {
+      "U01.I": "u01-core-implementation-audit",
+      "U01.V": "u01-core-review-audit"
+    },
+    "cellsByTask": {
+      "U01.I": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "activity reference: job filter preserves identity/order and status short circuit",
+            "activity reference: transition and readiness maps preserve inherited lookup behavior",
+            "activity reference: revision policies retain integer checks, ties and reference returns",
+            "activity reference: signatures and announcements preserve field selection and ordered copy",
+            "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "activity reference: owner next-step copy and prototype lookups remain observable"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_activity_helpers_reference.tap",
+          "requirementIds": [
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "answer reference: consent and summary retain truthiness and precedence",
+            "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+            "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_answer_helpers_reference.tap",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "profile reference: form patch fixes fields and preserves priority coercion",
+            "profile reference: pointers decode escapes, own keys and primitive boxing",
+            "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+            "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+            "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+            "profile reference: provenance selects longest ancestor or sorted descendant summary",
+            "profile reference: tags retain duplicates, order and String coercion",
+            "U01 resume reference preserves counts and default copy",
+            "U01 resume reference preserves extraction precedence and malformed projections",
+            "U01 resume reference preserves grouping coercion and strict response identity",
+            "U01 resume reference preserves accessor order and thrown identities"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_profile_helpers_reference.tap",
+          "requirementIds": [
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput",
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "testNames": [
+            "trash-reference: delete phrases retain falsy defaults and String coercion",
+            "trash-reference: filtering preserves order, item identity and strict type matching",
+            "trash-reference: missing collections and malformed elements keep existing behavior",
+            "trash-reference: blockers sum integers only without clamping negatives",
+            "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+            "trash-reference: revision conflict takes precedence without consulting other fields",
+            "trash-reference: presentation functions leave frozen caller records unchanged"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_trash_reference.tap",
+          "requirementIds": [
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_activity_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "activity gates retain absent job results and suppress unchanged queue membership",
+            "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "activity TS retains array/record identities and avoids mutating frozen inputs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_activity_helpers_ts.tap",
+          "requirementIds": [
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_answer_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "answer TS preserves getter access order, short circuits and coercion errors",
+            "answer TS scope retains JS JSON semantics, getter order, toJSON and failures"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_answer_helpers_ts.tap",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_profile_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "profile helpers preserve errors for absent patch entries and drafts",
+            "profile TS covers six exports with fixed ordinary and coercive cases",
+            "profile TS preserves getter/coercion and custom iteration behavior",
+            "profile TS preserves patch alias mutation, failure boundaries and provenance identity"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_profile_helpers_ts.tap",
+          "requirementIds": [
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_resume_view_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_resume_view_ts.test.mjs"
+          ],
+          "testNames": [
+            "inert resume view module exposes exactly the four existing helpers",
+            "assignment text retains exact counts, pluralization and noninteger defaults",
+            "extraction view preserves every state's exact user-facing response",
+            "proposal grouping preserves known groups and existing path coercion",
+            "resume responses require both the same request and the same view without coercion",
+            "pure helpers leave caller projections unchanged",
+            "U01 resume differential preserves getters and coercion order",
+            "U01 resume differential preserves original thrown identity and short circuits"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_resume_view_ts.tap",
+          "requirementIds": [
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_trash_view_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_view_ts.test.mjs"
+          ],
+          "testNames": [
+            "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+            "trash TS preserves property access and coercion order including propagated errors",
+            "trash TS preserves filtering identities, order, sparse semantics and callback access",
+            "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_trash_view_ts.tap",
+          "requirementIds": [
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        },
+        {
+          "id": "U01-browser",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers_browser_ts.test.mjs"
+          ],
+          "testNames": [
+            "helper browser contract: emitted modules load and preserve browser-native behavior"
+          ],
+          "reporter": "node-tap13",
+          "timeoutMs": 60000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-browser.tap",
+          "environmentId": "node-local",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope",
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep",
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput",
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse",
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        }
+      ],
+      "U01.V": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "activity reference: job filter preserves identity/order and status short circuit",
+            "activity reference: transition and readiness maps preserve inherited lookup behavior",
+            "activity reference: revision policies retain integer checks, ties and reference returns",
+            "activity reference: signatures and announcements preserve field selection and ordered copy",
+            "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "activity reference: owner next-step copy and prototype lookups remain observable"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_activity_helpers_reference.tap",
+          "requirementIds": [
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "answer reference: consent and summary retain truthiness and precedence",
+            "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+            "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_answer_helpers_reference.tap",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "profile reference: form patch fixes fields and preserves priority coercion",
+            "profile reference: pointers decode escapes, own keys and primitive boxing",
+            "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+            "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+            "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+            "profile reference: provenance selects longest ancestor or sorted descendant summary",
+            "profile reference: tags retain duplicates, order and String coercion",
+            "U01 resume reference preserves counts and default copy",
+            "U01 resume reference preserves extraction precedence and malformed projections",
+            "U01 resume reference preserves grouping coercion and strict response identity",
+            "U01 resume reference preserves accessor order and thrown identities"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_profile_helpers_reference.tap",
+          "requirementIds": [
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput",
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "testNames": [
+            "trash-reference: delete phrases retain falsy defaults and String coercion",
+            "trash-reference: filtering preserves order, item identity and strict type matching",
+            "trash-reference: missing collections and malformed elements keep existing behavior",
+            "trash-reference: blockers sum integers only without clamping negatives",
+            "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+            "trash-reference: revision conflict takes precedence without consulting other fields",
+            "trash-reference: presentation functions leave frozen caller records unchanged"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_trash_reference.tap",
+          "requirementIds": [
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_activity_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "activity gates retain absent job results and suppress unchanged queue membership",
+            "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "activity TS retains array/record identities and avoids mutating frozen inputs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_activity_helpers_ts.tap",
+          "requirementIds": [
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_answer_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "answer TS preserves getter access order, short circuits and coercion errors",
+            "answer TS scope retains JS JSON semantics, getter order, toJSON and failures"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_answer_helpers_ts.tap",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_profile_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "profile helpers preserve errors for absent patch entries and drafts",
+            "profile TS covers six exports with fixed ordinary and coercive cases",
+            "profile TS preserves getter/coercion and custom iteration behavior",
+            "profile TS preserves patch alias mutation, failure boundaries and provenance identity"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_profile_helpers_ts.tap",
+          "requirementIds": [
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_resume_view_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_resume_view_ts.test.mjs"
+          ],
+          "testNames": [
+            "inert resume view module exposes exactly the four existing helpers",
+            "assignment text retains exact counts, pluralization and noninteger defaults",
+            "extraction view preserves every state's exact user-facing response",
+            "proposal grouping preserves known groups and existing path coercion",
+            "resume responses require both the same request and the same view without coercion",
+            "pure helpers leave caller projections unchanged",
+            "U01 resume differential preserves getters and coercion order",
+            "U01 resume differential preserves original thrown identity and short circuits"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_resume_view_ts.tap",
+          "requirementIds": [
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_trash_view_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_view_ts.test.mjs"
+          ],
+          "testNames": [
+            "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+            "trash TS preserves property access and coercion order including propagated errors",
+            "trash TS preserves filtering identities, order, sparse semantics and callback access",
+            "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_trash_view_ts.tap",
+          "requirementIds": [
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        },
+        {
+          "id": "U01-browser",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers_browser_ts.test.mjs"
+          ],
+          "testNames": [
+            "helper browser contract: emitted modules load and preserve browser-native behavior"
+          ],
+          "reporter": "node-tap13",
+          "timeoutMs": 60000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/u01-core-port/logs/U01-browser.tap",
+          "environmentId": "node-local",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope",
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep",
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput",
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse",
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        }
+      ]
+    },
+    "behavior": {
+      "taskIds": [
+        "U01.R",
+        "U01.I",
+        "U01.V"
+      ],
+      "dependencies": {
+        "U01.R": [
+          "P00.V"
+        ],
+        "U01.I": [
+          "P00.V",
+          "U01.R"
+        ],
+        "U01.V": [
+          "U01.I",
+          "P01.V"
+        ]
+      },
+      "allowed_files": {
+        "U01.R": [
+          "tests_js/workspace_profile_helpers_reference.test.mjs",
+          "docs/migration/evidence/ui/U01-reference.md"
+        ],
+        "U01.I": [
+          "src/workspace-ui/lib/answer-view.ts",
+          "src/workspace-ui/lib/activity-view.ts",
+          "src/workspace-ui/lib/profile-view.ts",
+          "src/workspace-ui/lib/resume-view.ts",
+          "src/workspace-ui/lib/trash-view.ts",
+          "runtime/workspace-ui/lib/answer-view.js",
+          "runtime/workspace-ui/lib/activity-view.js",
+          "runtime/workspace-ui/lib/profile-view.js",
+          "runtime/workspace-ui/lib/resume-view.js",
+          "runtime/workspace-ui/lib/trash-view.js",
+          "tests_js/workspace_answer_helpers_ts.test.mjs",
+          "tests_js/workspace_activity_helpers_ts.test.mjs",
+          "tests_js/workspace_profile_helpers_ts.test.mjs",
+          "tests_js/workspace_resume_view_ts.test.mjs",
+          "tests_js/workspace_trash_view_ts.test.mjs",
+          "tests_js/workspace_helpers_browser_ts.test.mjs",
+          "docs/migration/evidence/ui/U01-reuse.md"
+        ],
+        "U01.V": []
+      },
+      "reusedProduction": [
+        "src/workspace-ui/lib/answer-view.ts",
+        "src/workspace-ui/lib/activity-view.ts",
+        "src/workspace-ui/lib/profile-view.ts",
+        "src/workspace-ui/lib/resume-view.ts",
+        "src/workspace-ui/lib/trash-view.ts"
+      ],
+      "exportNames": [
+        "answerNeedsFreshConsent",
+        "answerSummary",
+        "canRevealAnswer",
+        "canRefreshAnswerDraft",
+        "canApplyAnswerReveal",
+        "canApplyAnswerDialogResponse",
+        "canApplyAnswerDialogMutation",
+        "answerApiPath",
+        "sameAnswerScope",
+        "filterJobs",
+        "transitionsFor",
+        "canMarkReadyFrom",
+        "shouldUseActivityResponse",
+        "newestCanonicalJob",
+        "activitySignature",
+        "activityAnnouncement",
+        "attentionMembershipSignature",
+        "attentionAnnouncement",
+        "attentionMissingInformationText",
+        "attentionBlockerSummary",
+        "ownerBetaNextStep",
+        "formPatch",
+        "pointerValue",
+        "patchForPaths",
+        "conflictingPaths",
+        "summarizeProvenance",
+        "tagsFromInput",
+        "resumeAssignmentText",
+        "extractionRequestView",
+        "proposalGroupForPath",
+        "shouldUseResumeResponse",
+        "typedDeletePhrase",
+        "filterTrashItems",
+        "trashBlockerText",
+        "lifecycleErrorText"
+      ],
+      "cells": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "activity reference: job filter preserves identity/order and status short circuit",
+            "activity reference: transition and readiness maps preserve inherited lookup behavior",
+            "activity reference: revision policies retain integer checks, ties and reference returns",
+            "activity reference: signatures and announcements preserve field selection and ordered copy",
+            "activity reference: attention signatures preserve order and blocker special-case exactness",
+            "activity reference: owner next-step copy and prototype lookups remain observable"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_activity_helpers_reference.tap",
+          "requirementIds": [
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "answer reference: consent and summary retain truthiness and precedence",
+            "answer reference: identity and request gates preserve strict comparison and short circuits",
+            "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+            "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_answer_helpers_reference.tap",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "testNames": [
+            "profile reference: form patch fixes fields and preserves priority coercion",
+            "profile reference: pointers decode escapes, own keys and primitive boxing",
+            "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+            "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+            "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+            "profile reference: provenance selects longest ancestor or sorted descendant summary",
+            "profile reference: tags retain duplicates, order and String coercion",
+            "U01 resume reference preserves counts and default copy",
+            "U01 resume reference preserves extraction precedence and malformed projections",
+            "U01 resume reference preserves grouping coercion and strict response identity",
+            "U01 resume reference preserves accessor order and thrown identities"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_profile_helpers_reference.tap",
+          "requirementIds": [
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput",
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse"
+          ]
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "testNames": [
+            "trash-reference: delete phrases retain falsy defaults and String coercion",
+            "trash-reference: filtering preserves order, item identity and strict type matching",
+            "trash-reference: missing collections and malformed elements keep existing behavior",
+            "trash-reference: blockers sum integers only without clamping negatives",
+            "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+            "trash-reference: revision conflict takes precedence without consulting other fields",
+            "trash-reference: presentation functions leave frozen caller records unchanged"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_trash_reference.tap",
+          "requirementIds": [
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_activity_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "activity gates retain absent job results and suppress unchanged queue membership",
+            "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+            "activity TS preserves custom callbacks/returns, access order and thrown errors",
+            "activity TS retains array/record identities and avoids mutating frozen inputs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_activity_helpers_ts.tap",
+          "requirementIds": [
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_answer_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "answer request gates reject stale selections, keys, sequences and generations exactly",
+            "answer TS covers all nine reference exports across ordinary and coercive inputs",
+            "answer TS preserves getter access order, short circuits and coercion errors",
+            "answer TS scope retains JS JSON semantics, getter order, toJSON and failures"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_answer_helpers_ts.tap",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_profile_helpers_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_ts.test.mjs"
+          ],
+          "testNames": [
+            "profile helpers preserve errors for absent patch entries and drafts",
+            "profile TS covers six exports with fixed ordinary and coercive cases",
+            "profile TS preserves getter/coercion and custom iteration behavior",
+            "profile TS preserves patch alias mutation, failure boundaries and provenance identity"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_profile_helpers_ts.tap",
+          "requirementIds": [
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_resume_view_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_resume_view_ts.test.mjs"
+          ],
+          "testNames": [
+            "inert resume view module exposes exactly the four existing helpers",
+            "assignment text retains exact counts, pluralization and noninteger defaults",
+            "extraction view preserves every state's exact user-facing response",
+            "proposal grouping preserves known groups and existing path coercion",
+            "resume responses require both the same request and the same view without coercion",
+            "pure helpers leave caller projections unchanged",
+            "U01 resume differential preserves getters and coercion order",
+            "U01 resume differential preserves original thrown identity and short circuits"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_resume_view_ts.tap",
+          "requirementIds": [
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse"
+          ]
+        },
+        {
+          "id": "U01-differential-workspace_trash_view_ts",
+          "environmentId": "node-local",
+          "reporter": "node-tap13",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_view_ts.test.mjs"
+          ],
+          "testNames": [
+            "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+            "trash TS preserves property access and coercion order including propagated errors",
+            "trash TS preserves filtering identities, order, sparse semantics and callback access",
+            "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-differential-workspace_trash_view_ts.tap",
+          "requirementIds": [
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        },
+        {
+          "id": "U01-browser",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers_browser_ts.test.mjs"
+          ],
+          "testNames": [
+            "helper browser contract: emitted modules load and preserve browser-native behavior"
+          ],
+          "reporter": "node-tap13",
+          "timeoutMs": 60000,
+          "maxOutputBytes": 1048576,
+          "logPath": "docs/migration/evidence/ui/logs/U01-browser.tap",
+          "environmentId": "node-local",
+          "requirementIds": [
+            "u01.answerNeedsFreshConsent",
+            "u01.answerSummary",
+            "u01.canRevealAnswer",
+            "u01.canRefreshAnswerDraft",
+            "u01.canApplyAnswerReveal",
+            "u01.canApplyAnswerDialogResponse",
+            "u01.canApplyAnswerDialogMutation",
+            "u01.answerApiPath",
+            "u01.sameAnswerScope",
+            "u01.filterJobs",
+            "u01.transitionsFor",
+            "u01.canMarkReadyFrom",
+            "u01.shouldUseActivityResponse",
+            "u01.newestCanonicalJob",
+            "u01.activitySignature",
+            "u01.activityAnnouncement",
+            "u01.attentionMembershipSignature",
+            "u01.attentionAnnouncement",
+            "u01.attentionMissingInformationText",
+            "u01.attentionBlockerSummary",
+            "u01.ownerBetaNextStep",
+            "u01.formPatch",
+            "u01.pointerValue",
+            "u01.patchForPaths",
+            "u01.conflictingPaths",
+            "u01.summarizeProvenance",
+            "u01.tagsFromInput",
+            "u01.resumeAssignmentText",
+            "u01.extractionRequestView",
+            "u01.proposalGroupForPath",
+            "u01.shouldUseResumeResponse",
+            "u01.typedDeletePhrase",
+            "u01.filterTrashItems",
+            "u01.trashBlockerText",
+            "u01.lifecycleErrorText"
+          ]
+        }
+      ],
+      "phaseCells": {
+        "U01.R": [
+          "U01-reference-workspace_activity_helpers_reference",
+          "U01-reference-workspace_answer_helpers_reference",
+          "U01-reference-workspace_profile_helpers_reference",
+          "U01-reference-workspace_trash_reference"
+        ],
+        "U01.I": [
+          "U01-reference-workspace_activity_helpers_reference",
+          "U01-reference-workspace_answer_helpers_reference",
+          "U01-reference-workspace_profile_helpers_reference",
+          "U01-reference-workspace_trash_reference",
+          "U01-differential-workspace_activity_helpers_ts",
+          "U01-differential-workspace_answer_helpers_ts",
+          "U01-differential-workspace_profile_helpers_ts",
+          "U01-differential-workspace_resume_view_ts",
+          "U01-differential-workspace_trash_view_ts",
+          "U01-browser"
+        ],
+        "U01.V": [
+          "U01-reference-workspace_activity_helpers_reference",
+          "U01-reference-workspace_answer_helpers_reference",
+          "U01-reference-workspace_profile_helpers_reference",
+          "U01-reference-workspace_trash_reference",
+          "U01-differential-workspace_activity_helpers_ts",
+          "U01-differential-workspace_answer_helpers_ts",
+          "U01-differential-workspace_profile_helpers_ts",
+          "U01-differential-workspace_resume_view_ts",
+          "U01-differential-workspace_trash_view_ts",
+          "U01-browser"
+        ]
+      },
+      "referenceReuse": "Reuse exact27 original helper exports and4 trash exports,24 original tests; add4 original-only resume tests for4 exports. Fresh R/I/V receipts; old progress explicitly open.",
+      "gaps": [
+        "Append4 original-only resume fixed/getter/error references to existing profile reference entrypoint; append2 differential witnesses to existing resume entrypoint.",
+        "fileToBase64 excluded from35 exports; explicit new U02 module.",
+        "Old bounded progress is not a canonical accepted phase receipt.",
+        "No application routing or UI0 acceptance claimed."
+      ],
+      "coverage": [
+        {
+          "export": "answerNeedsFreshConsent",
+          "requirementId": "u01.answerNeedsFreshConsent",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: consent and summary retain truthiness and precedence",
+              "line": 5
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+              "line": 16
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "answerSummary",
+          "requirementId": "u01.answerSummary",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: consent and summary retain truthiness and precedence",
+              "line": 5
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "canRevealAnswer",
+          "requirementId": "u01.canRevealAnswer",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: consent and summary retain truthiness and precedence",
+              "line": 5
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "canRefreshAnswerDraft",
+          "requirementId": "u01.canRefreshAnswerDraft",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+              "line": 20
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+              "line": 16
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "canApplyAnswerReveal",
+          "requirementId": "u01.canApplyAnswerReveal",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+              "line": 20
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+              "line": 16
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "canApplyAnswerDialogResponse",
+          "requirementId": "u01.canApplyAnswerDialogResponse",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+              "line": 20
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+              "line": 16
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "canApplyAnswerDialogMutation",
+          "requirementId": "u01.canApplyAnswerDialogMutation",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: identity and request gates preserve strict comparison and short circuits",
+              "line": 20
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer request gates reject stale selections, keys, sequences and generations exactly",
+              "line": 16
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "answerApiPath",
+          "requirementId": "u01.answerApiPath",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+              "line": 36
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS preserves getter access order, short circuits and coercion errors",
+              "line": 66
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "sameAnswerScope",
+          "requirementId": "u01.sameAnswerScope",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_reference.test.mjs",
+              "testName": "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence",
+              "line": 46
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS covers all nine reference exports across ordinary and coercive inputs",
+              "line": 44
+            },
+            {
+              "file": "tests_js/workspace_answer_helpers_ts.test.mjs",
+              "testName": "answer TS scope retains JS JSON semantics, getter order, toJSON and failures",
+              "line": 89
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "filterJobs",
+          "requirementId": "u01.filterJobs",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: job filter preserves identity/order and status short circuit",
+              "line": 5
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+              "line": 87
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "transitionsFor",
+          "requirementId": "u01.transitionsFor",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: transition and readiness maps preserve inherited lookup behavior",
+              "line": 18
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+              "line": 87
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "canMarkReadyFrom",
+          "requirementId": "u01.canMarkReadyFrom",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: transition and readiness maps preserve inherited lookup behavior",
+              "line": 18
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "shouldUseActivityResponse",
+          "requirementId": "u01.shouldUseActivityResponse",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: revision policies retain integer checks, ties and reference returns",
+              "line": 31
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity gates retain absent job results and suppress unchanged queue membership",
+              "line": 18
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "newestCanonicalJob",
+          "requirementId": "u01.newestCanonicalJob",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: revision policies retain integer checks, ties and reference returns",
+              "line": 31
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity gates retain absent job results and suppress unchanged queue membership",
+              "line": 18
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+              "line": 87
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "activitySignature",
+          "requirementId": "u01.activitySignature",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: signatures and announcements preserve field selection and ordered copy",
+              "line": 45
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "activityAnnouncement",
+          "requirementId": "u01.activityAnnouncement",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: signatures and announcements preserve field selection and ordered copy",
+              "line": 45
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "attentionMembershipSignature",
+          "requirementId": "u01.attentionMembershipSignature",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+              "line": 58
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "attentionAnnouncement",
+          "requirementId": "u01.attentionAnnouncement",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+              "line": 58
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity gates retain absent job results and suppress unchanged queue membership",
+              "line": 18
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "attentionMissingInformationText",
+          "requirementId": "u01.attentionMissingInformationText",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+              "line": 58
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "attentionBlockerSummary",
+          "requirementId": "u01.attentionBlockerSummary",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: attention signatures preserve order and blocker special-case exactness",
+              "line": 58
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "ownerBetaNextStep",
+          "requirementId": "u01.ownerBetaNextStep",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_reference.test.mjs",
+              "testName": "activity reference: owner next-step copy and prototype lookups remain observable",
+              "line": 75
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+              "line": 37
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS preserves custom callbacks/returns, access order and thrown errors",
+              "line": 65
+            },
+            {
+              "file": "tests_js/workspace_activity_helpers_ts.test.mjs",
+              "testName": "activity TS retains array/record identities and avoids mutating frozen inputs",
+              "line": 87
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "formPatch",
+          "requirementId": "u01.formPatch",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: form patch fixes fields and preserves priority coercion",
+              "line": 5
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+              "line": 28
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+              "line": 48
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "pointerValue",
+          "requirementId": "u01.pointerValue",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: pointers decode escapes, own keys and primitive boxing",
+              "line": 19
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+              "line": 28
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+              "line": 48
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "patchForPaths",
+          "requirementId": "u01.patchForPaths",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+              "line": 31
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+              "line": 46
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile helpers preserve errors for absent patch entries and drafts",
+              "line": 14
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+              "line": 28
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+              "line": 48
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves patch alias mutation, failure boundaries and provenance identity",
+              "line": 64
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "conflictingPaths",
+          "requirementId": "u01.conflictingPaths",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+              "line": 56
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile helpers preserve errors for absent patch entries and drafts",
+              "line": 14
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+              "line": 28
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves patch alias mutation, failure boundaries and provenance identity",
+              "line": 64
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "summarizeProvenance",
+          "requirementId": "u01.summarizeProvenance",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: provenance selects longest ancestor or sorted descendant summary",
+              "line": 66
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+              "line": 28
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+              "line": 48
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves patch alias mutation, failure boundaries and provenance identity",
+              "line": 64
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "tagsFromInput",
+          "requirementId": "u01.tagsFromInput",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "profile reference: tags retain duplicates, order and String coercion",
+              "line": 78
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS covers six exports with fixed ordinary and coercive cases",
+              "line": 28
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_ts.test.mjs",
+              "testName": "profile TS preserves getter/coercion and custom iteration behavior",
+              "line": 48
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "resumeAssignmentText",
+          "requirementId": "u01.resumeAssignmentText",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves counts and default copy",
+              "status": "required new original-only fixed witness"
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves accessor order and thrown identities",
+              "status": "required new original accessor/error witness"
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "inert resume view module exposes exactly the four existing helpers",
+              "line": 10
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "assignment text retains exact counts, pluralization and noninteger defaults",
+              "line": 16
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "pure helpers leave caller projections unchanged",
+              "line": 104
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves getters and coercion order",
+              "line": 118,
+              "status": "candidate passes; not yet canonical"
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves original thrown identity and short circuits",
+              "line": 143,
+              "status": "candidate passes; not yet canonical"
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "extractionRequestView",
+          "requirementId": "u01.extractionRequestView",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves extraction precedence and malformed projections",
+              "status": "required new original-only fixed witness"
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves accessor order and thrown identities",
+              "status": "required new original accessor/error witness"
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "inert resume view module exposes exactly the four existing helpers",
+              "line": 10
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "extraction view preserves every state's exact user-facing response",
+              "line": 39
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "pure helpers leave caller projections unchanged",
+              "line": 104
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves getters and coercion order",
+              "line": 118,
+              "status": "candidate passes; not yet canonical"
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves original thrown identity and short circuits",
+              "line": 143,
+              "status": "candidate passes; not yet canonical"
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "proposalGroupForPath",
+          "requirementId": "u01.proposalGroupForPath",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves grouping coercion and strict response identity",
+              "status": "required new original-only fixed witness"
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves accessor order and thrown identities",
+              "status": "required new original accessor/error witness"
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "inert resume view module exposes exactly the four existing helpers",
+              "line": 10
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "proposal grouping preserves known groups and existing path coercion",
+              "line": 66
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "pure helpers leave caller projections unchanged",
+              "line": 104
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves getters and coercion order",
+              "line": 118,
+              "status": "candidate passes; not yet canonical"
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves original thrown identity and short circuits",
+              "line": 143,
+              "status": "candidate passes; not yet canonical"
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "shouldUseResumeResponse",
+          "requirementId": "u01.shouldUseResumeResponse",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves grouping coercion and strict response identity",
+              "status": "required new original-only fixed witness"
+            },
+            {
+              "file": "tests_js/workspace_profile_helpers_reference.test.mjs",
+              "testName": "U01 resume reference preserves accessor order and thrown identities",
+              "status": "required new original accessor/error witness"
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "inert resume view module exposes exactly the four existing helpers",
+              "line": 10
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "resume responses require both the same request and the same view without coercion",
+              "line": 87
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "pure helpers leave caller projections unchanged",
+              "line": 104
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves getters and coercion order",
+              "line": 118,
+              "status": "candidate passes; not yet canonical"
+            },
+            {
+              "file": "tests_js/workspace_resume_view_ts.test.mjs",
+              "testName": "U01 resume differential preserves original thrown identity and short circuits",
+              "line": 143,
+              "status": "candidate passes; not yet canonical"
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "typedDeletePhrase",
+          "requirementId": "u01.typedDeletePhrase",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: delete phrases retain falsy defaults and String coercion",
+              "line": 7
+            },
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+              "line": 107
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+              "line": 26
+            },
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS preserves property access and coercion order including propagated errors",
+              "line": 45
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "filterTrashItems",
+          "requirementId": "u01.filterTrashItems",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: filtering preserves order, item identity and strict type matching",
+              "line": 22
+            },
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: missing collections and malformed elements keep existing behavior",
+              "line": 43
+            },
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+              "line": 107
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS preserves filtering identities, order, sparse semantics and callback access",
+              "line": 94
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "trashBlockerText",
+          "requirementId": "u01.trashBlockerText",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: blockers sum integers only without clamping negatives",
+              "line": 60
+            },
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+              "line": 107
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+              "line": 26
+            },
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS preserves property access and coercion order including propagated errors",
+              "line": 45
+            },
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged",
+              "line": 126
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        },
+        {
+          "export": "lifecycleErrorText",
+          "requirementId": "u01.lifecycleErrorText",
+          "originalAssertions": [
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+              "line": 79
+            },
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: revision conflict takes precedence without consulting other fields",
+              "line": 96
+            },
+            {
+              "file": "tests_js/workspace_trash_reference.test.mjs",
+              "testName": "trash-reference: presentation functions leave frozen caller records unchanged",
+              "line": 107
+            }
+          ],
+          "differentialAssertions": [
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+              "line": 26
+            },
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS preserves property access and coercion order including propagated errors",
+              "line": 45
+            },
+            {
+              "file": "tests_js/workspace_trash_view_ts.test.mjs",
+              "testName": "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged",
+              "line": 126
+            }
+          ],
+          "evidenceNote": "Test body directly calls named export or invokes compare(name,factory), whose helper calls both unchanged JS and runtime export; original fixed assertions do not compute expectations with port."
+        }
+      ],
+      "implementationCandidate": {
+        "status": "external tested candidate; no activation or acceptance",
+        "files": [
+          {
+            "path": "tests_js/workspace_resume_view_ts.test.mjs",
+            "candidatePath": "/Users/neonwatty/.codex/migration-recovery/e3db-core-paths-ui-20260908/u01-implementation-candidate/tests_js/workspace_resume_view_ts.test.mjs",
+            "sha256": "0bdc1c6e1dec865e5ebb60dc6e168061f0a3722bc55fdce54a962c77523a585d",
+            "physicalLines": 166
+          }
+        ],
+        "unchangedProduction": [
+          {
+            "path": "src/workspace-ui/lib/answer-view.ts",
+            "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01"
+          },
+          {
+            "path": "src/workspace-ui/lib/activity-view.ts",
+            "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105"
+          },
+          {
+            "path": "src/workspace-ui/lib/profile-view.ts",
+            "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0"
+          },
+          {
+            "path": "src/workspace-ui/lib/resume-view.ts",
+            "sha256": "5aa051a8e22bc217977f61ba15176ea6e5cbc1672752a0cfc48ba89c1fc725ab"
+          },
+          {
+            "path": "src/workspace-ui/lib/trash-view.ts",
+            "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb"
+          },
+          {
+            "path": "runtime/workspace-ui/lib/answer-view.js",
+            "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573"
+          },
+          {
+            "path": "runtime/workspace-ui/lib/activity-view.js",
+            "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+          },
+          {
+            "path": "runtime/workspace-ui/lib/profile-view.js",
+            "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe"
+          },
+          {
+            "path": "runtime/workspace-ui/lib/resume-view.js",
+            "sha256": "c6cedcfe438c68e02275da36f06e4eaca5b2212275fc3ce9b898343f7a9c586a"
+          },
+          {
+            "path": "runtime/workspace-ui/lib/trash-view.js",
+            "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836"
+          }
+        ],
+        "focused": {
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_resume_view_ts.test.mjs"
+          ],
+          "tests": 8,
+          "failures": 0,
+          "skips": 0,
+          "durationMs": 36.953708,
+          "outputBytes": 1757
+        },
+        "preservation": "Existing6callback byte prefix retained; added2declared cases; no production counterexample found."
+      }
+    },
+    "coordinatorOwnership": [],
+    "plan": "# U01 Mac core TypeScript port\n\nImplement the exact declared interface and witnesses in the adjacent specification.\nPreserve Python/JavaScript behavior, error and access order, persisted contracts,\nand human-only final submission. All new modules remain inert.\n\nThe coordinator alone reconciles the explicitly owned source-catalog rows and\nthe separately validated review lock. Source workers own only their assigned\nimplementation and test files. Native/browser checks use isolated fixtures.\n\nFresh input hashes bind this accepted prerequisite revision. Implementation and\nindependent review use the same immutable source subject and exact bounded cells.\nNo hosted platform matrix or live Store cutover is part of this package.\n"
+  }
+}

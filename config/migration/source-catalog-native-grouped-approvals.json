@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-grouped-approvals.js",
+      "sha256": "d31ae59d331df66d04ef0116cab45fa8777037138499a3c066adb8c663539bd3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/grouped-approvals.js",
+      "sha256": "10e9a315e2586a0f91f852e1ed54df12f102e1011c48ade91730a1e522cb43ef",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-grouped-approvals.ts",
+      "sha256": "d2d1db7e7a18f92a747d18e8fb734f0a00ae07bd05d8aefd3c87c220d4bf1e76",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/grouped-approvals.ts",
+      "sha256": "cf3bd287ece017083161c68266d0616a7c05b90e0508a65827a4ca9a3c1d2999",
+      "classification": "unreviewed"
+    }
+  ]
+}

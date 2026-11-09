@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: activity reference: job filter preserves identity/order and status short circuit
+ok 1 - activity reference: job filter preserves identity/order and status short circuit
+  ---
+  duration_ms: 0.649875
+  type: 'test'
+  ...
+# Subtest: activity reference: transition and readiness maps preserve inherited lookup behavior
+ok 2 - activity reference: transition and readiness maps preserve inherited lookup behavior
+  ---
+  duration_ms: 0.522584
+  type: 'test'
+  ...
+# Subtest: activity reference: revision policies retain integer checks, ties and reference returns
+ok 3 - activity reference: revision policies retain integer checks, ties and reference returns
+  ---
+  duration_ms: 0.123375
+  type: 'test'
+  ...
+# Subtest: activity reference: signatures and announcements preserve field selection and ordered copy
+ok 4 - activity reference: signatures and announcements preserve field selection and ordered copy
+  ---
+  duration_ms: 0.214833
+  type: 'test'
+  ...
+# Subtest: activity reference: attention signatures preserve order and blocker special-case exactness
+ok 5 - activity reference: attention signatures preserve order and blocker special-case exactness
+  ---
+  duration_ms: 0.138875
+  type: 'test'
+  ...
+# Subtest: activity reference: owner next-step copy and prototype lookups remain observable
+ok 6 - activity reference: owner next-step copy and prototype lookups remain observable
+  ---
+  duration_ms: 0.077416
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37.515375

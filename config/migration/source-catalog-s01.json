@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/python-object.ts",
+      "sha256": "b7b7b5221f8bfff1ce70edd156da30e8e0f739a942b3d19de80f8244ea56a804",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-object-legacy.ts",
+      "sha256": "2e4a4fe379fef37058551bb8b0781d098eb23fefc3cd54b01f43fc63ffbe6df5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-object.js",
+      "sha256": "8777226a4b0fa916e0e7b529edb8c85fa399c39a810b40957b94905e5a0bb3d0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-object-legacy.js",
+      "sha256": "86e4537ed1d8f7885404dcfa09e362804c3bbea59d1aa8e5a600939e083e99ba",
+      "classification": "unreviewed"
+    }
+  ]
+}

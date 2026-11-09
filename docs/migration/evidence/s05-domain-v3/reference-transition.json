@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "S05.domain2.reference-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+    "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3",
+    "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/s05-domain-v3/reference-dag.json",
+    "sha256": "4a0e8f9022f8a47d719f83d211f86a7fee5331182cd23e20e14a91c03a3a96b2",
+    "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+  },
+  "retirements": [
+    {
+      "id": "S05.domain.R",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+        "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4",
+        "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+      },
+      "replacementId": "S05.domain2.R",
+      "attempt": null
+    }
+  ],
+  "additions": [
+    {
+      "id": "S05.domain2.R",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+        "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916",
+        "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "S05.I",
+      "beforeDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V",
+        "S05.domain.R"
+      ],
+      "afterDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V",
+        "S05.domain2.R"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [
+    {
+      "originalTaskId": "S05.domain.R",
+      "replacementTaskId": "S05.domain2.R",
+      "originalCellId": "s05.domain.reference",
+      "replacementCellId": "s05.domain.reference"
+    }
+  ],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Preserve the original Store reference obligations while explicitly owning test support registration; retire the unexecuted assignment with no fabricated attempt."
+}

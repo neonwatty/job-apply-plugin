@@ -1,0 +1,62 @@
+TAP version 13
+# Subtest: typed JSON independently matches python3 reference
+ok 1 - typed JSON independently matches python3 reference
+  ---
+  duration_ms: 63.16475
+  type: 'test'
+  ...
+# {"inputModel":"unicode-scalar-raw-text","implementation":"cpython","python":"3.14.4","unicode":"16.0.0","intMaxStrDigits":4300,"recursionLimit":1000,"cases":712,"seed":1906946051,"repeatedProfile":false}
+# Subtest: python3 typed reference rejects caller arguments and stdin
+ok 2 - python3 typed reference rejects caller arguments and stdin
+  ---
+  duration_ms: 43.93475
+  type: 'test'
+  ...
+# Subtest: typed JSON independently matches python3.12 reference
+ok 3 - typed JSON independently matches python3.12 reference
+  ---
+  duration_ms: 48.213208
+  type: 'test'
+  ...
+# {"inputModel":"unicode-scalar-raw-text","implementation":"cpython","python":"3.12.13","unicode":"15.0.0","intMaxStrDigits":4300,"recursionLimit":1000,"cases":712,"seed":1906946051,"repeatedProfile":false}
+# Subtest: python3.12 typed reference rejects caller arguments and stdin
+ok 4 - python3.12 typed reference rejects caller arguments and stdin
+  ---
+  duration_ms: 30.054916
+  type: 'test'
+  ...
+# Subtest: typed JSON independently matches python3.13 reference
+ok 5 - typed JSON independently matches python3.13 reference
+  ---
+  duration_ms: 55.540625
+  type: 'test'
+  ...
+# {"inputModel":"unicode-scalar-raw-text","implementation":"cpython","python":"3.13.13","unicode":"15.1.0","intMaxStrDigits":4300,"recursionLimit":1000,"cases":712,"seed":1906946051,"repeatedProfile":false}
+# Subtest: python3.13 typed reference rejects caller arguments and stdin
+ok 6 - python3.13 typed reference rejects caller arguments and stdin
+  ---
+  duration_ms: 40.389083
+  type: 'test'
+  ...
+# Subtest: typed JSON independently matches python3.14 reference
+ok 7 - typed JSON independently matches python3.14 reference
+  ---
+  duration_ms: 53.720834
+  type: 'test'
+  ...
+# {"inputModel":"unicode-scalar-raw-text","implementation":"cpython","python":"3.14.4","unicode":"16.0.0","intMaxStrDigits":4300,"recursionLimit":1000,"cases":712,"seed":1906946051,"repeatedProfile":true}
+# Subtest: python3.14 typed reference rejects caller arguments and stdin
+ok 8 - python3.14 typed reference rejects caller arguments and stdin
+  ---
+  duration_ms: 38.698959
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 412.871084

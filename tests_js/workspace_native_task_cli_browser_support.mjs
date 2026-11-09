@@ -1,0 +1,100 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+// The caller supplies a disposable v9 fixture with synthetic preflight-ready facts/resume.
+export async function taskCliBrowser(page, root, fixture, buildRoot) {
+  const execute = promisify(execFile);
+  async function cli(command, args = [], payload, expectedCode = 0) {
+    if (payload !== undefined) {
+      const input = join(fixture.root, 'task-wrapper-browser-input.json');
+      await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
+      args = [...args, '--input', input];
+    }
+    let result;
+    try {
+      result = await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-task.js'),
+        '--root', root, '--native-lock', fixture.receipt.artifact, command, ...args], { env: { PATH: '' } });
+      assert.equal(expectedCode, 0);
+    } catch (error) {
+      assert.equal(error.code, expectedCode);
+      result = error;
+    }
+    assert.equal(result.stderr, '');
+    const value = JSON.parse(result.stdout);
+    assert.equal(value.ok, expectedCode === 0);
+    if (value.ok) assert.equal(value.command, command);
+    assert.doesNotMatch(result.stdout, /PRIVATE-WRAPPER-BROWSER|private=wrapper|tokenHash/);
+    return value;
+  }
+  async function jobsCli(command, args = [], payload) {
+    if (payload !== undefined) {
+      const input = join(fixture.root, 'task-wrapper-run-input.json');
+      await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
+      args = [...args, '--input', input];
+    }
+    const result = await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'),
+      '--root', root, '--native-lock', fixture.receipt.artifact, command, ...args], { env: { PATH: '' } });
+    assert.equal(result.stderr, '');
+    return JSON.parse(result.stdout);
+  }
+  const role = 'Task wrapper browser role';
+  const created = await cli('intake', [], { role, company: 'Task wrapper company',
+    url: 'https://example.invalid/task-wrapper?private=wrapper', description: 'PRIVATE-WRAPPER-BROWSER' });
+  assert.equal(created.action, 'create');
+  const id = created.job.id;
+  assert.deepEqual((await cli('snapshot')).snapshot.jobs.find(job => job.id === id), created.job);
+
+  await clickCompanionNav(page, 'Jobs');
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: new RegExp(role) }).click();
+  const modal = page.locator('dialog.job-drawer');
+  assert.equal(await modal.locator('.job-drawer-summary dd').first().innerText(), 'Task wrapper company');
+  const panel = modal.getByRole('region', { name: 'Job activity', exact: true });
+  await panel.getByText(/Status: saved/i).waitFor();
+  const initialActivity = await cli('activity', ['--id', id]);
+  assert.equal(initialActivity.jobId, id);
+  assert.equal(initialActivity.activity.job.status, 'saved');
+  const jobsPath = join(root, 'jobs.json');
+  const before = await readFile(jobsPath, 'utf8');
+  const selectArgs = ['--id', id, '--expected-revision', String(created.job.revision)];
+  const denied = await cli('select', selectArgs, undefined, 2);
+  assert.deepEqual(denied, { ok: false, error: { code: 'owner_confirmation_required',
+    message: 'Explicit owner confirmation is required.' } });
+  assert.equal(await readFile(jobsPath, 'utf8'), before);
+  const resume = Object.values(JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes)[0];
+  const factSet = JSON.parse(await readFile(join(root, 'resume-facts.json'), 'utf8')).sets[resume.id];
+  const factRevision = factSet.versions.at(-1).revision;
+  const run = await jobsCli('application-run-status');
+  if (run === null) {
+    await jobsCli('application-run-start', ['--resume-id', resume.id,
+      '--expected-resume-revision', String(resume.revision), '--expected-fact-revision', String(factRevision),
+      '--owner-confirmed'], { jobIds: [id] });
+  } else {
+    await jobsCli('application-run-update', ['--run-id', run.runId,
+      '--expected-revision', String(run.revision)], { jobIds: [...run.queueVersions.at(-1).jobIds, id] });
+  }
+  const selectedRevision = created.job.revision;
+  const selected = await cli('select', ['--id', id, '--expected-revision', String(selectedRevision), '--owner-confirmed']);
+  assert.equal(selected.action, 'ready');
+  assert.equal(selected.job.status, 'ready');
+  assert.equal(selected.job.revision, selectedRevision + 1);
+  const activity = await cli('activity', ['--id', id]);
+  assert.equal(activity.activity.job.status, 'ready');
+  assert.equal(activity.activity.job.revision, selected.job.revision);
+  assert.deepEqual((await cli('snapshot')).snapshot.jobs.find(job => job.id === id), selected.job);
+  // Reload closes the old editor and loads the canonical revision before reopening.
+  await page.reload();
+  await clickCompanionNav(page, 'Jobs');
+  await page.getByRole('button', { name: new RegExp(role) })
+    .filter({ hasText: new RegExp(`revision ${selected.job.revision}$`) }).click();
+  await panel.getByText(/Status: ready/i).waitFor();
+  assert.equal(await modal.locator('.job-drawer-summary dd').first().innerText(), 'Task wrapper company');
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  return { intakeVisible: true, envelopes: true, ownerConfirmationRequired: true,
+    canonicalReload: true, activitySnapshotAgreement: true, pythonAbsentFromPath: true };
+}

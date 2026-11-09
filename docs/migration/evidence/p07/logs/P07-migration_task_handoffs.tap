@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: P06 registered product overlap requires an independently frozen handoff
+ok 1 - P06 registered product overlap requires an independently frozen handoff
+  ---
+  duration_ms: 2709.241458
+  type: 'test'
+  ...
+# Subtest: P06 exact handoff permits only the named successor and overlapping paths
+ok 2 - P06 exact handoff permits only the named successor and overlapping paths
+  ---
+  duration_ms: 3871.746292
+  type: 'test'
+  ...
+# Subtest: P06 forged stale expanded and competing handoffs unlock no product ownership
+ok 3 - P06 forged stale expanded and competing handoffs unlock no product ownership
+  ---
+  duration_ms: 13598.315541
+  type: 'test'
+  ...
+# Subtest: P06 unreleased predecessor paths remain reserved
+ok 4 - P06 unreleased predecessor paths remain reserved
+  ---
+  duration_ms: 3119.880667
+  type: 'test'
+  ...
+# Subtest: P06 actual checker keeps pending successor acceptance open and accepts independently verified completion
+ok 5 - P06 actual checker keeps pending successor acceptance open and accepts independently verified completion
+  ---
+  duration_ms: 4597.170291
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28056.893083

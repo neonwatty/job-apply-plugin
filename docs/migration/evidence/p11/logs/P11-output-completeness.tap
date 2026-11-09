@@ -1,0 +1,88 @@
+TAP version 13
+# Subtest: platform Python selection and generated test commands are explicit
+ok 1 - platform Python selection and generated test commands are explicit
+  ---
+  duration_ms: 0.663833
+  type: 'test'
+  ...
+# Subtest: suite execution streams prefixed failures and aggregates in matrix order
+ok 2 - suite execution streams prefixed failures and aggregates in matrix order
+  ---
+  duration_ms: 22.35
+  type: 'test'
+  ...
+# Subtest: suite execution honors its concurrency bound and runs each suite once
+ok 3 - suite execution honors its concurrency bound and runs each suite once
+  ---
+  duration_ms: 22.922042
+  type: 'test'
+  ...
+# Subtest: process execution terminates hangs and bounds noisy output
+ok 4 - process execution terminates hangs and bounds noisy output
+  ---
+  duration_ms: 53.681334
+  type: 'test'
+  ...
+# Subtest: timeout terminates an owned grandchild process tree
+ok 5 - timeout terminates an owned grandchild process tree
+  ---
+  duration_ms: 1205.837584
+  type: 'test'
+  ...
+# Subtest: timeout retains group cleanup after the direct parent exits
+ok 6 - timeout retains group cleanup after the direct parent exits
+  ---
+  duration_ms: 1303.181875
+  type: 'test'
+  ...
+# Subtest: receipts contain selection and timing metadata but no commands, output, or environment
+ok 7 - receipts contain selection and timing metadata but no commands, output, or environment
+  ---
+  duration_ms: 16.001417
+  type: 'test'
+  ...
+# Subtest: CLI parsing rejects ambiguity and accepts bounded concurrency
+ok 8 - CLI parsing rejects ambiguity and accepts bounded concurrency
+  ---
+  duration_ms: 0.31475
+  type: 'test'
+  ...
+# Subtest: stream prefixes empty lines without trailing spaces and preserves nonempty payloads
+ok 9 - stream prefixes empty lines without trailing spaces and preserves nonempty payloads
+  ---
+  duration_ms: 2411.806125
+  type: 'test'
+  ...
+# Subtest: P11 streamed output enforces independent stdout and stderr byte boundaries
+ok 10 - P11 streamed output enforces independent stdout and stderr byte boundaries
+  ---
+  duration_ms: 1110.205791
+  type: 'test'
+  ...
+# Subtest: P11 output overflow cannot pass after zero exit or competing termination
+ok 11 - P11 output overflow cannot pass after zero exit or competing termination
+  ---
+  duration_ms: 2285.698208
+  type: 'test'
+  ...
+# Subtest: P11 output overflow retains cleanup for an owned surviving descendant
+ok 12 - P11 output overflow retains cleanup for an owned surviving descendant
+  ---
+  duration_ms: 2188.210667
+  type: 'test'
+  ...
+# Subtest: P11 incomplete output fails suite receipts without leaking captured data
+ok 13 - P11 incomplete output fails suite receipts without leaking captured data
+  ---
+  duration_ms: 53.944959
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10712.21075

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/python-json-bytes.ts",
+      "sha256": "347a11d6792529ad2a2ad9f4f02a767abb1db10a568292d9c2ebbe49ecb86e70",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-byte-errors.ts",
+      "sha256": "c592f684ac5ffc17d3800e008b07fabadddc5c14d3a1f537ef4fdea69d740c6f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-utf8-decode.ts",
+      "sha256": "89020d76d9bc572244285e61379e72c4e8ef3c4c7e0c57d236ffc7a82dc8b1b2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-utf16-decode.ts",
+      "sha256": "8efa7d6d210464ba6e9a79d14acf92b0019dfc70fd86a9f6e1ca92842a02b094",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-utf32-decode.ts",
+      "sha256": "0afc517e79879826985deb08805f1e5408e7728af1227cf742b0741b2f6c76e6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-json-bytes.js",
+      "sha256": "9d221128859f631b26e1e0bc61d334325a9451a7f239f37bacbe1a6d50db37e7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-byte-errors.js",
+      "sha256": "daa79fc6661bc8b85229e57bc8d3ae17149588ceb8097303ad7b2d0f0327e52a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-utf8-decode.js",
+      "sha256": "ca07e2da6a45bffeb2bd01b949e58879a751dec97ae243f2dd6a703b7e0f1311",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-utf16-decode.js",
+      "sha256": "f8c4191a9414da5b8caf4c9bcb38dabeb4c5f6989ede9abeb026bb3e846bad9c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-utf32-decode.js",
+      "sha256": "28425269b80eed6dd5413cd1781da9280baf23501ee50acdb980bf7449d0600b",
+      "classification": "unreviewed"
+    }
+  ]
+}

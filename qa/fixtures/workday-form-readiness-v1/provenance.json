@@ -1,0 +1,8 @@
+{
+  "currentLiveAtsStatus": "unverified",
+  "evidenceKind": "hand-authored-synthetic",
+  "fixtureId": "workday-form-readiness-v1",
+  "fixtureSha256": "c32babbbb04aa72e6a880bab37474bb6f111b060a7e92a44ef9bbc4e423f4bda",
+  "platformFamily": "workday",
+  "schemaVersion": 1
+}

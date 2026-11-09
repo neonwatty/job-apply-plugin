@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: unified Trash helpers filter types and require exact type-specific phrases
+ok 1 - unified Trash helpers filter types and require exact type-specific phrases
+  ---
+  duration_ms: 0.71425
+  type: 'test'
+  ...
+# Subtest: unified Trash helpers ignore stale success and failure side effects
+ok 2 - unified Trash helpers ignore stale success and failure side effects
+  ---
+  duration_ms: 0.295333
+  type: 'test'
+  ...
+# Subtest: fragment token is decoded without accepting unrelated URL data
+ok 3 - fragment token is decoded without accepting unrelated URL data
+  ---
+  duration_ms: 0.116291
+  type: 'test'
+  ...
+# Subtest: fragment token survives a same-tab reload without remaining in the URL
+ok 4 - fragment token survives a same-tab reload without remaining in the URL
+  ---
+  duration_ms: 0.078291
+  type: 'test'
+  ...
+# Subtest: API client authenticates in memory and surfaces revision conflicts
+ok 5 - API client authenticates in memory and surfaces revision conflicts
+  ---
+  duration_ms: 0.198583
+  type: 'test'
+  ...
+# Subtest: Facts save retry policy is bounded and limited to revision conflicts
+ok 6 - Facts save retry policy is bounded and limited to revision conflicts
+  ---
+  duration_ms: 0.051667
+  type: 'test'
+  ...
+# Subtest: jobs filter by status and human-visible fields
+ok 7 - jobs filter by status and human-visible fields
+  ---
+  duration_ms: 0.098916
+  type: 'test'
+  ...
+# Subtest: form values become a supported Store patch
+ok 8 - form values become a supported Store patch
+  ---
+  duration_ms: 0.057542
+  type: 'test'
+  ...
+# Subtest: resume tag drafts are trimmed without inventing durable browser state
+ok 9 - resume tag drafts are trimmed without inventing durable browser state
+  ---
+  duration_ms: 0.1855
+  type: 'test'
+  ...
+# Subtest: resume assignment copy uses canonical projection counts
+ok 10 - resume assignment copy uses canonical projection counts
+  ---
+  duration_ms: 0.226833
+  type: 'test'
+  ...
+# Subtest: resume refresh results stay bound to their requested Active or Trash view
+ok 11 - resume refresh results stay bound to their requested Active or Trash view
+  ---
+  duration_ms: 0.069
+  type: 'test'
+  ...
+# Subtest: extraction request view is honest and closed for every state
+ok 12 - extraction request view is honest and closed for every state
+  ---
+  duration_ms: 0.089417
+  type: 'test'
+  ...
+# Subtest: proposal groups keep deterministic order and unknown paths visible
+ok 13 - proposal groups keep deterministic order and unknown paths visible
+  ---
+  duration_ms: 0.041125
+  type: 'test'
+  ...
+# Subtest: status actions preserve guarded ready, acquire, and applied boundaries
+ok 14 - status actions preserve guarded ready, acquire, and applied boundaries
+  ---
+  duration_ms: 1.223875
+  type: 'test'
+  ...
+# Subtest: M01 employer account requests preserve revision checks, coercion and explicit clear
+ok 15 - M01 employer account requests preserve revision checks, coercion and explicit clear
+  ---
+  duration_ms: 1.430083
+  type: 'test'
+  ...
+# Subtest: M01 Trusted Fill approval packets preserve field order, copying and coercion failures
+ok 16 - M01 Trusted Fill approval packets preserve field order, copying and coercion failures
+  ---
+  duration_ms: 2.434792
+  type: 'test'
+  ...
+# Subtest: M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths
+ok 17 - M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths
+  ---
+  duration_ms: 0.86875
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves API errors and bounded revision retries
+ok 18 - U02 reference preserves API errors and bounded revision retries
+  ---
+  duration_ms: 0.149791
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves token storage and denied storage access
+ok 19 - U02 reference preserves token storage and denied storage access
+  ---
+  duration_ms: 0.170083
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves fetch options response decoding and signal identity
+ok 20 - U02 reference preserves fetch options response decoding and signal identity
+  ---
+  duration_ms: 0.245167
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves stale success failure invalidation and callback throws
+ok 21 - U02 reference preserves stale success failure invalidation and callback throws
+  ---
+  duration_ms: 0.174792
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves complete state shape and independent mutable containers
+ok 22 - U02 reference preserves complete state shape and independent mutable containers
+  ---
+  duration_ms: 0.361375
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves DOM lookup toast replacement and connection guard
+ok 23 - U02 reference preserves DOM lookup toast replacement and connection guard
+  ---
+  duration_ms: 0.397041
+  type: 'test'
+  ...
+# Subtest: U02 reference preserves FileReader listener ordering and error rejection
+ok 24 - U02 reference preserves FileReader listener ordering and error rejection
+  ---
+  duration_ms: 0.235292
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 201.114292

@@ -1,0 +1,21 @@
+{
+  "answers": {
+    "question.f61e911c8e90b4b07b3410bf8c90bc772b5f1d4bab926de311796348e35d20d8": {
+      "aliases": [],
+      "confirmedAt": "2026-08-01T12:00:00Z",
+      "key": "question.f61e911c8e90b4b07b3410bf8c90bc772b5f1d4bab926de311796348e35d20d8",
+      "question": "Preferred location?",
+      "scope": {},
+      "sensitivity": "none",
+      "source": "user",
+      "state": "confirmed",
+      "updatedAt": "2026-08-01T12:00:00Z",
+      "value": "Remote"
+    }
+  },
+  "metadata": {
+    "createdAt": "2026-08-01T12:00:00Z",
+    "updatedAt": "2026-08-01T12:00:00Z"
+  },
+  "schemaVersion": 1
+}

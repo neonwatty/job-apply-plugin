@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "S05.domain3.reference-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/s05-domain-v3/reference-dag.json",
+    "sha256": "4a0e8f9022f8a47d719f83d211f86a7fee5331182cd23e20e14a91c03a3a96b2",
+    "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+    "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8",
+    "revision": "48e83ca0715c975b56436e78e14e4e1aa47f1584"
+  },
+  "retirements": [
+    {
+      "id": "S05.domain2.R",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+        "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916",
+        "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+      },
+      "replacementId": "S05.domain3.R",
+      "attempt": null
+    }
+  ],
+  "additions": [
+    {
+      "id": "S05.domain3.R",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v4/S05.domain3.R.json",
+        "sha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2",
+        "revision": "48e83ca0715c975b56436e78e14e4e1aa47f1584"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "S05.I",
+      "beforeDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V",
+        "S05.domain2.R"
+      ],
+      "afterDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V",
+        "S05.domain3.R"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [
+    {
+      "originalTaskId": "S05.domain2.R",
+      "replacementTaskId": "S05.domain3.R",
+      "originalCellId": "s05.domain.reference",
+      "replacementCellId": "s05.domain.reference"
+    },
+    {
+      "originalTaskId": "S05.domain2.R",
+      "replacementTaskId": "S05.domain3.R",
+      "originalCellId": "s05.domain2.registration",
+      "replacementCellId": "s05.domain2.registration"
+    }
+  ],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Preserve all existing Store reference and registration witnesses while owning the bounded immutable Git cache correction and its loader regression; retire the uncommitted predecessor without fabricating an attempt."
+}

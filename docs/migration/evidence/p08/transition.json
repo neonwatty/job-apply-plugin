@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "P08.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p03/evidence/v2/approved-dag.json",
+    "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f",
+    "revision": "644e5e870d4487578641cceb20d65affaf260d61"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p08/approved-dag.json",
+    "sha256": "763c50631ece1a641d2f256802479df0bd5af71d8c0e6ced64712ddea001a563",
+    "revision": "7ea2f48fecd36b4f9c77988507240f1c187f100a"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P08.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p08/P08.I.json",
+        "sha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392",
+        "revision": "7ea2f48fecd36b4f9c77988507240f1c187f100a"
+      }
+    },
+    {
+      "id": "P08.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p08/P08.V.json",
+        "sha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066",
+        "revision": "7ea2f48fecd36b4f9c77988507240f1c187f100a"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R"
+      ],
+      "afterDependencies": [
+        "P03.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Add explicit frozen-platform literal witness recognition; retain original S08 evidence and all accepted task identities."
+}

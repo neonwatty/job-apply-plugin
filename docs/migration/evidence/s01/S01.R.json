@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "S01.R",
+  "role": "reference",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "S01",
+    "parentNode": "SEM",
+    "owner": "root",
+    "allowed_files": [
+      "tools/contracts/python-object/reference.py",
+      "tests_js/python_object_reference.test.mjs",
+      "docs/migration/python-object-reference.md",
+      "docs/migration/evidence/s01/reference-audit.json",
+      "docs/migration/evidence/s01/S01.R.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "5ead8f981d7e457e41cbb2fd06aac1b8845a7eee969c19463a42687a283e72ac",
+  "auditContract": {
+    "path": "docs/migration/evidence/s01/reference-audit.json",
+    "sha256": "4a04140794b3b6413ff95bab03767aa5db5dd2125b340ef94e7e8a449429dd0b"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "8f282c09ebe7285c83fafe16c2ab2e4a04577124",
+  "inputs": [
+    {
+      "path": "tools/contracts/python-object/reference.py",
+      "sha256": "9538767aa71e347c3d9c39165ab364869c11bd8d7994fa3b4801d1893372dbc9"
+    },
+    {
+      "path": "tests_js/python_object_reference.test.mjs",
+      "sha256": "d53a6e27ab07fad36bfd82bc015994a4b915c639e6f4709afd28d0d8964b4dbd"
+    },
+    {
+      "path": "docs/migration/python-object-reference.md",
+      "sha256": "2b918a6a8977b3d5484e1690e82ca832c373e53fcf104741773758e5ec7a7ed9"
+    },
+    {
+      "path": "docs/migration/evidence/s01/reference-audit.json",
+      "sha256": "4a04140794b3b6413ff95bab03767aa5db5dd2125b340ef94e7e8a449429dd0b"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "s01.reference.python-object",
+      "requirementIds": [
+        "s01.audit.python-object-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_object_reference.test.mjs"
+      ],
+      "testNames": [
+        "Python object reference default profile",
+        "Python object reference 3.12 profile",
+        "Python object reference 3.13 profile",
+        "Python object reference 3.14 profile",
+        "Python object reference rejects caller input"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s01/logs/S01-R-python-object-reference.tap"
+    }
+  ],
+  "artifacts": []
+}

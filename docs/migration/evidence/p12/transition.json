@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "P12.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p11/approved-dag.json",
+    "sha256": "eb11fe5c96b2d668ef32555e2674e7e3ef59dcb1957b930239242bf5cec10caf",
+    "revision": "a967474cec8530347393d08948b58d857a5a2608"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p12/approved-dag.json",
+    "sha256": "eca63c82bdb2b582f5abd5a4c8cccaaaa1961a50a16f59956db0379848d6150c",
+    "revision": "738a8748ab53a048fbe1fb4908d9b9f139e78625"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P12.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p12/P12.I.json",
+        "sha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0",
+        "revision": "738a8748ab53a048fbe1fb4908d9b9f139e78625"
+      }
+    },
+    {
+      "id": "P12.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p12/P12.V.json",
+        "sha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3",
+        "revision": "738a8748ab53a048fbe1fb4908d9b9f139e78625"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V",
+        "P10.V",
+        "P11.V"
+      ],
+      "afterDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V",
+        "P10.V",
+        "P11.V",
+        "P12.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Require isolated graph reference environment proofs at the final CI gate; preserve inherited-context refusal."
+}

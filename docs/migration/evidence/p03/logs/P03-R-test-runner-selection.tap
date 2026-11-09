@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: affected selection unions owners and selects a changed test itself
+ok 1 - affected selection unions owners and selects a changed test itself
+  ---
+  duration_ms: 1.051125
+  type: 'test'
+  ...
+# Subtest: global and unknown changes fail closed to the full tier
+ok 2 - global and unknown changes fail closed to the full tier
+  ---
+  duration_ms: 0.11175
+  type: 'test'
+  ...
+# Subtest: real shared Python helpers select every consuming shard
+ok 3 - real shared Python helpers select every consuming shard
+  ---
+  duration_ms: 84.32525
+  type: 'test'
+  ...
+# Subtest: real production paths conservatively include cross-language consumers
+ok 4 - real production paths conservatively include cross-language consumers
+  ---
+  duration_ms: 77.03575
+  type: 'test'
+  ...
+# Subtest: matrix validation rejects omissions and duplicate full inventory
+ok 5 - matrix validation rejects omissions and duplicate full inventory
+  ---
+  duration_ms: 0.845459
+  type: 'test'
+  ...
+# Subtest: name-status parsing preserves both rename paths and deletions
+ok 6 - name-status parsing preserves both rename paths and deletions
+  ---
+  duration_ms: 0.125042
+  type: 'test'
+  ...
+# Subtest: git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths
+ok 7 - git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths
+  ---
+  duration_ms: 301.326625
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 501.921541

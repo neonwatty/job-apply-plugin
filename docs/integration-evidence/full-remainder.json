@@ -1,0 +1,20 @@
+{
+  "headSha": "71122df0615751a797b382638516c723f52f9226",
+  "timeoutMs": 180000,
+  "results": [
+    {
+      "id": "node-recorder",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87753
+    },
+    {
+      "id": "node-workspace-other",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 80749
+    }
+  ]
+}

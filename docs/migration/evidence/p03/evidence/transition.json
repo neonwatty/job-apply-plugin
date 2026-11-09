@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.evidence.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/s02/retry1/approved-dag.json",
+    "sha256": "d563b690197cf17d0c0319352bfcacb7431f0f43b16e7efe1c91d0731927b81a",
+    "revision": "0f9635a69d9527df3ee4b504065a6ac51cffde5e"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p03/evidence/approved-dag.json",
+    "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f",
+    "revision": "fbc787a04f0ed08e5d5ebc443b197175521ecabc"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P03.evidence.R",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/evidence/P03.evidence.R.json",
+        "sha256": "18f17ebee6b1df5a2771fd9874e15a5de23c362fef3120dd7f66bfd86c308c64",
+        "revision": "fbc787a04f0ed08e5d5ebc443b197175521ecabc"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.V",
+        "P04.V",
+        "P05.V",
+        "T05.R"
+      ],
+      "afterDependencies": [
+        "P03.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled."
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source": {
+    "status": "observed",
+    "detail": "Public LinkedIn Jobs listings showed related title vocabulary."
+  },
+  "suggestions": [
+    {
+      "title": "Machine Learning Engineer",
+      "category": "core",
+      "rationale": "Matches the example owner's stated model delivery work.",
+      "evidence": [{"source": "LinkedIn Jobs", "url": "https://www.linkedin.com/jobs/view/synthetic-core-1/", "observedTitle": "Machine Learning Engineer", "company": "Synthetic Example A"}]
+    },
+    {
+      "title": "Staff Machine Learning Engineer",
+      "category": "adjacent",
+      "rationale": "The observed scope extends the example owner's stated platform work.",
+      "evidence": [{"source": "LinkedIn Jobs", "url": "https://www.linkedin.com/jobs/view/synthetic-adjacent-1/", "observedTitle": "Staff Machine Learning Engineer", "company": "Synthetic Example B"}]
+    },
+    {
+      "title": "Director of AI",
+      "category": "stretch",
+      "rationale": "The observed management scope would require a leadership transition.",
+      "evidence": [{"source": "LinkedIn Jobs", "url": "https://www.linkedin.com/jobs/view/synthetic-stretch-1/", "observedTitle": "Director of AI", "company": "Synthetic Example C"}]
+    }
+  ]
+}

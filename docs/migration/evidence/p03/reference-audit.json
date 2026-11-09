@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "p03-reference-audit",
+  "assignmentIds": [
+    "P03.R"
+  ],
+  "allowed_files": [
+    "config/test-matrix.json",
+    "tools/local-checks/git.mjs",
+    "tools/local-checks/policy.mjs",
+    "tools/local-checks/run.mjs",
+    "tools/test-runner/matrix.mjs",
+    "tools/test-runner/patterns.mjs",
+    "tools/test-runner/git.mjs",
+    "tests_js/local_checks_git.test.mjs",
+    "tests_js/local_checks_policy.test.mjs",
+    "tests_js/test-runner-selection.test.mjs",
+    "docs/migration/evidence/p03/reference.md",
+    "docs/migration/evidence/p03/reference-audit.json",
+    "docs/migration/evidence/p03/P03.R.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p03.reference.audit.local_checks_git",
+    "p03.reference.audit.local_checks_policy",
+    "p03.reference.audit.test-runner-selection"
+  ],
+  "cells": [
+    {
+      "id": "P03.R.local_checks_git",
+      "requirementIds": [
+        "p03.reference.audit.local_checks_git"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_git.test.mjs"
+      ],
+      "testNames": [
+        "Git helper preserves stdout and resolves only existing commits",
+        "index snapshot isolates staged content and preserves dirty root/index",
+        "unborn staged index and staged deletion/rename produce exact snapshots",
+        "snapshot callback failure removes only owned worktree and preserves original state",
+        "hook alternate index is captured without leaking Git environment into snapshots",
+        "push targets use pushed commits, support multiple refs and ignore deletions",
+        "new branches use merge base with explicitly configured comparison ref",
+        "push validation rejects malformed records and unavailable remote objects",
+        "annotated tag targets peel to the commit actually pushed",
+        "dependency-linked staged snapshots remain clean without hiding unrelated files",
+        "staged merge snapshots preserve two-parent and octopus ancestry without changing owner state",
+        "merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-R-local_checks_git.tap"
+    },
+    {
+      "id": "P03.R.local_checks_policy",
+      "requirementIds": [
+        "p03.reference.audit.local_checks_policy"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_policy.test.mjs"
+      ],
+      "testNames": [
+        "receipt policy fingerprint changes when active runner implementation changes",
+        "documentation stays light while exact inert codec changes add focused tests",
+        "new production modules, global edits, unknown paths and deleted codec escalate",
+        "accepted inert boundaries select focused tests and include dependent validation",
+        "tag pushes require complete local release and platform selection even with no changes",
+        "known renderer changes select their suite without unrelated package tests",
+        "local success rejects missing, failed and wrongly skipped mandatory cells",
+        "only fresh complete deep receipts for the exact identity can satisfy escalation"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-R-local_checks_policy.tap"
+    },
+    {
+      "id": "P03.R.test-runner-selection",
+      "requirementIds": [
+        "p03.reference.audit.test-runner-selection"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "testNames": [
+        "affected selection unions owners and selects a changed test itself",
+        "global and unknown changes fail closed to the full tier",
+        "real shared Python helpers select every consuming shard",
+        "real production paths conservatively include cross-language consumers",
+        "matrix validation rejects omissions and duplicate full inventory",
+        "name-status parsing preserves both rename paths and deletions",
+        "git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-R-test-runner-selection.tap"
+    }
+  ],
+  "artifacts": []
+}

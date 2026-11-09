@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "P10.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p03/retry2/approved-dag.json",
+    "sha256": "b48eb60db792265bba692ff042027ed143da9ef25cc7d301c4e94f6ce84e5570",
+    "revision": "f798709585ab98f01239d3e6d4c12af01fccc340"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p10/approved-dag.json",
+    "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd",
+    "revision": "7c4773db7a65e6166ab7d55e219ef0134b7f536f"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P10.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p10/P10.I.json",
+        "sha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07",
+        "revision": "7c4773db7a65e6166ab7d55e219ef0134b7f536f"
+      }
+    },
+    {
+      "id": "P10.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p10/P10.V.json",
+        "sha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83",
+        "revision": "7c4773db7a65e6166ab7d55e219ef0134b7f536f"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V"
+      ],
+      "afterDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V",
+        "P10.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Add bounded reference shard isolation to the final CI gate; preserve existing acceptance and output limits."
+}

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "m02-point-filesystem-audit",
+  "assignmentIds": [
+    "M02.I",
+    "M02.V"
+  ],
+  "allowed_files": [
+    "src/contracts/point-filesystem.ts",
+    "runtime/contracts/point-filesystem.js",
+    "tests_js/point_paths_reference.test.mjs",
+    "config/migration/source-catalog-m02.json",
+    "docs/migration/evidence/m02/approved-dag.json",
+    "docs/migration/evidence/m02/implementation-spec.json",
+    "docs/migration/evidence/m02/implementation.md",
+    "docs/migration/evidence/m02/implementation-audit.json",
+    "docs/migration/evidence/m02/M02.I.json",
+    "docs/migration/evidence/m02/M02.V.json",
+    "docs/migration/evidence/m02/transition.json"
+  ],
+  "emittedFiles": [
+    "runtime/contracts/point-filesystem.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "m02.fsdecode",
+    "m02.fsencode"
+  ],
+  "cells": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_reference.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "testNames": [
+        "S05 reference observes point codecs parent order and cache identity under default CPython",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.12",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.13",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.14",
+        "S05 reference rejects caller arguments paths and stdin",
+        "S05 point filesystem codec matches the accepted24 surrogateescape observations",
+        "S05 point filesystem codec preserves trusted text identity and leaves legacy bytes unchanged"
+      ],
+      "logPath": "docs/migration/evidence/m02/logs/M02-codec.tap",
+      "id": "m02.codec.node",
+      "requirementIds": [
+        "m02.fsencode",
+        "m02.fsdecode"
+      ]
+    }
+  ],
+  "artifacts": []
+}

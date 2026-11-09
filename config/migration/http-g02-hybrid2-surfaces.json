@@ -1,0 +1,341 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:GET:/lib/helpers-original.js",
+      "kind": "http",
+      "method": "GET",
+      "path": "/lib/helpers-original.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/lib/helpers-original.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/lib/helpers-original.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/runtime/workspace-ui/lib/answer-view.js",
+      "kind": "http",
+      "method": "GET",
+      "path": "/runtime/workspace-ui/lib/answer-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/runtime/workspace-ui/lib/answer-view.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/runtime/workspace-ui/lib/answer-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/runtime/workspace-ui/lib/profile-view.js",
+      "kind": "http",
+      "method": "GET",
+      "path": "/runtime/workspace-ui/lib/profile-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/runtime/workspace-ui/lib/profile-view.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/runtime/workspace-ui/lib/profile-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/runtime/workspace-ui/lib/resume-view.js",
+      "kind": "http",
+      "method": "GET",
+      "path": "/runtime/workspace-ui/lib/resume-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/runtime/workspace-ui/lib/resume-view.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/runtime/workspace-ui/lib/resume-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/runtime/workspace-ui/lib/trash-view.js",
+      "kind": "http",
+      "method": "GET",
+      "path": "/runtime/workspace-ui/lib/trash-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/runtime/workspace-ui/lib/trash-view.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/runtime/workspace-ui/lib/trash-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/runtime/workspace-ui/lib/activity-view.js",
+      "kind": "http",
+      "method": "GET",
+      "path": "/runtime/workspace-ui/lib/activity-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/runtime/workspace-ui/lib/activity-view.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/runtime/workspace-ui/lib/activity-view.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

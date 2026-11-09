@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: task loader binds actual tested Git subject separately from later evidence commits
+ok 1 - task loader binds actual tested Git subject separately from later evidence commits
+  ---
+  duration_ms: 437.668208
+  type: 'test'
+  ...
+# Subtest: task loader rejects dirty and untracked evidence without executing receipt commands
+ok 2 - task loader rejects dirty and untracked evidence without executing receipt commands
+  ---
+  duration_ms: 356.724292
+  type: 'test'
+  ...
+# Subtest: task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits
+ok 3 - task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits
+  ---
+  duration_ms: 1803.614333
+  type: 'test'
+  ...
+# Subtest: task loader preserves absent catalog behavior
+ok 4 - task loader preserves absent catalog behavior
+  ---
+  duration_ms: 216.716042
+  type: 'test'
+  ...
+# Subtest: task Git reads ignore replacement objects for declared immutable revisions
+ok 5 - task Git reads ignore replacement objects for declared immutable revisions
+  ---
+  duration_ms: 288.512083
+  type: 'test'
+  ...
+# Subtest: task loader reads actual object-form source-size baselines and verifies a shrinking extraction
+ok 6 - task loader reads actual object-form source-size baselines and verifies a shrinking extraction
+  ---
+  duration_ms: 728.072167
+  type: 'test'
+  ...
+# Subtest: task lifecycle validates staged planning, future tests, subject, evidence and receipt commits
+ok 7 - task lifecycle validates staged planning, future tests, subject, evidence and receipt commits
+  ---
+  duration_ms: 1375.007167
+  type: 'test'
+  ...
+# Subtest: task lifecycle opens acceptance during a frozen successor and rejects undeclared drift
+ok 8 - task lifecycle opens acceptance during a frozen successor and rejects undeclared drift
+  ---
+  duration_ms: 4660.647416
+  type: 'test'
+  ...
+# Subtest: execution base cannot conceal source edits or use a fabricated review lock
+ok 9 - execution base cannot conceal source edits or use a fabricated review lock
+  ---
+  duration_ms: 684.58625
+  type: 'test'
+  ...
+# Subtest: accepted subject must contain its declared literal test identities even when planning deferred discovery
+ok 10 - accepted subject must contain its declared literal test identities even when planning deferred discovery
+  ---
+  duration_ms: 389.142458
+  type: 'test'
+  ...
+# Subtest: platform task evidence binds actual conditional capture to the frozen cell environment
+ok 11 - platform task evidence binds actual conditional capture to the frozen cell environment
+  ---
+  duration_ms: 1646.787125
+  type: 'test'
+  ...
+# Subtest: platform task evidence rejects wrong-platform same-count outputs and immutable source drift
+ok 12 - platform task evidence rejects wrong-platform same-count outputs and immutable source drift
+  ---
+  duration_ms: 2183.793375
+  type: 'test'
+  ...
+# Subtest: immutable Git cache retains hot reads without increasing count or byte bounds
+ok 13 - immutable Git cache retains hot reads without increasing count or byte bounds
+  ---
+  duration_ms: 33.342167
+  type: 'test'
+  ...
+# Subtest: immutable ancestry amortizes successful heads and preserves bounded fallback
+ok 14 - immutable ancestry amortizes successful heads and preserves bounded fallback
+  ---
+  duration_ms: 22.212542
+  type: 'test'
+  ...
+# Subtest: immutable ancestry agrees with Git on branches tags unknown IDs and replacements
+ok 15 - immutable ancestry agrees with Git on branches tags unknown IDs and replacements
+  ---
+  duration_ms: 326.683041
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15313.014334

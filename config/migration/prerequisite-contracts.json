@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "environments": [
+    {
+      "id": "darwin-node22.22.3-unicode17",
+      "platform": "darwin",
+      "node": "v22.22.3",
+      "unicode": "17.0"
+    }
+  ],
+  "contracts": [
+    {
+      "id": "trash-reference-v1",
+      "kind": "reference",
+      "requirements": [
+        "UI0-trash-platform",
+        "UI0-trash-noop",
+        "UI0-trash-privacy",
+        "UI0-trash-conflict",
+        "UI0-trash-valid",
+        "UI0-trash-invalid",
+        "UI0-trash-missing"
+      ],
+      "filePaths": [
+        "workspace/lib/helpers.js",
+        "tests_js/workspace_trash_reference.test.mjs",
+        "config/migration/requirements-trash-01.json",
+        "config/migration/requirements-trash-02.json",
+        "config/migration/requirements-trash-03.json",
+        "config/migration/requirements-trash-04.json"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_reference.test.mjs"
+      ],
+      "environmentId": "darwin-node22.22.3-unicode17",
+      "author": "migration_sequence",
+      "reviewer": "numeric_codec"
+    },
+    {
+      "id": "node-compiler-v1",
+      "kind": "interface",
+      "requirements": [
+        "compiler.node-builtins"
+      ],
+      "filePaths": [
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        "tools/build-runtime.mjs",
+        "tools/runtime-build/inventory.mjs",
+        "tests_js/build-runtime.test.mjs"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "tests_js/build-runtime.test.mjs"
+      ],
+      "environmentId": "darwin-node22.22.3-unicode17",
+      "author": "integration",
+      "reviewer": "validation_strategy"
+    }
+  ]
+}

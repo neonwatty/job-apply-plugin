@@ -1,0 +1,83 @@
+import { validateProfile } from '../contracts/workspace/profile.js';
+import { copy, fromJSON, get, has, int, integer, object, parse, serialize, set, string, text, JobsError } from '../contracts/workspace/values.js';
+import { optionalEmail, publicSettings, settingsPatch, validateSettings, validateSettingsDocument } from '../contracts/workspace/automation.js';
+import { publicAccount, validateAccountsDocument } from '../contracts/workspace/accounts.js';
+export const cloneDocument = (document) => object(parse(serialize(document)), 'document');
+export const nativeAutomationCapability = () => fromJSON({
+    providerId: null, state: 'unsupported', reasonCode: 'native_provider_not_composed',
+    credentialOperationsReady: false, syntheticOperationsReady: false, discoveryMode: 'side_effect_free',
+    accountFlowAutomation: {
+        providerId: null, state: 'unsupported', reasonCode: 'native_account_flow_not_composed',
+        productionSeamReady: false, liveExecutionEnabled: false, emailOnlyCandidateProfileReady: false,
+        workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: true,
+        myGreenhousePasswordlessConfigurationReady: true, myGreenhousePasswordlessExecutionReady: false,
+        discoveryMode: 'side_effect_free',
+    },
+});
+export function automationProjection(repository) {
+    return repository.automationTransaction(async (tx) => {
+        const settings = object(get(validateSettingsDocument(await tx.loadSettings()), 'settings'), 'automation settings');
+        const accounts = object(get(validateAccountsDocument(await tx.loadAccounts()), 'accounts'), 'employer accounts');
+        const profile = validateProfile(await tx.loadProfile());
+        const metadata = object(get(profile, 'metadata'), 'profile metadata');
+        const revision = has(metadata, 'revision') ? int(get(metadata, 'revision')) : 1n;
+        if (revision === null || revision < 1n)
+            throw new JobsError('profile revision is invalid');
+        const publicAccounts = [...accounts.entries()].sort(([left], [right]) => string(left) < string(right) ? -1 : 1)
+            .map(([, account]) => publicAccount(object(account, 'employer account')));
+        const projection = object(fromJSON({}), 'automation projection');
+        set(projection, 'settings', cloneDocument(publicSettings(settings)));
+        set(projection, 'capability', nativeAutomationCapability());
+        set(projection, 'accounts', publicAccounts);
+        return set(projection, 'profileRevision', integer(revision));
+    });
+}
+export class AutomationService {
+    repository;
+    now;
+    constructor(repository, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
+        this.repository = repository;
+        this.now = now;
+    }
+    get(publicView = false) {
+        return this.repository.automationTransaction(async (tx) => {
+            const record = object(get(validateSettingsDocument(await tx.loadSettings()), 'settings'), 'automation settings');
+            return cloneDocument(publicView ? publicSettings(record) : record);
+        });
+    }
+    update(value, expectedRevision, publicView = false) {
+        const patch = settingsPatch(value);
+        return this.repository.automationTransaction(async (tx) => this.save(tx, patch, expectedRevision, publicView));
+    }
+    copyProfileEmail(profileRevision, settingsRevision, publicView = true) {
+        return this.repository.automationTransaction(async (tx) => {
+            const profile = validateProfile(await tx.loadProfile());
+            const metadata = object(get(profile, 'metadata'), 'profile metadata');
+            if ((has(metadata, 'revision') ? int(get(metadata, 'revision')) : 1n) !== profileRevision)
+                throw new JobsError('profile revision conflict');
+            const current = object(get(validateSettingsDocument(await tx.loadSettings()), 'settings'), 'automation settings');
+            if (int(get(current, 'revision')) !== settingsRevision)
+                throw new JobsError('automation settings revision conflict');
+            const email = optionalEmail(get(object(get(profile, 'profile'), 'profile'), 'email'), 'profile email');
+            if (email === null)
+                throw new JobsError('canonical profile email is unavailable');
+            const updated = await this.save(tx, set(object(fromJSON({}), 'patch'), 'signupEmail', email), settingsRevision, true);
+            return publicView ? updated : set(object(fromJSON({ copied: true }), 'copy result'), 'revision', get(updated, 'revision'));
+        });
+    }
+    async save(tx, patch, revision, publicView) {
+        const document = validateSettingsDocument(await tx.loadSettings()), current = object(get(document, 'settings'), 'automation settings');
+        if (int(get(current, 'revision')) !== revision)
+            throw new JobsError('automation settings revision conflict');
+        const updated = copy(current);
+        for (const [key, value] of patch.entries())
+            updated.set(key, value);
+        if (has(patch, 'signupEmail'))
+            set(updated, 'signupEmail', optionalEmail(get(patch, 'signupEmail'), 'signup email'));
+        set(updated, 'revision', integer(revision + 1n));
+        set(updated, 'updatedAt', text(this.now()));
+        validateSettings(updated);
+        await tx.saveSettings(set(copy(document), 'settings', updated));
+        return cloneDocument(publicView ? publicSettings(updated) : updated);
+    }
+}

@@ -1,0 +1,37 @@
+TAP version 13
+# Subtest: PythonText retains distinct pair/scalar identities across construction and concatenation
+ok 1 - PythonText retains distinct pair/scalar identities across construction and concatenation
+  ---
+  duration_ms: 270.460542
+  type: 'test'
+  ...
+# Child TAP SHA256 1e24598747a634b159d69bb93f2953fcdde12edd90d7553909fc5486f91fb2c4
+# TAP version 13\\n\# Subtest: PythonText matches frozen builtin reference: python3\\nok 1 - PythonText matches frozen builtin reference: python3\\n  ---\\n  duration_ms: 47.718084\\n  type: 'test'\\n  ...\\n\# 3.14.4: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile\\n\# Subtest: PythonText matches frozen builtin reference: python3.12\\nok 2 - PythonText matches frozen builtin reference: python3.12\\n  ---\\n  duration_ms: 35.245\\n  type: 'test'\\n  ...\\n\# 3.12.13: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile\\n\# Subtest: PythonText matches frozen builtin reference: python3.13\\nok 3 - PythonText matches frozen builtin reference: python3.13\\n  ---\\n  duration_ms: 45.767667\\n  type: 'test'\\n  ...\\n\# 3.13.13: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile\\n\# Subtest: PythonText matches frozen builtin reference: python3.14\\nok 4 - PythonText matches frozen builtin reference: python3.14\\n  ---\\n  duration_ms: 45.533792\\n  type: 'test'\\n  ...\\n\# 3.14.4: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile\\n\# Subtest: PythonText retains distinct pair/scalar identities across construction and concatenation\\nok 5 - PythonText retains distinct pair/scalar identities across construction and concatenation\\n  ---\\n  duration_ms: 0.310208\\n  type: 'test'\\n  ...\\n\# Subtest: PythonText defensively freezes content and preserves immutable error originals\\nok 6 - PythonText defensively freezes content and preserves immutable error originals\\n  ---\\n  duration_ms: 0.2825\\n  type: 'test'\\n  ...\\n\# Subtest: PythonText rejects malformed runtime inputs and implicit conversion\\nok 7 - PythonText rejects malformed runtime inputs and implicit conversion\\n  ---\\n  duration_ms: 0.3375\\n  type: 'test'\\n  ...\\n\# Subtest: PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits\\nok 8 - PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits\\n  ---\\n  duration_ms: 29.9495\\n  type: 'test'\\n  ...\\n1..8\\n\# tests 8\\n\# suites 0\\n\# pass 8\\n\# fail 0\\n\# cancelled 0\\n\# skipped 0\\n\# todo 0\\n\# duration_ms 244.60675\\n
+# Validated all eight unchanged child tests
+# Subtest: PythonText defensively freezes content and preserves immutable error originals
+ok 2 - PythonText defensively freezes content and preserves immutable error originals
+  ---
+  duration_ms: 0.086417
+  type: 'test'
+  ...
+# Subtest: PythonText rejects malformed runtime inputs and implicit conversion
+ok 3 - PythonText rejects malformed runtime inputs and implicit conversion
+  ---
+  duration_ms: 0.045541
+  type: 'test'
+  ...
+# Subtest: PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits
+ok 4 - PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits
+  ---
+  duration_ms: 0.043833
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 310.18525

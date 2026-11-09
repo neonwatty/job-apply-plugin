@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "g02-hybrid-implementation-audit",
+  "assignmentIds": [
+    "G02.hybrid.I"
+  ],
+  "allowed_files": [
+    "scripts/job_apply_workspace/__init__.py",
+    "scripts/job_apply_workspace/queries.py",
+    "workspace/lib/helpers-bridge.js",
+    "tests_js/workspace_information_architecture.test.mjs",
+    "tests_js/workspace_hybrid_assets_support.mjs",
+    "tests_js/workspace_hybrid_browser_support.mjs",
+    "config/migration/source-catalog-04.json",
+    "config/migration/source-catalog-g02-hybrid.json",
+    "docs/migration/evidence/g02-hybrid/implementation-spec.json",
+    "docs/migration/evidence/g02-hybrid/implementation-plan.md",
+    "docs/migration/evidence/g02-hybrid/integration-dag.json",
+    "docs/migration/evidence/g02-hybrid/integration-transition.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.I.audit.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.V.audit.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "g02.hybrid.serving"
+  ],
+  "cells": [
+    {
+      "id": "g02.hybrid.browser-assets",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_information_architecture.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "global navigation exposes the pipeline, application data, and controls model",
+        "navigation preserves button, badge, active-state, and event-binding contracts",
+        "persistent trust context explains local data and human control",
+        "navigation has a collision-free row and focus-safe narrow-width overflow",
+        "hybrid UI serves exact TypeScript helper assets through guarded Python routes",
+        "hybrid UI boots real Python server with compiled helper identities and navigation"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/g02-hybrid/logs/g02.hybrid.browser-assets.tap",
+      "requirementIds": [
+        "g02.hybrid.serving"
+      ]
+    }
+  ],
+  "artifacts": []
+}

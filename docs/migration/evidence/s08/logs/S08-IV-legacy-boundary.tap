@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: typed objects preserve numeric identity, duplicate decoded keys and safe property names
+ok 1 - typed objects preserve numeric identity, duplicate decoded keys and safe property names
+  ---
+  duration_ms: 1.53175
+  type: 'test'
+  ...
+# Subtest: Python key sorting uses Unicode code points and strings remain ensure-ASCII
+ok 2 - Python key sorting uses Unicode code points and strings remain ensure-ASCII
+  ---
+  duration_ms: 0.145334
+  type: 'test'
+  ...
+# Subtest: UTF-8 raw text retains lone escaped keys and combines escaped surrogate pairs
+ok 3 - UTF-8 raw text retains lone escaped keys and combines escaped surrogate pairs
+  ---
+  duration_ms: 0.145375
+  type: 'test'
+  ...
+# Subtest: non-finite values and numeric overflow retain Python spellings
+ok 4 - non-finite values and numeric overflow retain Python spellings
+  ---
+  duration_ms: 0.115792
+  type: 'test'
+  ...
+# Subtest: syntax error offsets count code points rather than UTF-16 units
+ok 5 - syntax error offsets count code points rather than UTF-16 units
+  ---
+  duration_ms: 0.204375
+  type: 'test'
+  ...
+# Subtest: integer digit limits apply inside documents without restricting unlimited mode
+ok 6 - integer digit limits apply inside documents without restricting unlimited mode
+  ---
+  duration_ms: 1.337417
+  type: 'test'
+  ...
+# Subtest: deep parsing and serialization have no diagnostic depth cap
+ok 7 - deep parsing and serialization have no diagnostic depth cap
+  ---
+  duration_ms: 1.837542
+  type: 'test'
+  ...
+# Subtest: serializer rejects cycles while allowing shared acyclic values
+ok 8 - serializer rejects cycles while allowing shared acyclic values
+  ---
+  duration_ms: 0.1375
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48.852125

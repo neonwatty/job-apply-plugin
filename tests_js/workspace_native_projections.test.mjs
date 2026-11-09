@@ -1,0 +1,203 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { nativeFixture } from './exclusive_file_lock_support.mjs';
+import { setup as nativeSetup, snapshot, write } from './workspace_native_claims_support.mjs';
+import { WorkspaceProjectionsService } from '../runtime/workspace-core/workspace-projections.js';
+import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
+const plain = value => JSON.parse(serialize(value));
+const now = '2026-09-10T12:00:00Z';
+function setup(jobs = [], sessions = [], claim = null) {
+  const tx = {
+    jobs: fromJSON({jobs:Object.fromEntries(jobs.map(job=>[job.id,job]))}),
+    sessions:sessions.map(fromJSON), coordinator:fromJSON({claim}), history:[],
+    profile:fromJSON({profile:{}}),resumes:fromJSON({resumes:{}}),answers:fromJSON({answers:{},redirects:{}}),
+    files:{externalObservation:async()=>({exists:true,size:1,modifiedAt:now})},
+  };
+  return {tx,service:new WorkspaceProjectionsService({claimTransaction:async operation=>operation(tx)},()=>now)};
+}
+const job = (id,status,extra={}) => ({id,status,revision:2,priority:0,createdAt:now,updatedAt:now,...extra});
+const session = (id,extra={}) => ({schemaVersion:1,applicationId:id,status:'active',pendingFields:[],...extra});
+test('attention sorts all reasons and expiry is inclusive, task snapshot hides job metadata',async()=>{
+  const jobs=[job('needs','needs_info'),job('review','awaiting_review'),job('interrupted','in_progress'),job('expired','in_progress'),job('browser','needs_info'),job('deleted','needs_info',{deletedAt:now})];
+  const claim={jobId:'expired',expiresAt:now,acquiredAt:now,heartbeatAt:now,ownerLabel:'PRIVATE OWNER',tokenHash:'PRIVATE TOKEN'};
+  const browser=session('browser',{browserHandoff:{state:'required',reasonCode:'unsupported-control',revision:1},blockers:[{type:'browser_handoff',code:'unsupported-control'},{type:'information',code:'owner-input-required'}]});
+  const {service}=setup(jobs,[browser],claim);
+  const attention=plain(await service.attention());
+  assert.deepEqual(attention.items.map(row=>row.jobId),['expired','interrupted','review','browser','needs']);
+  assert.equal(attention.items[0].reasonCode,'expired_agent_attempt');
+  assert.equal(attention.snapshotSignature.length,64);
+  assert.deepEqual(plain(await service.attention()),attention);
+  const snapshot=plain(await service.taskSnapshot());
+  assert.equal(snapshot.overview.counts.attentionJobs,5);
+  assert.equal(snapshot.jobs.length,5);
+  assert.doesNotMatch(JSON.stringify(snapshot),/PRIVATE/);
+  assert.equal(plain(await service.activity('expired')).claim.state,'expired');
+  assert.equal(plain(await service.activity('interrupted')).claim.state,'interrupted');
+});
+test('activity is selected-job-only, missing sessions work and unknown/deleted jobs fail',async()=>{
+  const {service,tx}=setup([job('one','saved'),job('deleted','saved',{deletedAt:now})]);
+  tx.history=[fromJSON({applicationId:'other',event:'PRIVATE'}),fromJSON({applicationId:'one',event:'reviewed',status:'review',at:now,company:'PRIVATE'})];
+  assert.deepEqual(plain(await service.activity('one')),{job:{status:'saved',revision:2},session:null,claim:{state:'none'},history:[{event:'reviewed',status:'review',at:now}]});
+  await assert.rejects(service.activity('missing'),/job does not exist/);
+  await assert.rejects(service.activity('deleted'),/job does not exist/);
+  assert.throws(()=>service.activity('../escape'));
+});
+test('a consent-only handoff requests confirmation rather than missing information',async()=>{
+  const consent=session('consent',{blockers:[{type:'owner_review',code:'consent-required'}]});
+  const {service}=setup([job('consent','needs_info')],[consent]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'owner_confirmation_required');
+  assert.equal(attention.items[0].missingInformationCount,0);
+  assert.doesNotMatch(attention.items[0].guidance,/missing facts|missing answers/i);
+});
+test('a site consent conflict with another pending answer keeps missing-information guidance',async()=>{
+  const pending={reference:`pending_${'a'.repeat(32)}`,state:'missing',question:'PRIVATE QUESTION'};
+  const stored=session('one',{pendingFields:[pending],blockers:[{type:'owner_review',code:'site-required-opt-in-conflict'}]});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.equal(attention.items[0].missingInformationCount,1);
+  assert.deepEqual(attention.items[0].session.blockers,[{type:'owner_review',code:'site-required-opt-in-conflict'}]);
+  assert.doesNotMatch(JSON.stringify(attention),/PRIVATE QUESTION/);
+});
+test('a consent conflict with another required checklist action keeps missing-information guidance',async()=>{
+  const stored=session('one',{handoffChecklist:['consent_choice','required_question'],
+    blockers:[{type:'owner_review',code:'site-required-opt-in-conflict'}]});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.deepEqual(attention.items[0].session.handoffChecklist,['consent_choice','required_question']);
+});
+test('a consent conflict with another blocker keeps missing-information guidance',async()=>{
+  const stored=session('one',{handoffChecklist:['consent_choice'],blockers:[
+    {type:'owner_review',code:'site-required-opt-in-conflict'},
+    {type:'information',code:'owner-input-required'},
+  ]});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.equal(attention.items[0].session.blockers.length,2);
+});
+test('closed handoff checklist reaches attention and activity without form wording',async()=>{
+  const checklist=['resume_upload','passport_country','country_of_residence','age_over_18'];
+  const stored=session('one',{handoffChecklist:checklist,blockers:[{type:'browser_handoff',code:'unsupported-control'}],
+    browserHandoff:{state:'required',reasonCode:'unsupported-control',revision:1}});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  const activity=plain(await service.activity('one'));
+  assert.deepEqual(attention.items[0].session.handoffChecklist,checklist);
+  assert.deepEqual(activity.session.handoffChecklist,checklist);
+  assert.doesNotMatch(JSON.stringify({attention,activity}),/PRIVATE|filename|filepath/iu);
+});
+test('mixed browser and missing-answer checklist uses needs-information guidance',async()=>{
+  const stored=session('one',{handoffChecklist:['resume_upload','passport_country'],
+    blockers:[{type:'browser_handoff',code:'unsupported-control'},{type:'information',code:'owner-input-required'}],
+    browserHandoff:{state:'required',reasonCode:'unsupported-control',revision:1}});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.deepEqual(attention.items[0].session.handoffChecklist,['resume_upload','passport_country']);
+});
+test('a Ready job with an unresolved sensitive question remains in attention without projecting its value',async()=>{
+  const pending={reference:`pending_${'a'.repeat(32)}`,answerKey:'sensitive',state:'missing',sensitive:true,fieldClass:'sms_consent',question:'PRIVATE QUESTION'};
+  const {service}=setup([job('one','ready')],[session('one',{pendingFields:[pending]})]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items.length,1);
+  assert.equal(attention.items[0].reasonCode,'pending_live_reconfirmation');
+  assert.equal(attention.items[0].missingInformationCount,1);
+  assert.equal(plain(await service.overview()).counts.attentionJobs,1);
+  assert.equal(plain(await service.taskSnapshot()).overview.counts.attentionJobs,1);
+  assert.doesNotMatch(JSON.stringify(attention),/PRIVATE QUESTION|sensitive|sms_consent/);
+});
+test('activity pending information is value-free and stale approvals are suppressed',async()=>{
+  const reference=`pending_${'a'.repeat(32)}`;
+  const approval={reference,answerKey:'answer',answerRevision:1,currentUse:true,remember:false,policyMode:'strict',useAuthority:'per_use',eligible:true,confidenceBand:'none',reasonCodes:[]};
+  const pending={reference,answerKey:'answer',state:'missing',questionFingerprint:'b'.repeat(64)};
+  const {service,tx}=setup([job('one','needs_info')],[session('one',{attemptRevision:1,pendingFields:[pending],approvals:[approval]})]);
+  tx.answers=fromJSON({answers:{answer:{key:'answer',revision:1,state:'confirmed',value:'PRIVATE ANSWER',question:'PRIVATE QUESTION'}},redirects:{}});
+  let output=plain(await service.activity('one'));
+  assert.equal(output.session.pendingInformation[0].resolutionEligible,true);
+  assert.doesNotMatch(JSON.stringify(output),/PRIVATE|Fingerprint/);
+  assert.equal(output.session.approvals.length,1);
+  tx.answers=fromJSON({answers:{answer:{key:'answer',revision:2,state:'confirmed',value:'PRIVATE ANSWER'}},redirects:{}});
+  assert.deepEqual(plain(await service.activity('one')).session.approvals,[]);
+  tx.jobs=fromJSON({jobs:{one:job('one','in_progress')}});
+  assert.deepEqual(plain(await service.activity('one')).session.approvals,[]);
+  tx.sessions=[fromJSON(session('one',{pendingFields:[{...pending,question:'PRIVATE QUESTION'}]}))];
+  assert.doesNotMatch(JSON.stringify(plain(await service.activity('one'))),/PRIVATE QUESTION/);
+  // Invalid persisted session metadata must fail closed before it reaches projection.
+  tx.sessions=[fromJSON(session('one',{pendingFields:[{...pending,value:'PRIVATE ANSWER'}]}))];
+  await assert.rejects(service.activity('one'),/pending field/);
+});
+test('overview setup precedence and accepted active counts',async()=>{
+  const {service,tx}=setup([job('ready','ready')]);
+  assert.equal(plain(await service.overview()).nextAction,'import_resume');
+  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,path:'/synthetic',observedSize:1,observedModifiedAt:now}}});
+  assert.equal(plain(await service.overview()).nextAction,'review_facts');
+  tx.profile=fromJSON({profile:{applicationPreferences:{preferredBrowser:'chrome',browserFallback:'ask',progressionMode:'guided',preferredAutomationMode:'campaign_to_review'}}});
+  assert.equal(plain(await service.overview()).nextAction,'review_facts','setup preferences are not applicant facts');
+  tx.profile=fromJSON({profile:{name:'PRIVATE'}});
+  assert.equal(plain(await service.overview()).nextAction,'prepare_job');
+  const jobs=plain(tx.jobs),run={runId:'run-unit',status:'active',revision:1,
+    selection:{resumeId:'r',contentRevision:`content_${'a'.repeat(32)}`,factRevision:1,confirmedAt:now},
+    queueVersions:[{revision:1,jobIds:['ready'],updatedAt:now}],createdAt:now,updatedAt:now,completedAt:null};
+  jobs.metadata={applicationRuns:{activeRunId:run.runId,runs:{[run.runId]:run}}};
+  tx.jobs=fromJSON(jobs);
+  assert.equal(plain(await service.overview()).nextAction,'handoff_ready_job');
+  tx.coordinator=fromJSON({claim:{jobId:'other',expiresAt:'2026-09-10T12:00:01Z'}});
+  assert.equal(plain(await service.overview()).nextAction,'prepare_job');
+  tx.answers=fromJSON({answers:{a:{},b:{reviewStatus:'proposed'},c:{deletedAt:now}}});
+  assert.equal(plain(await service.overview()).counts.answers,1);
+});
+
+test('scoped resume onboarding does not treat applicant-wide profile facts as confirmed resume facts',async()=>{
+  const {service,tx}=setup();
+  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,contentRevision:'content_current'}}});
+  tx.profile=fromJSON({profile:{name:'PRIVATE LEGACY FACT'}});
+  tx.requests=fromJSON({requests:{request:{requestId:'request',resumeId:'r',scope:'resume',status:'requested'}}});
+  const pending=plain(await service.overview());
+  assert.equal(pending.setup.hasProfileFacts,false);
+  assert.equal(pending.setup.factsWorkspace,'resumes');
+  assert.equal(pending.nextAction,'review_facts');
+  tx.facts=fromJSON({sets:{r:{versions:[{state:'confirmed',contentRevision:'content_current'}]}}});
+  const confirmed=plain(await service.overview());
+  assert.equal(confirmed.setup.hasProfileFacts,true);
+  assert.equal(confirmed.nextAction,'capture_job');
+});
+
+test('all modern projection payloads and signatures match authoritative Python',async()=>{
+  const {service,tx}=setup([job('α','needs_info'),job('one','awaiting_review'),job('two','in_progress'),job('deleted','saved',{deletedAt:now})]);
+  // Canonical job ids are ASCII; unicode in projected labels still tests canonical hashing.
+  tx.jobs=fromJSON({jobs:{one:job('one','awaiting_review',{company:'会社',notes:'PRIVATE'}),two:job('two','in_progress'),three:job('three','needs_info'),deleted:job('deleted','saved',{deletedAt:now})}});
+  tx.sessions=[fromJSON(session('three',{pendingFields:[{reference:`pending_${'a'.repeat(32)}`,state:'missing',question:'PRIVATE QUESTION'}]}))];
+  tx.history=[fromJSON({applicationId:'one',event:'reviewed',at:now,company:'PRIVATE'})];
+  const input=Object.fromEntries(['jobs','coordinator','profile','resumes','answers'].map(key=>[key,plain(tx[key])]));
+  Object.assign(input,{sessions:tx.sessions.map(plain),history:tx.history.map(plain),now});
+  const result=spawnSync(process.env.JOB_APPLY_CONTRACT_PYTHON || 'python3',['tools/contracts/workspace-projections/reference.py'],{input:JSON.stringify(input),encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  const expected=JSON.parse(result.stdout);
+  assert.deepEqual(plain(await service.overview()),expected.overview);
+  assert.deepEqual(plain(await service.attention()),expected.attention);
+  assert.deepEqual(plain(await service.taskSnapshot()),expected.snapshot);
+  for (const [id,activity] of Object.entries(expected.activity)) assert.deepEqual(plain(await service.activity(id)),activity);
+});
+
+test('native fixture projections are read-only and reject corrupt persisted sessions', {timeout:60000},async()=>{
+  const fixture=await nativeFixture();
+  try {
+    const state=await nativeSetup(fixture,'projections');
+    const service=new WorkspaceProjectionsService(state.repository,()=>state.clock.now);
+    const before=await snapshot(state.root);
+    assert.equal(plain(await service.overview()).counts.jobs,2);
+    assert.deepEqual(plain(await service.attention()).items,[]);
+    assert.equal(plain(await service.preflight('job')).ready,true);
+    assert.equal(plain(await service.activity('job')).session,null);
+    assert.equal(plain(await service.taskSnapshot()).jobs.length,2);
+    assert.deepEqual(await snapshot(state.root),before);
+    await write(state.root,'sessions/job.json',{schemaVersion:1,applicationId:'job',status:'active',pendingFields:[{reference:'invalid',value:'PRIVATE'}]});
+    const corrupted=await snapshot(state.root);
+    await assert.rejects(service.activity('job'),/pending field/);
+    assert.deepEqual(await snapshot(state.root),corrupted);
+  } finally { await fixture.cleanup(); }
+});

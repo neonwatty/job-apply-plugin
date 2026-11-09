@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/m02/approved-dag.json",
+    "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+  },
+  "package": {
+    "id": "M02",
+    "parentNode": "SEM",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "src/contracts/point-filesystem.ts",
+      "runtime/contracts/point-filesystem.js",
+      "tests_js/point_paths_reference.test.mjs",
+      "config/migration/source-catalog-m02.json",
+      "docs/migration/evidence/m02/approved-dag.json",
+      "docs/migration/evidence/m02/implementation-spec.json",
+      "docs/migration/evidence/m02/implementation.md",
+      "docs/migration/evidence/m02/implementation-audit.json",
+      "docs/migration/evidence/m02/M02.I.json",
+      "docs/migration/evidence/m02/M02.V.json",
+      "docs/migration/evidence/m02/transition.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [
+      "runtime/contracts/point-filesystem.js"
+    ],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "f39c5d1c7704c30281330621935809ced728f93bf87844997acd3085e77ca4d1",
+  "auditContract": {
+    "path": "docs/migration/evidence/m02/implementation-audit.json",
+    "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "ac5440067b6f1a0969169572439b127609733e3e",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/m02/approved-dag.json",
+      "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+    },
+    {
+      "path": "docs/migration/evidence/m02/implementation-audit.json",
+      "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+    },
+    {
+      "path": "docs/migration/evidence/m02/implementation-spec.json",
+      "sha256": "49f5dd16bc37a123877988868f0175c99f7926ca37eb8c2a84e38abe2cbe2087"
+    },
+    {
+      "path": "docs/migration/evidence/m02/implementation.md",
+      "sha256": "18e5fa41bc1e77bc06dd987913df4a81933b96518b547b05062599e4e5a30ca7"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/approved-dag.json",
+      "sha256": "b48eb60db792265bba692ff042027ed143da9ef25cc7d301c4e94f6ce84e5570"
+    },
+    {
+      "path": "docs/migration/evidence/s05/S05.R.json",
+      "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-audit.json",
+      "sha256": "05d82a1c1c749d01342c8694b02537ed859fcfc9051d90ac500f5be797c8df0a"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-plan.md",
+      "sha256": "633792f3a4ec5d084a468ce643d91724f478099319cf27110225598add2fe104"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-vectors.json",
+      "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference.md",
+      "sha256": "1cdbe1b3b0d13fd7c90d228a1ad69f7aa40ddd500cf7e72af61d20bf38466a84"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+    },
+    {
+      "path": "scripts/job_apply_store/__init__.py",
+      "sha256": "d1f3908a9875fdeda94a2d1823b0e42edb29c7814a638b8edcdc15e127052a04"
+    },
+    {
+      "path": "scripts/job_apply_store/base.py",
+      "sha256": "e1deee9f49d012eac54f3ef4990c7641d43874afa699c8d12d79919599f27c88"
+    },
+    {
+      "path": "scripts/job_apply_store/constants.py",
+      "sha256": "4438a36055842e18af0ae806fed1f61bf8280908995f7295662a4213226e8b5c"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/__init__.py",
+      "sha256": "b112b206edd338aa0dd2a17d1414be2c843d6d44337249d59079a82129cd0c26"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/__init__.py",
+      "sha256": "8515203ac4bc80d5d722deffa1879e08518b2a200a7bdbab5425c8dee43ee1be"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+      "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/__init__.py",
+      "sha256": "9ff7cd33ef9e3c17454ac38ab147f3eaec75e44816a6ea8fa0a5d3fa381dfba0"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/storage.py",
+      "sha256": "97ec178e0b3ddc1d3be97b1c6c34983ecf9c50caa9c6f4fd4125dbb71c6db6fe"
+    },
+    {
+      "path": "scripts/job_apply_store/errors.py",
+      "sha256": "be48cff00389f30d0f51f95ec154baec6162a57350b2ab3cfcb531da7456e01c"
+    },
+    {
+      "path": "scripts/job_apply_store/io.py",
+      "sha256": "6e4b36c224fdf34924f14fecbd6d8afaf398afcff455509b85a817008c407d53"
+    },
+    {
+      "path": "scripts/job_apply_store/normalization.py",
+      "sha256": "8c299675838779908a1d3876db22fc2d9b32a2e08a890246357193b1d20b2beb"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/__init__.py",
+      "sha256": "b8e8d8f492cf48c33321d01db8899357f333cf94b93e5f20835cce62104524e3"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/accounts.py",
+      "sha256": "aa62b41eabe54f13c3b3fbb9791dedafc98dbac9d4e68262452e69bfb2457ddc"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/extraction.py",
+      "sha256": "6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/jobs_resumes.py",
+      "sha256": "1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/profile_answers.py",
+      "sha256": "599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/sessions.py",
+      "sha256": "9d1c6158facc0724e5500defbc8027931e2112927677d9f3b79d5a8fde5339ce"
+    },
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78"
+    },
+    {
+      "path": "src/contracts/raw-json/point-text-codec.ts",
+      "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe"
+    },
+    {
+      "path": "tests_js/atomic_write_json_reference.test.mjs",
+      "sha256": "f022146fca2bf619338cd6113b788c728fc387bcba09f94022f954432a6d9d57"
+    },
+    {
+      "path": "tests_js/jsonl_append_reference.test.mjs",
+      "sha256": "2f4ee1c18f2c4cdb3b59a2a6403cb113d4f7890b72fff57e1bc7655c49b0d66f"
+    },
+    {
+      "path": "tests_js/managed_observation_reference.test.mjs",
+      "sha256": "bbaf38d7ab716f0d0757c09cb7dabef820eb60572dca5abd817581953730821e"
+    },
+    {
+      "path": "tests_js/managed_resume_path_reference.test.mjs",
+      "sha256": "e642dfed8368bf2f280d61b6b42f8f3b50264a0c418574677d3085b18cca4f36"
+    },
+    {
+      "path": "tests_js/point_paths_reference.test.mjs",
+      "sha256": "ced650ecb6f1a5f73ff92ab98ef6fdd36981e8c982f4b9ce892f175772d565ee"
+    },
+    {
+      "path": "tests_js/posix_path_bytes_reference.test.mjs",
+      "sha256": "a4e3153c2ff1dfa7a2ef4ba191d07aee8460d0d11122b9f6f7f308c1338dd6aa"
+    },
+    {
+      "path": "tests_js/posix_path_bytes_ts.test.mjs",
+      "sha256": "c388412888b81f2cddcc560bd496ed7ba279ccbc0b67328cc85ed7447645b447"
+    },
+    {
+      "path": "tests_js/posix_path_bytes_ts_support.mjs",
+      "sha256": "08f4177520af95466c77fe39b92a26a0cccf81d8895b09074e3e9ea06a481db7"
+    },
+    {
+      "path": "tests_js/private_file_digest_reference.test.mjs",
+      "sha256": "8ea60743e987c0df0f5da922a13f5a8753f58fb506f5782b41313da66284dcd8"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/reference.py",
+      "sha256": "283e45f35c5485a645fa71844958749e541108be5b55cad6a76fcc8687182381"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/support.py",
+      "sha256": "a95c02ec86844aa931d20c26238d56436cdb576e0902ca7307f1b5d560fdfa39"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/reference.py",
+      "sha256": "6a877e92fb9c0ecbbcc19a76e4f15b4dd1f4112304c2c7b7aed2958647783d13"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/support.py",
+      "sha256": "cb6c28460033dea72c93807a457b6abefc2f98f0903519805d1fcf348224c0ea"
+    },
+    {
+      "path": "tools/contracts/managed-observation/native.py",
+      "sha256": "bf00ae00da09b75cff6da59e5450efb5acfc71a747d48bff1b06fb1f67e6431d"
+    },
+    {
+      "path": "tools/contracts/managed-observation/reference.py",
+      "sha256": "d6b170e99a986c5d1a15a134bc6044cd559fa06d2c5381d90d3b49ec104e7a0b"
+    },
+    {
+      "path": "tools/contracts/managed-resume-path/reference.py",
+      "sha256": "133a81e18fdbe0265fd49c2908fa79831fc3d1cd958a23e40bbc702ec36a7de4"
+    },
+    {
+      "path": "tools/contracts/point-paths/fixtures.py",
+      "sha256": "5bf7a455f7995088c1bef89f3c9f07121ad059d0c78f4c37ef80b7f99e99292e"
+    },
+    {
+      "path": "tools/contracts/point-paths/reference.py",
+      "sha256": "b4a7c94be6098cbfb53dc8c5f548b574d4e9b7e9aa9e3fedfc8288f1269c1454"
+    },
+    {
+      "path": "tools/contracts/point-paths/support.py",
+      "sha256": "7fea6f59851b5664b24197d201bc5728e31ac8eca1a28f50e64ecc29807f9cca"
+    },
+    {
+      "path": "tools/contracts/posix-path-bytes/reference.py",
+      "sha256": "5a51271c11cf812328d31d9864c736bbbdf8bb80e2c27db17d266073c2855325"
+    },
+    {
+      "path": "tools/contracts/private-file-digest/reference.py",
+      "sha256": "7dba1564bd23b7659b33550a2eff3f2582794bdac714a50205f40e2ac554b783"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "bdebb937679d70d0987004561f5d9cf40bc5a6a6b3b2a068ec4b4f8fef98ede3"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "2ac168e57ab71e78aa18decb4ff79ef1a3481b941779dc0618b31f1ec5f80b5f"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_reference.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "testNames": [
+        "S05 reference observes point codecs parent order and cache identity under default CPython",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.12",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.13",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.14",
+        "S05 reference rejects caller arguments paths and stdin",
+        "S05 point filesystem codec matches the accepted24 surrogateescape observations",
+        "S05 point filesystem codec preserves trusted text identity and leaves legacy bytes unchanged"
+      ],
+      "logPath": "docs/migration/evidence/m02/logs/M02-codec.tap",
+      "id": "m02.codec.node",
+      "requirementIds": [
+        "m02.fsencode",
+        "m02.fsdecode"
+      ]
+    }
+  ],
+  "artifacts": [],
+  "id": "M02.I",
+  "role": "implementation-or-gate"
+}

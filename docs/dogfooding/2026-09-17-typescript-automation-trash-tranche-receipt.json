@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "phase": "C",
+  "date": "2026-09-17",
+  "baseCommit": "6659c003afe0a4ef2d19e6ae44154fccbbf41c50",
+  "branch": "codex/ts-job-apply-dogfood-phase-c",
+  "syntheticOnly": true,
+  "externalPortalVisited": false,
+  "realAccountCreated": false,
+  "credentialUsed": false,
+  "captchaOrMfaAttempted": false,
+  "finalActionActivated": false,
+  "applicationSubmitted": false,
+  "agentWorkflowsEvidenceClaimed": false,
+  "automation": {
+    "workdayFlowKind": "password_candidate_account",
+    "oracleFlowKind": "email_only_candidate_profile",
+    "greenhousePublicClassification": "unavailable_adapter_unresolved",
+    "unknownPortalRejected": true,
+    "liveExecutionEnabled": false,
+    "settingsRevisionConflictNoRetry": true,
+    "realmRevisionConflictNoRetry": true,
+    "trustedFillAllowedOperations": [
+      "fill_text",
+      "select_option"
+    ],
+    "trustedFillApprovalRevision": 1,
+    "uncomposedProviderPreservedApproval": true,
+    "needsAttentionFailuresCovered": true
+  },
+  "trash": {
+    "jobRestored": true,
+    "resumeRestored": true,
+    "answerRestored": true,
+    "exactDeletePhrasesCovered": true,
+    "staleRevisionNoRetry": true,
+    "referenceAndProtectedBlockersCovered": true,
+    "managedResumeFileDeletionCovered": true,
+    "auditEvidenceRetained": true,
+    "recordIsolationCovered": true
+  },
+  "browser": {
+    "desktop": true,
+    "mobileWidth": 390,
+    "mobileHeight": 844,
+    "automationHorizontalOverflow": false,
+    "trashHorizontalOverflow": false,
+    "restartReadback": true
+  },
+  "tests": {
+    "failingFirstRegressionObserved": true,
+    "productionCompanionBrowserPassed": true,
+    "automationBoundaryTestsPassed": 31,
+    "trashLifecycleTestsPassed": 99,
+    "affectedSuitesPassed": 23,
+    "affectedSuitesSelected": 25,
+    "affectedLocalHostBaselineFailures": [
+      "native-frozen-reference-profiles: unreviewed CPython 3.12.14 patch",
+      "native-posix-lock: current Xcode toolchain lacks sys/file.h"
+    ]
+  },
+  "cleanup": {
+    "storeMovedToMacOSTrash": true,
+    "recoverable": true
+  }
+}

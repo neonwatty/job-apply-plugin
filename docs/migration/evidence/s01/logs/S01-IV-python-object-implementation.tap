@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: S01 content-equal keys retain first identity and insertion order
+ok 1 - S01 content-equal keys retain first identity and insertion order
+  ---
+  duration_ms: 1.474625
+  type: 'test'
+  ...
+# Subtest: S01 literal pair scalar lone empty and NUL keys remain distinct
+ok 2 - S01 literal pair scalar lone empty and NUL keys remain distinct
+  ---
+  duration_ms: 2.181
+  type: 'test'
+  ...
+# Subtest: S01 deletion returns presence and reinsertion preserves dictionary order
+ok 3 - S01 deletion returns presence and reinsertion preserves dictionary order
+  ---
+  duration_ms: 0.428791
+  type: 'test'
+  ...
+# Subtest: S01 missing lookup differs from present null and undefined
+ok 4 - S01 missing lookup differs from present null and undefined
+  ---
+  duration_ms: 0.410541
+  type: 'test'
+  ...
+# Subtest: S01 opaque values retain numeric shared and cyclic identity
+ok 5 - S01 opaque values retain numeric shared and cyclic identity
+  ---
+  duration_ms: 0.844583
+  type: 'test'
+  ...
+# Subtest: S01 entry snapshots protect structure while retaining value references
+ok 6 - S01 entry snapshots protect structure while retaining value references
+  ---
+  duration_ms: 0.745792
+  type: 'test'
+  ...
+# Subtest: S01 runtime key validation cannot forge content identity
+ok 7 - S01 runtime key validation cannot forge content identity
+  ---
+  duration_ms: 0.552083
+  type: 'test'
+  ...
+# Subtest: S01 legacy Map ingress preserves representable keys and value identity
+ok 8 - S01 legacy Map ingress preserves representable keys and value identity
+  ---
+  duration_ms: 0.46
+  type: 'test'
+  ...
+# Subtest: S01 legacy Map egress rejects lossy pairs without source mutation
+ok 9 - S01 legacy Map egress rejects lossy pairs without source mutation
+  ---
+  duration_ms: 1.759292
+  type: 'test'
+  ...
+# Subtest: S01 large keys avoid argument-spread limits and retain exact lookup
+ok 10 - S01 large keys avoid argument-spread limits and retain exact lookup
+  ---
+  duration_ms: 131.309916
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 213.493375

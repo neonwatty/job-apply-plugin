@@ -1,0 +1,25 @@
+.resume-facts-panel { margin-top:1rem }
+.resume-facts-heading { display:flex;justify-content:space-between;align-items:start;gap:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--line) }
+.resume-facts-heading h3 { margin:.25rem 0 0;font:500 clamp(1.45rem,2.7vw,2.1rem) Georgia,serif }
+.resume-facts-sync { display:grid;justify-items:end;gap:.35rem;max-width:260px;text-align:right }
+.resume-facts-sync small { color:var(--muted);font-size:.72rem;line-height:1.35 }
+.resume-facts-meta { display:flex;align-items:center;gap:.6rem;margin:1rem 0;color:var(--muted);font-size:.8rem;font-weight:700 }
+.resume-facts-meta strong { padding:.35rem .6rem;border-radius:999px;background:#fff0d6;color:#75500b;text-transform:capitalize }
+.resume-fact-sections { display:grid;gap:1rem }
+.resume-fact-section { min-width:0;padding:1.1rem;border:1px solid var(--line);border-radius:14px;background:#fafaf6 }
+.resume-fact-section h4 { margin:0 0 1rem;font:600 1.15rem Georgia,serif }
+.resume-fact-fields { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem }
+.resume-fact-wide,.resume-fact-array,.resume-fact-record { grid-column:1/-1 }
+.resume-fact-array { display:grid;gap:.8rem }
+.resume-fact-record { min-width:0;padding:1rem;border:1px solid #d7ddd7;border-radius:11px;background:white }
+.resume-fact-record legend { max-width:100%;padding:0 .4rem;font-weight:800;overflow-wrap:anywhere }
+.resume-fact-record .resume-fact-record { background:#fafaf6 }
+.resume-fact-empty { margin:0;color:var(--muted);font-size:.82rem }
+.resume-facts-history { margin-top:1rem;color:var(--muted);font-size:.8rem }
+.resume-facts-history summary { cursor:pointer;color:var(--green);font-weight:800 }
+.resume-facts-history pre { white-space:pre-wrap;overflow-wrap:anywhere }
+@media(max-width:760px) {
+  .resume-facts-heading { flex-direction:column }
+  .resume-facts-sync { justify-items:start;max-width:none;text-align:left }
+  .resume-fact-fields { grid-template-columns:1fr }
+}

@@ -1,0 +1,46 @@
+schema: agent-workflow-config/v0
+
+project:
+  id: job-apply-plugin
+  appName: Job Apply Companion
+  baseUrl: http://127.0.0.1:41739
+  healthPath: /
+
+commands:
+  start: >-
+    npm run companion:start -- --root .workflows/local/job-apply-store --port 41739
+    --legacy-profile .workflows/local/no-legacy-profile.json
+  healthTimeoutSeconds: 60
+
+paths:
+  definitions: .workflows/workflows
+  runStore: .workflows/local
+
+platforms:
+  desktop-web:
+    adapter: browser
+    viewport:
+      width: 1440
+      height: 900
+  mobile-web:
+    adapter: browser
+    viewport:
+      width: 390
+      height: 844
+
+evidence:
+  screenshots: declared-checkpoints
+  failureRecording: video-or-trace
+  retainVerifiedDownloads: false
+
+studio:
+  host: 127.0.0.1
+  port: auto
+  openBrowser: false
+
+security:
+  omitHeaders:
+    - authorization
+    - cookie
+    - set-cookie
+  rejectPathTraversal: true

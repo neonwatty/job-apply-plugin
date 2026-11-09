@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "id": "p01-bootstrap-audit-v2",
+  "assignmentIds": [
+    "P01.I",
+    "P01.V"
+  ],
+  "allowed_files": [
+    "tools/migration/evidence-io.mjs",
+    "tools/migration/tap-evidence.mjs",
+    "tools/migration/load-prerequisites.mjs",
+    "tools/migration/prerequisite-receipts.mjs",
+    "tools/migration/task-manifests.mjs",
+    "tools/migration/task-receipts.mjs",
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/check.mjs",
+    "tests_js/migration_task_manifests.test.mjs",
+    "tests_js/migration_task_receipts.test.mjs",
+    "tests_js/migration_task_loader.test.mjs",
+    "tests_js/migration_load_prerequisites.test.mjs",
+    "tests_js/migration_prerequisite_receipts.test.mjs",
+    "tests_js/migration_task_support.mjs",
+    "docs/migration/evidence/bootstrap/p01-audit-v2.json",
+    "docs/migration/evidence/bootstrap/P01.I-v2.json",
+    "docs/migration/evidence/bootstrap/P01.V-v2.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p01.audit.migration_task_manifests",
+    "p01.audit.migration_task_receipts",
+    "p01.audit.migration_task_loader",
+    "p01.audit.migration_load_prerequisites",
+    "p01.audit.migration_prerequisite_receipts"
+  ],
+  "cells": [
+    {
+      "id": "p01.migration_task_manifests",
+      "requirementIds": [
+        "p01.audit.migration_task_manifests"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_manifests.tap"
+    },
+    {
+      "id": "p01.migration_task_receipts",
+      "requirementIds": [
+        "p01.audit.migration_task_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_receipts.tap"
+    },
+    {
+      "id": "p01.migration_task_loader",
+      "requirementIds": [
+        "p01.audit.migration_task_loader"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery"
+      ],
+      "timeoutMs": 240000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_loader.tap"
+    },
+    {
+      "id": "p01.migration_load_prerequisites",
+      "requirementIds": [
+        "p01.audit.migration_load_prerequisites"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_load_prerequisites.test.mjs"
+      ],
+      "testNames": [
+        "actual Git evidence rejects working drift, uncommitted logs and symlink escapes"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_load_prerequisites.tap"
+    },
+    {
+      "id": "p01.migration_prerequisite_receipts",
+      "requirementIds": [
+        "p01.audit.migration_prerequisite_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_prerequisite_receipts.test.mjs"
+      ],
+      "testNames": [
+        "verified evidence unlocks only its prerequisite kind",
+        "status, review or outcome assertions cannot replace successful evidence",
+        "immutable revisions and current files must agree",
+        "every requirement needs canonical command and known environment",
+        "captured TAP must match counts and be complete, current and supported",
+        "registered prerequisite scope cannot shrink to a convenient passing subset",
+        "malformed records and duplicate receipts return errors without partial unlocking"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_prerequisite_receipts.tap"
+    }
+  ],
+  "artifacts": []
+}

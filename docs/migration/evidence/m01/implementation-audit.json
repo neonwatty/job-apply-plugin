@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "m01-automation-request-audit",
+  "assignmentIds": [
+    "M01.I",
+    "M01.V"
+  ],
+  "allowed_files": [
+    "src/workspace-ui/lib/automation-request.ts",
+    "runtime/workspace-ui/lib/automation-request.js",
+    "tests_js/workspace_helpers.test.mjs",
+    "config/migration/source-catalog-m01.json",
+    "docs/migration/evidence/m01/approved-dag.json",
+    "docs/migration/evidence/m01/implementation-spec.json",
+    "docs/migration/evidence/m01/implementation.md",
+    "docs/migration/evidence/m01/implementation-audit.json",
+    "docs/migration/evidence/m01/M01.I.json",
+    "docs/migration/evidence/m01/M01.V.json",
+    "docs/migration/evidence/m01/transition.json"
+  ],
+  "emittedFiles": [
+    "runtime/workspace-ui/lib/automation-request.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "m01.approval",
+    "m01.employer",
+    "m01.revoke"
+  ],
+  "cells": [
+    {
+      "id": "m01.requests.node",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_helpers.test.mjs"
+      ],
+      "testNames": [
+        "unified Trash helpers filter types and require exact type-specific phrases",
+        "unified Trash helpers ignore stale success and failure side effects",
+        "fragment token is decoded without accepting unrelated URL data",
+        "fragment token survives a same-tab reload without remaining in the URL",
+        "API client authenticates in memory and surfaces revision conflicts",
+        "Facts save retry policy is bounded and limited to revision conflicts",
+        "jobs filter by status and human-visible fields",
+        "form values become a supported Store patch",
+        "resume tag drafts are trimmed without inventing durable browser state",
+        "resume assignment copy uses canonical projection counts",
+        "resume refresh results stay bound to their requested Active or Trash view",
+        "extraction request view is honest and closed for every state",
+        "proposal groups keep deterministic order and unknown paths visible",
+        "status actions preserve guarded ready, acquire, and applied boundaries",
+        "M01 employer account requests preserve revision checks, coercion and explicit clear",
+        "M01 Trusted Fill approval packets preserve field order, copying and coercion failures",
+        "M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/m01/logs/M01-requests.tap",
+      "requirementIds": [
+        "m01.employer",
+        "m01.approval",
+        "m01.revoke"
+      ]
+    }
+  ],
+  "artifacts": []
+}

@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "P07.R",
+  "role": "reference",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "P07",
+    "parentNode": "I",
+    "owner": "root",
+    "allowed_files": [
+      "docs/migration/evidence/p07/reference-audit.json",
+      "docs/migration/evidence/p07/P07.R.json",
+      "docs/migration/evidence/p07/reference.md"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "a7ee2bfbf1728a8ff8e0b7ece217851f0e835f5846bed1d51d7318091b8af891",
+  "auditContract": {
+    "path": "docs/migration/evidence/p07/reference-audit.json",
+    "sha256": "45748471a078da40c42e1c09ebbf3f6f262159902bc5b5c50ebbb489618c2559"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "fbb0fa659d41571ac8d00aa52d776d64b90a7887",
+  "inputs": [
+    {
+      "path": "docs/migration/evidence/p07/reference-audit.json",
+      "sha256": "45748471a078da40c42e1c09ebbf3f6f262159902bc5b5c50ebbb489618c2559"
+    },
+    {
+      "path": "docs/migration/evidence/p07/reference.md",
+      "sha256": "44e68b48bd0b0588328b5f3f6f134ac593dbc27d9840d37b5753cc94c9b5aad5"
+    },
+    {
+      "path": "tests_js/migration_task_manifests.test.mjs",
+      "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+    },
+    {
+      "path": "tests_js/migration_task_receipts.test.mjs",
+      "sha256": "f1ff5ea9a7985924da19cb72b491408fd264320a2c1b85a8e82cfc6fc808f7db"
+    },
+    {
+      "path": "tests_js/migration_task_metadata.test.mjs",
+      "sha256": "7f504ef6da451bb2402a892ec7c2c65cc09b821b113da7366866312cd02babf0"
+    },
+    {
+      "path": "tests_js/migration_task_support.mjs",
+      "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+    },
+    {
+      "path": "tests_js/migration_task_handoff_support.mjs",
+      "sha256": "c1aa4a0a1fe584c8420e657d94e2da6cca2a0b65caa635ffced623387b9d75ad"
+    },
+    {
+      "path": "tools/migration/requirements.mjs",
+      "sha256": "f1a64d8aa967a26383b468415eee037964493e15db32dcc051982a92d1b89f1c"
+    },
+    {
+      "path": "tools/migration/prerequisite-receipts.mjs",
+      "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+    },
+    {
+      "path": "tools/migration/load-prerequisites.mjs",
+      "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "d94cc57e34b04b23a92300d398bf5c437a30c792d4c26cb74e639e0654a50960"
+    },
+    {
+      "path": "tools/migration/task-handoffs.mjs",
+      "sha256": "53f0b202d20c8e0ee7e4e0dbf5d0c2a4e5dbde3705be6d7d3bc4a1fc5c746220"
+    },
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "0d75598250285d430de555a5f28bfc929cd857da071eda2b85c39c8ece382810"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/check-remaining-plan.mjs",
+      "sha256": "4283d1a2406481027f5f2a164aeca2f35f472dab5366665c2bebe2597a9e10cb"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "b48e1b9f5368d5992e4a137283d6635eaff78200f1d8d4542a7f4c4f17fbff17"
+    },
+    {
+      "path": "tools/migration/browser-exports.mjs",
+      "sha256": "3d3039688a9cf5671a8656082cd1c69f62605f562c4bbf77c3d5392790c00403"
+    },
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "b2105d8b36ef2d5e1c9859ac33d9a8243b96b2c9d1e94346b357782597eb56d7"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "4ed219833b67d72e75f12bb8ad27d7493080a7e0175bb9313bacc939f8ac6909"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "63b58bf38b32765082eb453d95806732daa1b2cb6a97993c2d5dc98c51e86eec"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "6f9b64a114cbe0e316689a6a4ceb0d27034dc10a29c41e749b49853890c813f0"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "P07.R.migration_task_manifests",
+      "requirementIds": [
+        "p07.reference.audit.migration_task_manifests"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-R-migration_task_manifests.tap"
+    },
+    {
+      "id": "P07.R.migration_task_receipts",
+      "requirementIds": [
+        "p07.reference.audit.migration_task_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-R-migration_task_receipts.tap"
+    },
+    {
+      "id": "P07.R.migration_task_metadata",
+      "requirementIds": [
+        "p07.reference.audit.migration_task_metadata"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_metadata.test.mjs"
+      ],
+      "testNames": [
+        "P06 coordinator catalog and review lock evolve through actual activation and receipt snapshots",
+        "P06 metadata evolution cannot conceal source edits or unrelated shard changes",
+        "P06 frozen metadata identities and historical evidence remain immutable",
+        "P06 actual dependency-linked hook snapshots support the complete registered product lifecycle"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-R-migration_task_metadata.tap"
+    }
+  ],
+  "artifacts": []
+}

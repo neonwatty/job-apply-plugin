@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "baseSha": null,
+  "headSha": null,
+  "changedPaths": [],
+  "selectedSuites": [
+    "windows-contracts",
+    "macos-native-contracts"
+  ],
+  "fallbackReason": null,
+  "timings": [
+    {
+      "id": "windows-contracts",
+      "durationMs": 0,
+      "status": "skipped"
+    },
+    {
+      "id": "macos-native-contracts",
+      "durationMs": 35661,
+      "status": "passed"
+    }
+  ],
+  "status": "passed"
+}

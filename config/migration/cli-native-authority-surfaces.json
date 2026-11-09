@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:attention-approval-preview",
+      "kind": "cli",
+      "command": "attention-approval-preview",
+      "node": "I",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/cli/native-grouped-approvals.ts",
+        "src/workspace-core/grouped-approvals.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:attention-approval-approve",
+      "kind": "cli",
+      "command": "attention-approval-approve",
+      "node": "I",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/cli/native-grouped-approvals.ts",
+        "src/workspace-core/grouped-approvals.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:replay-transition",
+      "kind": "cli",
+      "command": "replay-transition",
+      "node": "I",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/replay-transition.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:trusted-fill-approve",
+      "kind": "cli",
+      "command": "trusted-fill-approve",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/trusted-fill.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:trusted-fill-status",
+      "kind": "cli",
+      "command": "trusted-fill-status",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/trusted-fill.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:trusted-fill-evaluate",
+      "kind": "cli",
+      "command": "trusted-fill-evaluate",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/trusted-fill.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:trusted-fill-revoke",
+      "kind": "cli",
+      "command": "trusted-fill-revoke",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-authority.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/trusted-fill.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

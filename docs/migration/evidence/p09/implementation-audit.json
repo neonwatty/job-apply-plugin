@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "p09-captured-successor-audit",
+  "assignmentIds": [
+    "P09.I",
+    "P09.V"
+  ],
+  "allowed_files": [
+    "tools/migration/load-task-lineage.mjs",
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/task-receipts.mjs",
+    "tests_js/migration_task_receipts.test.mjs",
+    "tests_js/migration_task_lineage_lifecycle.test.mjs",
+    "tests_js/migration_task_lineage_git_support.mjs",
+    "tests_js/migration_task_support.mjs",
+    "docs/migration/evidence/p09/implementation.md",
+    "docs/migration/evidence/p09/implementation-audit.json",
+    "docs/migration/evidence/p09/P09.I.json",
+    "docs/migration/evidence/p09/P09.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p09.closed-currentness-bridge",
+    "p09.actual-retirement-lifecycle"
+  ],
+  "cells": [
+    {
+      "id": "P09.receipts",
+      "requirementIds": [
+        "p09.closed-currentness-bridge"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration",
+        "captured successor bridges preserve historical currentness without accepting retired tasks",
+        "captured successor bridges reject forged hashes ownership dependencies and ancestry",
+        "captured successor bridges compose transitively and reject cycles and missing adoption"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p09/logs/P09-receipts.tap"
+    },
+    {
+      "id": "P09.lifecycle",
+      "requirementIds": [
+        "p09.actual-retirement-lifecycle"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_lineage_lifecycle.test.mjs"
+      ],
+      "testNames": [
+        "P07 replacement cannot weaken accepted dependencies or required coverage",
+        "P07 replacement cycles and fake Git ancestry fail closed",
+        "P07 later replacement success cannot retroactively pass the rejected attempt",
+        "P07 lineage activation and receipt snapshots preserve accepted history",
+        "captured successor lifecycle preserves an accepted reference through retirement and fresh replacement review",
+        "captured successor lifecycle rejects unbound adoption and keeps invalid batches closed"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p09/logs/P09-lifecycle.tap"
+    }
+  ],
+  "artifacts": []
+}

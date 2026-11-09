@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: trash-reference: delete phrases retain falsy defaults and String coercion
+ok 1 - trash-reference: delete phrases retain falsy defaults and String coercion
+  ---
+  duration_ms: 0.404625
+  type: 'test'
+  ...
+# Subtest: trash-reference: filtering preserves order, item identity and strict type matching
+ok 2 - trash-reference: filtering preserves order, item identity and strict type matching
+  ---
+  duration_ms: 0.653167
+  type: 'test'
+  ...
+# Subtest: trash-reference: missing collections and malformed elements keep existing behavior
+ok 3 - trash-reference: missing collections and malformed elements keep existing behavior
+  ---
+  duration_ms: 0.148916
+  type: 'test'
+  ...
+# Subtest: trash-reference: blockers sum integers only without clamping negatives
+ok 4 - trash-reference: blockers sum integers only without clamping negatives
+  ---
+  duration_ms: 0.158708
+  type: 'test'
+  ...
+# Subtest: trash-reference: lifecycle messages preserve defaults, coercion and count suffix
+ok 5 - trash-reference: lifecycle messages preserve defaults, coercion and count suffix
+  ---
+  duration_ms: 0.106084
+  type: 'test'
+  ...
+# Subtest: trash-reference: revision conflict takes precedence without consulting other fields
+ok 6 - trash-reference: revision conflict takes precedence without consulting other fields
+  ---
+  duration_ms: 0.045875
+  type: 'test'
+  ...
+# Subtest: trash-reference: presentation functions leave frozen caller records unchanged
+ok 7 - trash-reference: presentation functions leave frozen caller records unchanged
+  ---
+  duration_ms: 0.076167
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33.481834

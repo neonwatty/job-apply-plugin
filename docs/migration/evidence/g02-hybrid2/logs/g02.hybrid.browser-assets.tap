@@ -1,0 +1,47 @@
+TAP version 13
+# Subtest: global navigation exposes the pipeline, application data, and controls model
+ok 1 - global navigation exposes the pipeline, application data, and controls model
+  ---
+  duration_ms: 2.266208
+  type: 'test'
+  ...
+# Subtest: navigation preserves button, badge, active-state, and event-binding contracts
+ok 2 - navigation preserves button, badge, active-state, and event-binding contracts
+  ---
+  duration_ms: 1.042042
+  type: 'test'
+  ...
+# Subtest: persistent trust context explains local data and human control
+ok 3 - persistent trust context explains local data and human control
+  ---
+  duration_ms: 0.513167
+  type: 'test'
+  ...
+# Subtest: navigation has a collision-free row and focus-safe narrow-width overflow
+ok 4 - navigation has a collision-free row and focus-safe narrow-width overflow
+  ---
+  duration_ms: 0.674667
+  type: 'test'
+  ...
+# Subtest: hybrid UI serves exact TypeScript helper assets through guarded Python routes
+ok 5 - hybrid UI serves exact TypeScript helper assets through guarded Python routes
+  ---
+  duration_ms: 314.847541
+  type: 'test'
+  ...
+# Subtest: hybrid UI boots real Python server with compiled helper identities and navigation
+ok 6 - hybrid UI boots real Python server with compiled helper identities and navigation
+  ---
+  duration_ms: 4465.498209
+  type: 'test'
+  ...
+# {"current":{"passed":true,"editing":true,"draftRefresh":true,"revisionConflict":true,"rebase":true,"persistedReload":true,"cspViolations":[],"browser":"151.0.7922.34","modules":["/runtime/workspace-ui/lib/activity-view.js","/runtime/workspace-ui/lib/activity-view.js","/runtime/workspace-ui/lib/answer-view.js","/runtime/workspace-ui/lib/answer-view.js","/runtime/workspace-ui/lib/profile-view.js","/runtime/workspace-ui/lib/profile-view.js","/runtime/workspace-ui/lib/resume-view.js","/runtime/workspace-ui/lib/resume-view.js","/runtime/workspace-ui/lib/trash-view.js","/runtime/workspace-ui/lib/trash-view.js"],"boot":"ready","navigation":["overview","jobs","facts","overview"],"exports":36,"runtimeIdentity":true,"legacyFileReaderIdentity":true,"pageErrors":[],"failedRequests":[]},"packaged":{"passed":true,"editing":true,"draftRefresh":true,"revisionConflict":true,"rebase":true,"persistedReload":true,"cspViolations":[],"browser":"151.0.7922.34","modules":["/runtime/workspace-ui/lib/activity-view.js","/runtime/workspace-ui/lib/activity-view.js","/runtime/workspace-ui/lib/answer-view.js","/runtime/workspace-ui/lib/answer-view.js","/runtime/workspace-ui/lib/profile-view.js","/runtime/workspace-ui/lib/profile-view.js","/runtime/workspace-ui/lib/resume-view.js","/runtime/workspace-ui/lib/resume-view.js","/runtime/workspace-ui/lib/trash-view.js","/runtime/workspace-ui/lib/trash-view.js"],"boot":"ready","navigation":["overview","jobs","facts","overview"],"exports":36,"runtimeIdentity":true,"legacyFileReaderIdentity":true,"pageErrors":[],"failedRequests":[]}}
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4970.50925

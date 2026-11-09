@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-resolve",
+      "kind": "cli",
+      "command": "resume-resolve",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-list",
+      "kind": "cli",
+      "command": "resume-list",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-update",
+      "kind": "cli",
+      "command": "resume-update",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-adopt",
+      "kind": "cli",
+      "command": "resume-adopt",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-set-default",
+      "kind": "cli",
+      "command": "resume-set-default",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-check",
+      "kind": "cli",
+      "command": "resume-check",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-trash",
+      "kind": "cli",
+      "command": "resume-trash",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-restore",
+      "kind": "cli",
+      "command": "resume-restore",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-delete",
+      "kind": "cli",
+      "command": "resume-delete",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-create",
+      "kind": "cli",
+      "command": "resume-extraction-request-create",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-get",
+      "kind": "cli",
+      "command": "resume-extraction-request-get",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-list",
+      "kind": "cli",
+      "command": "resume-extraction-request-list",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-cancel",
+      "kind": "cli",
+      "command": "resume-extraction-request-cancel",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-fail",
+      "kind": "cli",
+      "command": "resume-extraction-request-fail",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-retry",
+      "kind": "cli",
+      "command": "resume-extraction-request-retry",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-extraction-request-complete",
+      "kind": "cli",
+      "command": "resume-extraction-request-complete",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:profile-preparedness-get",
+      "kind": "cli",
+      "command": "profile-preparedness-get",
+      "node": "PF",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:resume-proposal-create",
+      "kind": "cli",
+      "command": "resume-proposal-create",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

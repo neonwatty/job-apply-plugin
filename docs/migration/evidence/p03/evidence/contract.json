@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "scope": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+  "previousDag": {
+    "path": "docs/migration/evidence/s02/retry1/approved-dag.json",
+    "sha256": "d563b690197cf17d0c0319352bfcacb7431f0f43b16e7efe1c91d0731927b81a",
+    "revision": "0f9635a69d9527df3ee4b504065a6ac51cffde5e"
+  },
+  "rawLogPath": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_run.tap",
+  "attributeBytes": "/docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_run.tap whitespace=-blank-at-eol\n",
+  "requirements": [
+    "Only the exact declared log path receives whitespace=-blank-at-eol; no globs, filters, text conversion or global whitespace configuration.",
+    "Preserve the three existing installation callbacks, assertions and observed names.",
+    "Use disposable real Git repositories and the exact tracked attributes bytes; git diff --cached --check must permit end-of-line spaces for the named log.",
+    "Compare original raw Buffer SHA256 with index git show :path bytes; neither attributes nor tests may normalize raw evidence.",
+    "The same trailing spaces must fail in ordinary source and a sibling/other raw log.",
+    "At the exempted path, blank-at-eof and space-before-tab must still fail; explicitly select those rules in the disposable fixture to avoid ambient Git configuration.",
+    "Do not modify hook.mjs, migration validators, existing raw logs, or any other source. All implementation follows the first committed activation.",
+    "The independently accepted evidence receipt is a required dependency of never-frozen T05.I; no P03.I/V acceptance is implied."
+  ]
+}

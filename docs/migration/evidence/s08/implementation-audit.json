@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "id": "s08-implementation-audit",
+  "assignmentIds": [
+    "S08.I",
+    "S08.V"
+  ],
+  "allowed_files": [
+    "src/contracts/raw-json/parser.ts",
+    "src/contracts/raw-json/serializer.ts",
+    "src/contracts/raw-json/point-value.ts",
+    "src/contracts/raw-json/point-parser-core.ts",
+    "src/contracts/raw-json/point-text-codec.ts",
+    "src/contracts/raw-json/point-parser.ts",
+    "src/contracts/raw-json/json-serialization-core.ts",
+    "src/contracts/raw-json/point-serializer.ts",
+    "runtime/contracts/raw-json/parser.js",
+    "runtime/contracts/raw-json/serializer.js",
+    "runtime/contracts/raw-json/point-value.js",
+    "runtime/contracts/raw-json/point-parser-core.js",
+    "runtime/contracts/raw-json/point-text-codec.js",
+    "runtime/contracts/raw-json/point-parser.js",
+    "runtime/contracts/raw-json/json-serialization-core.js",
+    "runtime/contracts/raw-json/point-serializer.js",
+    "tests_js/typed_json_points.test.mjs",
+    "tests_js/typed_json_points_profiles.test.mjs",
+    "tests_js/typed_json_points_compat.test.mjs",
+    "docs/migration/python-json-points-port.md",
+    "docs/migration/evidence/s08/implementation-audit.json",
+    "docs/migration/evidence/s08/S08.I.json",
+    "docs/migration/evidence/s08/S08.V.json",
+    "config/migration/source-catalog-s08.json",
+    "config/migration/source-catalog-02.json",
+    "config/migration/source-catalog-05.json",
+    "docs/migration/evidence/s08/additional-reference-vectors.json",
+    "docs/migration/evidence/s08/composed-reference-vectors.json",
+    "tests_js/typed_json_oracle.test.mjs",
+    "tests_js/raw_json_numeric.test.mjs",
+    "tests_js/store_validation_ts.test.mjs",
+    "tests_js/persisted_json_ts.test.mjs",
+    "tests_js/jsonl_json_ts.test.mjs",
+    "docs/migration/evidence/s08/implementation.md"
+  ],
+  "emittedFiles": [
+    "runtime/contracts/raw-json/parser.js",
+    "runtime/contracts/raw-json/serializer.js",
+    "runtime/contracts/raw-json/point-value.js",
+    "runtime/contracts/raw-json/point-parser-core.js",
+    "runtime/contracts/raw-json/point-text-codec.js",
+    "runtime/contracts/raw-json/point-parser.js",
+    "runtime/contracts/raw-json/json-serialization-core.js",
+    "runtime/contracts/raw-json/point-serializer.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "s08.audit.points",
+    "s08.audit.profiles",
+    "s08.audit.compat",
+    "s08.audit.legacy-boundary",
+    "s08.audit.legacy-oracle",
+    "s08.audit.numeric",
+    "s08.audit.composed-reference",
+    "s08.audit.validation",
+    "s08.audit.persisted",
+    "s08.audit.jsonl"
+  ],
+  "cells": [
+    {
+      "id": "s08.implementation.points",
+      "requirementIds": [
+        "s08.audit.points"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/typed_json_points.test.mjs"
+      ],
+      "testNames": [
+        "S08 point parser preserves all 38 independently fixed document outcomes",
+        "S08 point parser preserves all 48 supplemental diagnostic and numeric outcomes",
+        "S08 point objects preserve ordered content keys and numeric identities",
+        "S08 point diagnostics preserve exact documents coordinates and profile differences",
+        "S08 point byte composition preserves decoding errors and codepoint identity",
+        "S08 point serializer preserves all three frozen graph outcomes and ASCII reload distinctions",
+        "S08 point API rejects invalid runtime inputs without implicit conversion"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-points.tap"
+    },
+    {
+      "id": "s08.implementation.profiles",
+      "requirementIds": [
+        "s08.audit.profiles"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/typed_json_points_profiles.test.mjs"
+      ],
+      "testNames": [
+        "S08 point JSON matches the frozen composed reference under default CPython",
+        "S08 point JSON matches the frozen composed reference under CPython 3.12",
+        "S08 point JSON matches the frozen composed reference under CPython 3.13",
+        "S08 point JSON matches the frozen composed reference under CPython 3.14"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-profiles.tap"
+    },
+    {
+      "id": "s08.implementation.compat",
+      "requirementIds": [
+        "s08.audit.compat"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/typed_json_points_compat.test.mjs"
+      ],
+      "testNames": [
+        "S08 shared parser preserves legacy mixed surrogate values and Map keys",
+        "S08 legacy errors retain class identity offsets and configuration precedence",
+        "S08 shared numeric parsing preserves digit limits signed zero and nonfinite values",
+        "S08 shared engines handle 2000 levels without recursive traversal",
+        "S08 shared serializers distinguish active cycles from shared acyclic containers",
+        "S08 long text and key inputs preserve immutable point identity without spread limits"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-compat.tap"
+    },
+    {
+      "id": "s08.implementation.legacy-boundary",
+      "requirementIds": [
+        "s08.audit.legacy-boundary"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/typed_json_boundary.test.mjs"
+      ],
+      "testNames": [
+        "typed objects preserve numeric identity, duplicate decoded keys and safe property names",
+        "Python key sorting uses Unicode code points and strings remain ensure-ASCII",
+        "UTF-8 raw text retains lone escaped keys and combines escaped surrogate pairs",
+        "non-finite values and numeric overflow retain Python spellings",
+        "syntax error offsets count code points rather than UTF-16 units",
+        "integer digit limits apply inside documents without restricting unlimited mode",
+        "deep parsing and serialization have no diagnostic depth cap",
+        "serializer rejects cycles while allowing shared acyclic values"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-legacy-boundary.tap"
+    },
+    {
+      "id": "s08.implementation.legacy-oracle",
+      "requirementIds": [
+        "s08.audit.legacy-oracle"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/typed_json_oracle.test.mjs"
+      ],
+      "testNames": [
+        "typed JSON independently matches python3 reference",
+        "python3 typed reference rejects caller arguments and stdin",
+        "typed JSON independently matches python3.12 reference",
+        "python3.12 typed reference rejects caller arguments and stdin",
+        "typed JSON independently matches python3.13 reference",
+        "python3.13 typed reference rejects caller arguments and stdin",
+        "typed JSON independently matches python3.14 reference",
+        "python3.14 typed reference rejects caller arguments and stdin"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-legacy-oracle.tap"
+    },
+    {
+      "id": "s08.implementation.numeric",
+      "requirementIds": [
+        "s08.audit.numeric"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/raw_json_numeric.test.mjs"
+      ],
+      "testNames": [
+        "single numeric token grammar rejects whitespace, junk and alternate spellings",
+        "integer identity, digit limits and signed zero are exact",
+        "fixed finite scope formatting remains required without versioned executables",
+        "integer digit configuration rejects invalid limits",
+        "independent numeric oracle from python3",
+        "python3 reference rejects caller arguments and stdin",
+        "independent numeric oracle from python3.12",
+        "python3.12 reference rejects caller arguments and stdin",
+        "independent numeric oracle from python3.13",
+        "python3.13 reference rejects caller arguments and stdin",
+        "independent numeric oracle from python3.14",
+        "python3.14 reference rejects caller arguments and stdin"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-numeric.tap"
+    },
+    {
+      "id": "s08.implementation.composed-reference",
+      "requirementIds": [
+        "s08.audit.composed-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/codepoint_json_reference.test.mjs"
+      ],
+      "testNames": [
+        "S03.R composed codepoint JSON reference: default CPython",
+        "S03.R composed codepoint JSON reference: CPython 3.12",
+        "S03.R composed codepoint JSON reference: CPython 3.13",
+        "S03.R composed codepoint JSON reference: CPython 3.14",
+        "S03.R composed codepoint JSON reference rejects caller input"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-composed-reference.tap"
+    },
+    {
+      "id": "s08.implementation.validation",
+      "requirementIds": [
+        "s08.audit.validation"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/store_validation_ts.test.mjs"
+      ],
+      "testNames": [
+        "document validation matches authoritative Python: python3",
+        "document validation matches authoritative Python: python3.12",
+        "document validation matches authoritative Python: python3.13",
+        "document validation matches authoritative Python: python3.14",
+        "document validation preserves all entries and typed atom identities",
+        "fixed reference refuses caller arguments and input"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-validation.tap"
+    },
+    {
+      "id": "s08.implementation.persisted",
+      "requirementIds": [
+        "s08.audit.persisted"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/persisted_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "persisted JSON chunks and strict UTF8 match Python: python3",
+        "persisted JSON chunks and strict UTF8 match Python: python3.12",
+        "persisted JSON chunks and strict UTF8 match Python: python3.13",
+        "persisted JSON chunks and strict UTF8 match Python: python3.14"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-persisted.tap"
+    },
+    {
+      "id": "s08.implementation.jsonl",
+      "requirementIds": [
+        "s08.audit.jsonl"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/jsonl_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.12",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.13",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.14"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-IV-jsonl.tap"
+    }
+  ],
+  "artifacts": []
+}

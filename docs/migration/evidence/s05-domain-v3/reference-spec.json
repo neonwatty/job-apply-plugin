@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "S05.domain2.R",
+  "previousDag": {
+    "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+    "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3",
+    "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+  },
+  "originalManifest": {
+    "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+    "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4",
+    "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+  },
+  "dependencies": [
+    "P00.V",
+    "S05.R",
+    "M02.V",
+    "S04.V",
+    "P12.V",
+    "M01.V",
+    "U01.R",
+    "U02.R"
+  ],
+  "prerequisiteReceipts": [
+    {
+      "id": "P00.V",
+      "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+    },
+    {
+      "id": "S05.R",
+      "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+    },
+    {
+      "id": "M02.V",
+      "sha256": "a953288b93e03dde8d6d7f05a1980ed4ceee081d41c267fead57c1ed1176bad1"
+    },
+    {
+      "id": "S04.V",
+      "sha256": "c308d9f21efcb704215f9e78fb1a5aaf3dc597204282600238547e5936a70f1d"
+    },
+    {
+      "id": "P12.V",
+      "sha256": "ec247a75c7a3544e39e8b3114455002a5eeaa7a8f987645856bce959b6f8abe9"
+    },
+    {
+      "id": "M01.V",
+      "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+    },
+    {
+      "id": "U01.R",
+      "sha256": "dc447d50c8b26c1be1381134f3017f1161231564d667f4a1eb8d7d595ec489f2"
+    },
+    {
+      "id": "U02.R",
+      "sha256": "e77d63779f755df00e58cfb66674f9d3494e22c3b292e24abe3178dac01d33dd"
+    }
+  ],
+  "registrationCandidate": {
+    "path": "tests_js/point_paths_reference.test.mjs",
+    "sha256": "adadd2a0a89ee3d687041b76a277d1d42da94011898ceb627b15ccc24b1995f8"
+  },
+  "matrixCandidateSha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374",
+  "reason": "Preserve the original Store reference obligations while explicitly owning test support registration; retire the unexecuted assignment with no fabricated attempt."
+}

@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "id": "P01.V",
+  "role": "independent-review",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "P01",
+    "parentNode": "I",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "tools/migration/evidence-io.mjs",
+      "tools/migration/tap-evidence.mjs",
+      "tools/migration/load-prerequisites.mjs",
+      "tools/migration/prerequisite-receipts.mjs",
+      "tools/migration/task-manifests.mjs",
+      "tools/migration/task-receipts.mjs",
+      "tools/migration/load-task-evidence.mjs",
+      "tools/migration/check.mjs",
+      "tests_js/migration_task_manifests.test.mjs",
+      "tests_js/migration_task_receipts.test.mjs",
+      "tests_js/migration_task_loader.test.mjs",
+      "tests_js/migration_load_prerequisites.test.mjs",
+      "tests_js/migration_prerequisite_receipts.test.mjs",
+      "tests_js/migration_task_support.mjs",
+      "docs/migration/evidence/bootstrap/p01-audit.json",
+      "docs/migration/evidence/bootstrap/P01.I.json",
+      "docs/migration/evidence/bootstrap/P01.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "7189cb9d62ca244ccfc7784089d32ad7a69f27e29401e28791f201cb6aae5767",
+  "auditContract": {
+    "path": "docs/migration/evidence/bootstrap/p01-audit.json",
+    "sha256": "e01d765784d1b4fac891021a8dab5c917486a44107bfda4ef05b80b44db2112b"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "3ed8f30cdc8cd8096fcc7867730ea44764de9071",
+  "inputs": [
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "0edbb50c6ead7963f6e3b5dca2138fa5d71c2dbd4ab254359f8a87212cc227f6"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/load-prerequisites.mjs",
+      "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+    },
+    {
+      "path": "tools/migration/prerequisite-receipts.mjs",
+      "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "4ed219833b67d72e75f12bb8ad27d7493080a7e0175bb9313bacc939f8ac6909"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "f68aab726ce27f6718282cb19b8b905f9e45940c2508cc3df8369a3ec5eccfba"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "f63db62c036d8e581f7ab990d8fb0c3b04d6dbe2bda4b9a0a0b967dd91fac5dd"
+    },
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+    },
+    {
+      "path": "tests_js/migration_task_manifests.test.mjs",
+      "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+    },
+    {
+      "path": "tests_js/migration_task_receipts.test.mjs",
+      "sha256": "8a5c0c368dbb0a7ca0cc141f305c72bdb28fee1842666b0c19d66c6393f2fde3"
+    },
+    {
+      "path": "tests_js/migration_task_loader.test.mjs",
+      "sha256": "33a7065cfb8c83f48e7bede9630fd62b4d44bd962b6cb6d5cac1995cfd7aa5c2"
+    },
+    {
+      "path": "tests_js/migration_load_prerequisites.test.mjs",
+      "sha256": "31a5cd3502ebdbf866b04ab877f54148f270c9af9faee5b644bb9e2a3dc5a0e6"
+    },
+    {
+      "path": "tests_js/migration_prerequisite_receipts.test.mjs",
+      "sha256": "f1a16fca20709f54c0cadba3b120bf6c5fa11098fe4fbd93d83ca2503598935f"
+    },
+    {
+      "path": "tests_js/migration_task_support.mjs",
+      "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+    },
+    {
+      "path": "docs/migration/evidence/bootstrap/p01-audit.json",
+      "sha256": "e01d765784d1b4fac891021a8dab5c917486a44107bfda4ef05b80b44db2112b"
+    },
+    {
+      "path": "tools/migration/browser-exports.mjs",
+      "sha256": "3d3039688a9cf5671a8656082cd1c69f62605f562c4bbf77c3d5392790c00403"
+    },
+    {
+      "path": "tools/migration/check-remaining-plan.mjs",
+      "sha256": "4283d1a2406481027f5f2a164aeca2f35f472dab5366665c2bebe2597a9e10cb"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "1a2b7ff84198387c72eb5ff510bbe9aff6da235291056b4ef7766d2201b3f0d4"
+    },
+    {
+      "path": "tools/migration/requirements.mjs",
+      "sha256": "f1a64d8aa967a26383b468415eee037964493e15db32dcc051982a92d1b89f1c"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "d94cc57e34b04b23a92300d398bf5c437a30c792d4c26cb74e639e0654a50960"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "p01.migration_task_manifests",
+      "requirementIds": [
+        "p01.audit.migration_task_manifests"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P01-migration_task_manifests.tap"
+    },
+    {
+      "id": "p01.migration_task_receipts",
+      "requirementIds": [
+        "p01.audit.migration_task_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P01-migration_task_receipts.tap"
+    },
+    {
+      "id": "p01.migration_task_loader",
+      "requirementIds": [
+        "p01.audit.migration_task_loader"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery"
+      ],
+      "timeoutMs": 240000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P01-migration_task_loader.tap"
+    },
+    {
+      "id": "p01.migration_load_prerequisites",
+      "requirementIds": [
+        "p01.audit.migration_load_prerequisites"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_load_prerequisites.test.mjs"
+      ],
+      "testNames": [
+        "actual Git evidence rejects working drift, uncommitted logs and symlink escapes"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P01-migration_load_prerequisites.tap"
+    },
+    {
+      "id": "p01.migration_prerequisite_receipts",
+      "requirementIds": [
+        "p01.audit.migration_prerequisite_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_prerequisite_receipts.test.mjs"
+      ],
+      "testNames": [
+        "verified evidence unlocks only its prerequisite kind",
+        "status, review or outcome assertions cannot replace successful evidence",
+        "immutable revisions and current files must agree",
+        "every requirement needs canonical command and known environment",
+        "captured TAP must match counts and be complete, current and supported",
+        "registered prerequisite scope cannot shrink to a convenient passing subset",
+        "malformed records and duplicate receipts return errors without partial unlocking"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P01-migration_prerequisite_receipts.tap"
+    }
+  ],
+  "artifacts": []
+}

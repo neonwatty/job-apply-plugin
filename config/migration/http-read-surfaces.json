@@ -1,0 +1,553 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:GET:/api/boot",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/boot",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/overview",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/overview",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/workspace-projections-http.ts",
+        "src/workspace-core/workspace-projections.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/profile",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/profile",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/profile-http.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/account-operation",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/account-operation",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/account-operation-http.ts",
+        "src/workspace-core/account-operation.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/attention",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/attention",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/workspace-projections-http.ts",
+        "src/workspace-core/workspace-projections.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/profile-preparedness",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/profile-preparedness",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/answers/cleanup-preview",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/answers/cleanup-preview",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/answers-http.ts",
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts",
+        "src/contracts/workspace/answer-match-features.ts",
+        "src/contracts/workspace/answer-match-reuse.ts",
+        "src/contracts/workspace/answer-match-scoring.ts",
+        "src/contracts/workspace/answer-match-unicode-alnum-astral.ts",
+        "src/contracts/workspace/answer-match-unicode-alnum-bmp.ts",
+        "src/contracts/workspace/answer-match-unicode-assigned-astral.ts",
+        "src/contracts/workspace/answer-match-unicode-assigned-bmp.ts",
+        "src/contracts/workspace/answer-match-unicode.ts",
+        "src/contracts/workspace/answer-match-vocabulary.ts",
+        "src/workspace-core/answer-match.ts",
+        "src/contracts/workspace/answer-match-cleanup.ts",
+        "src/workspace-core/answer-cleanup.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/automation",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/automation",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/fact-groups",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/fact-groups",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/profile-http.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/state",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/state",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/jobs",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/jobs",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/trash",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/trash",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/trash-http.ts",
+        "src/workspace-core/trash.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resumes",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resumes",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/resumes-http.ts",
+        "src/workspace-core/resumes.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resumes/trash",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resumes/trash",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resume-extraction-requests",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resume-extraction-requests",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resume-proposals",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resume-proposals",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/answers",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/answers",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/pending-answers",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/pending-answers",
+      "node": "ANS",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts",
+        "src/workspace-core/pending-answers-http.ts",
+        "src/workspace-core/jobs-http.ts",
+        "apps/companion/server/routes.ts",
+        "apps/companion/server/forward.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "g02-nextperf-implementation-audit",
+  "assignmentIds": [
+    "G02.nextperf.I"
+  ],
+  "allowed_files": [
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/evidence-io.mjs",
+    "tests_js/migration_task_loader.test.mjs",
+    "tests_js/migration_task_support.mjs",
+    "docs/migration/evidence/g02-nextperf/implementation-spec.json",
+    "docs/migration/evidence/g02-nextperf/implementation-plan.md",
+    "docs/migration/evidence/g02-nextperf/integration-dag.json",
+    "docs/migration/evidence/g02-nextperf/integration-transition.json",
+    "docs/migration/evidence/g02-nextperf/G02.nextperf.I.audit.json",
+    "docs/migration/evidence/g02-nextperf/G02.nextperf.V.audit.json",
+    "docs/migration/evidence/g02-nextperf/G02.nextperf.I.json",
+    "docs/migration/evidence/g02-nextperf/G02.nextperf.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "g02.nextperf.immutable-facts"
+  ],
+  "cells": [
+    {
+      "id": "g02.nextperf.immutable-facts",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery",
+        "platform task evidence binds actual conditional capture to the frozen cell environment",
+        "platform task evidence rejects wrong-platform same-count outputs and immutable source drift",
+        "immutable Git cache retains hot reads within explicit count and byte bounds",
+        "immutable ancestry amortizes successful heads and preserves bounded fallback",
+        "immutable ancestry agrees with Git on branches tags unknown IDs and replacements",
+        "base facts reuse immutable paths including absence without crossing bases or hiding validation",
+        "immutable cache retains below 32 MiB and evicts above it with unchanged read limits"
+      ],
+      "timeoutMs": 90000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/g02-nextperf/logs/immutable-facts.tap",
+      "requirementIds": [
+        "g02.nextperf.immutable-facts"
+      ]
+    }
+  ],
+  "artifacts": []
+}

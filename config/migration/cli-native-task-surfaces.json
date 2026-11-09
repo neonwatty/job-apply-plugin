@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-task.ts:snapshot",
+      "kind": "cli",
+      "command": "snapshot",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:activity",
+      "kind": "cli",
+      "command": "activity",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:intake",
+      "kind": "cli",
+      "command": "intake",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:select",
+      "kind": "cli",
+      "command": "select",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:resolve-pending-answer",
+      "kind": "cli",
+      "command": "resolve-pending-answer",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:semantic-lookup",
+      "kind": "cli",
+      "command": "semantic-lookup",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:cleanup-preview",
+      "kind": "cli",
+      "command": "cleanup-preview",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:cleanup-approve",
+      "kind": "cli",
+      "command": "cleanup-approve",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:approval-preview",
+      "kind": "cli",
+      "command": "approval-preview",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-task.ts:approval-approve",
+      "kind": "cli",
+      "command": "approval-approve",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-task.ts",
+        "src/cli/task-runner.ts",
+        "src/cli/task-command.ts",
+        "src/cli/task-protocol.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

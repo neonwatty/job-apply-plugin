@@ -6,6 +6,11 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+
+try:
+    from scripts.skill_documents import skill_documents
+except ModuleNotFoundError:
+    from skill_documents import skill_documents
 from pathlib import Path
 
 
@@ -102,7 +107,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="+", type=Path)
     arguments = parser.parse_args(argv)
-    errors = [error for path in arguments.paths for error in check_path(path)]
+    paths = []
+    try:
+        for path in arguments.paths:
+            paths.extend(skill_documents(path) if path.name == "SKILL.md" else [path])
+    except (OSError, ValueError) as error:
+        print(str(error), file=sys.stderr)
+        return 1
+    errors = [error for path in paths for error in check_path(path)]
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1

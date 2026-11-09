@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "journal:coordinator-journal.json:operation:null",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation",
+      "value": null,
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:coordinator-journal.json:operation.kind:answer_merge",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "answer_merge",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:coordinator-journal.json:operation.kind:answer_resolution",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "answer_resolution",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-answer-resolution-journal.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:coordinator-journal.json:operation.kind:acquire",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "acquire",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/claims.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:coordinator-journal.json:operation.kind:review_restart",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "review_restart",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-claim-history.ts",
+        "src/workspace-core/claims.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:coordinator-journal.json:operation.kind:recover",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "recover",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/claims.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:coordinator-journal.json:operation.kind:handoff",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "handoff",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/claims.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-job-upsert.js",
+      "sha256": "0e6396e536552fa9297fb55b8a2e09cf5bc893b1525c4a90dd4a8afbf5ecc267",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/job-upsert-plan.js",
+      "sha256": "4122bdc6aefe2f471fc8f8dc4feed72732ae24bad781bedb098fe2123e82fc48",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/job-upsert.js",
+      "sha256": "906919dcec3acac8004b9140e7d2036c13315401bf3538696b2b0d143f760a83",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-job-upsert.ts",
+      "sha256": "b7e0d4ce18e8fe7e14d1ab2fcf90a2dbed1913ee7c9a89f6c1f224d33420b011",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/job-upsert-plan.ts",
+      "sha256": "c0f81818c0b9bef6eb5dac36acab43df8006585bf9f4a8451fa2f4a63d1f193e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/job-upsert.ts",
+      "sha256": "69e16d70b7c750a13e1b272d5bd77ba833ce043928e509a0f71595cbeffd555d",
+      "classification": "unreviewed"
+    }
+  ]
+}

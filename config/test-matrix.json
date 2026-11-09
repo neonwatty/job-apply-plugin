@@ -1,0 +1,1579 @@
+{
+  "schemaVersion": 1,
+  "runtime": "typescript",
+  "inventory": {
+    "include": [
+      "tests_js/**/*.mjs",
+      "tools/**/*.mjs",
+      "src/**/*.ts",
+      "apps/companion/**",
+      "runtime/**/*.js",
+      "scripts/**/*.mjs",
+      "native/**"
+    ]
+  },
+  "fullInventory": {
+    "include": [
+      "tests/test_*.py",
+      "tests_js/*.test.mjs"
+    ]
+  },
+  "referenceTests": [
+    {
+      "path": "tests/test_account_setup_skill.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_answer_claim.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_answer_cli.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_answer_resume.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_answer_skill.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_ast_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_final_action_docs.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_account_canary.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_account_canary_executor.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_account_executor.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_account_flows.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_accounts.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_answer_match.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_attempt.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_credentials.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_form_readiness.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_password_account_flows.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_policy_authorization.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_policy_campaign.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_policy_outcomes.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_policy_split.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_skill_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_split_compatibility.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_task.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_trusted_fill.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_accounts.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_answers.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_jobs.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_launcher.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_profile.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_resumes.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_search_handoff.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_security.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_apply_workspace_startup.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_job_title_discovery_skill.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_macos_account_flow_helper.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_macos_credential_helper.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_macos_workday_account_flow_helper.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_account.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_chrome_control.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_chrome_facade.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_chrome_lifecycle.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_chrome_loader_isolation.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_chrome_paths.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_compiler_artifacts.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_compiler_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_compiler_privacy.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_fixture_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_flow_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_leaf_imports.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_observation_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_oracle_events.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_oracle_semantics.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_oracle_sessions.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_privacy.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_promotion_candidate.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_promotion_facade.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_promotion_security.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_promotion_transaction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_readiness_oracle.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_auto_submit.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_cleanup.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_committed_scenarios.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_facade.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_lifecycle.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_pdf_inspection.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_prepare.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_replay_security.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_qa_server.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_recorder_fs.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_runtime_launch_evidence.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_search_saved_skills.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_skill_documents.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_smoke_artifacts.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_smoke_harness_split.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_source_size_policy.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_email_execution_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_email_scope_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_operations_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_password_execution_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_registry_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_settings_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_synthetic_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_account_trusted_fill_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_accounts.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_accounts_live.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_accounts_recovery.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answer_approval.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answer_cleanup_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answer_merge_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answer_mutation_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answer_read_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answer_semantics.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answers_crud.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answers_merge.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_answers_query.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_attention.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_claims_acquisition.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_cli.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_cli_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_compat_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_composition.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_coordinator_approvals_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_coordinator_attention_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_coordinator_claims_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_coordinator_persistence_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_coordinator_progress_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_domain_composition.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_extraction_journal_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_extraction_proposals.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_extraction_proposals_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_extraction_recovery.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_extraction_requests.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_extraction_requests_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_facade_cli_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_facade_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_fact_groups.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_history_sessions.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_integrity.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_crud.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_crud_domain.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_legacy_1.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_legacy_2.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_legacy_domain.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_overview_domain.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_upsert.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_jobs_upsert_domain.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_legacy_sessions_1.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_legacy_sessions_2.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_loader_isolation.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_overview.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_profile.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_profile_domain.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_profile_facts_domain.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_readiness.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_recovery.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_restart.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_result_contract.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resume_lifecycle_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resume_mutations_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resume_read_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resume_storage_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resume_wave_integration.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resumes_registry.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_resumes_storage.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_session_document_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_session_history_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_session_lifecycle_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_session_readiness_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_sessions_integration.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_startup_extraction.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_trusted_fill.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_wave_a_integration.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_wave_b_integration.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests/test_store_wave_c_coordinator_integration.py",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/artifact_copy_metadata_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/artifact_copy_order_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/artifact_data_copy_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/atomic_write_json_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/atomic_write_json_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/codepoint_json_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/data_copy_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/exclusive_file_lock_fault_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/exclusive_file_lock_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/final_action_policy_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/history_read_idempotency_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/http_json_bytes_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/installed_artifacts_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/installed_artifacts_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/jsonl_append_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/jsonl_history_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/jsonl_json_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/local_checks_historical_boundary.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/local_checks_migration_maintenance.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/local_checks_policy.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/local_checks_run.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/managed_observation_native_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/managed_observation_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/managed_observation_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/managed_resume_path_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/managed_resume_path_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_browser_inventory.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_inventory.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_load_prerequisites.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_packages.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_prerequisite_receipts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_python_runtime_closure.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_remaining_plan.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_requirements.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_handoffs.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_lineage.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_lineage_lifecycle.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_loader.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_manifests.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_metadata.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_receipts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_task_replacements.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_test_bindings.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/migration_triage_report.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_answer_cli_parity.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_attempt_protocol.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_canonical_writer_rehearsal.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_cli_parser_parity.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_command_inventory.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_policy_store_clone.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_profile_cli_parity.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_resume_cli_parity.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/native_source_install_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/persisted_json_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/point_paths_digest_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/point_paths_parent_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/point_paths_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/point_persistence_baselines.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/point_persistence_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/posix_flock.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/posix_path_bytes_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/posix_path_bytes_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/posix_timestamps.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/private_file_digest_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/private_file_digest_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python-answer-matching-raw.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python-contracts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python-profile-fact-contracts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python-startup-contracts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_json_bytes_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_json_ingress.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_json_stdin.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_object_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_text_acceptance.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_text_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/python_text_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/raw_json_numeric.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_ats_safety_greenhouse_ashby.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_ats_safety_lever.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_ats_safety_workday_linkedin.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_broker.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_capture_browser.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_capture_checkpoint_scenario.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_capture_safety.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_capture_unit.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_capture_workday.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_checkpoint_basics.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_checkpoint_client.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_facade_contract.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_lifecycle_signals.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/recorder_png_resources.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/renderer.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/renderer_ashby.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/renderer_generic.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/renderer_greenhouse.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/renderer_lever.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/resume_modified_at_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/resume_modified_at_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/runtime-support.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/store_raw_read_reference.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/store_raw_read_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/store_validation_ts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/typed_json_oracle.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/typed_json_points_portable.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/typed_json_points_profiles.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/unified_task_spine_oracle.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_activity.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_answers.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_attention.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_automation.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_claim_sessions.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_claims_contracts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_extraction.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_facts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_helpers.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_information_architecture.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_markup.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_accounts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_cleanup.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_cleanup_integration.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_match.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_merge.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_merge_integration.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_resolution.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_reuse.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answer_sessions.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_answers.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_authority_cli.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_automation.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_automation_cli.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_extraction_domain.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_grouped_approvals.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_history_cli.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_job_preflight.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_job_transitions.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_job_trash.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_job_trash_delete.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_job_upsert.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_jobs.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_legacy_jobs.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_legacy_safety.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_lifecycle_answers.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_profile.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_projections.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_resumes.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_sessions_cli.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_store_bootstrap_cli.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_task_cli.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_native_task_intake.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_owner_beta.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/workspace_review_restart_contracts.test.mjs",
+      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
+    },
+    {
+      "path": "tests_js/filesystem_error_reference.test.mjs",
+      "reason": "Optional live CPython errno comparisons; required error-category and real filesystem tests remain native."
+    }
+  ],
+  "globalPaths": [
+    "tools/migration/**",
+    "config/migration/**",
+    ".githooks/**",
+    "tools/local-checks/**",
+    "config/test-matrix.json",
+    "tools/test-runner.mjs",
+    "tools/test-runner/**",
+    "tools/check-test-matrix.mjs",
+    "tools/ci/**",
+    ".workflows/workflows/*.workflow.yaml",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "src/**",
+    "runtime/**",
+    "tools/build-runtime.mjs",
+    "tools/runtime-build/**",
+    "contracts/**",
+    "test/contract/**",
+    ".github/workflows/**",
+    "config/reference-test-matrix.json"
+  ],
+  "suites": [
+    {
+      "id": "typescript-check",
+      "kind": "command",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "tiers": [
+        "fast",
+        "full"
+      ]
+    },
+    {
+      "id": "companion-typescript-check",
+      "kind": "command",
+      "command": [
+        "npm",
+        "run",
+        "companion:typecheck"
+      ],
+      "tiers": [
+        "fast",
+        "full"
+      ]
+    },
+    {
+      "id": "source-size",
+      "kind": "command",
+      "command": [
+        "npm",
+        "run",
+        "check:size"
+      ],
+      "tiers": [
+        "fast",
+        "full"
+      ]
+    },
+    {
+      "id": "matrix-policy",
+      "kind": "command",
+      "command": [
+        "node",
+        "tools/check-test-matrix.mjs"
+      ],
+      "tiers": [
+        "fast",
+        "full"
+      ]
+    },
+    {
+      "id": "core-workflow-audit",
+      "kind": "command",
+      "command": [
+        "npm",
+        "run",
+        "audit:core-workflows"
+      ],
+      "tiers": [
+        "fast",
+        "full"
+      ]
+    },
+    {
+      "id": "node-foundation-fast",
+      "kind": "node-test",
+      "include": [
+        "tests_js/build-runtime.test.mjs",
+        "tests_js/ci-shadow.test.mjs",
+        "tests_js/test-runner-execution.test.mjs",
+        "tests_js/test-runner-selection.test.mjs",
+        "tests_js/typescript_ci.test.mjs",
+        "tests_js/migration_suite_registry.test.mjs",
+        "tests_js/site_metadata.test.mjs"
+      ],
+      "tiers": [
+        "fast",
+        "full"
+      ]
+    },
+    {
+      "id": "node-native-unit",
+      "kind": "node-test",
+      "include": [
+        "tests_js/account_renderer.test.mjs",
+        "tests_js/agent_workflows_application_automation.test.mjs",
+        "tests_js/agent_workflows_application_recovery.test.mjs",
+        "tests_js/agent_workflows_application_setup.test.mjs",
+        "tests_js/agent_workflows_automation_trash.test.mjs",
+        "tests_js/core_workflow_registry.test.mjs",
+        "tests_js/exclusive_file_lock_ts.test.mjs",
+        "tests_js/filesystem_error_ts.test.mjs",
+        "tests_js/heavy_run_lease_reference.test.mjs",
+        "tests_js/jsonl_lock_integration.test.mjs",
+        "tests_js/local_checks_git.test.mjs",
+        "tests_js/local_checks_install.test.mjs",
+        "tests_js/local_checks_process.test.mjs",
+        "tests_js/python_json_bytes_ts.test.mjs",
+        "tests_js/python_object_ts.test.mjs",
+        "tests_js/recorder_event_budget.test.mjs",
+        "tests_js/renderer_qa_replay.test.mjs",
+        "tests_js/typed_json_boundary.test.mjs",
+        "tests_js/typed_json_points.test.mjs",
+        "tests_js/typed_json_points_compat.test.mjs",
+        "tests_js/workspace_accounts_sign_in.test.mjs",
+        "tests_js/workspace_activity_helpers_reference.test.mjs",
+        "tests_js/workspace_activity_helpers_ts.test.mjs",
+        "tests_js/workspace_answer_helpers_reference.test.mjs",
+        "tests_js/workspace_answer_helpers_ts.test.mjs",
+        "tests_js/workspace_consent_intent_variants.test.mjs",
+        "tests_js/workspace_helpers_browser_ts.test.mjs",
+        "tests_js/workspace_job_upsert_model.test.mjs",
+        "tests_js/workspace_legacy_jobs_model.test.mjs",
+        "tests_js/workspace_live_readiness_packet.test.mjs",
+        "tests_js/workspace_native_account_operation.test.mjs",
+        "tests_js/workspace_native_answer_cleanup_model.test.mjs",
+        "tests_js/workspace_native_answer_merge_kill.test.mjs",
+        "tests_js/workspace_native_answer_resolution_kill.test.mjs",
+        "tests_js/workspace_native_answers_integration.test.mjs",
+        "tests_js/workspace_native_answers_model.test.mjs",
+        "tests_js/workspace_native_application_authority.test.mjs",
+        "tests_js/workspace_native_automation_integration.test.mjs",
+        "tests_js/workspace_native_claims.test.mjs",
+        "tests_js/workspace_native_claims_recovery.test.mjs",
+        "tests_js/workspace_native_email_only_account.test.mjs",
+        "tests_js/workspace_native_extraction_kill.test.mjs",
+        "tests_js/workspace_native_extraction_model.test.mjs",
+        "tests_js/workspace_native_extraction_recovery.test.mjs",
+        "tests_js/workspace_native_extractions.test.mjs",
+        "tests_js/workspace_native_job_transition_adapters.test.mjs",
+        "tests_js/workspace_native_job_transition_model.test.mjs",
+        "tests_js/workspace_native_job_upsert_cli.test.mjs",
+        "tests_js/workspace_native_legacy_directory.test.mjs",
+        "tests_js/workspace_native_lifecycle_resumes.test.mjs",
+        "tests_js/workspace_native_pending_answer_model.test.mjs",
+        "tests_js/workspace_native_pending_answers.test.mjs",
+        "tests_js/workspace_native_preparedness_resume_create_cli.test.mjs",
+        "tests_js/workspace_native_projection_adapters.test.mjs",
+        "tests_js/workspace_native_projection_model.test.mjs",
+        "tests_js/workspace_native_replay_transition.test.mjs",
+        "tests_js/workspace_native_review_restart.test.mjs",
+        "tests_js/workspace_native_review_restart_recovery.test.mjs",
+        "tests_js/workspace_native_store_cli_integration.test.mjs",
+        "tests_js/workspace_native_synthetic_account.test.mjs",
+        "tests_js/workspace_native_trusted_fill.test.mjs",
+        "tests_js/workspace_native_trusted_fill_boundary.test.mjs",
+        "tests_js/workspace_native_trusted_fill_composition.test.mjs",
+        "tests_js/workspace_profile_helpers_reference.test.mjs",
+        "tests_js/workspace_profile_helpers_ts.test.mjs",
+        "tests_js/workspace_react_trash.test.mjs",
+        "tests_js/workspace_repeat_review_request.test.mjs",
+        "tests_js/workspace_resume_scoped_facts.test.mjs",
+        "tests_js/workspace_resume_view_ts.test.mjs",
+        "tests_js/workspace_task_intake_model.test.mjs",
+        "tests_js/workspace_title_discovery.test.mjs",
+        "tests_js/workspace_title_discovery_contract.test.mjs",
+        "tests_js/workspace_trash_reference.test.mjs",
+        "tests_js/workspace_trash_view_ts.test.mjs",
+        "tests_js/resume_facts_model.test.mjs"
+      ],
+      "tiers": [
+        "full"
+      ]
+    },
+    {
+      "id": "node-native-cli",
+      "kind": "node-test",
+      "include": [
+        "tests_js/companion_default_cutover.test.mjs",
+        "tests_js/final_action_policy_cli.test.mjs",
+        "tests_js/final_action_policy_concurrency.test.mjs",
+        "tests_js/native_attempt_lifecycle.test.mjs",
+        "tests_js/native_canonical_store_clone.test.mjs",
+        "tests_js/native_email_canary_composition.test.mjs",
+        "tests_js/native_installed_entrypoints.test.mjs",
+        "tests_js/native_store_activation_command.test.mjs",
+        "tests_js/native_writer_switch_policy_tamper.test.mjs",
+        "tests_js/native_writer_switch_rehearsal.test.mjs",
+        "tests_js/process_owned_writer_quiescence.test.mjs",
+        "tests_js/legacy_store_migration.test.mjs"
+      ],
+      "tiers": [
+        "full",
+        "platform"
+      ],
+      "platforms": [
+        "darwin",
+        "linux"
+      ]
+    },
+    {
+      "id": "node-native-browser",
+      "kind": "node-test",
+      "include": [
+        "tests_js/required_companion.test.mjs"
+      ],
+      "tiers": [
+        "full"
+      ]
+    },
+    {
+      "id": "macos-native-typescript-adapter",
+      "kind": "node-test",
+      "include": [
+        "tests_js/native_macos_email_account_adapter.test.mjs"
+      ],
+      "tiers": [
+        "full",
+        "platform"
+      ],
+      "platforms": [
+        "darwin"
+      ]
+    },
+    {
+      "id": "docs-links",
+      "kind": "command",
+      "command": [
+        "node",
+        "tools/check-links.mjs"
+      ],
+      "tiers": [
+        "release"
+      ]
+    },
+    {
+      "id": "release-package",
+      "kind": "command",
+      "command": [
+        "node",
+        "scripts/smoke-plugin.mjs"
+      ],
+      "tiers": [
+        "release"
+      ]
+    },
+    {
+      "id": "macos-native-source",
+      "kind": "command",
+      "command": [
+        "node",
+        "tools/check-native-macos.mjs"
+      ],
+      "platforms": [
+        "darwin"
+      ],
+      "tiers": [
+        "full",
+        "platform"
+      ]
+    },
+    {
+      "id": "production-dependencies",
+      "kind": "command",
+      "command": [
+        "npm",
+        "run",
+        "audit:dependencies"
+      ],
+      "tiers": [
+        "release"
+      ]
+    }
+  ],
+  "ownership": [
+    {
+      "paths": [
+        "**"
+      ],
+      "suites": [
+        "typescript-check",
+        "companion-typescript-check",
+        "source-size",
+        "matrix-policy",
+        "core-workflow-audit",
+        "node-foundation-fast",
+        "node-native-unit",
+        "node-native-cli",
+        "node-native-browser",
+        "macos-native-typescript-adapter",
+        "docs-links",
+        "release-package",
+        "macos-native-source",
+        "production-dependencies"
+      ]
+    }
+  ]
+}

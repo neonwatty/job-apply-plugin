@@ -1,0 +1,212 @@
+[
+  {
+    "id": "integer-control",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "integral-float",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "exponent",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "negative-zero",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-0.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "negative-integer-zero",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "nested",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":[1]},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":[1.0]},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "unsafe-neighbors",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":9007199254740992},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":9007199254740993},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "fraction-control",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.5},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.5},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "limit-1",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1}",
+    "layer": "application"
+  },
+  {
+    "id": "limit-1.0",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1.0}",
+    "layer": "application"
+  },
+  {
+    "id": "limit-1e0",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1e0}",
+    "layer": "application"
+  },
+  {
+    "id": "limit-true",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":true}",
+    "layer": "application"
+  },
+  {
+    "id": "limit-\"1\"",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":\"1\"}",
+    "layer": "application"
+  },
+  {
+    "id": "limit-null",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":null}",
+    "layer": "application"
+  },
+  {
+    "id": "error-wording",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":[],\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "unicode-0xdf",
+    "rawRequest": "{\"operation\": \"features\", \"text\": \"\\u00df\"}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "unicode-0x1ccd6",
+    "rawRequest": "{\"operation\": \"features\", \"text\": \"\\ud833\\udcd6\"}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "unicode-0x1e6c0",
+    "rawRequest": "{\"operation\": \"features\", \"text\": \"\\ud839\\udec0\"}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "nested-object-float",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":{\"n\":[1,{\"v\":2.0}]}},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":{\"n\":[1,{\"v\":2}]}},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "equal-exponent-floats",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e0},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "positive-exponent",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e+2},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":100.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "small-exponent",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e-7},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0.0000001},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "negative-float-zero",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-0.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "large-equal-integers",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":9007199254740993},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":9007199254740993},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "nan-scope",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":NaN},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":NaN},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "infinity-scope",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":Infinity},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e400},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "negative-infinity-scope",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-Infinity},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-1e400},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "escaped-key",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":{\"\\u0078\":\"a\\nb\"}},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":{\"x\":\"a\\nb\"}},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "duplicate-scope-key",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":{\"x\":1,\"x\":2}},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":{\"x\":2}},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "duplicate-limit-last-float",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1,\"limit\":1.0}",
+    "layer": "application"
+  },
+  {
+    "id": "invalid-trailing-comma",
+    "rawRequest": "{\"operation\":\"features\",}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "invalid-number",
+    "rawRequest": "{\"limit\":01}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "invalid-empty",
+    "rawRequest": "",
+    "layer": "interpreter"
+  },
+  {
+    "id": "invalid-trailing-document",
+    "rawRequest": "{}{}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "secret-projection",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"value\":\"RAW_REFERENCE_SECRET_CANARY\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "escaped-string",
+    "rawRequest": "{\"operation\":\"features\",\"text\":\"Synthetic\\u0020question\"}",
+    "layer": "application"
+  },
+  {
+    "id": "depth-within-harness",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  },
+  {
+    "id": "depth-limit",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "harness"
+  },
+  {
+    "id": "input-limit",
+    "rawRequest": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ",
+    "layer": "harness"
+  },
+  {
+    "id": "output-limit",
+    "rawRequest": "{\"operation\":\"features\",\"text\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+    "layer": "harness"
+  },
+  {
+    "id": "integer-digit-limit",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":77777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "interpreter"
+  },
+  {
+    "id": "float-underflow",
+    "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e-400},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+    "layer": "application"
+  }
+]

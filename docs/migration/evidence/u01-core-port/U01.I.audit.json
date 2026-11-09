@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "id": "u01-core-implementation-audit",
+  "assignmentIds": [
+    "U01.I"
+  ],
+  "allowed_files": [
+    "runtime/workspace-ui/lib/activity-view.js",
+    "runtime/workspace-ui/lib/answer-view.js",
+    "runtime/workspace-ui/lib/profile-view.js",
+    "runtime/workspace-ui/lib/resume-view.js",
+    "runtime/workspace-ui/lib/trash-view.js",
+    "src/workspace-ui/lib/activity-view.ts",
+    "src/workspace-ui/lib/answer-view.ts",
+    "src/workspace-ui/lib/profile-view.ts",
+    "src/workspace-ui/lib/resume-view.ts",
+    "src/workspace-ui/lib/trash-view.ts",
+    "tests_js/workspace_activity_helpers_ts.test.mjs",
+    "tests_js/workspace_answer_helpers_ts.test.mjs",
+    "tests_js/workspace_helpers_browser_ts.test.mjs",
+    "tests_js/workspace_profile_helpers_ts.test.mjs",
+    "tests_js/workspace_resume_view_ts.test.mjs",
+    "tests_js/workspace_trash_view_ts.test.mjs",
+    "docs/migration/evidence/u01-core-port/implementation-spec.json",
+    "docs/migration/evidence/u01-core-port/implementation-plan.md",
+    "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+    "docs/migration/evidence/u01-core-port/U01.V.audit.json",
+    "docs/migration/evidence/u01-core-port/U01.I.json",
+    "docs/migration/evidence/u01-core-port/U01.V.json"
+  ],
+  "emittedFiles": [
+    "runtime/workspace-ui/lib/activity-view.js",
+    "runtime/workspace-ui/lib/answer-view.js",
+    "runtime/workspace-ui/lib/profile-view.js",
+    "runtime/workspace-ui/lib/resume-view.js",
+    "runtime/workspace-ui/lib/trash-view.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "u01.activityAnnouncement",
+    "u01.activitySignature",
+    "u01.answerApiPath",
+    "u01.answerNeedsFreshConsent",
+    "u01.answerSummary",
+    "u01.attentionAnnouncement",
+    "u01.attentionBlockerSummary",
+    "u01.attentionMembershipSignature",
+    "u01.attentionMissingInformationText",
+    "u01.canApplyAnswerDialogMutation",
+    "u01.canApplyAnswerDialogResponse",
+    "u01.canApplyAnswerReveal",
+    "u01.canMarkReadyFrom",
+    "u01.canRefreshAnswerDraft",
+    "u01.canRevealAnswer",
+    "u01.conflictingPaths",
+    "u01.extractionRequestView",
+    "u01.filterJobs",
+    "u01.filterTrashItems",
+    "u01.formPatch",
+    "u01.lifecycleErrorText",
+    "u01.newestCanonicalJob",
+    "u01.ownerBetaNextStep",
+    "u01.patchForPaths",
+    "u01.pointerValue",
+    "u01.proposalGroupForPath",
+    "u01.resumeAssignmentText",
+    "u01.sameAnswerScope",
+    "u01.shouldUseActivityResponse",
+    "u01.shouldUseResumeResponse",
+    "u01.summarizeProvenance",
+    "u01.tagsFromInput",
+    "u01.transitionsFor",
+    "u01.trashBlockerText",
+    "u01.typedDeletePhrase"
+  ],
+  "cells": [
+    {
+      "id": "U01-reference-workspace_activity_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_activity_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "activity reference: job filter preserves identity/order and status short circuit",
+        "activity reference: transition and readiness maps preserve inherited lookup behavior",
+        "activity reference: revision policies retain integer checks, ties and reference returns",
+        "activity reference: signatures and announcements preserve field selection and ordered copy",
+        "activity reference: attention signatures preserve order and blocker special-case exactness",
+        "activity reference: owner next-step copy and prototype lookups remain observable"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_activity_helpers_reference.tap",
+      "requirementIds": [
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_answer_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_answer_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "answer reference: consent and summary retain truthiness and precedence",
+        "answer reference: identity and request gates preserve strict comparison and short circuits",
+        "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+        "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_answer_helpers_reference.tap",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_profile_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_profile_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "profile reference: form patch fixes fields and preserves priority coercion",
+        "profile reference: pointers decode escapes, own keys and primitive boxing",
+        "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+        "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+        "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+        "profile reference: provenance selects longest ancestor or sorted descendant summary",
+        "profile reference: tags retain duplicates, order and String coercion",
+        "U01 resume reference preserves counts and default copy",
+        "U01 resume reference preserves extraction precedence and malformed projections",
+        "U01 resume reference preserves grouping coercion and strict response identity",
+        "U01 resume reference preserves accessor order and thrown identities"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_profile_helpers_reference.tap",
+      "requirementIds": [
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput",
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_trash_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_reference.test.mjs"
+      ],
+      "testNames": [
+        "trash-reference: delete phrases retain falsy defaults and String coercion",
+        "trash-reference: filtering preserves order, item identity and strict type matching",
+        "trash-reference: missing collections and malformed elements keep existing behavior",
+        "trash-reference: blockers sum integers only without clamping negatives",
+        "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+        "trash-reference: revision conflict takes precedence without consulting other fields",
+        "trash-reference: presentation functions leave frozen caller records unchanged"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_trash_reference.tap",
+      "requirementIds": [
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_activity_helpers_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_activity_helpers_ts.test.mjs"
+      ],
+      "testNames": [
+        "activity gates retain absent job results and suppress unchanged queue membership",
+        "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+        "activity TS preserves custom callbacks/returns, access order and thrown errors",
+        "activity TS retains array/record identities and avoids mutating frozen inputs"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_activity_helpers_ts.tap",
+      "requirementIds": [
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_answer_helpers_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_answer_helpers_ts.test.mjs"
+      ],
+      "testNames": [
+        "answer request gates reject stale selections, keys, sequences and generations exactly",
+        "answer TS covers all nine reference exports across ordinary and coercive inputs",
+        "answer TS preserves getter access order, short circuits and coercion errors",
+        "answer TS scope retains JS JSON semantics, getter order, toJSON and failures"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_answer_helpers_ts.tap",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_profile_helpers_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_profile_helpers_ts.test.mjs"
+      ],
+      "testNames": [
+        "profile helpers preserve errors for absent patch entries and drafts",
+        "profile TS covers six exports with fixed ordinary and coercive cases",
+        "profile TS preserves getter/coercion and custom iteration behavior",
+        "profile TS preserves patch alias mutation, failure boundaries and provenance identity"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_profile_helpers_ts.tap",
+      "requirementIds": [
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_resume_view_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_resume_view_ts.test.mjs"
+      ],
+      "testNames": [
+        "inert resume view module exposes exactly the four existing helpers",
+        "assignment text retains exact counts, pluralization and noninteger defaults",
+        "extraction view preserves every state's exact user-facing response",
+        "proposal grouping preserves known groups and existing path coercion",
+        "resume responses require both the same request and the same view without coercion",
+        "pure helpers leave caller projections unchanged",
+        "U01 resume differential preserves getters and coercion order",
+        "U01 resume differential preserves original thrown identity and short circuits"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_resume_view_ts.tap",
+      "requirementIds": [
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_trash_view_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_view_ts.test.mjs"
+      ],
+      "testNames": [
+        "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+        "trash TS preserves property access and coercion order including propagated errors",
+        "trash TS preserves filtering identities, order, sparse semantics and callback access",
+        "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_trash_view_ts.tap",
+      "requirementIds": [
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    },
+    {
+      "id": "U01-browser",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_helpers_browser_ts.test.mjs"
+      ],
+      "testNames": [
+        "helper browser contract: emitted modules load and preserve browser-native behavior"
+      ],
+      "reporter": "node-tap13",
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-browser.tap",
+      "environmentId": "node-local",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope",
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep",
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput",
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse",
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    }
+  ],
+  "artifacts": []
+}

@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: profile reference: form patch fixes fields and preserves priority coercion
+ok 1 - profile reference: form patch fixes fields and preserves priority coercion
+  ---
+  duration_ms: 1.035125
+  type: 'test'
+  ...
+# Subtest: profile reference: pointers decode escapes, own keys and primitive boxing
+ok 2 - profile reference: pointers decode escapes, own keys and primitive boxing
+  ---
+  duration_ms: 0.138458
+  type: 'test'
+  ...
+# Subtest: profile reference: patches safely retain prototype-named own fields and ordered collisions
+ok 3 - profile reference: patches safely retain prototype-named own fields and ordered collisions
+  ---
+  duration_ms: 0.160625
+  type: 'test'
+  ...
+# Subtest: profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents
+ok 4 - profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents
+  ---
+  duration_ms: 0.063
+  type: 'test'
+  ...
+# Subtest: profile reference: conflicts preserve map baselines, structured conflicts and draft order
+ok 5 - profile reference: conflicts preserve map baselines, structured conflicts and draft order
+  ---
+  duration_ms: 0.207667
+  type: 'test'
+  ...
+# Subtest: profile reference: provenance selects longest ancestor or sorted descendant summary
+ok 6 - profile reference: provenance selects longest ancestor or sorted descendant summary
+  ---
+  duration_ms: 0.11625
+  type: 'test'
+  ...
+# Subtest: profile reference: tags retain duplicates, order and String coercion
+ok 7 - profile reference: tags retain duplicates, order and String coercion
+  ---
+  duration_ms: 0.101291
+  type: 'test'
+  ...
+# Subtest: U01 resume reference preserves counts and default copy
+ok 8 - U01 resume reference preserves counts and default copy
+  ---
+  duration_ms: 0.065583
+  type: 'test'
+  ...
+# Subtest: U01 resume reference preserves extraction precedence and malformed projections
+ok 9 - U01 resume reference preserves extraction precedence and malformed projections
+  ---
+  duration_ms: 0.214917
+  type: 'test'
+  ...
+# Subtest: U01 resume reference preserves grouping coercion and strict response identity
+ok 10 - U01 resume reference preserves grouping coercion and strict response identity
+  ---
+  duration_ms: 0.245667
+  type: 'test'
+  ...
+# Subtest: U01 resume reference preserves accessor order and thrown identities
+ok 11 - U01 resume reference preserves accessor order and thrown identities
+  ---
+  duration_ms: 0.129834
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35.85175

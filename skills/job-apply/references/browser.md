@@ -1,0 +1,108 @@
+## Browser Routing
+
+Use the active host's supported visible browser integration so the user can see navigation, authenticated state, entered values, uploads, and the final review page.
+
+- **Codex:** An explicit browser choice in the current request wins. Otherwise read
+  `profile.applicationPreferences.preferredBrowser`: `codex_browser` selects the
+  visible browser built into Codex and `chrome` selects the owner's visible Chrome
+  session. If no valid preference is saved, let the installed Browser plugin select
+  the appropriate in-app or Chrome surface for the URL. Reuse that browser binding
+  and visible tab throughout the application. Do not substitute an unrelated browser
+  automation server.
+- **Claude Code:** Use Claude in Chrome as the default and only required browser integration.
+
+If the preferred Codex surface is unavailable, follow
+`profile.applicationPreferences.browserFallback`: `ask` pauses before switching;
+`other_supported` may select the other supported surface when it is safe to do so.
+If no valid value is saved, ask. Changing to another form instance after private data
+was entered still requires fresh action-time consent under the rules below. Saved
+browser preferences never authorize authentication or data entry.
+
+### Visible-Browser Rules
+
+- Use Codex Browser/Chrome or Claude in Chrome for LinkedIn and every external application portal, according to the active host.
+- Use the user's existing authenticated Chrome session, but never ask for, read, store, or enter credentials.
+- Pause for the user to handle login, password, CAPTCHA, MFA, or account creation. For consent prompts, use [reusable consent intents](consent-intents.md) and act only after the required live-form approval.
+- Use Chrome's visible form controls and local file-upload support. Confirm the selected filename after an upload.
+- If an Apply link opens an external portal or a new tab, continue there in the same host-managed visible browser session.
+- When the Codex in-app browser must remain available for owner review or a later attempt, call its `tab.markHandoff()` on the current application tab before ending the turn. Do this after either `awaiting_review` or a resumable `needs_info` handoff, and keep the tab visible for the owner. The Store handoff preserves value-free status; `markHandoff()` preserves the browser tab. Neither proves that a draft survived a site timeout. Reinspect the live form before resuming, and never infer submission from the handoff.
+
+### Optional Browser Fallback
+
+In Codex, use only the interaction methods exposed by the selected Browser plugin; its Playwright API is part of that browser surface, not a separate integration. In Claude Code, a separate Playwright integration is not required and may be used only when **all** of the following are true:
+
+1. The user already has a Playwright integration configured in Claude Code.
+2. Claude in Chrome cannot reach a specific iframe, upload widget, or custom control after a reasonable visible attempt.
+3. The fallback does not require transferring login state or credentials.
+
+Use the fallback only for the blocked control, then return to the visible review workflow. If these conditions are not met, explain which field is blocked and leave it for the user to complete manually.
+
+---
+
+### Embedded ATS resume uploads
+
+For a resume input inside an iframe, arm the selected browser's documented file-chooser listener before clicking the input. If the input is visually hidden and no chooser event arrives, inspect the visible control once and try its **Attach** button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
+
+If the upload guard rejects the path, rerun `resume-resolve` for the selected resume, correct the proposed path and selected revision, then run the guard again. Do not open the chooser until it succeeds. If the chooser fails, `setFiles` returns without an accepted upload, or the ATS remains at an upload progress indicator, treat the upload as unresolved. First rerun the guard with the path and revision actually passed to the chooser. A constructed or stale path is an agent error: correct it from `resume-resolve` and retry once only if the same visible widget still exposes an upload control. If the widget is stuck, preserve the filled draft and do not reload it merely to retry. Inspect the visible widget and browser errors for another specific cause. Do not infer success from `setFiles`, a pending progress bar, or an empty file input. Do not repeatedly reattach the file to a stalled control. Do not blame or ask the owner to change Chrome's extension file-URL permission unless its disabled setting or a specific browser error confirms that cause.
+
+If `resume-resolve` cannot provide a valid path, do not guess another local path, use a different saved resume, or ask the owner to locate the Store's internal managed copy. Save a value-free `needs_info` handoff, then ask the owner where their original resume file is or ask them to provide it. Import or repair that file through the canonical Store and follow the selected-resume fact and application-run revision rules in [intake.md](intake.md) before starting another attempt; never upload the owner-supplied source path directly. If the canonical path is valid but the browser still cannot upload it, report a browser-control failure and ask the owner to handle that control rather than asking where the resume is.
+
+If the embedded control remains inaccessible, a direct form on the same ATS may be used only when its URL comes from the observed application and the company and job identity match. Open it in the same selected visible browser; do not guess a URL, switch automation tools, or treat the embedded draft as transferred. The direct page is a separate form instance. Read its blank form, obtain fresh post-readiness consent for the resume and profile data before entering them, and reconfirm each sensitive saved answer for that use. Refill and verify every field and the accepted resume there. Keep the embedded draft until the direct form is verified. Reconfirm any consent action on the direct form under [reusable consent intents](consent-intents.md), and leave final submission to the owner.
+
+If the direct control also fails, save value-free progress and use the `unsupported-control` browser handoff. Report the observed control failure without proposing a permission change that has not been verified as the cause.
+
+Before that handoff, finish and verify every other field supported by the current form, including permitted saved answers, approved consent actions, and conditional questions. Recheck earlier fields after the failed upload because the form may rerender. For multi-selects, count a visible selected chip as a selection even when the underlying text input is empty. Leave only the failed upload, unapproved consent or authentication, and final submission for the owner; list those remaining actions by field name without values and record the matching closed `handoffChecklist` codes under [durable handoff](application.md#durable-to-do-checklist-for-a-needs-attention-handoff). Preserve the visible draft. An unresolved required upload cannot support `awaiting_review`.
+
+---
+
+### Post-readiness action-time consent
+
+First read [application automation](application-automation.md). Guided follows the consent transition below. Autofill to Review and Campaign to Review replace the repeated granular prompt only after the live attempt broker authorizes the exact current action group; their durable grant never relaxes the visible-browser, verification, interrupt, sensitive-answer, or final-action rules.
+
+Action-time consent has a closed, one-use state transition:
+
+1. Before the exact application form is visibly ready, consent is `not_ready`. Earlier approval, a URL or job selection, consent from another application, and blanket future consent are invalid and cannot authorize entering data.
+2. After the visible form is read, establish `ready_unconfirmed` only when the exact data scope, destination, purpose, remembered-answer use, and review-only limit are known. Ask for explicit action-time consent unless the owner's current message was sent after that visible readiness and already explicitly authorizes those same bounds.
+3. That matching post-readiness authorization transitions once to `consent_consumed` for the bounded filling pass. Proceed without asking for the same confirmation again. It is not reusable for another job, destination, purpose, attempt, or future application.
+4. A material change to the data scope, destination, or purpose invalidates the consumed consent. Read the changed visible state and obtain new explicit post-change consent before entering more data. Ordinary page progression within the unchanged bounds, a value-free status update, or the final manual-review handoff is not a material change and must not trigger duplicate confirmation.
+
+An exact current-form approval may cover several identified sensitive saved answers in one request. Reuse that approval for those fields during the same filling pass; ordinary page progression does not require another prompt. A general instruction to fill from saved answers covers matching non-sensitive answers, but does not silently authorize a newly observed sensitive field, a new consent purpose, or a legally significant agreement. Keep current-use, remember, login or account consent, and the manual final-action boundary distinct. Never echo raw applicant values in chat, summaries, diagnostics, or receipts. Describe only field names or groups, counts, and states such as complete, incomplete, uncertain, or awaiting owner input. The values remain visible only in the owner-visible form where they were entered.
+
+### Verified field entry
+
+Treat a browser write that returns without an error as an attempted write, not proof
+that the field accepted the value. Apply this bounded loop to every editable control:
+
+1. Resolve the intended value from the canonical profile or a permitted saved answer
+   before interacting with the control. If a permitted saved value exists, do not ask
+   the user for it again merely because browser entry fails.
+2. Identify the exact form instance being edited. An embedded application and a
+   separately opened fallback page are independent forms; never infer that a value,
+   selection, or upload present in one is present in the other.
+3. Perform one normal write, then immediately read the control's current state and
+   compare it privately with the intended value. Keep this verification value-free in
+   logs, progress, history, receipts, and user-facing summaries.
+4. If the value did not persist, inspect the control once and make at most one safe
+   alternate entry attempt supported by the visible browser, such as sequential
+   typing for a text control. Verify the control state again. Do not repeat the same
+   action after the bounded fallback fails.
+5. Revalidate already-filled critical controls after an upload, selection, navigation,
+   or other action that may rerender the form. Restore a cleared value at most once
+   using the same bounded loop.
+6. If a known value still cannot be entered, classify the blocker as
+   `unsupported-control` with `owner-input-required`, leave the visible form open,
+   save only value-free progress, and hand control to the user. This is a browser
+   handoff, not a missing-answer request. Never claim the field is complete merely
+   because the browser operation returned no error.
+
+Record and describe this outcome as **Browser action required**. Tell the user that
+the saved information is already known and that the visible browser control needs
+their action; do not direct them to add, edit, or repeat the answer in Companion.
+
+An alternate entry method within the same form instance, application attempt,
+destination, and already-approved purpose does not require renewed fill consent.
+Opening or switching to another form instance is a new action surface and requires
+fresh consent before entering private data there. Keep every final action untouched
+throughout recovery.
+
+---

@@ -1,0 +1,44 @@
+TAP version 13
+# Subtest: S03.R composed codepoint JSON reference: default CPython
+ok 1 - S03.R composed codepoint JSON reference: default CPython
+  ---
+  duration_ms: 75.4515
+  type: 'test'
+  ...
+# 3.14.4: 38 fixed documents and 3 serializer graphs; default may duplicate a profile
+# Subtest: S03.R composed codepoint JSON reference: CPython 3.12
+ok 2 - S03.R composed codepoint JSON reference: CPython 3.12
+  ---
+  duration_ms: 106.063458
+  type: 'test'
+  ...
+# 3.12.13: 38 fixed documents and 3 serializer graphs; default may duplicate a profile
+# Subtest: S03.R composed codepoint JSON reference: CPython 3.13
+ok 3 - S03.R composed codepoint JSON reference: CPython 3.13
+  ---
+  duration_ms: 123.005917
+  type: 'test'
+  ...
+# 3.13.13: 38 fixed documents and 3 serializer graphs; default may duplicate a profile
+# Subtest: S03.R composed codepoint JSON reference: CPython 3.14
+ok 4 - S03.R composed codepoint JSON reference: CPython 3.14
+  ---
+  duration_ms: 71.657208
+  type: 'test'
+  ...
+# 3.14.4: 38 fixed documents and 3 serializer graphs; default may duplicate a profile
+# Subtest: S03.R composed codepoint JSON reference rejects caller input
+ok 5 - S03.R composed codepoint JSON reference rejects caller input
+  ---
+  duration_ms: 56.26225
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 472.8245

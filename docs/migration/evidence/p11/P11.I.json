@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/p11/approved-dag.json",
+    "sha256": "eb11fe5c96b2d668ef32555e2674e7e3ef59dcb1957b930239242bf5cec10caf"
+  },
+  "package": {
+    "id": "P11",
+    "parentNode": "CI",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "tools/test-runner/process.mjs",
+      "tests_js/test-runner-execution.test.mjs",
+      "docs/migration/evidence/p11/implementation.md",
+      "docs/migration/evidence/p11/implementation-spec.json",
+      "docs/migration/evidence/p11/implementation-audit.json",
+      "docs/migration/evidence/p11/approved-dag.json",
+      "docs/migration/evidence/p11/P11.I.json",
+      "docs/migration/evidence/p11/P11.V.json",
+      "docs/migration/evidence/p11/transition.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "35beb84d3ab2229393d0f521b76c191ea7a6d2c0dac36829f2d7c5d3d6fb35c1",
+  "auditContract": {
+    "path": "docs/migration/evidence/p11/implementation-audit.json",
+    "sha256": "af3cba085cbc3f6be0055b1edb458b0790982534e061136fe792a097a68c1a25"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "20fb48e66da8a1e9b1eeed2d08bb25017529b19f",
+  "inputs": [
+    {
+      "path": ".gitignore",
+      "sha256": "ca96d5296019cd001c61c3ace3bb6be6a54976c2db880cca87f92facc14e5ee0"
+    },
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "0859a8eb3f25160272d579da5f37d6c76d7459c02e48418dc84a0b8ee201f0ed"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/P03.retry2.I.json",
+      "sha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/P03.retry2.V.json",
+      "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec"
+    },
+    {
+      "path": "docs/migration/evidence/p10/P10.I.json",
+      "sha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07"
+    },
+    {
+      "path": "docs/migration/evidence/p10/P10.V.json",
+      "sha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83"
+    },
+    {
+      "path": "docs/migration/evidence/p11/approved-dag.json",
+      "sha256": "eb11fe5c96b2d668ef32555e2674e7e3ef59dcb1957b930239242bf5cec10caf"
+    },
+    {
+      "path": "docs/migration/evidence/p11/implementation-audit.json",
+      "sha256": "af3cba085cbc3f6be0055b1edb458b0790982534e061136fe792a097a68c1a25"
+    },
+    {
+      "path": "docs/migration/evidence/p11/implementation-spec.json",
+      "sha256": "48a8e5262375abe8298badd9624b0f144da0aa63219a7239c59c8764d51b05cc"
+    },
+    {
+      "path": "docs/migration/evidence/p11/implementation.md",
+      "sha256": "bf9340dcbea2b8c5ac5232f29c49b8a9ed388d66a4b74e3857a486219899a698"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "tests_js/test-runner-execution.test.mjs",
+      "sha256": "7728c34652ca2d88464994e1c51317587e5e2d152d0fd4765599721c1e47df43"
+    },
+    {
+      "path": "tools/local-checks/git.mjs",
+      "sha256": "d48fc04f3e7fe434f9fd6a0efe00306b0d5947678d4023aba8d2c13913cc2c32"
+    },
+    {
+      "path": "tools/local-checks/process.mjs",
+      "sha256": "5a9bcd74638a9c2b89e69ae2730710a2ddac02906159b3ae8d012386e4f257db"
+    },
+    {
+      "path": "tools/test-runner.mjs",
+      "sha256": "26dfa5444ac3f454cc41aadc03a8dad81d9e1d16f058b9c129279b714d7b41e6"
+    },
+    {
+      "path": "tools/test-runner/execute.mjs",
+      "sha256": "ba8bbdfdfb2c6569e639351d00ce7eccae8fd8c0655b9053baebb52f69750568"
+    },
+    {
+      "path": "tools/test-runner/git.mjs",
+      "sha256": "78097d57073dc0ab2057f783e467b9af2720738e8c9a8b73e96caa919f6f07bf"
+    },
+    {
+      "path": "tools/test-runner/matrix.mjs",
+      "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+    },
+    {
+      "path": "tools/test-runner/patterns.mjs",
+      "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+    },
+    {
+      "path": "tools/test-runner/process.mjs",
+      "sha256": "b9eea8bec5e3bb21a4bcb820c83414b798b7f25c336b1b639c2f179ca0c13d17"
+    },
+    {
+      "path": "tools/test-runner/receipt.mjs",
+      "sha256": "abc68fd0ce1e82d3861aba60e50f9173b9dcd04a5442d7f17b476c29ee56b2fb"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "p11.output-completeness",
+      "requirementIds": [
+        "p11.output-completeness",
+        "p11.overflow-cleanup",
+        "p11.failed-receipt-propagation"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-execution.test.mjs"
+      ],
+      "testNames": [
+        "platform Python selection and generated test commands are explicit",
+        "suite execution streams prefixed failures and aggregates in matrix order",
+        "suite execution honors its concurrency bound and runs each suite once",
+        "process execution terminates hangs and bounds noisy output",
+        "timeout terminates an owned grandchild process tree",
+        "timeout retains group cleanup after the direct parent exits",
+        "receipts contain selection and timing metadata but no commands, output, or environment",
+        "CLI parsing rejects ambiguity and accepts bounded concurrency",
+        "stream prefixes empty lines without trailing spaces and preserves nonempty payloads",
+        "P11 streamed output enforces independent stdout and stderr byte boundaries",
+        "P11 output overflow cannot pass after zero exit or competing termination",
+        "P11 output overflow retains cleanup for an owned surviving descendant",
+        "P11 incomplete output fails suite receipts without leaking captured data"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p11/logs/P11-output-completeness.tap"
+    }
+  ],
+  "artifacts": [],
+  "id": "P11.I",
+  "role": "implementation-or-gate"
+}

@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.retry2.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p03/retry1/v3/approved-dag.json",
+    "sha256": "e3263aff31d3039ccef242a331c8d7cbb80d01274821fa378fab4516c8f7c74d",
+    "revision": "496f6706486bdcbeed2a1fdc1c30159389bb5f56"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p03/retry2/approved-dag.json",
+    "sha256": "b48eb60db792265bba692ff042027ed143da9ef25cc7d301c4e94f6ce84e5570",
+    "revision": "f798709585ab98f01239d3e6d4c12af01fccc340"
+  },
+  "retirements": [
+    {
+      "id": "P03.retry1.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+        "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9",
+        "revision": "496f6706486bdcbeed2a1fdc1c30159389bb5f56"
+      },
+      "replacementId": "P03.retry2.I",
+      "attempt": {
+        "subject": {
+          "sha": "b54f9c4e47300be209640aa68ae1b250e584808e",
+          "tree": "58c38c0ead6231440bd06329b3c205f070f9cc7e"
+        },
+        "evidenceCommit": "33228477ec7a1d19e17c1e2327b83f082d41afdf",
+        "capture": {
+          "path": "docs/migration/evidence/p03/retry2/original-capture.json",
+          "sha256": "ae19557320454e79f317b991f6040c8759da78a77a7ffd6db6730631d71fb128"
+        },
+        "files": [
+          {
+            "path": "tools/local-checks/policy.mjs",
+            "sha256": "c819357e48a5f92f59329b3737189d773b4b348cca23718845c00576ef54c88b"
+          },
+          {
+            "path": "tools/local-checks/run.mjs",
+            "sha256": "06d223f41e9ce7da8562f9e9e9db6c1f554d25d28a8227999868f39654ae6c36"
+          },
+          {
+            "path": "tools/local-checks/consumer-graph.mjs",
+            "sha256": null
+          },
+          {
+            "path": "tools/local-checks/graph-syntax.mjs",
+            "sha256": null
+          },
+          {
+            "path": "tools/local-checks/focused-contracts.mjs",
+            "sha256": null
+          },
+          {
+            "path": "tools/local-checks/focused-closure.mjs",
+            "sha256": null
+          },
+          {
+            "path": "config/test-matrix.json",
+            "sha256": "1e64e3c323341312a22f52440fa3bcbd951532c5c3611398d3fb246e6d494440"
+          },
+          {
+            "path": "tests_js/local_checks_policy.test.mjs",
+            "sha256": "1c3a478a1b5e2fd4d85a05d77348faaaf375f03d0aa32f38b707bb25c3afbc20"
+          },
+          {
+            "path": "tests_js/local_checks_run.test.mjs",
+            "sha256": "d74866accb73a1f4b81c5a44d61789e23b5522065186fbad16a1ec9d8972c7ab"
+          },
+          {
+            "path": "tests_js/test-runner-selection.test.mjs",
+            "sha256": "543ca75020eca436b8075c640b7b970269daf447695a5b6f90d4837aa6de3c55"
+          },
+          {
+            "path": "tests_js/local_checks_graph_support.mjs",
+            "sha256": null
+          },
+          {
+            "path": "docs/migration/evidence/p03/implementation.md",
+            "sha256": "51ffaa6df468d045915724e9135ded3f440d6a982e1e2798f7c6243b91a11ad1"
+          },
+          {
+            "path": "docs/migration/evidence/p03/implementation-audit.json",
+            "sha256": "df318ccba9e54f979afada169432bbf3ac652b9905140a198b8e25ff8511f22d"
+          },
+          {
+            "path": "docs/migration/evidence/p03/P03.I.json",
+            "sha256": "caed0a91e588dea40ad00f93f162b1c4100c1177322345f39f47d7e13403db15"
+          },
+          {
+            "path": "docs/migration/evidence/p03/P03.V.json",
+            "sha256": "81cb53101934d2c52ba57706b4869471e5e2fee105ba50c225d64e100bfaa55c"
+          },
+          {
+            "path": "docs/migration/evidence/p03/reference-consumers.json",
+            "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
+          },
+          {
+            "path": "docs/migration/evidence/p03/implementation-v2.md",
+            "sha256": "55e340ff418e21df5e71f6dc365e448b696b95bf03576d1ba07356220e793c91"
+          },
+          {
+            "path": "docs/migration/evidence/p03/implementation-audit-v2.json",
+            "sha256": "ae8b01900f48d799f0f89de95afbd2af0c9b42cbf0b778e09cc339f8ac164f56"
+          },
+          {
+            "path": "docs/migration/evidence/p03/P03.I-v2.json",
+            "sha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725"
+          },
+          {
+            "path": "docs/migration/evidence/p03/P03.V-v2.json",
+            "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213"
+          },
+          {
+            "path": "tools/test-runner/process.mjs",
+            "sha256": "b9eea8bec5e3bb21a4bcb820c83414b798b7f25c336b1b639c2f179ca0c13d17"
+          },
+          {
+            "path": "tests_js/test-runner-execution.test.mjs",
+            "sha256": "7728c34652ca2d88464994e1c51317587e5e2d152d0fd4765599721c1e47df43"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/implementation.md",
+            "sha256": "9cbdea9c7f02773fcbedb6394d5eae8a77a27076777fe23c6b452121f7f910ea"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/reference-consumers.json",
+            "sha256": "55a5cb507e76a059141c6a231213d947b330f78be1139d902c6598d678dce1c7"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/implementation-audit.json",
+            "sha256": "589391febf08ed00130c9b217fdac22894873bd5cdd1344fd874ec250ccc9d4a"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/P03.retry1.I.json",
+            "sha256": "9461961a6c79938ab9b407ac7dbcc943782723e963040bfa6e7a8d9574173473"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/P03.retry1.V.json",
+            "sha256": "f80d506ae9d6a6d0a265501a20303e7822637bdb779a42fc503564179580ba89"
+          },
+          {
+            "path": "tools/local-checks/process.mjs",
+            "sha256": "5a9bcd74638a9c2b89e69ae2730710a2ddac02906159b3ae8d012386e4f257db"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/implementation.md",
+            "sha256": "1a54976f545b3d8dbfbe91b8fb63c93533c67f8a0d8984a9fbc9139f50143cc6"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/reference-consumers.json",
+            "sha256": "4a598aebe533d64e55f32633147fdcc5d2aae556043ee53329a689dbb911dcae"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/implementation-audit.json",
+            "sha256": "ceba87fbbaf1a28240386c16cafedce49c475aa89040ba8712303bed41025537"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+            "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+            "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5"
+          }
+        ],
+        "artifacts": [
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.local_checks_git.tap",
+            "sha256": "d6fb37ae7fa43d056bd1b3c263eab1b53c4848ec1c5232821a92931b8300933e"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.local_checks_policy.tap",
+            "sha256": "e437ad8a86767cde2aca90b46391b104d5ff04bcc95589cfc8742cf9323777a0"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.local_checks_run.tap",
+            "sha256": "e34c5f9e3a5c684389e76a826596c35be475ca4c62607652acfa7e1a1178b5cc"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.test-runner-selection.tap",
+            "sha256": "282296887d4ceace323f9e43100988be117dde9496337483a789a61582ed7ea2"
+          },
+          {
+            "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.retry1.reporter-prefix.tap",
+            "sha256": "ff58cd345b33daa16cb2058be24919374fd5c277f3b9963014e0a055f52ac8af"
+          }
+        ]
+      }
+    },
+    {
+      "id": "P03.retry1.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+        "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5",
+        "revision": "496f6706486bdcbeed2a1fdc1c30159389bb5f56"
+      },
+      "replacementId": "P03.retry2.V",
+      "attempt": null
+    }
+  ],
+  "additions": [
+    {
+      "id": "P03.retry2.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/retry2/P03.retry2.I.json",
+        "sha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1",
+        "revision": "f798709585ab98f01239d3e6d4c12af01fccc340"
+      }
+    },
+    {
+      "id": "P03.retry2.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/retry2/P03.retry2.V.json",
+        "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec",
+        "revision": "f798709585ab98f01239d3e6d4c12af01fccc340"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T04.I",
+      "beforeDependencies": [
+        "P03.retry1.V",
+        "P04.V",
+        "P05.V",
+        "T13.V",
+        "T14.V",
+        "T15.V",
+        "T04.R"
+      ],
+      "afterDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T13.V",
+        "T14.V",
+        "T15.V",
+        "T04.R"
+      ]
+    },
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.retry1.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V"
+      ],
+      "afterDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [
+    {
+      "originalTaskId": "P03.retry1.I",
+      "replacementTaskId": "P03.retry2.I",
+      "originalCellId": "p03.implementation.v2.local_checks_git",
+      "replacementCellId": "p03.implementation.v2.local_checks_git"
+    },
+    {
+      "originalTaskId": "P03.retry1.I",
+      "replacementTaskId": "P03.retry2.I",
+      "originalCellId": "p03.implementation.v2.local_checks_policy",
+      "replacementCellId": "p03.implementation.v2.local_checks_policy"
+    },
+    {
+      "originalTaskId": "P03.retry1.I",
+      "replacementTaskId": "P03.retry2.I",
+      "originalCellId": "p03.implementation.v2.local_checks_run",
+      "replacementCellId": "p03.implementation.v2.local_checks_run"
+    },
+    {
+      "originalTaskId": "P03.retry1.I",
+      "replacementTaskId": "P03.retry2.I",
+      "originalCellId": "p03.implementation.v2.test-runner-selection",
+      "replacementCellId": "p03.implementation.v2.test-runner-selection"
+    },
+    {
+      "originalTaskId": "P03.retry1.I",
+      "replacementTaskId": "P03.retry2.I",
+      "originalCellId": "p03.retry1.reporter-prefix",
+      "replacementCellId": "p03.retry1.reporter-prefix"
+    },
+    {
+      "originalTaskId": "P03.retry1.V",
+      "replacementTaskId": "P03.retry2.V",
+      "originalCellId": "p03.implementation.v2.local_checks_git",
+      "replacementCellId": "p03.implementation.v2.local_checks_git"
+    },
+    {
+      "originalTaskId": "P03.retry1.V",
+      "replacementTaskId": "P03.retry2.V",
+      "originalCellId": "p03.implementation.v2.local_checks_policy",
+      "replacementCellId": "p03.implementation.v2.local_checks_policy"
+    },
+    {
+      "originalTaskId": "P03.retry1.V",
+      "replacementTaskId": "P03.retry2.V",
+      "originalCellId": "p03.implementation.v2.local_checks_run",
+      "replacementCellId": "p03.implementation.v2.local_checks_run"
+    },
+    {
+      "originalTaskId": "P03.retry1.V",
+      "replacementTaskId": "P03.retry2.V",
+      "originalCellId": "p03.implementation.v2.test-runner-selection",
+      "replacementCellId": "p03.implementation.v2.test-runner-selection"
+    },
+    {
+      "originalTaskId": "P03.retry1.V",
+      "replacementTaskId": "P03.retry2.V",
+      "originalCellId": "p03.retry1.reporter-prefix",
+      "replacementCellId": "p03.retry1.reporter-prefix"
+    }
+  ],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Preserve actual active P03.retry1 partial formatter capture without acceptance; retain all52 witness identities, add S08.V continuity prerequisite, review current census and require fresh complete outputs."
+}

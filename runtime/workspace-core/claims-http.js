@@ -1,0 +1,59 @@
+import { ClaimsService } from './claims.js';
+import { get, int, keys, object, parse, serialize, string, JobsError } from '../contracts/workspace/values.js';
+/** Authenticated transport supplies body bounds; bearer credentials are never logged. */
+export async function claimsHttp(repository, method, path, body) {
+    const service = new ClaimsService(repository);
+    if (method === 'GET' && path === '/api/claims')
+        return { status: 200, body: serialize(await service.status()) };
+    const shapes = {
+        'review-restart': ['jobId', 'ownerLabel', 'expectedRevision', 'ownerConfirmedNotSubmitted'],
+        select: ['jobId', 'expectedRevision', 'ownerConfirmed'], acquire: ['jobId', 'ownerLabel', 'expectedRevision'],
+        'confirm-input': ['jobId', 'resumeId', 'expectedRevision', 'expectedResumeRevision', 'expectedFactRevision', 'ownerConfirmed'],
+        heartbeat: ['jobId', 'token'], recover: ['jobId', 'ownerLabel'], progress: ['jobId', 'token', 'session'],
+        handoff: ['jobId', 'token', 'status', 'session', 'expectedRevision'],
+    };
+    const action = path.startsWith('/api/claims/') ? path.slice('/api/claims/'.length) : '';
+    const fields = shapes[action];
+    if (method !== 'POST' || !fields)
+        return null;
+    const payload = object(parse(body), 'claim body');
+    if (payload.size !== fields.length || keys(payload).some(key => !fields.includes(key)))
+        throw new JobsError('claim body contains unsupported or missing fields');
+    const id = string(get(payload, 'jobId'));
+    if (id === null)
+        throw new JobsError('claim job id must be a string');
+    const revision = () => {
+        const value = int(get(payload, 'expectedRevision'));
+        if (value === null)
+            throw new JobsError('expected revision must be an integer');
+        return value;
+    };
+    let result;
+    if (action === 'select')
+        result = await service.select(id, revision(), get(payload, 'ownerConfirmed') === true);
+    else if (action === 'confirm-input') {
+        const resumeId = string(get(payload, 'resumeId'));
+        const resumeRevision = int(get(payload, 'expectedResumeRevision'));
+        const factRevision = int(get(payload, 'expectedFactRevision'));
+        if (resumeId === null || resumeRevision === null || factRevision === null || resumeRevision < 1n || factRevision < 1n)
+            throw new JobsError('confirmed input revisions are invalid');
+        result = await service.confirmInput(id, resumeId, revision(), resumeRevision, factRevision, get(payload, 'ownerConfirmed') === true);
+    }
+    else if (action === 'review-restart')
+        result = await service.restart(id, get(payload, 'ownerLabel'), revision(), get(payload, 'ownerConfirmedNotSubmitted') === true);
+    else if (action === 'acquire')
+        result = await service.acquire(id, get(payload, 'ownerLabel'), revision());
+    else if (action === 'heartbeat')
+        result = await service.heartbeat(id, get(payload, 'token'));
+    else if (action === 'recover')
+        result = await service.recover(id, get(payload, 'ownerLabel'));
+    else if (action === 'progress')
+        result = await service.progress(id, get(payload, 'token'), object(get(payload, 'session'), 'session'));
+    else {
+        const status = string(get(payload, 'status'));
+        if (status === null)
+            throw new JobsError('claimed handoff status is unsupported');
+        result = await service.handoff(id, get(payload, 'token'), status, object(get(payload, 'session'), 'session'), revision());
+    }
+    return { status: 200, body: serialize(result) };
+}

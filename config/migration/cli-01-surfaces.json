@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:qa/chrome/cli.py:start",
+      "kind": "cli",
+      "command": "start",
+      "node": "CHROME",
+      "sources": [
+        "qa/chrome/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/chrome/cli.py:reset",
+      "kind": "cli",
+      "command": "reset",
+      "node": "CHROME",
+      "sources": [
+        "qa/chrome/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/chrome/cli.py:check",
+      "kind": "cli",
+      "command": "check",
+      "node": "CHROME",
+      "sources": [
+        "qa/chrome/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/chrome/cli.py:stop",
+      "kind": "cli",
+      "command": "stop",
+      "node": "CHROME",
+      "sources": [
+        "qa/chrome/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/promotion/cli.py:compile",
+      "kind": "cli",
+      "command": "compile",
+      "node": "REPLAY",
+      "sources": [
+        "qa/promotion/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/promotion/cli.py:approve",
+      "kind": "cli",
+      "command": "approve",
+      "node": "REPLAY",
+      "sources": [
+        "qa/promotion/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/promotion/cli.py:promote",
+      "kind": "cli",
+      "command": "promote",
+      "node": "REPLAY",
+      "sources": [
+        "qa/promotion/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:prepare",
+      "kind": "cli",
+      "command": "prepare",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:evaluate",
+      "kind": "cli",
+      "command": "evaluate",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:started",
+      "kind": "cli",
+      "command": "started",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:reviewed",
+      "kind": "cli",
+      "command": "reviewed",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:resolve",
+      "kind": "cli",
+      "command": "resolve",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:cleanup",
+      "kind": "cli",
+      "command": "cleanup",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:qa/replay/cli.py:verify-auto-submit",
+      "kind": "cli",
+      "command": "verify-auto-submit",
+      "node": "REPLAY",
+      "sources": [
+        "qa/replay/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-attempt.py:start",
+      "kind": "cli",
+      "command": "start",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-attempt.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-attempt.py:restart-review",
+      "kind": "cli",
+      "command": "restart-review",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-attempt.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-attempt.py:heartbeat",
+      "kind": "cli",
+      "command": "heartbeat",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-attempt.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-attempt.py:progress",
+      "kind": "cli",
+      "command": "progress",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-attempt.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

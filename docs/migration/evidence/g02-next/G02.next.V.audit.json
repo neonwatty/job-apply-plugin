@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "g02-next-review-audit",
+  "assignmentIds": [
+    "G02.next.V"
+  ],
+  "allowed_files": [
+    "apps/companion/.gitignore",
+    "apps/companion/app/layout.tsx",
+    "apps/companion/app/page.tsx",
+    "apps/companion/components/Companion.tsx",
+    "apps/companion/components/JobEditor.tsx",
+    "apps/companion/components/Jobs.tsx",
+    "apps/companion/components/Overview.tsx",
+    "apps/companion/components/client.ts",
+    "apps/companion/components/companion.css",
+    "apps/companion/components/contracts.ts",
+    "apps/companion/components/job-editor-state.ts",
+    "apps/companion/launch.mjs",
+    "apps/companion/next-env.d.ts",
+    "apps/companion/next.config.ts",
+    "apps/companion/package-standalone.mjs",
+    "apps/companion/package.json",
+    "apps/companion/proxy.ts",
+    "apps/companion/server/assets.ts",
+    "apps/companion/server/config.ts",
+    "apps/companion/server/forward.ts",
+    "apps/companion/server/routes.ts",
+    "apps/companion/tsconfig.json",
+    "config/migration/browser-g02-next-surfaces.json",
+    "config/migration/http-asset-head-surfaces.json",
+    "config/migration/http-asset-surfaces.json",
+    "config/migration/http-g02-hybrid2-surfaces.json",
+    "config/migration/http-g02-next-surfaces.json",
+    "config/migration/http-read-detail-surfaces.json",
+    "config/migration/http-read-surfaces.json",
+    "config/migration/http-write-accounts-surfaces.json",
+    "config/migration/http-write-answers-02-surfaces.json",
+    "config/migration/http-write-answers-surfaces.json",
+    "config/migration/http-write-jobs-surfaces.json",
+    "config/migration/http-write-profile-surfaces.json",
+    "config/migration/http-write-resumes-surfaces.json",
+    "config/migration/source-catalog-01.json",
+    "config/migration/source-catalog-g02-next.json",
+    "config/test-matrix.json",
+    "docs/testing.md",
+    "package-lock.json",
+    "package.json",
+    "tests_js/workspace_information_architecture.test.mjs",
+    "tests_js/workspace_next_browser_support.mjs",
+    "tests_js/workspace_next_editor_support.mjs",
+    "tests_js/workspace_next_security_support.mjs",
+    "tools/migration/check.mjs",
+    "tools/migration/next-surfaces.mjs",
+    "docs/migration/evidence/g02-next/implementation-spec.json",
+    "docs/migration/evidence/g02-next/implementation-plan.md",
+    "docs/migration/evidence/g02-next/integration-dag.json",
+    "docs/migration/evidence/g02-next/integration-transition.json",
+    "docs/migration/evidence/g02-next/G02.next.I.audit.json",
+    "docs/migration/evidence/g02-next/G02.next.V.audit.json",
+    "docs/migration/evidence/g02-next/G02.next.I.json",
+    "docs/migration/evidence/g02-next/G02.next.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "g02.next.local-companion"
+  ],
+  "cells": [
+    {
+      "id": "g02.next.local-companion",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_information_architecture.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "global navigation exposes the pipeline, application data, and controls model",
+        "navigation preserves button, badge, active-state, and event-binding contracts",
+        "persistent trust context explains local data and human control",
+        "navigation has a collision-free row and focus-safe narrow-width overflow",
+        "hybrid UI serves exact TypeScript helper assets through guarded Python routes",
+        "hybrid UI boots real Python server with compiled helper identities and navigation",
+        "Next Companion enforces local transport security and bounded proxy contracts",
+        "Next Companion editor preserves drafts and validates canonical response contracts",
+        "Next Companion production standalone supports editing conflicts reload and legacy navigation"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/g02-next/logs/local-companion.tap",
+      "requirementIds": [
+        "g02.next.local-companion"
+      ]
+    }
+  ],
+  "artifacts": []
+}

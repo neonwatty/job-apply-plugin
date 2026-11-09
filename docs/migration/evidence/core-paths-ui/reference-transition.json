@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "core-paths-ui-reference.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/m02/approved-dag.json",
+    "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2",
+    "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+    "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3",
+    "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "S05.domain.R",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+        "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4",
+        "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "S05.I",
+      "beforeDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V"
+      ],
+      "afterDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V",
+        "S05.domain.R"
+      ]
+    },
+    {
+      "id": "S05.V",
+      "beforeDependencies": [
+        "S05.I",
+        "P01.V"
+      ],
+      "afterDependencies": [
+        "S05.I",
+        "P01.V",
+        "P05.V"
+      ]
+    },
+    {
+      "id": "U02.R",
+      "beforeDependencies": [
+        "P00.V"
+      ],
+      "afterDependencies": [
+        "P00.V",
+        "M01.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Prepare local Mac Store domain and UI reference work in disjoint scopes; reuse accepted evidence and retain later release obligations."
+}

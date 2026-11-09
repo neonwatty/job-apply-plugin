@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: S08 point parser preserves all 38 independently fixed document outcomes
+ok 1 - S08 point parser preserves all 38 independently fixed document outcomes
+  ---
+  duration_ms: 7.000417
+  type: 'test'
+  ...
+# Subtest: S08 point parser preserves all 48 supplemental diagnostic and numeric outcomes
+ok 2 - S08 point parser preserves all 48 supplemental diagnostic and numeric outcomes
+  ---
+  duration_ms: 3.016209
+  type: 'test'
+  ...
+# Subtest: S08 point objects preserve ordered content keys and numeric identities
+ok 3 - S08 point objects preserve ordered content keys and numeric identities
+  ---
+  duration_ms: 0.413542
+  type: 'test'
+  ...
+# Subtest: S08 point diagnostics preserve exact documents coordinates and profile differences
+ok 4 - S08 point diagnostics preserve exact documents coordinates and profile differences
+  ---
+  duration_ms: 1.000625
+  type: 'test'
+  ...
+# Subtest: S08 point byte composition preserves decoding errors and codepoint identity
+ok 5 - S08 point byte composition preserves decoding errors and codepoint identity
+  ---
+  duration_ms: 0.555
+  type: 'test'
+  ...
+# Subtest: S08 point serializer preserves all three frozen graph outcomes and ASCII reload distinctions
+ok 6 - S08 point serializer preserves all three frozen graph outcomes and ASCII reload distinctions
+  ---
+  duration_ms: 0.1565
+  type: 'test'
+  ...
+# Subtest: S08 point API rejects invalid runtime inputs without implicit conversion
+ok 7 - S08 point API rejects invalid runtime inputs without implicit conversion
+  ---
+  duration_ms: 0.373917
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 64.606917

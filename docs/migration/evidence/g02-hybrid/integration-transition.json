@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "G02.hybrid.integration-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+    "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127",
+    "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/g02-hybrid/integration-dag.json",
+    "sha256": "ccba09337c8f31486b95687e99e6552dc3188395be30cccaed1268788d7ba651",
+    "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "G02.hybrid.I",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+        "sha256": "efe9190d952d7501c29caa88ba8335563a2e969db25830ae0b1b4ef1877bf7ef",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      }
+    },
+    {
+      "id": "G02.hybrid.V",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+        "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "G02.I",
+      "beforeDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V"
+      ],
+      "afterDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Wire accepted TypeScript UI helpers to the existing Python server for bounded checkout/package integration while preserving the final assembly gate."
+}

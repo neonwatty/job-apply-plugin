@@ -3,10 +3,50 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:qa-browser": "node --test --test-concurrency=1 tests_js/*.test.mjs",
-    "test:auto-submit": "python3 scripts/qa-replay.py verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json",
-    "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_server_oracle.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
-    "qa:record": "node qa/recorder.mjs"
+    "hooks:install": "node tools/local-checks/install.mjs",
+    "verify:commit": "node tools/local-checks/hook.mjs commit",
+    "verify:push": "node tools/local-checks/hook.mjs push",
+    "verify:deep": "node tools/local-checks/hook.mjs deep",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "build:runtime": "node tools/build-runtime.mjs",
+    "build:check": "node tools/build-runtime.mjs --check",
+    "check:size": "node tools/check-source-size.mjs",
+    "check:test-matrix": "node tools/check-test-matrix.mjs",
+    "audit:core-workflows": "node tools/audit-core-workflows.mjs",
+    "test:fast": "node tools/test-runner.mjs fast",
+    "test:affected": "node tools/test-runner.mjs affected",
+    "test:full": "node tools/test-runner.mjs full",
+    "test:platform": "node tools/test-runner.mjs platform",
+    "test:release": "node tools/test-runner.mjs release",
+    "test:qa-browser": "node tools/run-qa-browser.mjs",
+    "test:agent-local": "node tools/local-agent-acceptance.mjs",
+    "test:macos-workday-boundary": "python3 -m unittest -v tests.test_macos_workday_account_flow_helper",
+    "qa:unified-task-spine": "node qa/unified_task_spine_oracle.mjs --json",
+    "qa:resume-extraction-onboarding": "python3 qa/resume_extraction_onboarding_oracle.py --json",
+    "test:auto-submit": "node runtime/cli/native-qa-replay.js verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json",
+    "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_oracle_events.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
+    "qa:record": "node qa/recorder.mjs",
+    "check:migration": "node tools/migration/check.mjs",
+    "companion:build": "npm run build --workspace job-apply-companion && node apps/companion/package-standalone.mjs",
+    "companion:start": "node apps/companion/supervise.mjs",
+    "companion:dev": "node apps/companion/supervise.mjs --dev",
+    "companion:typecheck": "npm run typecheck --workspace job-apply-companion",
+    "test:reference": "node tools/test-runner.mjs reference",
+    "test:migration-once": "node tools/python-store-migration-once.mjs",
+    "test:required": "node tools/test-runner.mjs full",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high"
   },
-  "devDependencies": { "playwright": "1.62.1" }
+  "devDependencies": {
+    "@neonwatty/agent-workflows": "0.1.0",
+    "@types/node": "22.20.1",
+    "ajv": "8.20.0",
+    "playwright": "1.62.1",
+    "typescript": "5.9.3"
+  },
+  "optionalDependencies": {
+    "@lineagehq/workflows": "github:lineagehq/workflows#1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225"
+  },
+  "workspaces": [
+    "apps/companion"
+  ]
 }

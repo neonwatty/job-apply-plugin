@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "tranche": "typescript-application-dogfood",
+  "date": "2026-09-17",
+  "base": "44837dc",
+  "result": "pass",
+  "closed": true,
+  "proof": {
+    "isolatedNativeStore": true,
+    "ownerStoreUntouched": true,
+    "fictionalInputsOnly": true,
+    "profileAndPreferencesPrepared": true,
+    "observedAnswerReviewed": true,
+    "managedResumeContinuity": true,
+    "savedNeedsInfoReadyObserved": true,
+    "revisionConflictDraftPreserved": true,
+    "exactNeedsAttentionBlocker": true,
+    "pendingAnswerResolved": true,
+    "desktopReadback": true,
+    "mobileReadback": true,
+    "mobileHorizontalOverflowAbsent": true,
+    "expiredClaimRecovered": true,
+    "reviewRestarted": true,
+    "manualReviewReady": true,
+    "finalActionUntouched": true,
+    "thirdPartySiteUntouched": true,
+    "workflowRunnerUsed": false
+  },
+  "counts": {
+    "canonicalJobs": 1,
+    "managedResumes": 1,
+    "acceptedReusableAnswers": 3,
+    "pendingInformationAtBlock": 1,
+    "pendingInformationAtReview": 0,
+    "readinessAssertionsPassed": 7,
+    "claimRecoveries": 1,
+    "reviewRestarts": 1,
+    "finalActionEvents": 0
+  },
+  "finalState": {
+    "jobStatus": "awaiting_review",
+    "jobRevision": 13,
+    "sessionStatus": "review",
+    "sessionStep": "review",
+    "readiness": "ready",
+    "browserHandoff": "ready_for_owner",
+    "browserHandoffReason": "final-review-required"
+  },
+  "limitations": [
+    "agent_workflows_skill_unregistered",
+    "agent_workflows_runner_unavailable",
+    "in_app_browser_confirmation_control_unavailable"
+  ]
+}

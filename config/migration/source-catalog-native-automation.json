@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/account-realm.js",
+      "sha256": "d59c1087479878c8962ff0b592d5d158003efe89f88d54659e307f66d2a3ddfb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/accounts.js",
+      "sha256": "a70974ecc52a434c61d2849239057b452285c81befb5e878e37c72e2d8c2dea9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/automation.js",
+      "sha256": "53f11bceb4e8ec57d2074e477a0b66ac14d63f5e10d1334f5875ec31ba5f6174",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-automation.js",
+      "sha256": "f538ee8ab5f4d9d1478d8a66086cc805cdba979f5feca98ddbc628306c107f1f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/accounts.js",
+      "sha256": "821a5cf62fa92749ce208daf1a6e7e39dd55f1e6a4a59b7e333172c518a62b1f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/automation-http.js",
+      "sha256": "f44035bca5c17b2a64ba2efdae07ec54c3889a0b953dea72c47c508d03edb087",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/automation.js",
+      "sha256": "2565a05a0b745da20f642dd3f60a889dc4c78f54fcf391623756172f9924c602",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/account-realm.ts",
+      "sha256": "a0aab845050ac2b2acb33cd82066ca8109890bfe1023b9b0a60a3d4a32f581b5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/accounts.ts",
+      "sha256": "958d1c2b206b1d2fc8b22fd876988cb68c45d4e85915f4d1cee3c2093cda24b6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/automation.ts",
+      "sha256": "62da4e021fa22afdd82c46418d10f8e55fcfe6e38c4ff6c22af80ff84a79ed34",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-automation.ts",
+      "sha256": "fdc37088cd5af2340a0333054501dd19bbb453c190fe5feea9a9d2b00382cb04",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/accounts.ts",
+      "sha256": "c4fd4b8bb2aa65504760ed5464bffe6ba44fd5ad6f789e3a65917e5b1d0b22b5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/automation-http.ts",
+      "sha256": "911a39b8c5f086277f85956cdc6337a0ac347deab465c613bc773a987e917cf4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/automation.ts",
+      "sha256": "46d34f3e44e3fb6b8258fffaf631f2ea408b14d98d970811c42d6b250049b67c",
+      "classification": "unreviewed"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/s04/implementation-dag.json",
+    "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79"
+  },
+  "package": {
+    "id": "P02",
+    "parentNode": "CI",
+    "owner": "timestamp_tests",
+    "allowed_files": [
+      "tools/migration/local-mac-host.mjs",
+      "tests_js/runtime-support.test.mjs",
+      "docs/migration/local-mac-milestone.md",
+      "docs/migration/evidence/p02/mac-dogfood-spec.json",
+      "docs/migration/evidence/p02/mac-dogfood.md",
+      "docs/migration/evidence/p02/mac-dogfood-audit.json",
+      "docs/migration/evidence/p02/P02.I.json",
+      "docs/migration/evidence/p02/P02.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "1bb7aa7d9871ab2f52107c632004ec42917d55c908ad7f5bb0ecf65c8093b9d9",
+  "auditContract": {
+    "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+    "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+  },
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "base": "d762db9e806c4bc572b29189641cb4f6336ec5aa",
+  "inputs": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+      "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+      "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood.md",
+      "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-dag.json",
+      "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79"
+    },
+    {
+      "path": "docs/migration/remaining-migration-plan.md",
+      "sha256": "3f551f6572979aaa3034f1355111c01b7f640b07d5d15b059e7f3f71d5620941"
+    },
+    {
+      "path": "docs/migration/remaining/task-catalog.md",
+      "sha256": "1c4d15506c83fec978d6c57971c3c761ae4b9831326ede9bacf09c352c95bb16"
+    },
+    {
+      "path": "tests_js/runtime-support.test.mjs",
+      "sha256": "957c0366df840824c128ac781253750ee700135d88942d4fa99e7ce0246e3d67"
+    },
+    {
+      "path": "tools/probe-installed-runtime.mjs",
+      "sha256": "e8392feafae186cf9d4bff7cc7ab91e5f250b0400a0f9c7aea6c0bd81a809a75"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "p02.mac-dogfood.identity",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/runtime-support.test.mjs"
+      ],
+      "testNames": [
+        "missing, timed out and inaccessible runtimes return the same closed receipt",
+        "stable versions distinguish availability from provisional launch compatibility",
+        "malformed, prerelease, noisy and oversized output never reaches receipts",
+        "probe uses a fixed version-only command with bounded execution and no shell",
+        "unsupported platform or architecture cannot be mistaken for proven support",
+        "P02 Mac dogfood scope preserves deferred release qualification",
+        "P02 local Mac identity binds actual executables and rejects drift"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "requirementIds": [
+        "p02.mac.scope",
+        "p02.mac.identity"
+      ]
+    }
+  ],
+  "artifacts": [],
+  "id": "P02.I",
+  "role": "implementation-or-gate"
+}

@@ -1,0 +1,50 @@
+TAP version 13
+# Subtest: document validation matches authoritative Python: python3
+ok 1 - document validation matches authoritative Python: python3
+  ---
+  duration_ms: 37.774625
+  type: 'test'
+  ...
+# CPython 3.14.4: 78 fixed cases; duplicate profile=false
+# Subtest: document validation matches authoritative Python: python3.12
+ok 2 - document validation matches authoritative Python: python3.12
+  ---
+  duration_ms: 23.630916
+  type: 'test'
+  ...
+# CPython 3.12.13: 78 fixed cases; duplicate profile=false
+# Subtest: document validation matches authoritative Python: python3.13
+ok 3 - document validation matches authoritative Python: python3.13
+  ---
+  duration_ms: 32.567042
+  type: 'test'
+  ...
+# CPython 3.13.13: 78 fixed cases; duplicate profile=false
+# Subtest: document validation matches authoritative Python: python3.14
+ok 4 - document validation matches authoritative Python: python3.14
+  ---
+  duration_ms: 35.470834
+  type: 'test'
+  ...
+# CPython 3.14.4: 78 fixed cases; duplicate profile=true
+# Subtest: document validation preserves all entries and typed atom identities
+ok 5 - document validation preserves all entries and typed atom identities
+  ---
+  duration_ms: 0.14925
+  type: 'test'
+  ...
+# Subtest: fixed reference refuses caller arguments and input
+ok 6 - fixed reference refuses caller arguments and input
+  ---
+  duration_ms: 67.185042
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 235.209209

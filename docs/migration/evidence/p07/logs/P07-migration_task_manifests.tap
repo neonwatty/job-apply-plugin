@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: task manifests bind an independently scoped audit without product acceptance
+ok 1 - task manifests bind an independently scoped audit without product acceptance
+  ---
+  duration_ms: 2.001084
+  type: 'test'
+  ...
+# Subtest: task manifests reject malformed fields and changes to approved scope or execution identities
+ok 2 - task manifests reject malformed fields and changes to approved scope or execution identities
+  ---
+  duration_ms: 2.716667
+  type: 'test'
+  ...
+# Subtest: task manifest invalid batches unlock no otherwise valid entry
+ok 3 - task manifest invalid batches unlock no otherwise valid entry
+  ---
+  duration_ms: 0.200167
+  type: 'test'
+  ...
+# Subtest: task manifests bound eight modules and require an owned extraction and baseline for oversized sources
+ok 4 - task manifests bound eight modules and require an owned extraction and baseline for oversized sources
+  ---
+  duration_ms: 0.496
+  type: 'test'
+  ...
+# Subtest: product task manifests require every registered scenario binding and platform
+ok 5 - product task manifests require every registered scenario binding and platform
+  ---
+  duration_ms: 0.472791
+  type: 'test'
+  ...
+# Subtest: source size scope mirrors repository extensions and exclusions independently of production ownership
+ok 6 - source size scope mirrors repository extensions and exclusions independently of production ownership
+  ---
+  duration_ms: 0.427167
+  type: 'test'
+  ...
+# Subtest: accepted product predecessors do not silently release ownership to a ready successor
+ok 7 - accepted product predecessors do not silently release ownership to a ready successor
+  ---
+  duration_ms: 0.226917
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 39.307625

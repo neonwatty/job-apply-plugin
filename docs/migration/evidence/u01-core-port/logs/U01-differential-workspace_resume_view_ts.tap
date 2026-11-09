@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: inert resume view module exposes exactly the four existing helpers
+ok 1 - inert resume view module exposes exactly the four existing helpers
+  ---
+  duration_ms: 0.821042
+  type: 'test'
+  ...
+# Subtest: assignment text retains exact counts, pluralization and noninteger defaults
+ok 2 - assignment text retains exact counts, pluralization and noninteger defaults
+  ---
+  duration_ms: 0.308208
+  type: 'test'
+  ...
+# Subtest: extraction view preserves every state's exact user-facing response
+ok 3 - extraction view preserves every state's exact user-facing response
+  ---
+  duration_ms: 0.380833
+  type: 'test'
+  ...
+# Subtest: proposal grouping preserves known groups and existing path coercion
+ok 4 - proposal grouping preserves known groups and existing path coercion
+  ---
+  duration_ms: 0.200709
+  type: 'test'
+  ...
+# Subtest: resume responses require both the same request and the same view without coercion
+ok 5 - resume responses require both the same request and the same view without coercion
+  ---
+  duration_ms: 0.071125
+  type: 'test'
+  ...
+# Subtest: pure helpers leave caller projections unchanged
+ok 6 - pure helpers leave caller projections unchanged
+  ---
+  duration_ms: 0.090709
+  type: 'test'
+  ...
+# Subtest: U01 resume differential preserves getters and coercion order
+ok 7 - U01 resume differential preserves getters and coercion order
+  ---
+  duration_ms: 0.411
+  type: 'test'
+  ...
+# Subtest: U01 resume differential preserves original thrown identity and short circuits
+ok 8 - U01 resume differential preserves original thrown identity and short circuits
+  ---
+  duration_ms: 0.28225
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35.518708

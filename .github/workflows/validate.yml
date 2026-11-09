@@ -1,67 +1,110 @@
 name: Validate Plugin
-
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
-    branches: [main]
-
+    branches: [main, staging]
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
-  validate:
+  classify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: '20'
-
-      - name: Install QA dependencies
-        run: npm ci
-
-      - name: Install replay browser
-        run: npx playwright install --with-deps chromium
-
-      - name: Run replay QA launcher and manual reset guidance tests
-        run: python3 -m unittest tests.test_qa_chrome -v
-
-      - name: Run Python tests
-        run: python3 -m unittest discover -s tests -v
-
-      - name: Run deterministic LinkedIn screening replay
-        run: npm run test:qa-screening
-
-      - name: Run isolated Auto-submit safety matrix
-        run: npm run test:auto-submit
-
-      - name: Run deterministic replay browser tests
-        run: npm run test:qa-browser
-
-      - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
-
-      - name: Install Codex CLI
-        run: npm install -g @openai/codex
-
-      - name: Validate plugin schema
-        run: claude plugin validate .
-
-      - name: Validate JSON syntax
-        run: |
-          echo "Validating plugin.json..."
-          python3 -m json.tool .claude-plugin/plugin.json > /dev/null
-          echo "Validating marketplace.json..."
-          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
-          echo "Validating Codex plugin.json..."
-          python3 -m json.tool .codex-plugin/plugin.json > /dev/null
-          echo "Validating Codex marketplace.json..."
-          python3 -m json.tool .agents/plugins/marketplace.json > /dev/null
-          echo "All JSON files are valid"
-
-      - name: Run isolated plugin smoke test
-        run: bash scripts/smoke-plugin.sh
-
-      - name: Check documentation links
-        run: bash scripts/check-links.sh
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: node tools/ci/classify.mjs --base "$BASE_REF" --receipt ci-receipts/selection.json
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: selection
+          path: ci-receipts/selection.json
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:size -- --base "$BASE_REF"
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+      - run: npm run test:fast -- --concurrency 1 --receipt ci-receipts/fast.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: policy
+          path: ci-receipts/fast.json
+  native-shards:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        suite: [node-native-unit, node-native-cli, node-native-browser]
+        include:
+          - os: macos-latest
+            suite: macos-native-typescript-adapter
+          - os: macos-latest
+            suite: macos-native-source
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" ci-receipts/native.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-${{ matrix.os }}-${{ matrix.suite }}
+          path: ci-receipts/native.json
+  package-contract:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm install -g @anthropic-ai/claude-code @openai/codex
+      - run: npm run test:release -- --receipt ci-receipts/release.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: package-${{ matrix.os }}
+          path: ci-receipts/release.json
+  pr-gate:
+    name: PR gate
+    if: always()
+    needs: [classify, policy, native-shards, package-contract]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: node tools/ci/gate.mjs
+        env:
+          CI_RESULTS_JSON: ${{ toJSON(needs) }}
+          CI_SELECTED_JOBS: '["classify","policy","native-shards","package-contract"]'

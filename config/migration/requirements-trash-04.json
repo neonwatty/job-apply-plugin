@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "UI0-trash-platform",
+      "surfaceIds": [
+        "browser:workspace/lib/helpers.js:typedDeletePhrase",
+        "browser:workspace/lib/helpers.js:filterTrashItems",
+        "browser:workspace/lib/helpers.js:trashBlockerText",
+        "browser:workspace/lib/helpers.js:lifecycleErrorText",
+        "browser:workspace/app.js:typedDeletePhrase",
+        "browser:workspace/app.js:filterTrashItems",
+        "browser:workspace/app.js:trashBlockerText",
+        "browser:workspace/app.js:lifecycleErrorText"
+      ],
+      "family": "UI0",
+      "category": "platform",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        },
+        {
+          "path": "tests_js/workspace_trash_reference.test.mjs",
+          "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "node-workspace-other",
+          "file": "tests_js/workspace_trash_reference.test.mjs",
+          "testId": "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    }
+  ]
+}

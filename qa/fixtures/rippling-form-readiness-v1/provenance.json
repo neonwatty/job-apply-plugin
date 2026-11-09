@@ -1,0 +1,8 @@
+{
+  "currentLiveAtsStatus": "unverified",
+  "evidenceKind": "hand-authored-synthetic",
+  "fixtureId": "rippling-form-readiness-v1",
+  "fixtureSha256": "34fd59c2fc0b6390f1e057c9472ce4b4da60b64deab42edf2a9316e85af7317e",
+  "platformFamily": "rippling",
+  "schemaVersion": 1
+}

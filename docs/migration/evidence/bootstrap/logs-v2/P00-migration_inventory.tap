@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: consistent inventory is not migration acceptance
+ok 1 - consistent inventory is not migration acceptance
+  ---
+  duration_ms: 0.850167
+  type: 'test'
+  ...
+# Subtest: deleting, adding or altering inventory records cannot silently shrink coverage
+ok 2 - deleting, adding or altering inventory records cannot silently shrink coverage
+  ---
+  duration_ms: 0.145167
+  type: 'test'
+  ...
+# Subtest: source edits, additions, deletions and renames require reconciliation
+ok 3 - source edits, additions, deletions and renames require reconciliation
+  ---
+  duration_ms: 0.381292
+  type: 'test'
+  ...
+# Subtest: unknown owners, duplicate identities, missing sources and malformed methods fail
+ok 4 - unknown owners, duplicate identities, missing sources and malformed methods fail
+  ---
+  duration_ms: 0.140041
+  type: 'test'
+  ...
+# Subtest: cycles and unknown dependencies fail
+ok 5 - cycles and unknown dependencies fail
+  ---
+  duration_ms: 0.096083
+  type: 'test'
+  ...
+# Subtest: persisted artifacts and journal variants require valid paths, types and document bindings
+ok 6 - persisted artifacts and journal variants require valid paths, types and document bindings
+  ---
+  duration_ms: 0.322791
+  type: 'test'
+  ...
+# Subtest: invented passing, skipped or inapplicable evidence cannot close a cell
+ok 7 - invented passing, skipped or inapplicable evidence cannot close a cell
+  ---
+  duration_ms: 0.080459
+  type: 'test'
+  ...
+# Subtest: source discovery includes new runtime and boundary files, excludes test fixture data
+ok 8 - source discovery includes new runtime and boundary files, excludes test fixture data
+  ---
+  duration_ms: 0.167292
+  type: 'test'
+  ...
+# Subtest: real checkout detects untracked modules and source drift without changing files
+ok 9 - real checkout detects untracked modules and source drift without changing files
+  ---
+  duration_ms: 75.467583
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 258.504167

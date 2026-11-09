@@ -1,0 +1,661 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/Companion.tsx:default",
+      "kind": "browser",
+      "export": "default",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/Companion.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/JobEditor.tsx:JobEditor",
+      "kind": "browser",
+      "export": "JobEditor",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/JobEditor.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/Jobs.tsx:Jobs",
+      "kind": "browser",
+      "export": "Jobs",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/Jobs.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/Overview.tsx:Overview",
+      "kind": "browser",
+      "export": "Overview",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/Overview.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/client.ts:ApiError",
+      "kind": "browser",
+      "export": "ApiError",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/client.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/client.ts:createClient",
+      "kind": "browser",
+      "export": "createClient",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/client.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/client.ts:sessionToken",
+      "kind": "browser",
+      "export": "sessionToken",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/client.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:object",
+      "kind": "browser",
+      "export": "object",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:textFields",
+      "kind": "browser",
+      "export": "textFields",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:job",
+      "kind": "browser",
+      "export": "job",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:workspaceState",
+      "kind": "browser",
+      "export": "workspaceState",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:boot",
+      "kind": "browser",
+      "export": "boot",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:overview",
+      "kind": "browser",
+      "export": "overview",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-editor-state.ts:fieldsFor",
+      "kind": "browser",
+      "export": "fieldsFor",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-editor-state.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-editor-state.ts:openEditor",
+      "kind": "browser",
+      "export": "openEditor",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-editor-state.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-editor-state.ts:edit",
+      "kind": "browser",
+      "export": "edit",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-editor-state.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-editor-state.ts:observe",
+      "kind": "browser",
+      "export": "observe",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-editor-state.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-editor-state.ts:reapply",
+      "kind": "browser",
+      "export": "reapply",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-editor-state.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/FactGroups.tsx:FactGroups",
+      "kind": "browser",
+      "export": "FactGroups",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/FactGroups.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/FactValue.tsx:FactValue",
+      "kind": "browser",
+      "export": "FactValue",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/FactValue.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/Facts.tsx:Facts",
+      "kind": "browser",
+      "export": "Facts",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/Facts.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/facts-model.ts:snapshot",
+      "kind": "browser",
+      "export": "snapshot",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/facts-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/facts-model.ts:pointer",
+      "kind": "browser",
+      "export": "pointer",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/facts-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/facts-model.ts:patchBody",
+      "kind": "browser",
+      "export": "patchBody",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/facts-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/facts-model.ts:reapplyDraft",
+      "kind": "browser",
+      "export": "reapplyDraft",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/facts-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/facts-model.ts:factProvenance",
+      "kind": "browser",
+      "export": "factProvenance",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/facts-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/Resumes.tsx:Resumes",
+      "kind": "browser",
+      "export": "Resumes",
+      "node": "UIF",
+      "sources": ["apps/companion/components/Resumes.tsx"],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:resume",
+      "kind": "browser",
+      "export": "resume",
+      "node": "UIF",
+      "sources": ["apps/companion/components/contracts.ts"],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:resumeList",
+      "kind": "browser",
+      "export": "resumeList",
+      "node": "UIF",
+      "sources": ["apps/companion/components/contracts.ts"],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/ApplicationSettings.tsx:ApplicationSettings",
+      "kind": "browser", "export": "ApplicationSettings", "node": "UIF",
+      "sources": ["apps/companion/components/ApplicationSettings.tsx"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/application-preferences-model.ts:defaultApplicationPreferences",
+      "kind": "browser", "export": "defaultApplicationPreferences", "node": "UIF",
+      "sources": ["apps/companion/components/application-preferences-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/application-preferences-model.ts:readApplicationPreferences",
+      "kind": "browser", "export": "readApplicationPreferences", "node": "UIF",
+      "sources": ["apps/companion/components/application-preferences-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/application-preferences-model.ts:applicationPreferencesPatch",
+      "kind": "browser", "export": "applicationPreferencesPatch", "node": "UIF",
+      "sources": ["apps/companion/components/application-preferences-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/title-discovery-model.ts:titleKey",
+      "kind": "browser", "export": "titleKey", "node": "UIF",
+      "sources": ["apps/companion/components/title-discovery-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/title-discovery-model.ts:parseTitleDiscoveryPacket",
+      "kind": "browser", "export": "parseTitleDiscoveryPacket", "node": "UIF",
+      "sources": ["apps/companion/components/title-discovery-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/TitleDiscovery.tsx:TitleDiscovery",
+      "kind": "browser", "export": "TitleDiscovery", "node": "UIF",
+      "sources": ["apps/companion/components/TitleDiscovery.tsx"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    }
+  ]
+}

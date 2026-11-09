@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "id": "S02.I",
+  "role": "implementation-or-gate",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "S02",
+    "parentNode": "I",
+    "owner": "timestamp_tests",
+    "allowed_files": [
+      "src/contracts/python-json-bytes.ts",
+      "src/contracts/python-byte-errors.ts",
+      "src/contracts/python-utf8-decode.ts",
+      "src/contracts/python-utf16-decode.ts",
+      "src/contracts/python-utf32-decode.ts",
+      "runtime/contracts/python-json-bytes.js",
+      "runtime/contracts/python-byte-errors.js",
+      "runtime/contracts/python-utf8-decode.js",
+      "runtime/contracts/python-utf16-decode.js",
+      "runtime/contracts/python-utf32-decode.js",
+      "tests_js/python_json_bytes_ts.test.mjs",
+      "tests_js/python_json_bytes_ts_support.mjs",
+      "docs/migration/python-json-bytes-port.md",
+      "docs/migration/evidence/s02/implementation-audit.json",
+      "docs/migration/evidence/s02/S02.I.json",
+      "docs/migration/evidence/s02/S02.V.json",
+      "config/migration/source-catalog-s02.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [
+      "runtime/contracts/python-json-bytes.js",
+      "runtime/contracts/python-byte-errors.js",
+      "runtime/contracts/python-utf8-decode.js",
+      "runtime/contracts/python-utf16-decode.js",
+      "runtime/contracts/python-utf32-decode.js"
+    ],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "a2f25deeaa5fc2ec881d9b7d5bf2dbdd4f7b8d1303ce033985267c88cb4413ef",
+  "auditContract": {
+    "path": "docs/migration/evidence/s02/implementation-audit.json",
+    "sha256": "4612ae564b2c0fd24e3804827be07efeb3bf317d044b951a48128148f837f4b0"
+  },
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "base": "f3b90ba9e6a867c2f2bf853ec59798d12858ea11",
+  "inputs": [
+    {
+      "path": "docs/migration/evidence/s02/implementation-audit.json",
+      "sha256": "4612ae564b2c0fd24e3804827be07efeb3bf317d044b951a48128148f837f4b0"
+    },
+    {
+      "path": "docs/migration/remaining/s02-implementation.md",
+      "sha256": "80b784ca33e71f27780adb851b351e8661a075e62f2d60ee916bd484b696c0c3"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "tests_js/python_text_ts.test.mjs",
+      "sha256": "c278910ac938782dbfea8f049235d5a6bcfb32d4fc9ebe1f46d93d5129308585"
+    },
+    {
+      "path": "tools/contracts/python-json-bytes/reference.py",
+      "sha256": "a5b14b176b3ee2b9a21c3366a49cf07239d8e057aa3bfb897c20bf5f502bc428"
+    },
+    {
+      "path": "tests_js/python_json_bytes_reference.test.mjs",
+      "sha256": "7c1c97f9582de1ce92ba5f2b6282b037ac09b0ddbd3112fdbb9606e4a7eb0eb8"
+    },
+    {
+      "path": "docs/migration/python-json-bytes-reference.md",
+      "sha256": "f381cc0cadce915ceabcb8589f63450398afb7aec0ccb88982a1001e6a16d5cb"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "S02.I.decoder",
+      "requirementIds": [
+        "S02.I.decoder.required"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_json_bytes_ts.test.mjs"
+      ],
+      "testNames": [
+        "S02.I decoder matches all 82 frozen byte outcomes",
+        "S02.I detection preserves BOM precedence and zero-byte inference",
+        "S02.I UTF-8 surrogatepass preserves Python codepoint identity",
+        "S02.I UTF-16 combines only encoded adjacent surrogate pairs",
+        "S02.I UTF-32 preserves surrogate units and unsigned range failures",
+        "S02.I decoding errors preserve object bytes offsets reasons and messages",
+        "S02.I Buffer views and owned error bytes resist caller mutation",
+        "S02.I invalid JavaScript inputs fail before byte decoding"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s02/logs/S02.I.decoder.tap"
+    },
+    {
+      "id": "S02.I.reference",
+      "requirementIds": [
+        "S02.I.reference.required"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_json_bytes_reference.test.mjs"
+      ],
+      "testNames": [
+        "S02.R byte decoding reference: default CPython",
+        "S02.R byte decoding reference: CPython 3.12",
+        "S02.R byte decoding reference: CPython 3.13",
+        "S02.R byte decoding reference: CPython 3.14",
+        "S02.R byte decoding reference rejects external input"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s02/logs/S02.I.reference.tap"
+    },
+    {
+      "id": "S02.I.python-text",
+      "requirementIds": [
+        "S02.I.python-text.required"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_text_ts.test.mjs"
+      ],
+      "testNames": [
+        "PythonText retains distinct pair/scalar identities across construction and concatenation",
+        "PythonText defensively freezes content and preserves immutable error originals",
+        "PythonText rejects malformed runtime inputs and implicit conversion",
+        "PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s02/logs/S02.I.python-text.tap"
+    }
+  ],
+  "artifacts": []
+}

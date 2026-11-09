@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:profile-get",
+      "kind": "cli",
+      "command": "profile-get",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:profile-inspect",
+      "kind": "cli",
+      "command": "profile-inspect",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:preferences-get",
+      "kind": "cli",
+      "command": "preferences-get",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:profile-patch",
+      "kind": "cli",
+      "command": "profile-patch",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:profile-replace",
+      "kind": "cli",
+      "command": "profile-replace",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:preferences-set",
+      "kind": "cli",
+      "command": "preferences-set",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:fact-group-list",
+      "kind": "cli",
+      "command": "fact-group-list",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:fact-group-get",
+      "kind": "cli",
+      "command": "fact-group-get",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:fact-group-create",
+      "kind": "cli",
+      "command": "fact-group-create",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:fact-group-update",
+      "kind": "cli",
+      "command": "fact-group-update",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:fact-group-delete",
+      "kind": "cli",
+      "command": "fact-group-delete",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-profile.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

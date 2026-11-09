@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "phase": "D",
+  "date": "2026-09-17",
+  "baseCommit": "ce151e567cee00974d7e36d2bc9742793c1000dc",
+  "branch": "codex/ts-job-apply-dogfood-phase-d-controls",
+  "syntheticOnly": true,
+  "externalPortalVisited": false,
+  "realAccountCreated": false,
+  "credentialUsed": false,
+  "finalActionActivated": false,
+  "applicationSubmitted": false,
+  "agentWorkflowsEvidenceClaimed": false,
+  "journeys": {
+    "overview": true,
+    "needsAttentionReasons": [
+      "needs_information",
+      "interrupted_agent_attempt",
+      "expired_agent_attempt",
+      "awaiting_human_review"
+    ],
+    "claimSelectionAndAcquisition": true,
+    "claimExpiryRecoveryAndHandoff": true,
+    "staleAndMismatchedClaimsFailClosed": true,
+    "pendingQuestions": true,
+    "sensitiveAnswerBoundaries": true,
+    "groupedPartialApprovals": true,
+    "answerCleanupExplicitMerge": true,
+    "restartReadback": true,
+    "mobileWidth": 390,
+    "horizontalOverflow": false
+  },
+  "tests": {
+    "focused": {
+      "files": [
+        "tests_js/workspace_native_answer_cleanup.test.mjs",
+        "tests_js/workspace_native_answer_cleanup_integration.test.mjs",
+        "tests_js/workspace_native_answer_cleanup_model.test.mjs",
+        "tests_js/workspace_native_claims.test.mjs",
+        "tests_js/workspace_native_claims_recovery.test.mjs",
+        "tests_js/workspace_native_grouped_approvals.test.mjs",
+        "tests_js/workspace_native_pending_answer_model.test.mjs",
+        "tests_js/workspace_native_pending_answers.test.mjs",
+        "tests_js/workspace_native_projection_adapters.test.mjs",
+        "tests_js/workspace_native_projection_model.test.mjs",
+        "tests_js/workspace_native_projections.test.mjs"
+      ],
+      "passed": 57,
+      "failed": 0
+    },
+    "legacyPackagedBrowser": {
+      "file": "tests_js/workspace.test.mjs",
+      "passed": 3,
+      "failed": 0
+    },
+    "nativeTypeScriptNext": {
+      "file": "tests_js/workspace_information_architecture.test.mjs",
+      "passed": 9,
+      "failed": 0,
+      "productionStandaloneJourneyPassed": true
+    }
+  },
+  "defect": {
+    "reproduced": false,
+    "productCodeChanged": false
+  },
+  "cleanup": {
+    "storeMovedToMacOSTrash": true,
+    "recoverable": true,
+    "originalPathAbsent": true
+  }
+}

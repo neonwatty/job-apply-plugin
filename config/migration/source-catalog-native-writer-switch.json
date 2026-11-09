@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/store/native-writer-switch.js",
+      "sha256": "42df79d0934c4beae3b7a8ec66861994637d42ac763653165b9fc0789d6d58d3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/process-owned-writer.js",
+      "sha256": "0a0b7ccda94d4e70e725aa3d6bf437ed560449821a317774f5bb2261c68b06ad",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-writer-switch.ts",
+      "sha256": "96824e8ec8c2662dd3edfab9e7e5369ac7b35612cf7773ee16bfcb4a5aaa9b91",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/process-owned-writer.ts",
+      "sha256": "adf5b446fc53b3a0528b43fc618ef733942875dd76bea03bb8bf7c58fc57dac1",
+      "classification": "unreviewed"
+    }
+  ]
+}

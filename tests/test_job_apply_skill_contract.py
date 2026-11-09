@@ -1,0 +1,195 @@
+from scripts.skill_documents import skill_text
+import re
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SKILL_PATH = ROOT / "skills" / "job-apply" / "SKILL.md"
+WORKSPACE_SKILL_PATH = ROOT / "skills" / "job-workspace" / "SKILL.md"
+README_PATH = ROOT / "README.md"
+
+
+class JobApplySkillContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.skill = skill_text(SKILL_PATH)
+        cls.workspace_skill = skill_text(WORKSPACE_SKILL_PATH)
+        cls.readme = README_PATH.read_text(encoding="utf-8")
+        cls.normalized = " ".join(cls.skill.split())
+
+    def test_action_time_consent_requires_visible_readiness(self):
+        self.assertIn("Post-readiness action-time consent", self.skill)
+        self.assertIn("Before the exact application form is visibly ready", self.skill)
+        self.assertIn("blanket future consent are invalid", self.skill)
+        self.assertIn("current message was sent after that visible readiness", self.skill)
+
+    def test_matching_consent_is_consumed_once_without_duplicate_confirmation(self):
+        self.assertIn("transitions once to `consent_consumed`", self.skill)
+        self.assertIn("Proceed without asking for the same confirmation again", self.skill)
+        self.assertIn("It is not reusable for another job", self.skill)
+        self.assertIn("must not trigger duplicate confirmation", self.skill)
+
+    def test_only_material_scope_destination_or_purpose_change_reconfirms(self):
+        self.assertIn(
+            "A material change to the data scope, destination, or purpose invalidates the consumed consent",
+            self.skill,
+        )
+        self.assertIn("obtain new explicit post-change consent", self.skill)
+        self.assertIn("Ordinary page progression within the unchanged bounds", self.skill)
+
+    def test_user_facing_summaries_are_value_free(self):
+        self.assertIn("Never echo raw applicant values", self.skill)
+        self.assertIn("Describe only field names or groups, counts, and states", self.skill)
+        for unsafe in (
+            "Summarize every entered value",
+            "summarize all entered fields",
+            "summarize the fields",
+            "Review the parsed and entered values",
+            "summarize the application for the user",
+        ):
+            self.assertNotIn(unsafe, self.skill)
+
+    def test_attempt_helper_surface_remains_closed(self):
+        invocations = re.findall(
+            r"command\.mjs\" attempt[^`\n]*?\s(start|heartbeat|progress|handoff)(?:\s|`)",
+            self.skill,
+        )
+        self.assertTrue(invocations)
+        self.assertEqual(set(invocations), {"start", "heartbeat", "progress", "handoff"})
+        for forbidden in (" stop", " abort", " release", " recover", " adopt"):
+            self.assertNotRegex(self.skill, rf"command\.mjs\" attempt[^`\n]*{forbidden}\b")
+
+    def test_readme_documents_detached_broker_not_attached_stdin_process(self):
+        for required in (
+            "detached broker scoped to one Store and exact selected attempt",
+            "later stateless `heartbeat`, value-free `progress`, and `handoff` clients",
+            "`needs_info` handoff so the broker releases the claim and exits",
+            "exact job, session, and answer revisions shown there",
+            "fresh broker acquisition for the same canonical job",
+        ):
+            self.assertIn(required, self.readme)
+
+        for stale in (
+            "lifetime of one attached process",
+            "accepts only value-free progress and `needs_info` or `awaiting_review` handoff messages on stdin",
+            "Start a new private attempt process",
+        ):
+            self.assertNotIn(stale, self.readme)
+
+    def test_field_entry_requires_observed_persistence(self) -> None:
+        self.assertIn("attempted write, not proof", self.normalized)
+        self.assertIn("immediately read the control's current state", self.normalized)
+        self.assertIn("compare it privately with the intended value", self.normalized)
+        self.assertIn("merely because the browser operation returned no error", self.normalized)
+
+    def test_job_specific_discovery_source_precedes_uncertain_generic_answer(self) -> None:
+        self.assertIn("store job-get --id <job-id>", self.skill)
+        self.assertIn("`/source` provenance", self.skill)
+        self.assertIn("Prefer that specific evidence over a conflicting generic saved answer", self.skill)
+        self.assertIn("Leave an optional source field blank when uncertainty remains", self.skill)
+
+    def test_manual_review_preserves_the_visible_application_tab(self) -> None:
+        self.assertIn("`tab.markHandoff()`", self.skill)
+        self.assertIn("after either `awaiting_review` or a resumable `needs_info` handoff", self.skill)
+        self.assertIn("Reinspect the live form before resuming", self.skill)
+
+    def test_field_entry_recovery_is_bounded_and_rerender_safe(self) -> None:
+        self.assertIn("at most one safe", self.normalized)
+        self.assertIn("Do not repeat the same", self.normalized)
+        self.assertIn("Revalidate already-filled critical controls", self.normalized)
+        self.assertIn("Restore a cleared value at most once", self.normalized)
+
+    def test_failed_entry_is_not_misclassified_as_missing_data(self) -> None:
+        self.assertIn("do not ask the user for it again", self.normalized)
+        self.assertIn("`unsupported-control` with `owner-input-required`", self.normalized)
+        self.assertIn("browser handoff, not a missing-answer request", self.normalized)
+        self.assertIn("Browser action required", self.skill)
+        self.assertIn("already known", self.normalized)
+
+    def test_form_instances_and_consent_remain_separate(self) -> None:
+        self.assertIn("independent forms", self.normalized)
+        self.assertIn("requires fresh consent", self.normalized)
+        self.assertIn("Keep every final action untouched throughout recovery", self.normalized)
+
+    def test_embedded_upload_fallback_verifies_new_form_and_consent(self) -> None:
+        for required in (
+            "try its **Attach** button with a fresh listener",
+            "a click or chooser timeout is not upload proof",
+            "company and job identity match",
+            "The direct page is a separate form instance",
+            "obtain fresh post-readiness consent",
+            "reconfirm each sensitive saved answer",
+            "Keep the embedded draft until the direct form is verified",
+            "Do not infer that Chrome's file-URL permission is disabled",
+        ):
+            self.assertIn(required, self.skill)
+
+    def test_upload_uses_resolved_path_and_completes_other_fields_before_handoff(self) -> None:
+        for required in (
+            "store resume-resolve --id <confirmed-resume-id>",
+            "apps/companion/resume-upload-guard.mjs",
+            "--expected-revision <selected-resume-revision> --candidate-path <proposed-chooser-path>",
+            "This code guard resolves the Store again and rejects a path",
+            "Pass the successful guard's returned `path` unchanged",
+            "Never construct an upload path from a Store root",
+            "Do not open the chooser until it succeeds",
+            "First rerun the guard",
+            "correct it from `resume-resolve` and retry once",
+            "do not reload it merely to retry",
+            "Do not blame or ask the owner to change Chrome's extension file-URL permission",
+            "ask the owner where their original resume file is",
+            "never upload the owner-supplied source path directly",
+            "finish and verify every other field supported by the current form",
+            "count a visible selected chip as a selection",
+            "An unresolved required upload cannot support `awaiting_review`",
+        ):
+            self.assertIn(required, self.skill)
+
+    def test_resume_extraction_discovery_is_context_bounded(self) -> None:
+        self.assertIn("resume-extraction-request-list --status requested", self.skill)
+        self.assertIn("when the owner asks about resume facts", self.skill)
+        self.assertIn("supplies an exact extraction request", self.skill)
+        self.assertIn("Never scan for extraction requests during every job application", self.skill)
+
+    def test_resume_extraction_fulfills_one_exact_request_privately(self) -> None:
+        for required in (
+            "resume-extraction-request-get --id <id>",
+            "resume-resolve --id <resume-id>",
+            "resume-extraction-request-complete-scoped",
+            "scope: \"resume\"",
+            "profile-inspect",
+            "resume-proposal-list --resume-id <resume-id>",
+            "resume-extraction-request-complete",
+            "--expected-pending-proposal-id <proposal-id>",
+            "Delete the temporary candidate",
+            "do not retry unseen data",
+            "owner reviews and confirms it",
+        ):
+            self.assertIn(required, self.skill)
+        self.assertIn("Never copy facts from another resume", self.skill)
+
+    def test_resume_extraction_failure_reasons_are_closed(self) -> None:
+        self.assertIn("resume-extraction-request-fail", self.skill)
+        for reason in (
+            "content_unreadable",
+            "unsupported_resume",
+            "extraction_failed",
+            "candidate_invalid",
+            "interrupted",
+        ):
+            self.assertIn(f"`{reason}`", self.skill)
+
+    def test_workspace_queues_but_does_not_perform_extraction(self) -> None:
+        for required in ("queues work for the next active Job Apply agent",
+                         "does not start or launch an agent",
+                         "cannot extract facts, complete or fail a request, or author a proposal"):
+            self.assertIn(required, self.workspace_skill)
+            self.assertIn(required, self.readme)
+        self.assertIn("only request mutations are create, cancel, and retry", self.workspace_skill)
+        self.assertIn("review, edit, and confirm facts already extracted", self.workspace_skill)
+        self.assertNotIn("the workspace extracts", self.workspace_skill.lower())
+
+
+if __name__ == "__main__":
+    unittest.main()

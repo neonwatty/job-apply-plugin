@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "document:<legacy-profile>",
+      "kind": "document",
+      "path": "<legacy-profile>",
+      "artifact": "json",
+      "node": "PF",
+      "sources": [
+        "scripts/job_apply_store/base.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:resume-files/.<previous.name>.<nonce>.quarantine",
+      "kind": "document",
+      "path": "resume-files/.<previous.name>.<nonce>.quarantine",
+      "artifact": "temporary",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/domains/resumes/storage.py",
+        "scripts/job_apply_store/domains/resumes/lifecycle.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:<target-parent>/.<target-name>.*.tmp",
+      "kind": "document",
+      "path": "<target-parent>/.<target-name>.*.tmp",
+      "artifact": "temporary",
+      "node": "TX",
+      "sources": [
+        "scripts/job_apply_store/io.py",
+        "scripts/job_apply_policy/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:auto-submit/campaign.json",
+      "kind": "document",
+      "path": "auto-submit/campaign.json",
+      "artifact": "json",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:auto-submit/campaigns/<campaign-id-suffix>.json",
+      "kind": "document",
+      "path": "auto-submit/campaigns/<campaign-id-suffix>.json",
+      "artifact": "json",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/campaigns.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:auto-submit/applications/<campaign-id-suffix>/<application-ref-suffix>.json",
+      "kind": "document",
+      "path": "auto-submit/applications/<campaign-id-suffix>/<application-ref-suffix>.json",
+      "artifact": "json",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:auto-submit/receipts.jsonl",
+      "kind": "document",
+      "path": "auto-submit/receipts.jsonl",
+      "artifact": "jsonl",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:auto-submit/.lock",
+      "kind": "document",
+      "path": "auto-submit/.lock",
+      "artifact": "lock",
+      "node": "TX",
+      "sources": [
+        "scripts/job_apply_policy/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:resume-files/.<resume-id>.*.tmp",
+      "kind": "document",
+      "path": "resume-files/.<resume-id>.*.tmp",
+      "artifact": "temporary",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/domains/resumes/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:resume-files/.browser-upload.*<extension>",
+      "kind": "document",
+      "path": "resume-files/.browser-upload.*<extension>",
+      "artifact": "temporary",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_store/domains/resumes/storage.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,663 @@
+{
+  "schemaVersion": 1,
+  "id": "U01.I",
+  "role": "implementation-or-gate",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+    "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8"
+  },
+  "package": {
+    "id": "U01",
+    "parentNode": "UI0",
+    "owner": "timestamp_tests",
+    "allowed_files": [
+      "runtime/workspace-ui/lib/activity-view.js",
+      "runtime/workspace-ui/lib/answer-view.js",
+      "runtime/workspace-ui/lib/profile-view.js",
+      "runtime/workspace-ui/lib/resume-view.js",
+      "runtime/workspace-ui/lib/trash-view.js",
+      "src/workspace-ui/lib/activity-view.ts",
+      "src/workspace-ui/lib/answer-view.ts",
+      "src/workspace-ui/lib/profile-view.ts",
+      "src/workspace-ui/lib/resume-view.ts",
+      "src/workspace-ui/lib/trash-view.ts",
+      "tests_js/workspace_activity_helpers_ts.test.mjs",
+      "tests_js/workspace_answer_helpers_ts.test.mjs",
+      "tests_js/workspace_helpers_browser_ts.test.mjs",
+      "tests_js/workspace_profile_helpers_ts.test.mjs",
+      "tests_js/workspace_resume_view_ts.test.mjs",
+      "tests_js/workspace_trash_view_ts.test.mjs",
+      "docs/migration/evidence/u01-core-port/implementation-spec.json",
+      "docs/migration/evidence/u01-core-port/implementation-plan.md",
+      "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+      "docs/migration/evidence/u01-core-port/U01.V.audit.json",
+      "docs/migration/evidence/u01-core-port/U01.I.json",
+      "docs/migration/evidence/u01-core-port/U01.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [
+      "runtime/workspace-ui/lib/activity-view.js",
+      "runtime/workspace-ui/lib/answer-view.js",
+      "runtime/workspace-ui/lib/profile-view.js",
+      "runtime/workspace-ui/lib/resume-view.js",
+      "runtime/workspace-ui/lib/trash-view.js"
+    ],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "c1cbe899a20f5875f88de3f19dd144d122c4ee9bb5e2ce5dc7846067dacba0af",
+  "auditContract": {
+    "path": "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+    "sha256": "141f0f364c5b7df8b0c669b017bb2a713cc89eca6184736e47e197783224ff3d"
+  },
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "base": "2aed05d510cd847227a1b27ff2d899ac148d3f2a",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+    },
+    {
+      "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+      "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3"
+    },
+    {
+      "path": "docs/migration/evidence/m01/M01.I.json",
+      "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+    },
+    {
+      "path": "docs/migration/evidence/m01/M01.V.json",
+      "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+    },
+    {
+      "path": "docs/migration/evidence/m01/implementation-audit.json",
+      "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+    },
+    {
+      "path": "docs/migration/evidence/m01/implementation-spec.json",
+      "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+    },
+    {
+      "path": "docs/migration/evidence/m01/logs/M01-requests.tap",
+      "sha256": "f2777c22e2d5c30e09814a96d89f7be56afeda98615604b2ed90b5bc710de8f2"
+    },
+    {
+      "path": "docs/migration/evidence/remaining-helpers-focused.tap",
+      "sha256": "2854b6678d0454f995f7664a5f219f40fd16ec3576a11839d91d37c1f2ea2749"
+    },
+    {
+      "path": "docs/migration/evidence/remaining-helpers-progress.json",
+      "sha256": "ff89352f5dd86311a5d8b761ccaa53b0d05b9f72a7097daeaa530c59f55fac5d"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+      "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8"
+    },
+    {
+      "path": "docs/migration/evidence/trash-helper-7fa2687.json",
+      "sha256": "a33ade714166fb3a8239aaf5f503f68efe0c7722d26f44f268a57b66e6f34a2a"
+    },
+    {
+      "path": "docs/migration/evidence/trash-helper-7fa2687.tap",
+      "sha256": "2ea4f426588fac127abdb780318801efebec0724e1d4c70f74e60b8a0a6061cd"
+    },
+    {
+      "path": "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+      "sha256": "141f0f364c5b7df8b0c669b017bb2a713cc89eca6184736e47e197783224ff3d"
+    },
+    {
+      "path": "docs/migration/evidence/u01-core-port/U01.V.audit.json",
+      "sha256": "354563364d9a3d68540ba3ba19b047b1716901e5eed3d0cb9a4cbbd473f7df18"
+    },
+    {
+      "path": "docs/migration/evidence/u01-core-port/implementation-plan.md",
+      "sha256": "2b628b6c9ccaebb6b6b4137d92393f06a8684050242098e5c0323ffb85a8834d"
+    },
+    {
+      "path": "docs/migration/evidence/u01-core-port/implementation-spec.json",
+      "sha256": "d0356f27dd49af4525eb1120894ea3e80ba95159c06ab00ba552d8198428d9ca"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/U01.R.json",
+      "sha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+      "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-plan.md",
+      "sha256": "c9911976541cd7ade1a6d417f730acdb7e582d4fc977ea910012348956778396"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-spec.json",
+      "sha256": "d24dafa72ff44c9a69ad36c4fa2a38aaab8c33df6cb59c0b89b7a166aca9ffd9"
+    },
+    {
+      "path": "docs/migration/remaining-helper-reference.md",
+      "sha256": "f65addce9c6db1e1c951b47ee5b234e472c17af8bd4b8a8daf5130637de6d88f"
+    },
+    {
+      "path": "docs/migration/trash-helper-reference.md",
+      "sha256": "7ea83fc4e4ad314d9334f34f40fcfa305244bbd50a0a7e943ab97217e070cffe"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/activity-view.js",
+      "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/answer-view.js",
+      "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/automation-request.js",
+      "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/profile-view.js",
+      "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/resume-view.js",
+      "sha256": "c6cedcfe438c68e02275da36f06e4eaca5b2212275fc3ce9b898343f7a9c586a"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/trash-view.js",
+      "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836"
+    },
+    {
+      "path": "src/workspace-ui/lib/activity-view.ts",
+      "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105"
+    },
+    {
+      "path": "src/workspace-ui/lib/answer-view.ts",
+      "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01"
+    },
+    {
+      "path": "src/workspace-ui/lib/automation-request.ts",
+      "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84"
+    },
+    {
+      "path": "src/workspace-ui/lib/profile-view.ts",
+      "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0"
+    },
+    {
+      "path": "src/workspace-ui/lib/resume-view.ts",
+      "sha256": "5aa051a8e22bc217977f61ba15176ea6e5cbc1672752a0cfc48ba89c1fc725ab"
+    },
+    {
+      "path": "src/workspace-ui/lib/trash-view.ts",
+      "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb"
+    },
+    {
+      "path": "tests_js/workspace_activity_helpers_reference.test.mjs",
+      "sha256": "f952f5e334b1309d0a48134af45bce1541d0989a0d7c1cadda848ba3c8721648"
+    },
+    {
+      "path": "tests_js/workspace_activity_helpers_ts.test.mjs",
+      "sha256": "5befdfa638ded9b1bdb6dfb779e5700c06f3fbb9b68dfde16ef04776d993315c"
+    },
+    {
+      "path": "tests_js/workspace_answer_helpers_reference.test.mjs",
+      "sha256": "e8a9477ad6ada0d71ee411bacf4764d15de2bcf5b65aa1462301d2b5e4a327f9"
+    },
+    {
+      "path": "tests_js/workspace_answer_helpers_ts.test.mjs",
+      "sha256": "b4998e1006fb0de5c8d7c5baba58bdba7e37d8dbf4bf9ef358c48d8bb8d15038"
+    },
+    {
+      "path": "tests_js/workspace_helpers.test.mjs",
+      "sha256": "752391347ac67ab2624ab3b5ad7297f6e12c618de8f5502fefa2d3636780bb4e"
+    },
+    {
+      "path": "tests_js/workspace_helpers_browser_ts.test.mjs",
+      "sha256": "3f9048a2205f28bc43478019ea446c8dba692d3ecb0b734f2fee5c8f7318c18d"
+    },
+    {
+      "path": "tests_js/workspace_infrastructure_reference_support.mjs",
+      "sha256": "91a69f3e8267076e31ee705546018965ec32b342fcb65f443426864913a62810"
+    },
+    {
+      "path": "tests_js/workspace_profile_helpers_reference.test.mjs",
+      "sha256": "030cd5825218c8e881b847b6e5a5e288d2eda1a95ca5cd6ee56b621949735bc7"
+    },
+    {
+      "path": "tests_js/workspace_profile_helpers_ts.test.mjs",
+      "sha256": "1a696737ffb9c71c56d12d380bca6de683448d56ee22055baf7efeb90da0a516"
+    },
+    {
+      "path": "tests_js/workspace_resume_view_ts.test.mjs",
+      "sha256": "cb883289a95f02e56790d4ea577dc77d52a0d072f99e16cfcece52d025dad0a1"
+    },
+    {
+      "path": "tests_js/workspace_test_support.mjs",
+      "sha256": "f64c9e0c4291bf4c019693835c29322a80fe6559f14b047bdddf536d97e70082"
+    },
+    {
+      "path": "tests_js/workspace_trash_reference.test.mjs",
+      "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+    },
+    {
+      "path": "tests_js/workspace_trash_view_ts.test.mjs",
+      "sha256": "69ca6f67d55e4b46a054d647997c10dd0e641d46a84857d4134171cb549a3756"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "workspace/app.js",
+      "sha256": "4a50101e09cf0b5c70480074beae1ca193dffb16817d8ac8612c089c866b41c4"
+    },
+    {
+      "path": "workspace/bootstrap.js",
+      "sha256": "cab93d10769a32bd01991b1965dd1d0daa3d7ad0e2c8a20f4c2f1fcd193d690e"
+    },
+    {
+      "path": "workspace/features/activity.js",
+      "sha256": "ea68a9c2dd6880438229b5bb965c35c5b8235b36dc77df39b69dcc3b5ff8844e"
+    },
+    {
+      "path": "workspace/features/answers.js",
+      "sha256": "0e52d101f15a2453f2dfb75030224e0629a023d0d3532fd59255e23d61c75ad1"
+    },
+    {
+      "path": "workspace/features/automation.js",
+      "sha256": "e85037840fce9a20f7aa07c612c634dc6e8593bc970a6c40342f0787a55bffd3"
+    },
+    {
+      "path": "workspace/features/bindings.js",
+      "sha256": "a71d9196946c76b510b7347b8349dc8282ebb4d1b4e5e44412a56ced7b561f05"
+    },
+    {
+      "path": "workspace/features/facts.js",
+      "sha256": "3bcf4565f20237d03260ee0500bb4c6fed0a4917a35486551962ba99f301aabd"
+    },
+    {
+      "path": "workspace/features/jobs.js",
+      "sha256": "dfc365a7eb2be0afbce3859e1fba012329cf84371c67b200fc28ac5b84199a2b"
+    },
+    {
+      "path": "workspace/features/navigation.js",
+      "sha256": "1bf514de76dd7edad2cc3f17e962b2b425f6f89558abdc0a875a8783c84574f0"
+    },
+    {
+      "path": "workspace/features/overview.js",
+      "sha256": "d65133c691d5a1cc66ef863d60672ef32a967140e40c821eaf13ff193995246d"
+    },
+    {
+      "path": "workspace/features/resumes.js",
+      "sha256": "d2003cae799cceb859c0f1120473c7df4c13182f3c3ab7692dd119f81b242607"
+    },
+    {
+      "path": "workspace/features/trash.js",
+      "sha256": "36e114dfdc85f9ee98b8624043adf1de26591d51a6d776d035bdc703c005ffb3"
+    },
+    {
+      "path": "workspace/lib/api.js",
+      "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+    },
+    {
+      "path": "workspace/lib/dom.js",
+      "sha256": "9c366cc6b5e5bbab2c6b74db36f45445ea533c20086e29eebd02e6cce5a0e78e"
+    },
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+    },
+    {
+      "path": "workspace/lib/state.js",
+      "sha256": "f726687cb368d1238d0e9bd6c287dee9313631c51d43363441febbb966b16218"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "U01-reference-workspace_activity_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_activity_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "activity reference: job filter preserves identity/order and status short circuit",
+        "activity reference: transition and readiness maps preserve inherited lookup behavior",
+        "activity reference: revision policies retain integer checks, ties and reference returns",
+        "activity reference: signatures and announcements preserve field selection and ordered copy",
+        "activity reference: attention signatures preserve order and blocker special-case exactness",
+        "activity reference: owner next-step copy and prototype lookups remain observable"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_activity_helpers_reference.tap",
+      "requirementIds": [
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_answer_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_answer_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "answer reference: consent and summary retain truthiness and precedence",
+        "answer reference: identity and request gates preserve strict comparison and short circuits",
+        "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+        "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_answer_helpers_reference.tap",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_profile_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_profile_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "profile reference: form patch fixes fields and preserves priority coercion",
+        "profile reference: pointers decode escapes, own keys and primitive boxing",
+        "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+        "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+        "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+        "profile reference: provenance selects longest ancestor or sorted descendant summary",
+        "profile reference: tags retain duplicates, order and String coercion",
+        "U01 resume reference preserves counts and default copy",
+        "U01 resume reference preserves extraction precedence and malformed projections",
+        "U01 resume reference preserves grouping coercion and strict response identity",
+        "U01 resume reference preserves accessor order and thrown identities"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_profile_helpers_reference.tap",
+      "requirementIds": [
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput",
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_trash_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_reference.test.mjs"
+      ],
+      "testNames": [
+        "trash-reference: delete phrases retain falsy defaults and String coercion",
+        "trash-reference: filtering preserves order, item identity and strict type matching",
+        "trash-reference: missing collections and malformed elements keep existing behavior",
+        "trash-reference: blockers sum integers only without clamping negatives",
+        "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+        "trash-reference: revision conflict takes precedence without consulting other fields",
+        "trash-reference: presentation functions leave frozen caller records unchanged"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_trash_reference.tap",
+      "requirementIds": [
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_activity_helpers_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_activity_helpers_ts.test.mjs"
+      ],
+      "testNames": [
+        "activity gates retain absent job results and suppress unchanged queue membership",
+        "activity TS covers twelve exports with ordinary, missing and invalid inputs",
+        "activity TS preserves custom callbacks/returns, access order and thrown errors",
+        "activity TS retains array/record identities and avoids mutating frozen inputs"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_activity_helpers_ts.tap",
+      "requirementIds": [
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_answer_helpers_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_answer_helpers_ts.test.mjs"
+      ],
+      "testNames": [
+        "answer request gates reject stale selections, keys, sequences and generations exactly",
+        "answer TS covers all nine reference exports across ordinary and coercive inputs",
+        "answer TS preserves getter access order, short circuits and coercion errors",
+        "answer TS scope retains JS JSON semantics, getter order, toJSON and failures"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_answer_helpers_ts.tap",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_profile_helpers_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_profile_helpers_ts.test.mjs"
+      ],
+      "testNames": [
+        "profile helpers preserve errors for absent patch entries and drafts",
+        "profile TS covers six exports with fixed ordinary and coercive cases",
+        "profile TS preserves getter/coercion and custom iteration behavior",
+        "profile TS preserves patch alias mutation, failure boundaries and provenance identity"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_profile_helpers_ts.tap",
+      "requirementIds": [
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_resume_view_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_resume_view_ts.test.mjs"
+      ],
+      "testNames": [
+        "inert resume view module exposes exactly the four existing helpers",
+        "assignment text retains exact counts, pluralization and noninteger defaults",
+        "extraction view preserves every state's exact user-facing response",
+        "proposal grouping preserves known groups and existing path coercion",
+        "resume responses require both the same request and the same view without coercion",
+        "pure helpers leave caller projections unchanged",
+        "U01 resume differential preserves getters and coercion order",
+        "U01 resume differential preserves original thrown identity and short circuits"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_resume_view_ts.tap",
+      "requirementIds": [
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse"
+      ]
+    },
+    {
+      "id": "U01-differential-workspace_trash_view_ts",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_view_ts.test.mjs"
+      ],
+      "testNames": [
+        "trash TS matches unchanged JS across deterministic generated scalar/count inputs",
+        "trash TS preserves property access and coercion order including propagated errors",
+        "trash TS preserves filtering identities, order, sparse semantics and callback access",
+        "trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_trash_view_ts.tap",
+      "requirementIds": [
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    },
+    {
+      "id": "U01-browser",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_helpers_browser_ts.test.mjs"
+      ],
+      "testNames": [
+        "helper browser contract: emitted modules load and preserve browser-native behavior"
+      ],
+      "reporter": "node-tap13",
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/u01-core-port/logs/U01-browser.tap",
+      "environmentId": "node-local",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope",
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep",
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput",
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse",
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    }
+  ],
+  "artifacts": []
+}

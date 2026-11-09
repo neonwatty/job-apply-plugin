@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/answer-match-features.js",
+      "sha256": "ef85846d83e3785ed31c1e117b670f53a0e4d6c1c87bc446d62179488431106b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-reuse.js",
+      "sha256": "7edde7899ae87f942f6f5c77647e0e2c7f65309ebb6396df27458945652b5c33",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-scoring.js",
+      "sha256": "e733cf81eb3584e369575b4337f9d8e62d4f79673a38cb5b8d4800ec29b58f35",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-unicode-alnum-astral.js",
+      "sha256": "c54b58f8ba3f2b2f24daa166212e41adfd4d7ab2520b367981184adbeb325a30",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-unicode-alnum-bmp.js",
+      "sha256": "0372c1bf3ec19fbf354b2ba227c5dde469ff1e62686f860c7ab1b58ed70253ae",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-unicode-assigned-astral.js",
+      "sha256": "e7ca420918a5f3bd781bb82acdad99ed7f0990876a01262e517411c6beb74026",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-unicode-assigned-bmp.js",
+      "sha256": "8df6a30f7857856f30b2c07f14c44f77b8818bf374f94d65b9f17fa99a356265",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-unicode.js",
+      "sha256": "5ae3d7ce0908fe52382afff0aa73cc4eadfda62b93c83fb9d4fb4ad2cf142e67",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-vocabulary.js",
+      "sha256": "ebd804960e6646fd4328bac7daeacc99c86ad44c73e7e102d65fe37a8aefa5c7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answer-match.js",
+      "sha256": "e2fc3dd6ac15dee2aa3b76ec746e9e574f57d9a2a354526b8c2b44fa0953830c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-features.ts",
+      "sha256": "4f6e97aa710edcce5b8f8fca43dc49295c1543b346863993812c04c06dad09c5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-reuse.ts",
+      "sha256": "f9942d70326857d3c22a32c0e9c4d29d6bcae025ed7c4b9d0e23d105898d4159",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-scoring.ts",
+      "sha256": "62e601e8346770262963ac8cd1e4912d94c5b8cac3472b7783f08e016ecbbe30",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-unicode-alnum-astral.ts",
+      "sha256": "ff7105b2cbe2eaa64a92d7aed556a5a0fdca40337800feb486d0ea6f54cc895e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-unicode-alnum-bmp.ts",
+      "sha256": "2381004366c6315854827c4042bebe4e2227322e4619036b1dbdcc3999ea5bd6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-unicode-assigned-astral.ts",
+      "sha256": "29b64eb4de15c22de3deab99c82a3bded30a0efc9345a295812f981fbca35fb7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-unicode-assigned-bmp.ts",
+      "sha256": "cfeb467319047a9e7d8ec312b7cfe6345a496306ddcc904e10e9fc93fd1fa591",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-unicode.ts",
+      "sha256": "b75604d7f713894b1240ff39ad1b351a91061cd05e5985ce2641585fc83ae614",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-vocabulary.ts",
+      "sha256": "ecb860051902017b750a224de29f734802082cc31ac089d4f68372bd78fc0448",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answer-match.ts",
+      "sha256": "820959c7c8fae738440ebd92253702396a46f79983644ec4ed78f4f5b845301a",
+      "classification": "unreviewed"
+    }
+  ]
+}

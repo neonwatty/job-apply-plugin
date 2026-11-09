@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "p03-ui-tests-implementation-audit",
+  "assignmentIds": [
+    "P03.ui-tests.I"
+  ],
+  "allowed_files": [
+    "tools/migration/test-bindings.mjs",
+    "tests_js/migration_test_bindings.test.mjs",
+    "docs/migration/evidence/p03-ui-tests/implementation-spec.json",
+    "docs/migration/evidence/p03-ui-tests/implementation-plan.md",
+    "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+    "docs/migration/evidence/p03-ui-tests/integration-transition.json",
+    "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+    "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+    "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+    "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p03.ui-tests.timeout-recognition"
+  ],
+  "cells": [
+    {
+      "id": "P03.ui-tests.bindings",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_test_bindings.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "literal test bindings require node:test imports and nonempty direct declarations",
+        "malformed syntax and duplicate declared test IDs cannot bind requirements",
+        "platform literal bindings select only the explicitly supplied finite branch in source order",
+        "platform literal bindings preserve no-context behavior and reject unsupported syntax",
+        "platform literal bindings reject shadowed process and node test identities",
+        "platform literal bindings reject process mutation and escaped process aliases",
+        "platform literal bindings match the three frozen S08 platform declarations",
+        "current inventory discovery uses explicit current platform without changing no-context consumers",
+        "literal timeout options recognize safe positive integers and existing UI declaration shapes",
+        "literal timeout options reject dynamic unsafe and test-suppressing object forms",
+        "literal timeout options retain callback alias conditional and duplicate guards"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03-ui-tests/logs/P03.ui-tests.bindings.tap",
+      "requirementIds": [
+        "p03.ui-tests.timeout-recognition"
+      ]
+    }
+  ],
+  "artifacts": []
+}

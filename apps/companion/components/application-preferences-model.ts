@@ -1,0 +1,67 @@
+import { PythonObject } from '../../../src/contracts/python-object';
+import { get, has, integer, object, set, string, text, serialize } from '../../../src/contracts/workspace/values';
+import type { Document, Value } from '../../../src/contracts/workspace/values';
+import type { ProfileSnapshot } from './facts-model';
+import { agentModelPreferencesDiff } from './agent-model-preferences-model';
+import type { AgentModelPreferences } from './agent-model-preferences-model';
+
+export type PreferredBrowser = 'codex_browser'|'chrome';
+export type BrowserFallback = 'ask'|'other_supported';
+export type ProgressionMode = 'standard'|'guided';
+export type PreferredAutomationMode = 'guided'|'autofill_to_review'|'campaign_to_review';
+export type ApplicationPreferences = {
+  preferredBrowser: PreferredBrowser;
+  browserFallback: BrowserFallback;
+  progressionMode: ProgressionMode;
+  preferredAutomationMode: PreferredAutomationMode;
+};
+
+export const defaultApplicationPreferences: ApplicationPreferences = {
+  preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'guided'
+};
+
+const allowedBrowsers = new Set<PreferredBrowser>(['codex_browser','chrome']);
+const allowedFallbacks = new Set<BrowserFallback>(['ask','other_supported']);
+const allowedProgression = new Set<ProgressionMode>(['standard','guided']);
+const allowedAutomation = new Set<PreferredAutomationMode>(['guided','autofill_to_review','campaign_to_review']);
+const preferenceKeys = ['preferredBrowser','browserFallback','progressionMode','preferredAutomationMode'] as const;
+
+export function readApplicationPreferences(profile: Document): { preferences: ApplicationPreferences; complete: boolean } {
+  if (!has(profile,'applicationPreferences')) return { preferences: defaultApplicationPreferences, complete: false };
+  let stored: Document;
+  try { stored=object(get(profile,'applicationPreferences'),'application preferences'); }
+  catch { return { preferences: defaultApplicationPreferences, complete: false }; }
+  const browser=string(get(stored,'preferredBrowser')) as PreferredBrowser|null;
+  const fallback=string(get(stored,'browserFallback')) as BrowserFallback|null;
+  const progression=string(get(stored,'progressionMode')) as ProgressionMode|null;
+  const automation=string(get(stored,'preferredAutomationMode')) as PreferredAutomationMode|null;
+  return {
+    preferences: {
+      preferredBrowser: browser&&allowedBrowsers.has(browser)?browser:defaultApplicationPreferences.preferredBrowser,
+      browserFallback: fallback&&allowedFallbacks.has(fallback)?fallback:defaultApplicationPreferences.browserFallback,
+      progressionMode: progression&&allowedProgression.has(progression)?progression:defaultApplicationPreferences.progressionMode,
+      preferredAutomationMode: automation&&allowedAutomation.has(automation)?automation:defaultApplicationPreferences.preferredAutomationMode
+    },
+    complete: Boolean(browser&&allowedBrowsers.has(browser)&&fallback&&allowedFallbacks.has(fallback)
+      &&progression&&allowedProgression.has(progression)&&automation&&allowedAutomation.has(automation))
+  };
+}
+
+export function applicationPreferencesPatch(snapshot: ProfileSnapshot, preferences: ApplicationPreferences,
+  models?: AgentModelPreferences): string {
+  const stored = get(snapshot.profile,'applicationPreferences');
+  const current = stored instanceof PythonObject ? stored : new PythonObject<Value>();
+  const values = new PythonObject<Value>();
+  for (const key of preferenceKeys) {
+    if (!has(current,key) || string(get(current,key)) !== preferences[key]) set(values,key,text(preferences[key]));
+  }
+  const patch = new PythonObject<Value>(); set(patch,'applicationPreferences',values);
+  if (models) {
+    const modelPatch = agentModelPreferencesDiff(snapshot.profile, models);
+    if (modelPatch.size) set(patch, 'agentModelPreferences', modelPatch);
+  }
+  const body = new PythonObject<Value>();
+  set(body,'patch',patch); set(body,'expectedRevision',integer(snapshot.revision));
+  set(body,'atomicPaths',[]); set(body,'deletedPaths',[]);
+  return serialize(body);
+}

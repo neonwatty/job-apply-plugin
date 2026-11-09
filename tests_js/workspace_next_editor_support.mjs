@@ -1,0 +1,212 @@
+import assert from 'node:assert/strict';
+import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import ts from 'typescript';
+const root = new URL('../apps/companion/components/', import.meta.url);
+async function modules(run) {
+    const temp = await mkdtemp(join(tmpdir(), 'react-editor-'));
+    try {
+        for (const name of ['contracts', 'job-editor-state', 'client', 'facts-model', 'agent-model-preferences-model', 'application-preferences-model']) {
+            const text = await readFile(new URL(name + '.ts', root), 'utf8');
+            const js = ts.transpileModule(text, {
+                compilerOptions: {
+                    target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022
+                }
+            }).outputText.replaceAll("'./contracts'", "'./contracts.mjs'")
+                .replaceAll("'./facts-model'", "'./facts-model.mjs'")
+                .replaceAll("'./agent-model-preferences-model'", "'./agent-model-preferences-model.mjs'")
+                .replace(/'\.\.\/\.\.\/\.\.\/src\/([^']+)'/g, (_match, path) =>
+                    JSON.stringify(new URL('../runtime/' + path + '.js', import.meta.url).href));
+            await writeFile(join(temp, name + '.mjs'), js);
+        }
+        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))), await import(pathToFileURL(join(temp, 'facts-model.mjs'))), await import(pathToFileURL(join(temp, 'application-preferences-model.mjs'))), await import(pathToFileURL(join(temp, 'agent-model-preferences-model.mjs'))));
+    }
+    finally {
+        await rm(temp, {
+            recursive: true, force: true
+        });
+    }
+}
+async function editorDraftAssertions() {
+    return modules((m) => {
+        const first = {
+            id: 'one', url: 'https://example.invalid', revision: 1n, status: 'saved', company: 'Old', notes: ''
+        };
+        const draft = m.edit(m.openEditor(first), {
+            notes: 'Mine'
+        });
+        const latest = {
+            ...first, revision: 2n, company: 'Other'
+        };
+        const observed = m.observe(draft, [latest]);
+        assert.equal(observed.fields.notes, 'Mine');
+        assert.equal(observed.selected.revision, 1n);
+        assert.equal(m.observe({
+            ...observed, latest: {
+                ...latest, revision: 3n
+            }
+        }, [latest]).latest.revision, 3n);
+        const rebased = m.reapply(observed);
+        assert.equal(rebased.selected.revision, 2n);
+        assert.equal(rebased.fields.company, 'Other');
+        assert.equal(rebased.fields.notes, 'Mine');
+        assert.deepEqual([...rebased.dirty], ['notes']);
+        assert.equal(m.openEditor(latest).dirty.size, 0);
+        const missing = m.observe(draft, []);
+        assert.equal(missing.missing, true);
+        assert.equal(missing.fields.notes, 'Mine');
+        assert.equal(m.observe(missing, [first]).missing, false);
+        assert.equal(m.edit(draft, { notes: '' }).dirty.size, 0);
+    });
+}
+async function editorDtoAssertions() {
+    return modules((m, c) => {
+        const legacyResume = {
+            id: 'legacy', label: 'Legacy', default: true, revision: 1,
+            createdAt: '2026-09-09T00:00:00Z', updatedAt: '2026-09-09T00:00:00Z'
+        };
+        assert.deepEqual(c.resumeList({ resumes: [legacyResume] })[0].tags, []);
+        assert.throws(() => c.resume({ ...legacyResume, tags: null }));
+        assert.throws(() => c.resume({ ...legacyResume, tags: [1] }));
+        assert.throws(() => c.job({
+            id: 'x', revision: 0, status: 'saved', url: 'x'
+        }));
+        assert.throws(() => c.workspaceState({
+            jobs: [], resumes: [null]
+        }));
+        const value = {
+            id: 'x', revision: 1, status: 'saved', url: 'https://example.invalid', provenance: {
+                source: 'human'
+            }
+        };
+        assert.deepEqual(c.job(value), { ...value, revision: 1n });
+        assert.equal(c.job({ ...value, revision: 9007199254740993n }).revision, 9007199254740993n);
+        assert.deepEqual(c.boot({
+            status: 'ready'
+        }), {
+            status: 'ready'
+        });
+        assert.throws(() => c.overview({
+            setup: {}, counts: {}, nextAction: 'x', targetWorkspace: 'jobs'
+        }));
+    });
+}
+async function largeRevisionAssertions() {
+    await modules(async (_m, _c, clientModule) => {
+        const original = globalThis.fetch;
+        const fields = { url:'https://example.invalid',role:'',company:'',location:'',workplaceType:'',employmentType:'',
+            compensation:'',notes:'',description:'',resumeId:null,priority:0 };
+        try {
+            const bodies = [];
+            globalThis.fetch = async (_url, options = {}) => {
+                if (options.body) bodies.push(String(options.body));
+                const revision = options.body ? '9007199254740994' : '9007199254740993';
+                const job = `{"id":"job","url":"https://example.invalid","status":"saved","revision":${revision}}`;
+                const run = '{"runId":"run","revision":9007199254740993,"selection":{"resumeId":"resume","factRevision":9007199254740993},"queueVersions":[{"revision":9007199254740993,"jobIds":["job"]}]}';
+                return new Response(options.body ? job : `{"jobs":[${job}],"resumes":[],"applicationRun":${run}}`);
+            };
+            const client = clientModule.createClient('fixture');
+            const state = await client.state();
+            assert.equal(state.jobs[0].revision, 9007199254740993n);
+            assert.equal(typeof state.applicationRun.selection.factRevision, 'number');
+            assert.equal(typeof state.applicationRun.queueVersions[0].revision, 'number');
+            const updated = await client.update('job', state.jobs[0].revision, fields);
+            assert.equal(updated.revision, 9007199254740994n);
+            assert.match(bodies[0], /"expectedRevision":9007199254740993(?:[,}])/);
+        } finally { globalThis.fetch = original; }
+    });
+}
+async function cancellationAssertions() {
+    await modules(async (_m, _c, clientModule) => {
+        const original = globalThis.fetch;
+        try {
+            const controller = new AbortController();
+            let observed;
+            globalThis.fetch = (_url, options) => new Promise((_resolve, reject) => {
+                observed = options.signal;
+                options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+            });
+            const pending = clientModule.createClient('fixture').state(controller.signal);
+            assert.ok(observed instanceof AbortSignal);
+            assert.notEqual(observed, controller.signal, 'Caller cancellation is combined with a deadline');
+            controller.abort();
+            await assert.rejects(pending, { name: 'AbortError' });
+            assert.equal(observed.aborted, true);
+        } finally { globalThis.fetch = original; }
+    });
+}
+async function factsDraftAssertions() {
+    return modules((_m, _c, _client, facts) => {
+        const base = facts.snapshot('{"profile":{"name":"Old","extra":{"huge":9007199254740993,"float":1.0,"note":"Old"}},"revision":1,"factProvenance":{}}');
+        const draft = facts.snapshot('{"profile":{"name":"Mine","extra":{"huge":9007199254740993,"float":1.0,"note":"Changed"}},"revision":1,"factProvenance":{}}');
+        const latest = facts.snapshot('{"profile":{"name":"Old","phone":"Other","extra":{"huge":9007199254740993,"float":1.0,"note":"Old"}},"revision":2,"factProvenance":{}}');
+        const rebased = facts.reapplyDraft(base.profile, draft.profile, latest.profile);
+        const payload = facts.patchBody(latest, rebased);
+        assert.match(payload, /9007199254740993/);
+        assert.match(payload, /1\.0/);
+        const parsed = JSON.parse(payload);
+        assert.equal(parsed.expectedRevision, 2);
+        assert.equal(parsed.patch.name, 'Mine');
+        assert.equal(Object.hasOwn(parsed.patch, 'phone'), false);
+        assert.deepEqual(parsed.atomicPaths, ['/name', '/extra']);
+    });
+}
+async function applicationPreferencesAssertions() {
+    return modules((_m, _c, _client, facts, setup, models) => {
+        const empty = facts.snapshot('{"profile":{},"revision":4,"factProvenance":{}}');
+        assert.deepEqual(setup.readApplicationPreferences(empty.profile), {
+            preferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'guided' },
+            complete: false,
+        });
+        const saved = facts.snapshot('{"profile":{"applicationPreferences":{"preferredBrowser":"chrome","browserFallback":"other_supported","progressionMode":"guided","preferredAutomationMode":"campaign_to_review","future":"preserved"}},"revision":7,"factProvenance":{}}');
+        assert.deepEqual(setup.readApplicationPreferences(saved.profile), {
+            preferences: { preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided', preferredAutomationMode: 'campaign_to_review' },
+            complete: true,
+        });
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(saved, {
+            preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review',
+        })), {
+            patch: { applicationPreferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review' } },
+            expectedRevision: 7, atomicPaths: [], deletedPaths: [],
+        });
+        const latest = facts.snapshot('{"profile":{"applicationPreferences":{"preferredBrowser":"chrome","browserFallback":"ask","progressionMode":"guided","preferredAutomationMode":"campaign_to_review","future":"preserved"}},"revision":8,"factProvenance":{}}');
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(latest, {
+            preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'guided', preferredAutomationMode: 'campaign_to_review',
+        })), {
+            patch: { applicationPreferences: { preferredBrowser: 'codex_browser' } },
+            expectedRevision: 8, atomicPaths: [], deletedPaths: [],
+        });
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(empty, setup.defaultApplicationPreferences)), {
+            patch: { applicationPreferences: setup.defaultApplicationPreferences },
+            expectedRevision: 4, atomicPaths: [], deletedPaths: [],
+        });
+        assert.deepEqual(models.readAgentModelPreferences(empty.profile), models.defaultAgentModelPreferences);
+        const modelDraft = { ...models.defaultAgentModelPreferences, codexSearch: 'gpt-6-luna',
+            codexSearchEffort: 'low', codexApplicationEffort: 'medium', claudeCodeApplication: 'claude-sonnet' };
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(saved,
+            setup.readApplicationPreferences(saved.profile).preferences, modelDraft)), {
+            patch: { applicationPreferences: {}, agentModelPreferences: {
+                codex: { search: 'gpt-6-luna', searchReasoningEffort: 'low', applicationReasoningEffort: 'medium' },
+                claudeCode: { application: 'claude-sonnet' }
+            } }, expectedRevision: 7, atomicPaths: [], deletedPaths: [],
+        });
+        const configured = facts.snapshot('{"profile":{"agentModelPreferences":{"codex":{"search":"gpt-6-luna","searchReasoningEffort":"low","applicationReasoningEffort":"medium","future":"preserved"},"claudeCode":{"application":"claude-sonnet"}}},"revision":9,"factProvenance":{}}');
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(configured,
+            setup.defaultApplicationPreferences, { ...modelDraft, codexSearch: '', codexSearchEffort: '' })).patch.agentModelPreferences,
+            { codex: { search: null, searchReasoningEffort: null } });
+        assert.equal(models.validCodexReasoningEffort('high'), true);
+        assert.equal(models.validCodexReasoningEffort('xhigh'), false);
+        assert.throws(() => models.agentModelPreferencesDiff(empty.profile,
+            { ...modelDraft, codexSearchEffort: 'xhigh' }), /Codex reasoning effort/);
+    });
+}
+export async function nextEditor() {
+    await applicationPreferencesAssertions();
+    await factsDraftAssertions();
+    await editorDraftAssertions();
+    await editorDtoAssertions();
+    await largeRevisionAssertions();
+    await cancellationAssertions();
+}

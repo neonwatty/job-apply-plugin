@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:employer-account-update",
+      "kind": "cli",
+      "command": "employer-account-update",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:employer-account-execute-synthetic",
+      "kind": "cli",
+      "command": "employer-account-execute-synthetic",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:employer-account-operation-status",
+      "kind": "cli",
+      "command": "employer-account-operation-status",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:employer-account-operation-recover",
+      "kind": "cli",
+      "command": "employer-account-operation-recover",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:trusted-fill-approve",
+      "kind": "cli",
+      "command": "trusted-fill-approve",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:trusted-fill-status",
+      "kind": "cli",
+      "command": "trusted-fill-status",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:trusted-fill-evaluate",
+      "kind": "cli",
+      "command": "trusted-fill-evaluate",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:trusted-fill-revoke",
+      "kind": "cli",
+      "command": "trusted-fill-revoke",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/qa-account.py:verify-all",
+      "kind": "cli",
+      "command": "verify-all",
+      "node": "QA",
+      "sources": [
+        "scripts/qa-account.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/qa-account.py:verify-oracle-email-only",
+      "kind": "cli",
+      "command": "verify-oracle-email-only",
+      "node": "QA",
+      "sources": [
+        "scripts/qa-account.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/fixture_build.py:copy-critical",
+      "kind": "cli",
+      "command": "copy-critical",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/fixture_build.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/fixture_build.py:verify",
+      "kind": "cli",
+      "command": "verify",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/fixture_build.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/fixture_build.py:prepare-prior",
+      "kind": "cli",
+      "command": "prepare-prior",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/fixture_build.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/fixture_build.py:rewrite-marketplace",
+      "kind": "cli",
+      "command": "rewrite-marketplace",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/fixture_build.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/plugin_install_verify.py:claude",
+      "kind": "cli",
+      "command": "claude",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/plugin_install_verify.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/plugin_install_verify.py:codex",
+      "kind": "cli",
+      "command": "codex",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/plugin_install_verify.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/upgrade_verify.py:prior",
+      "kind": "cli",
+      "command": "prior",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/upgrade_verify.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/smoke/upgrade_verify.py:upgrade",
+      "kind": "cli",
+      "command": "upgrade",
+      "node": "QA",
+      "sources": [
+        "scripts/smoke/upgrade_verify.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

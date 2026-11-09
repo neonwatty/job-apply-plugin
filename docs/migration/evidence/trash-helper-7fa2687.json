@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "package": "UI0-trash-presentation",
+  "status": "independently-reviewed-local-evidence",
+  "parentAcceptance": "open",
+  "base": "8e0cb971e568b92e982e59a93862d0858db2cc5f",
+  "head": "7fa2687f3cac5d2ac4a28053124dcf13524fae4d",
+  "referenceRevision": "8e0cb971e568b92e982e59a93862d0858db2cc5f",
+  "activation": "inert",
+  "allowed_files": [
+    "src/workspace-ui/lib/trash-view.ts",
+    "runtime/workspace-ui/lib/trash-view.js",
+    "tests_js/workspace_trash_view_ts.test.mjs"
+  ],
+  "files": [
+    {
+      "path": "src/workspace-ui/lib/trash-view.ts",
+      "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/trash-view.js",
+      "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836"
+    },
+    {
+      "path": "tests_js/workspace_trash_view_ts.test.mjs",
+      "sha256": "69ca6f67d55e4b46a054d647997c10dd0e641d46a84857d4134171cb549a3756"
+    },
+    {
+      "path": "tests_js/workspace_trash_reference.test.mjs",
+      "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+    },
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "ad15fdbb990ec853d3741dc8f4ac8bc04fb9966c191d202ae8a1d9c19639a98b"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "a5408199a58571ca22666fa898d84c734d86efc1e69b21bae125705f6b9380da"
+    }
+  ],
+  "environment": {
+    "os": "Darwin",
+    "osRelease": "25.4.0",
+    "machine": "arm64",
+    "node": "v22.22.3"
+  },
+  "validation": {
+    "command": [
+      "node",
+      "--test",
+      "tests_js/workspace_trash_reference.test.mjs",
+      "tests_js/workspace_trash_view_ts.test.mjs"
+    ],
+    "timeoutSeconds": 30,
+    "exitCode": 0,
+    "tests": 11,
+    "failures": 0,
+    "skips": 0,
+    "seed": 334460,
+    "generatedComparisons": 1200,
+    "log": "docs/migration/evidence/trash-helper-7fa2687.tap",
+    "logSha256": "2ea4f426588fac127abdb780318801efebec0724e1d4c70f74e60b8a0a6061cd"
+  },
+  "reviewers": [
+    "numeric_codec",
+    "validation_strategy"
+  ],
+  "reviewResult": "No concrete behavioral differences found; caller-defined callbacks/getters may execute caller code.",
+  "openGates": [
+    "Executable scenario receipt validation and full node-I classification",
+    "Remaining UI0 helpers and integrated browser workflows",
+    "Mandatory native and release cells for their owning nodes"
+  ],
+  "inapplicability": {
+    "durableWrites": "These four helpers perform no owned IO; tests exercise ordinary data plus caller-defined hooks without application adapters.",
+    "nativeRecovery": "No native adapter, durable operation, process or recovery protocol in this child; parent platform gates remain open."
+  }
+}

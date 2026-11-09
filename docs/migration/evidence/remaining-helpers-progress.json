@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-progress-evidence",
+  "acceptance": "open",
+  "referenceBase": "7f6e1f4272e2b06a7eb955112356b96be983d929",
+  "environment": {
+    "platform": "darwin",
+    "node": "v22.22.3",
+    "unicode": "17.0",
+    "chromium": "151.0.7922.34",
+    "python": [
+      "3.12.13",
+      "3.13.13",
+      "3.14.4"
+    ]
+  },
+  "files": [
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "src/workspace-ui/lib/answer-view.ts",
+      "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/answer-view.js",
+      "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573"
+    },
+    {
+      "path": "tests_js/workspace_answer_helpers_reference.test.mjs",
+      "sha256": "e8a9477ad6ada0d71ee411bacf4764d15de2bcf5b65aa1462301d2b5e4a327f9"
+    },
+    {
+      "path": "tests_js/workspace_answer_helpers_ts.test.mjs",
+      "sha256": "b4998e1006fb0de5c8d7c5baba58bdba7e37d8dbf4bf9ef358c48d8bb8d15038"
+    },
+    {
+      "path": "src/workspace-ui/lib/activity-view.ts",
+      "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/activity-view.js",
+      "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+    },
+    {
+      "path": "tests_js/workspace_activity_helpers_reference.test.mjs",
+      "sha256": "f952f5e334b1309d0a48134af45bce1541d0989a0d7c1cadda848ba3c8721648"
+    },
+    {
+      "path": "tests_js/workspace_activity_helpers_ts.test.mjs",
+      "sha256": "5befdfa638ded9b1bdb6dfb779e5700c06f3fbb9b68dfde16ef04776d993315c"
+    },
+    {
+      "path": "src/workspace-ui/lib/profile-view.ts",
+      "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/profile-view.js",
+      "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe"
+    },
+    {
+      "path": "tests_js/workspace_profile_helpers_reference.test.mjs",
+      "sha256": "c39ab8dc7c1720074aa578e5388275597ba43f2c9bd1b88f473ae1435869e36d"
+    },
+    {
+      "path": "tests_js/workspace_profile_helpers_ts.test.mjs",
+      "sha256": "1a696737ffb9c71c56d12d380bca6de683448d56ee22055baf7efeb90da0a516"
+    },
+    {
+      "path": "tests_js/workspace_helpers_browser_ts.test.mjs",
+      "sha256": "3f9048a2205f28bc43478019ea446c8dba692d3ecb0b734f2fee5c8f7318c18d"
+    },
+    {
+      "path": "tools/contracts/managed-resume-path/reference.py",
+      "sha256": "133a81e18fdbe0265fd49c2908fa79831fc3d1cd958a23e40bbc702ec36a7de4"
+    },
+    {
+      "path": "tests_js/managed_resume_path_reference.test.mjs",
+      "sha256": "e642dfed8368bf2f280d61b6b42f8f3b50264a0c418574677d3085b18cca4f36"
+    }
+  ],
+  "focused": {
+    "tests": 35,
+    "failures": 0,
+    "skips": 0,
+    "cancelled": 0,
+    "log": "docs/migration/evidence/remaining-helpers-focused.tap",
+    "logSha256": "2854b6678d0454f995f7664a5f219f40fd16ec3576a11839d91d37c1f2ea2749"
+  },
+  "fullTier": {
+    "command": [
+      "npm",
+      "run",
+      "test:full"
+    ],
+    "exitCode": 1,
+    "suites": 14,
+    "passingSuites": 13,
+    "workspaceNodeTests": 350,
+    "workspaceNodeFailures": 0,
+    "workspaceNodeSkips": 0,
+    "failedSuite": "python-qa",
+    "failedSubtestAssertions": 3,
+    "failedTests": [
+      "tests.test_qa_chrome_facade.ChromeFacadeContractTests.test_facade_preserves_every_callable_signature_and_metadata",
+      "tests.test_qa_chrome_loader_isolation.ChromeLoaderIsolationTests.test_each_facade_retains_exact_loader_local_class_metadata"
+    ],
+    "reason": "Frozen QuietParser signatures omit Python 3.14 suggest_on_error and color parameters; unchanged tests pass on Python 3.12 and 3.13 and reproduce failures on 3.14.",
+    "skips": 2,
+    "skipReason": "Visible account-browser tests require dedicated opt-in.",
+    "scopeNote": "Final three focused test groups and trailing source whitespace cleanup followed this run; emitted runtime bytes unchanged."
+  },
+  "review": {
+    "sourceAuthor": "migration_sequence",
+    "sourceReviewers": [
+      "integration",
+      "numeric_codec"
+    ],
+    "differentialAuthor": "numeric_codec",
+    "differentialReviewer": "integration",
+    "browserAuthor": "integration",
+    "browserReviewer": "numeric_codec",
+    "pathReferenceAuthor": "validation_strategy",
+    "pathReferenceReviewers": [
+      "integration",
+      "migration_sequence"
+    ]
+  }
+}

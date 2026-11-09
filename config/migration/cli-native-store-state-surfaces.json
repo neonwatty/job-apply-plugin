@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:init",
+      "kind": "cli",
+      "command": "init",
+      "node": "I",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-bootstrap.ts",
+        "src/store/native-store-bootstrap.ts",
+        "src/store/native-store-layout.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:paths",
+      "kind": "cli",
+      "command": "paths",
+      "node": "I",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-bootstrap.ts",
+        "src/store/native-store-bootstrap.ts",
+        "src/store/native-store-layout.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-create",
+      "kind": "cli",
+      "command": "resume-create",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:profile-preparedness-get",
+      "kind": "cli",
+      "command": "profile-preparedness-get",
+      "node": "PF",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/profile-preparedness.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:history-append",
+      "kind": "cli",
+      "command": "history-append",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/store-history.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:history-list",
+      "kind": "cli",
+      "command": "history-list",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/store-history.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:session-save",
+      "kind": "cli",
+      "command": "session-save",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/store-sessions.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:session-load",
+      "kind": "cli",
+      "command": "session-load",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/store-sessions.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:session-list",
+      "kind": "cli",
+      "command": "session-list",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/store-sessions.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:session-delete",
+      "kind": "cli",
+      "command": "session-delete",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-store-state.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/workspace-core/store-sessions.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-legacy-jobs.js",
+      "sha256": "2bf502c91f06339b6f9a59069aae8094e77c23b393b1efa244037215fa15ccab",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/legacy-job-report.js",
+      "sha256": "5b2eb5d0693a9d00d76b86c80c2df942a9edd09c57a8a3a76758714176c173cb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/legacy-job-discovery.js",
+      "sha256": "07b6375c4c4af61e97fc010f3280fa0895510bb24c21c9318f024407b9d7757e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/posix-directory.js",
+      "sha256": "5b4f3a12549c4b1c0a15458267d97b0cfc64269318e6ae1cd4cdad6ae8aaaa34",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/legacy-job-plan.js",
+      "sha256": "83f3eb5b237204e5898c6146843fb58a8300c02d838362fdc071bf2dd5658af8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/legacy-jobs.js",
+      "sha256": "f3663a0db8758f47835b0f2fbeed6f63025dab3e0c1473fe118bbc2c27a3e613",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-legacy-jobs.ts",
+      "sha256": "6352a0afed2588d89358047bd8cf152d9c3919c06fed4559bbd3d6e1a3bf88bb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/legacy-job-report.ts",
+      "sha256": "4f6cce5d914485a530480878386b1d90518fd3429b7c59ba4f7358f032b04215",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/legacy-job-discovery.ts",
+      "sha256": "108a6714406ac4e34f216fc284f6caa38802a265606208762a7089bac3dced4b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/posix-directory.ts",
+      "sha256": "dde19669d21d9ac515784dceaa36ea90692f48a53b4850dc732b377115bb3dd0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/legacy-job-plan.ts",
+      "sha256": "6e58ecfd01f1eee0d3f77e458702eab58db57a855489c51f423af6888b904a6d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/legacy-jobs.ts",
+      "sha256": "7a0f001d26b633596a3a8846519d394374de19af9caa0ac34b42bbbd0ac2c709",
+      "classification": "unreviewed"
+    }
+  ]
+}

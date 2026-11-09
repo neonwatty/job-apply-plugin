@@ -1,0 +1,115 @@
+## Reusable answers
+
+Answer states have distinct behavior:
+
+| State | Meaning | May fill without asking? |
+|---|---|---|
+| `confirmed` | The user confirmed this value | Yes, when non-sensitive, scope matches, and filling this application is approved |
+| `inferred` | A candidate derived from context | No; show it and ask |
+| `missing` | No supported answer is known | No; ask |
+| `sensitive` | Salary, authorization, visa, demographic, disability, or similar | Only with current-form approval for this specific saved answer or an exact active grant |
+
+Look up the exact question and relevant scope before filling:
+
+```bash
+node "<plugin-root>/apps/companion/command.mjs" store answer-find \
+  --question "Are you authorized to work in the United States?" \
+  --scope '{"country":"US"}'
+```
+
+For deterministic semantic candidates and bounded policy, prefer `answer-semantic-lookup --input <private-json>`. The question is ephemeral; the Store recomputes against current canonical records and returns only opaque keys, confidence bands, and closed reason codes. `strict` and `bounded_loose` never imply remember or final-action authority. Sensitive bounded policy additionally requires an explicitly allowlisted field class. `answer-cleanup-preview` is non-mutating. `answer-cleanup-approve --input <exact-preview-selection> --owner-confirmed` is the only semantic-cleanup mutation path and rechecks the complete current preview before a revision-safe coordinator merge.
+
+Store a new reviewed non-sensitive answer with `answer-put --input <answer.json>`. Put creates accepted records only; use `answer-observe` to create pending records and `answer-review` to decline them. Updating through put requires `--expected-revision`; prefer selective `answer-update`. The helper owns stable keys and aliases and rejects normalized question/alias collisions inside the same exact scope.
+
+For the shared answer-library surface, list and selectively edit records through
+the helper. Existing records without explicit revisions are exposed as revision
+1 and gain durable revision metadata on their next mutation.
+
+```bash
+node "<plugin-root>/apps/companion/command.mjs" store answer-list [--state <state>] \
+  [--review-status <accepted|pending|declined> | --all-review-statuses] \
+  [--query <text>] [--offset <n>] [--limit <n>] \
+  [--include-trashed] [--trashed-only]
+node "<plugin-root>/apps/companion/command.mjs" store answer-list --consent-only
+node "<plugin-root>/apps/companion/command.mjs" store answer-consent-audit
+node "<plugin-root>/apps/companion/command.mjs" store answer-consent-candidates \
+  --input <private-json-containing-consentIntent-and-scope>
+node "<plugin-root>/apps/companion/command.mjs" store answer-observe --input <observation.json>
+node "<plugin-root>/apps/companion/command.mjs" store answer-review \
+  --key <answer-key> --decision <accepted|declined> \
+  --expected-revision <revision> [--input <patch.json>] [--remember-sensitive]
+node "<plugin-root>/apps/companion/command.mjs" store answer-reveal --key <answer-key>
+node "<plugin-root>/apps/companion/command.mjs" store answer-update \
+  --key <answer-key> --expected-revision <revision> --input <patch.json>
+node "<plugin-root>/apps/companion/command.mjs" store answer-merge \
+  --winner-key <accepted-winner-key> --source-key <active-duplicate-key> \
+  --expected-winner-revision <revision> --expected-source-revision <revision>
+node "<plugin-root>/apps/companion/command.mjs" store answer-trash \
+  --key <answer-key> --expected-revision <revision>
+node "<plugin-root>/apps/companion/command.mjs" store answer-restore \
+  --key <answer-key> --expected-revision <revision>
+node "<plugin-root>/apps/companion/command.mjs" store answer-delete \
+  --key <answer-key> --expected-revision <revision>
+```
+
+Legacy active records without `reviewStatus` are accepted without changing their stable keys or scopes. `answer-observe` creates a stable pending `missing` or `inferred` record; repeated observations update value-free observation metadata. This lock-serialized, additive observation update is the sole existing-record mutation that intentionally takes no expected revision: it changes only observation count/timestamps and never replaces canonical answer fields. Derived-key and redirect lookup must still match the record's current exact scope; an occupied historical key at another scope fails observation without mutation. Declined records stay durable for deduplication and are hidden from default views. Generic put/update operations cannot create or transition pending/declined review status; only `answer-review` can transition a pending record to accepted or declined. Every list item omits `value`, including non-sensitive answers, and reports reference counts. Permanent deletion requires trash and fails on any session or append-only history reference.
+
+`answer-merge` requires an explicit accepted winner, an active duplicate source, exact matching scopes, and both current revisions. It preserves the winner value, sensitive-consent marker, source/provenance, state, and confirmation metadata; discards the source value; transfers the normalized source question and aliases; and combines only value-free observation counts/timestamps. A third-record alias collision fails before mutation. Mutable sessions are rewritten atomically through the existing crash-recovery coordinator. History is never rewritten: the removed key becomes a permanent flattened value-free redirect, and reads/reference counts resolve it to the winner. Redirect targets must remain active and cannot be trashed. Never try to reuse, restore, delete, or resurrect a merged source key.
+
+### Sensitive answers require two decisions
+
+Make two separate decisions, which may be requested together:
+
+1. May I use this answer in the current form?
+2. Would you like me to remember this specific answer for later applications?
+
+Permission to fill is not permission to remember. If the user approves current use but not storage, do not persist the value. You may record a `sensitive` placeholder with `"value": null`.
+
+Persist a non-null sensitive value only after explicit field-specific remember consent in the current interaction:
+
+```bash
+node "<plugin-root>/apps/companion/command.mjs" store answer-put \
+  --input <sensitive-answer.json> \
+  --remember-sensitive
+```
+
+Even a remembered sensitive answer needs field-specific current-use authority for
+each future form. When that authority was already granted for the exact form and
+answer, use it without asking again or requesting that the owner re-enter the value.
+Changing a stored sensitive value through `answer-update` requires a fresh
+`--remember-sensitive` decision. Editing only its aliases or question wording
+does not manufacture a new retention decision.
+
+For consent and acknowledgment answers, store the owner's semantic decision in a
+purpose-specific `fieldClass`, not a browser control state. A generic scope `{}`
+may be used across employers only when the owner explicitly chooses that scope;
+aliases represent common wording, while a provider-specific decision keeps its
+narrower scope. The [consent-intent workflow](../../job-apply/references/consent-intents.md)
+matches the live purpose, requests current-use action approval, and maps the
+decision to a checkbox, menu, radio group, or requested assent phrase. Remembering
+the answer alone never authorizes the action.
+Reviewed consent defaults carry a `consentIntent` purpose ID and kind. Marking
+an existing sensitive answer is an exact-revision metadata edit that preserves
+its value, key, scope, and retention marker. The audit command suggests
+possible classifications but never modifies records. Candidate lookup returns
+redacted metadata only and grants no current-use or browser authority.
+
+For a confirmed U.S. veteran-status answer, one accepted sensitive record may
+carry `answerIntent: {"kind":"veteran_status","status":"not_a_veteran"}`.
+Set its `fieldClass` to `veteran_status` and scope to `{"country":"US"}`.
+The Store requires the matching canonical value:
+
+| Status | Saved value |
+| --- | --- |
+| `not_a_veteran` | `I am not a veteran` |
+| `veteran_not_protected` | `I am a veteran, just not a protected veteran` |
+| `protected_veteran` | `I am a protected veteran` |
+| `decline_to_identify` | `I do not wish to self-identify` |
+
+Record an intent only after the owner has stated the
+precise status; “not a protected veteran” alone cannot distinguish a veteran
+without protected status from someone who is not a veteran. Keep variant
+question wording in aliases or merge a reviewed observation into the canonical
+record rather than saving conflicting answers. A metadata-only intent edit
+preserves existing sensitive retention consent; changing its value still needs
+fresh field-specific remember consent.

@@ -1,0 +1,180 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+const execute = promisify(execFile);
+
+export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
+  const input = join(fixture.root, 'extraction-browser-input.json');
+  const document = async name => JSON.parse(await readFile(join(root, `${name}.json`), 'utf8'));
+  async function cli(command, args = [], body) {
+    if (body !== undefined) { await writeFile(input, JSON.stringify(body)); args = [...args, '--input', input]; }
+    return JSON.parse((await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'),
+      '--root', root, '--native-lock', fixture.receipt.artifact, command, ...args], { env: { PATH: '' } })).stdout);
+  }
+  const resume = Object.values((await document('resumes')).resumes)[0];
+  let profile = await document('profile');
+  await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)], { employer: ['Existing employer'] });
+  assert.equal(await page.locator('nav').getByRole('button', { name: 'Resume extraction', exact: true }).count(), 0);
+  await page.locator('#workspace-navigation').waitFor({ state: 'attached' });
+  await clickCompanionNav(page, 'Resumes');
+  await page.locator('.resume-card').first().waitFor();
+  assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
+  assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
+  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
+  assert.equal(await page.title(), 'Resume extraction · Job Apply Workspace');
+  await page.waitForFunction(() => document.activeElement?.id === 'workspace-content');
+  assert.equal(await page.locator('#workspace-content').evaluate(node => node === document.activeElement), true);
+  assert.equal(await page.locator('#workspace-navigation button[aria-label="Resumes"]').getAttribute('aria-current'), 'page');
+  await page.getByLabel('Resume to extract').selectOption(resume.id);
+  // Import and replacement request scoped extraction by default. Verify the
+  // queued request, then clear it for this legacy proposal walkthrough.
+  await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
+  await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
+  // With no review choices, an unacknowledged request write still needs navigation protection.
+  let releaseWrite, writeStarted, writeFinished;
+  const writeGate = new Promise(resolve => { releaseWrite = resolve; });
+  const writeEntered = new Promise(resolve => { writeStarted = resolve; });
+  const writeCompleted = new Promise(resolve => { writeFinished = resolve; });
+  const holdWrite = async route => {
+    if (route.request().method() === 'POST') {
+      writeStarted();
+      await writeGate;
+      await route.continue();
+      writeFinished();
+      return;
+    }
+    await route.continue();
+  };
+  await page.route('**/api/resume-extraction-requests', holdWrite);
+  let writePrompt;
+  const dismissWrite = async dialog => { writePrompt = dialog.message(); await dialog.dismiss(); };
+  try {
+    await page.getByRole('button', { name: 'Request extraction', exact: true }).click();
+    await writeEntered;
+    page.on('dialog', dismissWrite);
+    await clickCompanionNav(page, 'Jobs');
+    assert.equal(typeof writePrompt, 'string', 'An unacknowledged extraction request must guard navigation');
+    await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
+  } finally {
+    page.off('dialog', dismissWrite);
+    releaseWrite();
+    await writeCompleted;
+    await page.unroute('**/api/resume-extraction-requests', holdWrite);
+  }
+  const copyHandoff = page.getByRole('button', { name: 'Copy agent handoff', exact: true });
+  await copyHandoff.waitFor();
+  const requested = Object.values((await document('resume-extraction-requests')).requests)
+    .find(item => item.status === 'requested' && item.resumeId === resume.id);
+  assert.ok(requested, 'the browser request is durably queued before handoff');
+  await copyHandoff.click();
+  const handoff = await page.evaluate(() => navigator.clipboard.readText());
+  assert.equal(handoff, `Use the Job Apply resume workflow to process extraction request ${requested.requestId}.`);
+  assert.equal(handoff.includes(resume.label), false);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: () => Promise.reject(new Error('Synthetic clipboard denial')),
+    });
+  });
+  await copyHandoff.click();
+  const fallback = page.getByLabel('Agent handoff to copy', { exact: true });
+  await fallback.waitFor();
+  assert.equal(await fallback.inputValue(), handoff);
+  await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
+  await page.evaluate(() => {
+    let rejectWrite;
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: () => new Promise((resolve, reject) => { rejectWrite = reject; }),
+    });
+    globalThis.rejectSyntheticClipboardWrite = () => rejectWrite(new Error('Delayed clipboard denial'));
+  });
+  await copyHandoff.click();
+  await cli('resume-extraction-request-cancel', ['--id', requested.requestId,
+    '--expected-revision', String(requested.revision)]);
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await copyHandoff.waitFor({ state: 'hidden' });
+  await fallback.waitFor({ state: 'hidden' });
+  await page.evaluate(() => globalThis.rejectSyntheticClipboardWrite());
+  await page.waitForTimeout(0);
+  assert.equal(await fallback.count(), 0);
+  assert.equal(await copyHandoff.count(), 0);
+  // The rejected method is synthetic and page-scoped. Reload through the normal
+  // application lifecycle so later copy assertions exercise the real clipboard.
+  await page.reload();
+  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+  await clickCompanionNav(page, 'Resumes');
+  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
+  // Legacy proposal review remains readable, but the UI now requests scoped
+  // extraction. Create one legacy request privately to exercise that path.
+  const legacyRequest = await cli('resume-extraction-request-create', ['--resume-id', resume.id,
+    '--expected-resume-revision', String(resume.revision)]);
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
+  profile = await document('profile');
+  const result = await cli('resume-extraction-request-complete', ['--id', legacyRequest.requestId,
+    '--expected-request-revision', '1', '--expected-profile-revision', String(profile.metadata.revision)],
+  { firstName: 'Extracted name', employer: { title: 'Engineer' }, extractedCity: 'Remote' });
+  // The request and proposal lists can straddle completion during a refresh.
+  await page.route('**/api/resume-proposals', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: '{"proposals":[]}',
+  }));
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Extracted proposals', exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
+  assert.equal(await page.getByRole('heading', { name: 'Proposed facts', exact: true }).evaluate(element => element === document.activeElement), true);
+  await page.unroute('**/api/resume-proposals');
+  try { await page.getByLabel('Decision for /firstName', { exact: true }).selectOption('keep_current', { timeout: 5000 }); }
+  catch (error) { throw Error(error.message + '\n' + await page.locator('body').innerText()); }
+  await page.getByLabel('Decision for /employer/title', { exact: true }).selectOption('use_extracted');
+  await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: /Confirm replacement/ }).waitFor();
+  await page.getByLabel('I confirm replacing /employer for /employer/title.').check();
+  profile = await document('profile');
+  await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)], { concurrentNote: 'Keep this' });
+  await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
+  await page.getByRole('button', { name: 'Reapply my decisions', exact: true }).waitFor();
+  assert.equal(await page.getByLabel('Decision for /employer/title', { exact: true }).inputValue(), 'use_extracted');
+  await page.getByRole('button', { name: 'Reapply my decisions', exact: true }).click();
+  assert.equal(await page.getByLabel('I confirm replacing /employer for /employer/title.').isChecked(), false);
+  await page.getByLabel('I confirm replacing /employer for /employer/title.').check();
+  // Once the write is acknowledged, a failed detail read must report a refresh problem rather than a failed save.
+  const detailPath = `**/api/resume-proposals/${result.proposalSummary.id}`;
+  const dialogs = [];
+  const dismissDialog = async dialog => { dialogs.push(dialog.message()); await dialog.dismiss(); };
+  await page.route(detailPath, async route => {
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { message: 'Synthetic detail outage' } }) });
+  });
+  try {
+    await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
+    await page.getByText('Review decisions saved.', { exact: true }).waitFor();
+    await page.getByRole('alert').filter({ hasText: /decisions were saved.*could not be refreshed/i }).waitFor();
+    page.on('dialog', dismissDialog);
+    await clickCompanionNav(page, 'Jobs');
+    assert.deepEqual(dialogs, [], 'Saved review decisions must allow navigation after a failed detail refresh');
+    await page.getByRole('heading', { name: 'Jobs', exact: true, level: 1 }).waitFor();
+  } finally {
+    page.off('dialog', dismissDialog);
+    await page.unroute(detailPath);
+  }
+  await clickCompanionNav(page, 'Resumes');
+  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
+  await page.getByText('Review complete.', { exact: true }).waitFor();
+  profile = await document('profile');
+  assert.equal(profile.profile.employer.title, 'Engineer');
+  assert.equal(profile.profile.concurrentNote, 'Keep this');
+  assert.equal(profile.metadata.factProvenance['/extractedCity'].source, 'resume');
+  assert.equal(profile.metadata.factProvenance['/employer/title'].source, 'user');
+  assert.equal((await document('resume-extractions')).proposals[result.proposalSummary.id].status, 'completed');
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true,
+    exactValueFreeHandoff: true, staleFallbackCleared: true, pendingWriteNavigationGuard: true,
+    savedNavigationAfterRefreshFailure: true, provenance: true, narrow: true };
+}

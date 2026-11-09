@@ -1,0 +1,44 @@
+TAP version 13
+# Subtest: Python object reference default profile
+ok 1 - Python object reference default profile
+  ---
+  duration_ms: 50.3175
+  type: 'test'
+  ...
+# python3: CPython 3.14.4; 11 closed fixtures; executable 5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8
+# Subtest: Python object reference 3.12 profile
+ok 2 - Python object reference 3.12 profile
+  ---
+  duration_ms: 70.039083
+  type: 'test'
+  ...
+# python3.12: CPython 3.12.13; 11 closed fixtures; executable 36984af9f922aec72ba5b03e811ee92512268785007192e20f826cbd07cf8d04
+# Subtest: Python object reference 3.13 profile
+ok 3 - Python object reference 3.13 profile
+  ---
+  duration_ms: 86.9965
+  type: 'test'
+  ...
+# python3.13: CPython 3.13.13; 11 closed fixtures; executable 1c779e61f6218c42bad6d164b72fba890b9c33c96e562fd425266713cbce7a71
+# Subtest: Python object reference 3.14 profile
+ok 4 - Python object reference 3.14 profile
+  ---
+  duration_ms: 44.289125
+  type: 'test'
+  ...
+# python3.14: CPython 3.14.4; 11 closed fixtures; executable 5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8
+# Subtest: Python object reference rejects caller input
+ok 5 - Python object reference rejects caller input
+  ---
+  duration_ms: 42.7725
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 328.960041

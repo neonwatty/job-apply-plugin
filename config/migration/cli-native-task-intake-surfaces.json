@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:task-intake",
+      "kind": "cli",
+      "command": "task-intake",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-task-intake.ts",
+        "src/workspace-core/task-intake.ts",
+        "src/workspace-core/task-job-projection.ts",
+        "src/workspace-core/job-upsert-plan.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

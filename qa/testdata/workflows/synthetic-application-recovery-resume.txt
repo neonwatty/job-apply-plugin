@@ -1,0 +1,11 @@
+Avery Example
+Synthetic workflow test applicant
+
+Experience
+- Tested local-only application lifecycle and recovery boundaries.
+- Used fictional records under reserved example.invalid URLs.
+
+Education
+- Example Institute, Certificate in Reversible Workflows
+
+This resume is fictional and must never be sent to an employer or ATS.

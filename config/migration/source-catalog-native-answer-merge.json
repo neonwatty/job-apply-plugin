@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/answer-merge.js",
+      "sha256": "70737daf206ba9e1c3b30941cc05493d72c60e626c3a1eb87b054ce3385873b7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-session-fields.js",
+      "sha256": "0a5bbbeedaafa98ed0bd380e12f7507194c986e01bde439c39f659fd5dba5431",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-session-validation.js",
+      "sha256": "89284327559631ef3b94c7d04102b521e4e810177d65a7fd3edca9d2e9f4338f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-sessions.js",
+      "sha256": "1b898691a85e118c413ebae57523c6d6300cc98d330495095fbfe235b38f74c3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-answer-journal.js",
+      "sha256": "caee1e454cea3734888b76ff1831d68071de8d2d576b8b072f5cfac06fd99c73",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answer-merges.js",
+      "sha256": "25548a2c73ff88b89dd1e082ea94b9989457b4c3820f385992e1ef87351ef9ce",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-merge.ts",
+      "sha256": "58efe3efa1135198f7146905668f5dc6d3733f1bf36f637a790a50eab5e320a8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-session-fields.ts",
+      "sha256": "570b03904fea2d3cd4b785acfc5298874b6db93d99482880af531c147cf6d1fb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-session-validation.ts",
+      "sha256": "8112ac5f606c4c78216dae4765e1629b1016928ee22661509fc8a57402498410",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-sessions.ts",
+      "sha256": "afae1d4892c79efa5c531af65905c4c9a4a168452da5aaaa5e6b02fc88c76c9a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-answer-journal.ts",
+      "sha256": "955eca932ae8b36dc61628784f8ac55bba5120130d906c04078d7257b0613c96",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answer-merges.ts",
+      "sha256": "00c19a27d123a1e0ce086dab115dfe15a34d9cde2cd5853af18081b23ab11961",
+      "classification": "unreviewed"
+    }
+  ]
+}

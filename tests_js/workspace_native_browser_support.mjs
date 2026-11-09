@@ -1,0 +1,270 @@
+import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { nativeReactTrashBrowser } from './workspace_react_trash_native_browser_support.mjs';
+import { jobTrashBrowser } from './workspace_native_job_trash_browser_support.mjs';
+import { taskCliBrowser } from './workspace_native_task_cli_browser_support.mjs';
+import { nativeGroupedApprovalsBrowser } from './workspace_native_grouped_approvals_browser_support.mjs';
+import { legacyJobsBrowser } from './workspace_native_legacy_jobs_browser_support.mjs';
+import { taskIntakeBrowser } from './workspace_native_task_intake_browser_support.mjs';
+import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
+import { jobTransitionsBrowser } from './workspace_native_job_transitions_browser_support.mjs';
+import { jobUpsertBrowser } from './workspace_native_job_upsert_browser_support.mjs';
+import { projectionsBrowser } from './workspace_native_projections_browser_support.mjs';
+import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
+import { nativeTitleDiscoveryBrowser } from './workspace_native_title_discovery_browser_support.mjs';
+import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
+import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
+import { nativeExtractionsBrowser } from './workspace_native_extractions_browser_support.mjs';
+import { nativeAutomationBrowser } from './workspace_native_automation_browser_support.mjs';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { realpath, readFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { nativeFixture } from './exclusive_file_lock_support.mjs';
+import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
+import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
+const execute = promisify(execFile);
+
+export async function nativeJobsBrowser(buildRoot) {
+  const fixture = await nativeFixture();
+  let child, launcher, browser;
+  try {
+    const root = join(await realpath(fixture.root), 'jobs');
+    await initializeJobsFixture(root);
+    launcher = await spawnOwnedCompanion(buildRoot, root,
+      ['--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact], {
+        env: { PATH: '' }, leaseArtifact: fixture.receipt.artifact,
+    });
+    child = launcher.child;
+    let errors = '';
+    child.stderr.on('data', bytes => { errors += bytes; });
+    const startup = await new Promise((resolve, reject) => {
+      let output = '';
+      const timer = setTimeout(() => reject(Error(`Native startup timed out: ${errors}`)), 30000);
+      child.once('error', error => { clearTimeout(timer); reject(error); });
+      child.once('exit', () => { clearTimeout(timer); reject(Error(`Native startup failed: ${errors}`)); });
+      child.stdout.on('data', bytes => {
+        output += bytes;
+        if (!output.includes('\n')) return;
+        clearTimeout(timer);
+        try { resolve(JSON.parse(output.split('\n')[0])); } catch (error) { reject(error); }
+      });
+    });
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    const pageErrors = [];
+    const apiResponses = [];
+    page.on('response', async response => {
+      if (response.url().includes('/api/')) {
+        try { apiResponses.push({ url: response.url(), status: response.status(), body: await response.json() }); } catch {}
+      }
+    });
+    page.on('pageerror', error => pageErrors.push(error.message));
+    const claimRequests = [];
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path.startsWith('/api/claims')) claimRequests.push({ method: request.method(), path });
+    });
+    await browser.contexts()[0].grantPermissions(['clipboard-read', 'clipboard-write'], {
+      origin: new URL(startup.url).origin,
+    });
+    await page.goto(startup.url);
+    await page.getByText(/Synthetic native workspace/).waitFor();
+    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+    assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
+    assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
+    await clickCompanionNav(page, 'Needs Attention');
+    await page.getByText('Nothing needs your attention.',{exact:true}).waitFor();
+    await clickCompanionNav(page, 'Jobs');
+    await page.getByRole('button', { name: 'New job', exact: true }).click();
+    await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
+    await page.locator('dialog [name="role"]').fill('Native fixture role');
+    await page.getByRole('button', { name: 'Save job', exact: true }).click();
+    await page.locator('dialog').waitFor({ state: 'hidden' });
+    const stored = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8'));
+    const job = Object.values(stored.jobs)[0];
+    assert.equal(job.role, 'Native fixture role');
+    assert.equal(await page.getByLabel('No active application run', { exact: true }).count(), 0);
+    await page.getByRole('button', { name: /Native fixture role/ }).click();
+    await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+    await page.locator('dialog [name="notes"]').fill('Browser draft');
+    const cli = join(buildRoot, 'runtime/cli/native-jobs.js');
+    const patchFile = join(fixture.root, 'update.json');
+    const { writeFile, unlink } = await import('node:fs/promises');
+    await writeFile(patchFile, '{"company":"CLI writer"}');
+    const cliResult = await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'job-update', '--id', job.id, '--expected-revision', '1', '--input', patchFile], { env: { PATH: '' } });
+    assert.equal(JSON.parse(cliResult.stdout).revision, 2);
+    await page.getByRole('button', { name: 'Save job', exact: true }).click();
+    try { await page.getByText('This job changed elsewhere', { exact: true }).waitFor({ timeout: 5000 }); }
+    catch (error) { throw new Error(`${error.message}\n${JSON.stringify(apiResponses)}\n${await page.locator('body').innerText()}`); }
+    await page.getByRole('button', { name: 'Reapply my draft', exact: true }).click();
+    await page.getByRole('button', { name: 'Save job', exact: true }).click();
+    await page.locator('dialog').waitFor({ state: 'hidden' });
+    await page.reload();
+    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
+    await clickCompanionNav(page, 'Jobs');
+    await page.getByRole('button', { name: /Native fixture role/ }).click();
+    await page.getByRole('button', { name: 'Edit job', exact: true }).click();
+    assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
+    assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'CLI writer');
+    const facts = await nativeFactsBrowser(page, root, fixture, buildRoot);
+    const titleDiscovery = await nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot);
+    await clickCompanionNav(page, 'Resumes');
+    await page.getByRole('button', { name: 'Import resume', exact: true }).click();
+    await page.getByLabel('Label', { exact: true }).fill('Browser resume');
+    await page.getByLabel('Tags, separated by commas').fill('browser, primary');
+    await page.getByLabel('Resume file').setInputFiles({ name: 'browser.txt', mimeType: 'text/plain', buffer: Buffer.from('browser resume') });
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
+    await page.getByText('Resume imported. Fact extraction requested.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
+    await page.getByRole('button', { name: /Browser resume · Default/ }).click();
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    await page.getByLabel('Label', { exact: true }).fill('Browser resume updated');
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
+    await page.getByText('Resume details saved', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    await page.getByLabel('Replacement file').setInputFiles({ name: 'updated.txt', mimeType: 'text/plain', buffer: Buffer.from('updated browser resume') });
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
+    await page.getByText('Resume file replaced. Fact extraction requested.', { exact: true }).waitFor();
+    const resumeDocument = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8'));
+    const browserResume = Object.values(resumeDocument.resumes)[0];
+    assert.equal(browserResume.label, 'Browser resume updated');
+    assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
+    await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
+    const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
+    const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);
+    const automation = await nativeAutomationBrowser(page, root);
+    const currentResume = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes[browserResume.id];
+    const candidatePath = join(fixture.root, 'scoped-browser-facts.json');
+    await writeFile(candidatePath, JSON.stringify({ name: 'Synthetic Browser Candidate' }), { mode: 0o600 });
+    let draft;
+    try {
+      draft = JSON.parse((await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+        'resume-facts-draft', '--resume-id', browserResume.id, '--expected-resume-revision', String(currentResume.revision),
+        '--input', candidatePath], { env: { PATH: '' } })).stdout);
+    } finally { await unlink(candidatePath); }
+    const confirmed = JSON.parse((await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'resume-facts-confirm', '--resume-id', browserResume.id, '--expected-fact-revision', String(draft.revision),
+      '--expected-content-revision', currentResume.contentRevision], { env: { PATH: '' } })).stdout);
+    await clickCompanionNav(page, 'Resumes');
+    await page.getByRole('button', { name: /My resume draft/ }).click();
+    const resumeFacts = page.getByRole('region', { name: 'Facts for My resume draft' });
+    await resumeFacts.getByRole('textbox', { name: 'Name', exact: true }).fill('Unsaved fact draft');
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    assert.equal(await resumeFacts.getByRole('textbox', { name: 'Name', exact: true }).inputValue(), 'Unsaved fact draft');
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    await page.getByLabel('Label', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
+    const runInput = join(fixture.root, 'browser-application-run.json');
+    await writeFile(runInput, JSON.stringify({ jobIds: [job.id] }), { mode: 0o600 });
+    await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'application-run-start', '--resume-id', browserResume.id, '--input', runInput,
+      '--expected-resume-revision', String(currentResume.revision), '--expected-fact-revision', String(confirmed.revision),
+      '--owner-confirmed'], { env: { PATH: '' } });
+    const queuedJob = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id];
+    await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'job-transition', '--id', job.id, '--status', 'needs_info',
+      '--expected-revision', String(queuedJob.revision)], { env: { PATH: '' } });
+    await clickCompanionNav(page, 'Jobs');
+    await page.locator('.workspace-page:not([hidden]) .jobs-workspace').getByRole('button', { name: 'Refresh', exact: true }).click();
+    const applicationRun = page.getByLabel('Active application run', { exact: true });
+    await applicationRun.getByText('Locked inputs', { exact: true }).waitFor();
+    await applicationRun.getByText('1 job in this run.', { exact: false }).waitFor();
+    await applicationRun.getByText('confirmed facts stay locked until the run ends', { exact: false }).waitFor();
+    await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
+    await page.setViewportSize({width:390,height:844});
+    const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
+    const projections = await projectionsBrowser(page,{jobId:job.id,markReady:async()=>{
+      const current = JSON.parse(await readFile(join(root,'jobs.json'),'utf8')).jobs[job.id];
+      await execute(process.execPath,[cli,'--root',root,'--native-lock',fixture.receipt.artifact,
+        'task-select','--id',job.id,'--expected-revision',String(current.revision),'--owner-confirmed'],{env:{PATH:''}});
+    }});
+    // task-select above is the canonical transition to Ready. Exercise the
+    // copy-only application handoff only after that durable state is visible.
+    await clickCompanionNav(page, 'Jobs');
+    await claimsBrowser(page, { jobId: job.id, claimRequests });
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const transitions = await jobTransitionsBrowser(page, {
+      jobId: job.id,
+      readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
+      confirmInputs: async latest => ({ jobRevision: latest.revision }),
+      prepareInterrupted: async () => {
+        // root was initialized above from nativeFixture(), never an owner Store.
+        const coordinator = JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8'));
+        assert.equal(coordinator.claim, null);
+        const path = join(root, 'jobs.json');
+        const document = JSON.parse(await readFile(path, 'utf8'));
+        const current = document.jobs[job.id];
+        assert.equal(current.status, 'applied');
+        current.status = 'in_progress';
+        current.closedOutcome = null;
+        current.revision++;
+        current.updatedAt = new Date().toISOString();
+        document.metadata.updatedAt = current.updatedAt;
+        await writeFile(path, JSON.stringify(document), { mode: 0o600 });
+      },
+    });
+    const upsert = await jobUpsertBrowser(page, {
+      readDocument: () => readFile(join(root, 'jobs.json'), 'utf8'),
+      upsert: async (payload, origin, previewToken) => {
+        const input = join(fixture.root, 'browser-upsert.json');
+        await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
+        const args = [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+          previewToken ? 'job-upsert-commit' : 'job-upsert-preview', '--input', input, '--origin', origin];
+        if (previewToken) args.push('--token', previewToken);
+        const result = await execute(process.execPath, args, { env: { PATH: '' } });
+        return JSON.parse(result.stdout);
+      },
+    });
+    const legacyHome = join(fixture.root, 'legacy-browser-home');
+    const legacyReports = join(legacyHome, '.claude-job-searches');
+    await mkdir(legacyReports, { recursive: true });
+    const legacyJobs = await legacyJobsBrowser(page, {
+      readDocument: () => readFile(join(root, 'jobs.json'), 'utf8'),
+      writeReport: report => writeFile(join(legacyReports, 'search-browser.md'), report),
+      legacy: async (command, selected, previewToken) => {
+        const args = [cli, '--root', root, '--native-lock', fixture.receipt.artifact, command];
+        for (const id of selected) args.push('--select', id);
+        if (previewToken) args.push('--confirm', previewToken);
+        const result = await execute(process.execPath, args, { env: { PATH: '', HOME: legacyHome } });
+        return JSON.parse(result.stdout);
+      },
+    });
+    const taskIntake = await taskIntakeBrowser(page, {
+      readDocument: () => readFile(join(root, 'jobs.json'), 'utf8'),
+      intake: async (payload, origin) => {
+        const input = join(fixture.root, 'browser-task-intake.json');
+        await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
+        const args = [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+          'task-intake', '--input', input];
+        if (origin) args.push('--origin', origin);
+        const result = await execute(process.execPath, args, { env: { PATH: '' } });
+        return JSON.parse(result.stdout);
+      },
+      snapshot: async () => {
+        const result = await execute(process.execPath, [cli, '--root', root,
+          '--native-lock', fixture.receipt.artifact, 'task-snapshot'], { env: { PATH: '' } });
+        return JSON.parse(result.stdout);
+      },
+    });
+    const groupedApprovals = await nativeGroupedApprovalsBrowser(page, root, fixture, buildRoot);
+    const taskCli = await taskCliBrowser(page, root, fixture, buildRoot);
+    const jobTrash = await jobTrashBrowser(page, root, fixture, buildRoot);
+    const reactTrash = await nativeReactTrashBrowser(page, root, fixture, buildRoot);
+    const unsupported = await fetch(startup.origin + '/api/resumes/fixture/unknown', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
+    assert.equal(unsupported.status, 404);
+    assert.deepEqual(pageErrors, []);
+    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, titleDiscovery, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+  } finally {
+    if (browser) await browser.close();
+    await launcher?.stop();
+    await fixture.cleanup();
+  }
+}
