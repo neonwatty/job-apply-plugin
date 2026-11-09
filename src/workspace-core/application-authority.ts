@@ -37,12 +37,12 @@ function strings(value: Value, label: string): string[] {
 function exact(record: Document, fields: string[], label: string): void {
   if (record.size !== fields.length || keys(record).some(key => !fields.includes(key))) throw new JobsError(`${label} contains unsupported fields`);
 }
-function currentAnswer(answers: Document, ref: string): Document | null {
+function currentAnswer(answers: Document, ref: string, allowSensitive = false): Document | null {
   const raw = get(object(get(answers, 'answers'), 'answers'), ref);
   if (raw === null) return null;
   const answer = object(raw, 'answer');
   return get(answer, 'deletedAt') === null && string(has(answer, 'reviewStatus') ? get(answer, 'reviewStatus') : text('accepted')) === 'accepted'
-    && string(get(answer, 'state')) === 'confirmed' && get(answer, 'value') !== null ? answer : null;
+    && (string(get(answer, 'state')) === 'confirmed' || allowSensitive && string(get(answer, 'state')) === 'sensitive') && get(answer, 'value') !== null ? answer : null;
 }
 function profileRevision(profile: Document): bigint {
   const metadata = object(get(profile, 'metadata'), 'profile metadata');
@@ -138,8 +138,8 @@ export class ApplicationAuthorityService {
       }
       const sensitive: Value[] = [];
       for (const ref of sensitiveRefs) {
-        const answer = currentAnswer(tx.answers, ref);
-        if (answer === null || !sensitiveAnswer(answer)) throw new JobsError('sensitive answer authority requires an accepted confirmed answer');
+        const answer = currentAnswer(tx.answers, ref, true);
+        if (answer === null || !sensitiveAnswer(answer)) throw new JobsError('sensitive answer authority requires an accepted saved sensitive answer');
         const binding = doc({ answerRef: ref, answerRevision: null });
         set(binding, 'answerRevision', integer(answerRevision(answer))); sensitive.push(binding);
       }
@@ -234,7 +234,7 @@ export class ApplicationAuthorityService {
         const binding = object(item, 'sensitive answer binding'); return [string(get(binding, 'answerRef'))!, binding];
       }));
       for (const ref of sensitiveRefs) {
-        const answer = currentAnswer(tx.answers, ref), binding = bound.get(ref);
+        const answer = currentAnswer(tx.answers, ref, true), binding = bound.get(ref);
         if (answer === null || !sensitiveAnswer(answer) || !binding || !validateBoundSensitiveAnswer(answer, binding)) {
           return doc({ authorized:false, mode:'guided', reasonCode:'sensitive_current_use_not_approved', interrupt:true });
         }

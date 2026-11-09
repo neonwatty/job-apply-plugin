@@ -9,7 +9,7 @@ import { validateExtractionRequests } from '../contracts/workspace/extraction-re
 import { validateExtractions } from '../contracts/workspace/extraction-proposals.js';
 import { validateJobsDocument, safeId } from '../contracts/workspace/jobs.js';
 import { validateProfile } from '../contracts/workspace/profile.js';
-import { fromJSON, get, integer, object, string, JobsError } from '../contracts/workspace/values.js';
+import { fromJSON, get, has, integer, object, string, JobsError } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
@@ -132,7 +132,7 @@ export async function preparednessSnapshot(storage) {
             pendingPaths: get(record, 'pendingPaths').map(item => string(item)) };
     });
     const metadata = object(get(profile, 'metadata'), 'profile.metadata');
-    return { profile: get(profile, 'profile'), provenance: get(metadata, 'factProvenance'), resumes, requests, proposals,
+    return { profile: get(profile, 'profile'), provenance: has(metadata, 'factProvenance') ? get(metadata, 'factProvenance') : fromJSON({}), resumes, requests, proposals,
         observeResume: async (record) => {
             const source = resumeRecords.get(record.id);
             if (!source)

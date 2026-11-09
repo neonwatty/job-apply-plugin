@@ -34,6 +34,10 @@ export async function verifyLegacyMigration(source, work, plugin) {
     { cwd: plugin, env: { HOME: work, PATH: '' }, timeout: 30_000 })).stdout);
   const profile = await call(['profile-get']);
   assert.equal(profile.name, 'Synthetic Migration Applicant');
+  const readiness = await call(['profile-preparedness-get']);
+  assert.equal(readiness.commonCoverage.find(item => item.id === 'skills').state, 'present');
+  assert.equal(readiness.essentialSetup.find(item => item.id === 'first_name').state, 'blocked');
+  assert.equal(JSON.stringify(readiness).includes(profile.name), false, 'readiness is value-free');
   for (const [name, bytes] of Object.entries(before)) {
     assert.deepEqual(await readFile(join(`${root}.python-rollback`, name)), bytes, `retained ${name}`);
     assert.deepEqual(await readFile(join(root, name)), bytes, `active ${name}`);
@@ -47,5 +51,5 @@ export async function verifyLegacyMigration(source, work, plugin) {
   await rollbackNativeWriter(root, { provider });
   for (const [name, bytes] of Object.entries(before)) assert.deepEqual(await readFile(join(root, name)), bytes, `restored ${name}`);
   assert.equal(JSON.parse(await readFile(join(`${root}.native-retained`, 'jobs.json'), 'utf8')).jobs['migration-job'].id, 'migration-job');
-  return { originalFiles: Object.keys(before).length, backupBytesPreserved: true, restart: true, rollback: true };
+  return { originalFiles: Object.keys(before).length, backupBytesPreserved: true, preparedness: true, restart: true, rollback: true };
 }

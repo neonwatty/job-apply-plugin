@@ -158,3 +158,33 @@ test('native application authority is revisioned, claim-bound, redacted, and fin
     assert.equal(revoked.mode,'guided');assert.equal(revoked.revision,2);
   });
 });
+
+test('explicit sensitive grants accept saved sensitive states and bind the exact revision', async () => {
+  const { AnswersService } = await import('../runtime/workspace-core/answers.js');
+  const fixture = await nativeFixture();
+  try {
+    for (const typed of [false, true]) {
+      const state = await setup(fixture, `sensitive-grant-${typed}`);
+      const answers = new AnswersService(state.repository, () => state.clock.now);
+      const saved = plain(await answers.put(fromJSON({ key: 'private', question: 'Sensitive fixture?',
+        state: 'sensitive', value: typed ? 'I am not a veteran' : 'Private synthetic value',
+        sensitivity: 'high', scope: typed ? { country: 'US' } : {},
+        ...(typed ? { fieldClass: 'veteran_status', answerIntent: { kind: 'veteran_status', status: 'not_a_veteran' } } : {}),
+      }), true));
+      await state.claims.select('job', 1n, true);
+      const service = new ApplicationAuthorityService(state.repository, () => state.clock.now);
+      await service.set(fromJSON(authorityInput()), 0n);
+      const acquired = plain(await state.claims.acquire('job', text('Sensitive grant worker'), 2n));
+      const check = overrides => service.evaluate(fromJSON(evaluation(acquired.token, overrides))).then(plain);
+      assert.equal((await check({ sensitiveAnswerRefs: ['private'] })).reasonCode, 'sensitive_current_use_not_approved');
+      await service.set(fromJSON({ ...authorityInput(), sensitiveAnswerRefs: ['private'] }), 1n);
+      const allowed = await check({ sensitiveAnswerRefs: ['private'] });
+      assert.equal(allowed.authorized, true);
+      assert.doesNotMatch(JSON.stringify(allowed), /Private synthetic value|I am not a veteran|answerIntent/);
+      assert.equal((await check({ answerRefs: ['private'] })).reasonCode, 'answer_not_confirmed_non_sensitive');
+      assert.equal((await check({ sensitiveAnswerRefs: ['private'], interrupts: interrupts({ providerLegalConsent: true }) })).authorized, false);
+      await answers.update('private', fromJSON({ question: 'Updated sensitive fixture?' }), BigInt(saved.revision));
+      assert.equal((await check({ sensitiveAnswerRefs: ['private'] })).reasonCode, 'sensitive_current_use_not_approved');
+    }
+  } finally { await fixture.cleanup(); }
+});

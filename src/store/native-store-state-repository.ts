@@ -9,7 +9,7 @@ import { validateExtractionRequests } from '../contracts/workspace/extraction-re
 import { validateExtractions } from '../contracts/workspace/extraction-proposals.js';
 import { validateJobsDocument, safeId } from '../contracts/workspace/jobs.js';
 import { validateProfile } from '../contracts/workspace/profile.js';
-import { fromJSON, get, integer, object, string, JobsError } from '../contracts/workspace/values.js';
+import { fromJSON, get, has, integer, object, string, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import type { PreparednessSnapshot } from '../workspace-core/profile-preparedness.js';
 import type { ReplayTransitionTransaction } from '../workspace-core/replay-transition.js';
@@ -136,7 +136,7 @@ export async function preparednessSnapshot(storage: NativeStoreStateStorage): Pr
       pendingPaths: (get(record, 'pendingPaths') as Value[]).map(item => string(item)!) };
   });
   const metadata = object(get(profile, 'metadata'), 'profile.metadata');
-  return { profile: get(profile, 'profile'), provenance: get(metadata, 'factProvenance'), resumes, requests, proposals,
+  return { profile: get(profile, 'profile'), provenance: has(metadata, 'factProvenance') ? get(metadata, 'factProvenance') : fromJSON({}), resumes, requests, proposals,
     observeResume: async record => {
       const source = resumeRecords.get(record.id);
       if (!source) throw new JobsError('resume does not exist');
