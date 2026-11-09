@@ -1,3 +1,4 @@
+import { legacyStoreFixture } from './legacy_store_fixture_support.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
@@ -12,13 +13,7 @@ import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 
 const execute = promisify(execFile);
 const childScript = new URL('./process_owned_writer_child.mjs', import.meta.url).pathname;
-const python = `
-import sys,importlib.util
-from pathlib import Path
-spec=importlib.util.spec_from_file_location('switch_reference','scripts/job-apply-store.py')
-m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-s=m.Store(Path(sys.argv[1]));s.initialize()
-`;
+
 
 function alive(pid) {
   try { process.kill(pid, 0); return true; }
@@ -30,7 +25,7 @@ async function setup(t, behaviors = {}) {
   const parent = await realpath(fixture.root), active = join(parent, 'store');
   const candidate = `${active}.native-candidate`, state = join(parent, 'process-state');
   await mkdir(state, { mode: 0o700 });
-  await execute('python3', ['-c', python, active]);
+  await legacyStoreFixture(active);
   const provider = loadPosixFlockProvider(fixture.receipt.artifact);
   await prepareCanonicalStoreClone(active, candidate, provider, '2026-09-15T12:00:00Z');
   let sequence = 0;
@@ -97,6 +92,41 @@ test('controller force-kills an uncooperative writer tree and rejects overlappin
   assert.equal(alive(ignored.parent), false);
   assert.equal(alive(ignored.descendant), false);
   assert.equal(controller.mode, 'native');
+});
+
+test('termination probes retry permission errors and never equate denial with exit', { timeout: 60_000 }, async t => {
+  for (const persistent of [false, true]) await t.test(persistent ? 'persistent denial blocks rename' : 'transient denial retries', async t => {
+    const { controller, active } = await setup(t, { python: 'ignore' });
+    await controller.start('python');
+    const before = await readFile(join(active, 'profile.json'));
+    const originalKill = process.kill;
+    let killedGroup, denials = 0, transitionStarted = false;
+    process.kill = function (pid, signal) {
+      if (pid < 0 && signal === 'SIGKILL') killedGroup = pid;
+      if (pid === killedGroup && signal === 0 && (persistent || denials < 2)) {
+        denials++;
+        throw Object.assign(new Error('synthetic denied exit probe'), { code: 'EPERM' });
+      }
+      return originalKill(pid, signal);
+    };
+    try {
+      const activation = controller.activate({ boundary: () => { transitionStarted = true; } });
+      if (persistent) {
+        await assert.rejects(activation, /owned writer process group did not stop/);
+        assert.equal(transitionStarted, false);
+        assert.deepEqual(await readFile(join(active, 'profile.json')), before);
+        assert.equal(controller.mode, 'python');
+      } else {
+        await activation;
+        assert.equal(transitionStarted, true);
+        assert.equal(controller.mode, 'native');
+      }
+      assert.ok(denials >= 2);
+    } finally {
+      process.kill = originalKill;
+      await controller.stop();
+    }
+  });
 });
 
 test('a Store lifetime lease excludes a second process owner before it can start a writer', { timeout: 60000 }, async t => {

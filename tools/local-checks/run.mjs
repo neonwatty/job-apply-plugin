@@ -43,10 +43,7 @@ export function reusableReceipt(receipt, key, now = Date.now()) {
 async function environmentIdentity(root) {
   // All inherited child-visible variables are conservatively bound without disclosure.
   const inherited = Object.entries(cleanEnvironment()).sort(([a], [b]) => a.localeCompare(b));
-  const python = process.platform === 'win32' ? 'python' : 'python3';
-  const version = spawnSync(python, ['--version'], { env: cleanEnvironment(), encoding: 'utf8', timeout: 3000 });
-  if (version.error || version.status !== 0) throw new Error('Required local Python interpreter unavailable.');
-  return { node: process.version, python: version.stdout.trim(), platform: process.platform,
+  return { node: process.version, platform: process.platform,
     arch: process.arch, inheritedEnvironmentHash: hash(JSON.stringify(inherited)), policy: await policyFingerprint(),
     lock: hash(await readFile(join(root, 'package-lock.json'))),
     installedLock: hash(await readFile(join(root, 'node_modules/.package-lock.json'))) };

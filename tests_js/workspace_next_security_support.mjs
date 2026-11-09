@@ -9,7 +9,7 @@ import { checkBrowserBindings } from '../tools/migration/browser-exports.mjs';
 import ts from 'typescript';
 import { nextParity } from './workspace_next_parity_support.mjs';
 import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
-export async function nextSecurity() {
+export async function nextSecurity({ referenceParity = true } = {}) {
     const temporary = await mkdtemp(join(tmpdir(), 'companion-security-'));
     try {
         const root = fileURLToPath(new URL('../', import.meta.url));
@@ -86,7 +86,7 @@ export async function nextSecurity() {
         const { permittedApi } = await import(pathToFileURL(join(temporary, 'routes.mjs')));
         const { legacyAssets } = await import(pathToFileURL(join(temporary, 'assets.mjs')));
         const { forward, bounded } = await import(pathToFileURL(join(temporary, 'forward.mjs')));
-        await nextParity(forward);
+        if (referenceParity) await nextParity(forward);
         for (const prefix of [false, true]) {
             let cancelled = false;
             const stream = new ReadableStream({

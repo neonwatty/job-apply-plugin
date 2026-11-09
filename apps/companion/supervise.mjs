@@ -50,7 +50,7 @@ export async function validateSupervisorRoot(root) {
     lstat(root).catch(error => error?.code === 'ENOENT' ? null : Promise.reject(error)), realpath(root).catch(() => null),
   ]);
   if (!isAbsolute(root) || root !== resolve(root) || canonicalParent !== parent || !parentInfo?.isDirectory()
-    || parentInfo.isSymbolicLink() || parentInfo.uid !== process.getuid?.() || parentInfo.mode & 0o077
+    || parentInfo.isSymbolicLink() || parentInfo.uid !== process.getuid?.() || parentInfo.mode & 0o022
     || (rootInfo && (!rootInfo.isDirectory() || rootInfo.isSymbolicLink() || canonicalRoot !== root
       || rootInfo.uid !== process.getuid?.() || rootInfo.mode & 0o077))) throw new Error('Companion Store root is invalid');
 }

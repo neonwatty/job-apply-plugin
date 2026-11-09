@@ -27,9 +27,12 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
     const [factStatus, setFactStatus] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
     const [contentBusy, setContentBusy] = useState(false);
+    const [factGeneration, setFactGeneration] = useState(0);
     const [factsDirty, setFactsDirty] = useState(false);
     const [factsBusy, setFactsBusy] = useState(false);
+    const factState = useRef({ dirty: false, busy: false });
     const factStateChanged = useCallback((dirty: boolean, factBusy: boolean) => {
+        factState.current = { dirty, busy: factBusy };
         setFactsDirty(dirty);
         setFactsBusy(factBusy);
     }, []);
@@ -59,7 +62,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
                 const latest = next.find(item => item.id === current.base?.id);
                 if (!latest) return { ...current, latest: null, missing: true };
                 if (latest.revision < Math.max(current.base.revision, current.latest?.revision ?? 0)) return current;
-                if (!isDirty(current)) return openEditor(latest);
+                if (!isDirty(current) && !factState.current.dirty && !factState.current.busy) return openEditor(latest);
                 return { ...current, missing: false, latest: latest.revision > current.base.revision ? latest : null };
             });
             setError('');
@@ -83,6 +86,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
     useEffect(() => { dirtyChanged(dirty || busy || factsDirty || factsBusy); return () => dirtyChanged(false); }, [dirty, busy, factsDirty, factsBusy, dirtyChanged]);
     function open(record: ResumeRecord | null) {
         if (busy || factsBusy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
+        setFactGeneration(current => current + 1);
         setEditor(openEditor(record));
         setEditing(!record);
         setExtractByDefault(true);
@@ -101,6 +105,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
         setError('');
     }
     function reapply() {
+        if (factsBusy) return;
         setEditor(current => {
             if (!current?.latest || current.missing) return current;
             const next = openEditor(current.latest);
@@ -218,14 +223,14 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
         </div>
         {editor && <DetailDrawer titleId="resume-editor-title" close={close} className="resume-detail-drawer">
             <header className="detail-drawer-header"><div><p className="eyebrow">Resume</p><h2 id="resume-editor-title" tabIndex={-1} data-drawer-heading>{editor.base ? editor.base.label : 'Import resume'}</h2></div>
-                <div className="button-row"><button className="secondary" type="button" disabled={busy || loading} onClick={() => void refresh()}>Refresh resume</button>
-                    <button className="job-drawer-close" type="button" disabled={busy} onClick={close} aria-label="Close resume details">×</button></div></header>
+                <div className="button-row"><button className="secondary" type="button" disabled={busy || loading || factsBusy} onClick={() => void refresh()}>Refresh resume</button>
+                    <button className="job-drawer-close" type="button" disabled={busy || factsBusy} onClick={close} aria-label="Close resume details">×</button></div></header>
             {error && <p role="alert" className="error">{error}</p>}
             {editor.missing && <p className="notice" role="alert">This resume is no longer available. Your draft is preserved; saving is disabled.</p>}
             {editor.latest && <div className="notice resume-conflict" role="alert">
                 <p>This resume changed elsewhere. Your draft is preserved.</p>
-                <button disabled={busy} onClick={reapply}>Reapply my draft</button>{' '}
-                <button disabled={busy} onClick={() => open(editor.latest)}>Use latest resume</button>
+                <button disabled={busy || factsBusy} onClick={reapply}>Reapply my draft</button>{' '}
+                <button disabled={busy || factsBusy} onClick={() => open(editor.latest)}>Use latest resume</button>
             </div>}
             {!editing && editor.base ? <>
                 <div className="detail-drawer-summary"><dl>
@@ -245,7 +250,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
                         setEditing(true);
                     }}>Edit resume</button>
                 </div>
-                {editor.base.storageKind === 'managed' && <ResumeFacts key={editor.base.id} client={client} resume={editor.base}
+                {editor.base.storageKind === 'managed' && <ResumeFacts key={`${editor.base.id}:${factGeneration}`} client={client} resume={editor.base}
                     dirtyChanged={factStateChanged}
                     statusChanged={status => setFactStatus(current => ({ ...current, [editor.base!.id]: status }))} />}
             </> : <>

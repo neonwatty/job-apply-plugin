@@ -101,8 +101,9 @@ inventory. Use disposable synthetic Stores and preserve privacy and permissions.
 If Node is guaranteed by the chosen host contract, document that contract and
 the exercised minimum version. Otherwise evaluate signed standalone artifacts
 for each supported OS/architecture, including packaging, signing and upgrade
-evidence. Installing dependencies or downloading a runtime during plugin launch
-is prohibited.
+evidence. The installed runtime never downloads Node or compiles a native addon. A
+source-only Companion installation explicitly runs pinned npm installation and
+its local standalone build on first launch; this requires npm and registry access.
 
 Select one final strategy only after this matrix passes: a guaranteed Node
 runtime or signed standalone executables. The current `launchMode` does not

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "build:runtime": "node tools/build-runtime.mjs",
     "build:check": "node tools/build-runtime.mjs --check",
-    "check:size": "python3 scripts/check-source-size.py",
+    "check:size": "node tools/check-source-size.mjs",
     "check:test-matrix": "node tools/check-test-matrix.mjs",
     "audit:core-workflows": "node tools/audit-core-workflows.mjs",
     "test:fast": "node tools/test-runner.mjs fast",
@@ -30,7 +30,11 @@
     "companion:build": "npm run build --workspace job-apply-companion && node apps/companion/package-standalone.mjs",
     "companion:start": "node apps/companion/supervise.mjs",
     "companion:dev": "node apps/companion/supervise.mjs --dev",
-    "companion:typecheck": "npm run typecheck --workspace job-apply-companion"
+    "companion:typecheck": "npm run typecheck --workspace job-apply-companion",
+    "test:reference": "node tools/test-runner.mjs reference",
+    "test:migration-once": "node tools/python-store-migration-once.mjs",
+    "test:required": "node tools/test-runner.mjs full",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high"
   },
   "devDependencies": {
     "@neonwatty/agent-workflows": "0.1.0",

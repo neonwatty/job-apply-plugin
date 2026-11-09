@@ -7,7 +7,8 @@ writes the native ownership marker only after every required document is
 durable. The source Store is never modified.
 
 This boundary is deliberately narrower than a writer switch. The target must
-not exist, both paths and their parents must be real absolute private paths, and
+not exist, both Store paths must be real absolute private paths; their parents must be
+owned canonical directories without group/other write permission, and
 every copied file must be private, owned, singly linked, and within the bounded
 size profile. Unknown root entries, policy state such as `auto-submit`, linked
 directory entries, incomplete core state, or a source change during a read

@@ -47,6 +47,12 @@
 
 - Resumes shows extraction status and a Facts action for each resume. The review
   surface displays draft and confirmed revisions, field edits, and stale state.
+- Refreshing resume metadata preserves unsaved fact edits. Reapply the draft to
+  adopt the latest resume revision. If the agent also changed the facts, saving
+  pauses; **Check for agent updates** asks before discarding local edits and
+  loading the latest fact revision.
+- Numeric fact edits retain exact integers and untouched float values. Invalid
+  numeric text blocks saving and confirmation until corrected or discarded.
 - Overview sends scoped fact review to Resumes, including its setup link, so a
   first import does not lead to the applicant-wide legacy Facts page.
 - The agent asks for the run's resume and facts choice in chat. The UX is for detailed

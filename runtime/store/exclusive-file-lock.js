@@ -1,14 +1,22 @@
 import { constants } from "node:fs";
-import { open } from "node:fs/promises";
+import { lstat, open, realpath } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { filesystemEncode } from "../contracts/posix-path-bytes.js";
 import { constructPosixPath, posixParent, validatePathProfile } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 import { createNativeAtomicWriteIO, ensurePrivateDirectory } from "./private-filesystem.js";
-function nativeIO(profile) {
+function nativeIO(profile, preserveParentPermissions = false) {
     const filesystem = createNativeAtomicWriteIO(profile);
     return {
-        ensurePrivateDirectory: (path) => ensurePrivateDirectory(path, filesystem),
+        async ensurePrivateDirectory(path) {
+            if (!preserveParentPermissions)
+                return ensurePrivateDirectory(path, filesystem);
+            const metadata = await lstat(path);
+            if (!metadata.isDirectory() || metadata.isSymbolicLink() || await realpath(path) !== path
+                || metadata.uid !== process.getuid?.() || metadata.mode & 0o022) {
+                throw new Error('Lock parent must be owned and not writable by others');
+            }
+        },
         chmod: filesystem.chmod,
         async open(path, flags, mode) {
             const bytes = filesystemEncode(path);
@@ -37,7 +45,7 @@ export async function withExclusiveFileLock(path, callback, options) {
     }
     const signal = options.signal ?? new AbortController().signal;
     signal.throwIfAborted();
-    const io = options.io ?? nativeIO(options.pathProfile);
+    const io = options.io ?? nativeIO(options.pathProfile, options.preserveParentPermissions);
     path = constructPosixPath("", path);
     await io.ensurePrivateDirectory(posixParent(path));
     const handle = await io.open(path, constants.O_RDWR | constants.O_CREAT, 0o600);

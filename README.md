@@ -661,20 +661,24 @@ That verifier uses only `127.0.0.1`, a private per-run capability, opaque identi
 
 Contributions welcome! Please open an issue or PR on GitHub.
 
-Before opening a PR, run the same deterministic checks used by CI:
+Before opening a PR, use the [TypeScript testing tiers](docs/testing.md):
 
 ```bash
 npm ci
-npx playwright install --with-deps chromium
-python3 -m unittest discover -s tests -v
-npm run test:qa-screening
-npm run test:qa-browser
-bash scripts/smoke-plugin.sh
-bash scripts/check-links.sh
+npx playwright install chromium
+npm run test:affected -- --base origin/staging
+npm run test:release
 git diff --check
 ```
 
-The smoke test installs temporary working-tree fixtures under isolated Codex and Claude Code configuration directories and removes them on exit. It does not alter your normal host configuration.
+Required CI uses Node.js 22 or newer without CPython. The TypeScript transition
+also has a separate, manual one-time check that creates a Store using the actual
+historical Python release and verifies migration and rollback. See
+`npm run test:migration-once` in the testing guide. Historical Python differential
+checks remain optional development diagnostics.
+
+Package smoke tests use isolated Codex/Claude configuration directories and
+fictional Stores, then remove their fixtures on exit.
 
 ## Author
 

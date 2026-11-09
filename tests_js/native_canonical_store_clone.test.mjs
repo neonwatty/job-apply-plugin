@@ -1,3 +1,4 @@
+import { legacyStoreFixture } from './legacy_store_fixture_support.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
@@ -14,23 +15,12 @@ import { JobsService } from '../runtime/workspace-core/jobs.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
 
 const execute = promisify(execFile), fixed = '2026-09-14T12:00:00Z';
-const python = `
-import sys,importlib.util
-from pathlib import Path
-spec=importlib.util.spec_from_file_location('clone_reference','scripts/job-apply-store.py')
-m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-m.utc_now=lambda:'${fixed}'
-s=m.Store(Path(sys.argv[1]));s.initialize()
-s.create_job({'id':'clone-job','url':'https://example.invalid/job','role':'Engineer'})
-resume_source=Path(sys.argv[1]).parent/'clone-resume-source.txt'
-resume_source.write_text('Managed resume bytes')
-s.import_resume({'id':'clone-resume','label':'Clone resume','path':str(resume_source)})
-resume_source.unlink()
-`;
+
 
 async function canonicalSource(root, name) {
   const source = join(root, name);
-  await execute('python3', ['-c', python, source]);
+  await legacyStoreFixture(source, { job: { id: 'clone-job', url: 'https://example.invalid/job', role: 'Engineer' },
+    resume: { id: 'clone-resume', label: 'Clone resume' }, now: fixed });
   return source;
 }
 

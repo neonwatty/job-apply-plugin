@@ -40,47 +40,35 @@ test("global and unknown changes fail closed to the full tier", () => {
   assert.deepEqual(selectAffected(matrix, tracked, ["private/new.kind"]).suiteIds, ["fast", "slow"]);
 });
 
-test("real shared Python helpers select every consuming shard", async () => {
+test("required ownership conservatively selects native consumers without Python suites", async () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
-  for (const helper of ["store_case.py", "workspace_case.py", "compiler_case.py", "macos_workflow_contract.py"]) {
-    const selected = selectAffected(realMatrix, realPaths, [`tests/support/${helper}`]);
-    assert.equal(selected.fallbackReason, null);
-    for (const id of [
-      "python-fast", "python-qa", "python-workspace-contracts", "python-accounts",
-      "python-core", "windows-contracts", "macos-native-contracts",
-    ]) assert.equal(selected.suiteIds.includes(id), true, `${helper} omitted ${id}`);
-  }
-});
-
-test("real production paths conservatively include cross-language consumers", async () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
-  const cases = new Map([
-    ["config/core-workflows.json", ["core-workflow-audit", "python-qa"]],
-    ["scripts/qa-replay.py", ["python-qa", "python-workspace-contracts", "python-accounts", "python-core", "node-recorder", "node-renderer", "node-workspace-other"]],
-    ["scripts/job_apply_store/domains/jobs/crud.py", ["python-workspace-contracts", "python-accounts", "python-core", "node-workspace-other"]],
-    ["scripts/job_apply_workspace/server.py", ["python-workspace-contracts", "node-workspace-other"]],
-    ["qa/renderer/server.py", ["python-qa", "node-recorder", "node-renderer", "node-workspace-other"]],
-    ["workspace/server/routes.js", ["python-workspace-contracts", "node-workspace-other"]],
-  ]);
-  for (const [changed, expected] of cases) {
+  for (const changed of ["src/store/native-jobs.ts", "apps/companion/command.mjs", "skills/job-apply/SKILL.md"]) {
     const selected = selectAffected(realMatrix, realPaths, [changed]);
-    assert.equal(selected.fallbackReason, null);
-    for (const id of expected) assert.equal(selected.suiteIds.includes(id), true, `${changed} omitted ${id}`);
+    for (const id of ["core-workflow-audit", "node-native-cli", "node-native-unit", "node-native-browser"]) {
+      assert.ok(selected.suiteIds.includes(id), `${changed} omitted ${id}`);
+    }
+    assert.equal(selected.suiteIds.some(id => id.startsWith('python')), false);
   }
 });
 
-test("Agent Workflow definitions fail closed to every full-tier behavioral suite", async () => {
+test("Agent Workflow definitions select every required full-tier behavioral suite", async () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
-  const selected = selectAffected(realMatrix, realPaths, [
-    ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
-  ]);
+  const selected = selectAffected(realMatrix, realPaths, [".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml"]);
   assert.match(selected.fallbackReason, /^global path:/);
-  for (const id of ["core-workflow-audit", "native-default-cutover", "node-workspace-other"]) {
-    assert.equal(selected.suiteIds.includes(id), true, `workflow change omitted ${id}`);
-  }
+  assert.deepEqual(new Set(selected.suiteIds), new Set(realMatrix.suites.filter(s => s.tiers.includes('full')).map(s => s.id)));
+});
+
+test("matrix requires explicit reference classification and rejects overlap with required coverage", () => {
+  const classified = structuredClone(matrix);
+  classified.referenceTests = [{ path: 'tests/reference.test.mjs', reason: 'historical oracle' }];
+  const paths = [...tracked, 'tests/reference.test.mjs'];
+  assert.deepEqual(validateMatrix(classified, paths), []);
+  classified.suites[0].include.push('tests/reference.test.mjs');
+  assert.ok(validateMatrix(classified, paths).some(error => error.includes('overlap')));
+  classified.referenceTests.push(classified.referenceTests[0]);
+  assert.ok(validateMatrix(classified, paths).some(error => error.includes('duplicate reference')));
 });
 
 test("matrix validation rejects omissions and duplicate full inventory", () => {
@@ -223,13 +211,13 @@ test('P03 graph binds source and emitted module identities without duplicate con
 
 test('P10 reference suites isolate S04 and S05 without changing process output limits', async () => {
   const { assertReferenceSuiteIsolation } = await import('./reference_suite_support.mjs');
-  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT), trackedPaths(GRAPH_ROOT)]);
+  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT, "config/reference-test-matrix.json"), trackedPaths(GRAPH_ROOT)]);
   assertReferenceSuiteIsolation(actualMatrix, actualPaths);
 });
 
 test('P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage', async () => {
   const { assertReferenceSuiteFanout } = await import('./reference_suite_support.mjs');
-  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT), trackedPaths(GRAPH_ROOT)]);
+  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT, "config/reference-test-matrix.json"), trackedPaths(GRAPH_ROOT)]);
   assertReferenceSuiteFanout(actualMatrix, actualPaths);
 });
 

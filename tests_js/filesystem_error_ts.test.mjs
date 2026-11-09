@@ -1,32 +1,28 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { pythonFilesystemError, withPythonFilesystemErrors } from '../runtime/contracts/filesystem-error.js';
 
-for (const version of ['3.12', '3.13', '3.14']) {
-  test(`filesystem error categories match Python ${version} without replacing native diagnostics`, () => {
-    const script = `import errno,json
-names=['EACCES','EPERM','EEXIST','ENOENT','EISDIR','ENOTDIR','EINTR','EAGAIN','EWOULDBLOCK',
-'EINPROGRESS','EALREADY','EPIPE','ESHUTDOWN','ECONNABORTED','ECONNREFUSED','ECONNRESET','ESRCH','ETIMEDOUT','EIO','ENAMETOOLONG']
-print(json.dumps([[name,getattr(errno,name),type(OSError(getattr(errno,name),'synthetic')).__name__] for name in names]))`;
-    const run = spawnSync(`python${version}`, ['-I', '-c', script], { encoding: 'utf8', timeout: 5000 });
-    assert.equal(run.status, 0, run.stderr);
-    for (const [code, number, category] of JSON.parse(run.stdout)) {
-      const error = Object.assign(new Error('native diagnostic'), { code, errno: -number, path: 'synthetic' });
-      const originalStack = error.stack;
-      assert.equal(pythonFilesystemError(error), error);
-      assert.equal(error.name, category);
-      assert.equal(error.message, 'native diagnostic');
-      assert.equal(error.stack, originalStack);
-      assert.equal(error.path, 'synthetic');
-      assert.equal(error.code, code);
-      assert.equal(error.errno, -number);
-    }
-  });
-}
+test('filesystem errors retain the reviewed exception categories and native diagnostics', () => {
+  const cases = {
+    EACCES: 'PermissionError', EPERM: 'PermissionError', EEXIST: 'FileExistsError', ENOENT: 'FileNotFoundError',
+    EISDIR: 'IsADirectoryError', ENOTDIR: 'NotADirectoryError', EINTR: 'InterruptedError',
+    EAGAIN: 'BlockingIOError', EWOULDBLOCK: 'BlockingIOError', EINPROGRESS: 'BlockingIOError', EALREADY: 'BlockingIOError',
+    EPIPE: 'BrokenPipeError', ESHUTDOWN: 'BrokenPipeError', ECONNABORTED: 'ConnectionAbortedError',
+    ECONNREFUSED: 'ConnectionRefusedError', ECONNRESET: 'ConnectionResetError', ESRCH: 'ProcessLookupError',
+    ETIMEDOUT: 'TimeoutError', EIO: 'OSError', ENAMETOOLONG: 'OSError',
+  };
+  for (const [code, category] of Object.entries(cases)) {
+    const error = Object.assign(new Error('native diagnostic'), { code, errno: -1, path: 'synthetic' });
+    const stack = error.stack;
+    assert.equal(pythonFilesystemError(error), error);
+    assert.equal(error.name, category); assert.equal(error.message, 'native diagnostic');
+    assert.equal(error.stack, stack); assert.equal(error.path, 'synthetic');
+    assert.equal(error.code, code); assert.equal(error.errno, -1);
+  }
+});
 
 test('filesystem category bridge preserves non-filesystem and explicitly named errors', async () => {
   for (const error of [null, 'failure', new TypeError('synthetic'), new Error('plain'),
