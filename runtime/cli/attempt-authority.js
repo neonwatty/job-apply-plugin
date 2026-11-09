@@ -74,7 +74,7 @@ export class AttemptAuthority {
     }
     async #heartbeat() {
         this.#active();
-        await this.#service.heartbeat(this.#jobId, this.#token);
+        await this.#service.heartbeat(this.#jobId, this.#token, this.#revision);
     }
     dispatch(request) {
         return this.#serial(async () => {
@@ -113,7 +113,16 @@ export class AttemptAuthority {
                 const status = string(get(request, 'status'));
                 if (!['needs_info', 'awaiting_review'].includes(status ?? ''))
                     throw new Error('invalid request');
-                await this.#service.handoff(this.#jobId, this.#token, status, object(get(request, 'session'), 'session'), this.#revision);
+                try {
+                    await this.#service.handoff(this.#jobId, this.#token, status, object(get(request, 'session'), 'session'), this.#revision);
+                }
+                catch (error) {
+                    if (error instanceof Error && error.message === 'job revision conflict') {
+                        await this.close();
+                        this.#options.onHeartbeatFailure?.();
+                    }
+                    throw error;
+                }
                 await this.close();
                 return { response: set(attemptSuccess('handed_off'), 'status', text(status)), complete: true };
             }

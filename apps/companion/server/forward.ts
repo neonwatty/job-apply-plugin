@@ -3,6 +3,8 @@ import { permittedApi } from "./routes";
 import { legacyAssets } from "./assets";
 
 const MAX_BODY = 64 * 1024;
+// Candidate facts permit 256 KiB, plus the revision envelope.
+const MAX_FACTS = 320 * 1024;
 const MAX_UPLOAD = 4 * Math.ceil(10 * 1024 * 1024 / 3) + MAX_BODY;
 const MAX_RESPONSE = 32 * 1024 * 1024;
 export function failure(status: number, code: string, message: string): Response {
@@ -72,7 +74,7 @@ export async function forward(request: Request, kind: "api" | "asset",
       return failure(415, "request_error", "Content-Type must be application/json");
     }
     const limit = path === "/api/resumes/import" || /^\/api\/resumes\/[^/]+\/(replace|adopt)$/.test(path)
-      ? MAX_UPLOAD : MAX_BODY;
+      ? MAX_UPLOAD : /^\/api\/resume-facts\/[^/]+$/.test(path) ? MAX_FACTS : MAX_BODY;
     const length = request.headers.get("content-length");
     if (length === null || !/^\d+$/.test(length)) return failure(411, "request_error", "a valid Content-Length is required");
     if (Number(length) > limit) return failure(413, "request_error", "request body is too large");

@@ -26,5 +26,7 @@ current package never starts that package or a Python process.
 
 Installed tests run the production launcher and documented command surfaces
 with an empty `PATH`, cover fresh and legacy Stores, verify restart durability,
-and scan the installed tree for Python files. Unsupported platforms and invalid or
+and scan installed runtime trees for Python files. The separately assembled fixture
+also excludes repository reference trees; a raw source installation may retain
+those development files without invoking them. Unsupported platforms and invalid or
 missing packaged artifacts fail before activation.

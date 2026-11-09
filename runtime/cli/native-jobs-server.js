@@ -7,6 +7,8 @@ import { jobsHttp, apiError } from "../workspace-core/jobs-http.js";
 import { NativeJobsRepository } from "../store/native-jobs.js";
 import { loadPosixFlockProvider } from "../store/posix-flock.js";
 const maxBody = 64 * 1024;
+// Candidate facts permit 256 KiB, plus the revision envelope.
+const maxFacts = 320 * 1024;
 const maxUpload = 4 * Math.ceil(10 * 1024 * 1024 / 3) + maxBody;
 const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== "--root" || args[2] !== "--native-lock") {
@@ -52,7 +54,8 @@ const server = createServer(async (request, response) => {
             const length = request.headers["content-length"];
             if (!length || !/^\d+$/.test(length))
                 return fail(411, "request_error", "a valid Content-Length is required");
-            const limit = path === "/api/resumes/import" || /^\/api\/resumes\/[^/]+\/(replace|adopt)$/.test(path) ? maxUpload : maxBody;
+            const limit = path === "/api/resumes/import" || /^\/api\/resumes\/[^/]+\/(replace|adopt)$/.test(path) ? maxUpload
+                : /^\/api\/resume-facts\/[^/]+$/.test(path) ? maxFacts : maxBody;
             if (Number(length) > limit)
                 return fail(413, "request_error", "request body is too large");
             request.setTimeout(30_000, () => request.destroy());

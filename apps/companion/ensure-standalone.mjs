@@ -3,15 +3,9 @@ import { constants } from 'node:fs';
 import { lstat, mkdir, open, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { standaloneAssembled as assembled } from './standalone-assets.mjs';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
-
-async function assembled(app) {
-  const server = await lstat(join(app, '.next/standalone/apps/companion/server.js')).catch(() => null);
-  const staticAssets = await lstat(join(app, '.next/standalone/apps/companion/.next/static')).catch(() => null);
-  return server?.isFile() && !server.isSymbolicLink()
-    && staticAssets?.isDirectory() && !staticAssets.isSymbolicLink();
-}
 
 async function run(command, args, cwd, signal) {
   signal.throwIfAborted();

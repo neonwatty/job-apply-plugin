@@ -109,6 +109,8 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
     socket.once('end', () => {
       if (rejected) return;
       if (incoming === null) { if (received) reject(); else socket.destroy(); return; }
+      // The one-second deadline bounds framing, not a Store transaction waiting on its lock.
+      socket.setTimeout(0);
       queued = true;
       const request = incoming;
       queue = queue.then(async () => {
@@ -177,7 +179,8 @@ async function exchange(path: string, request: Document): Promise<Document> {
     socket.once('connect', () => socket.end(frame));
     socket.on('data', bytes => { try { result = decoder.push(bytes); } catch { fail(); } });
     socket.once('end', () => { socket.destroy(); if (result) resolve(result); else fail(); });
-    socket.once('error', fail); socket.setTimeout(1000, fail);
+    // Store lock acquisition permits 30 seconds; allow the response to finish after that wait.
+    socket.once('error', fail); socket.setTimeout(60_000, fail);
   });
 }
 export async function requestAttempt(root: string, request: Document, options: { start?: boolean; executable?: string } = {}): Promise<Document> {

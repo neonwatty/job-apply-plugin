@@ -267,3 +267,77 @@ test('orphan PID staging prefixes remain disposable while unsafe staging metadat
     await assert.rejects(state.claims.status());
   } finally {await fixture.cleanup();}
 });
+
+test('job revision drift stops renewal and preserves the claim for explicit recovery', async () => {
+  const { AttemptAuthority } = await import('../runtime/cli/attempt-authority.js');
+  const { TaskIntakeService } = await import('../runtime/workspace-core/task-intake.js');
+  const fixture = await nativeFixture();
+  try {
+    for (const detect of ['handoff', 'heartbeat']) {
+      const state = await setup(fixture, `revision-drift-${detect}`);
+      await state.claims.select('job', 1n, true);
+      let tick, cancelled = false, stopped = false;
+      const authority = new AttemptAuthority(state.claims, {
+        timers: { every(callback) { tick = callback; return 1; }, cancel() { cancelled = true; } },
+        onHeartbeatFailure() { stopped = true; },
+      });
+      await authority.acquire(fromJSON({ command: 'start', id: 'job', owner: 'owner', expectedRevision: 2 }));
+      await authority.dispatch(fromJSON({ command: 'progress', session: { status: 'active' } }));
+      await new TaskIntakeService(state.repository, () => state.clock.now).intake(fromJSON({
+        url: 'https://example.invalid/job', role: 'Engineer', company: 'Synthetic', location: 'Remote',
+      }));
+      assert.equal((await read(state.root, 'jobs.json')).jobs.job.revision, 4);
+      const before = await readFile(join(state.root, 'coordinator.json'), 'utf8');
+      const session = await readFile(join(state.root, 'sessions/job.json'), 'utf8');
+      if (detect === 'handoff') await assert.rejects(authority.dispatch(fromJSON({
+        command: 'handoff', status: 'needs_info', session: { status: 'active' },
+      })), /job revision conflict/);
+      else await tick();
+      assert.equal(cancelled, true);
+      assert.equal(stopped, true);
+      await assert.rejects(authority.dispatch(fromJSON({ command: 'heartbeat' })), /not active/);
+      assert.equal(await readFile(join(state.root, 'coordinator.json'), 'utf8'), before);
+      assert.equal(await readFile(join(state.root, 'sessions/job.json'), 'utf8'), session);
+      await assert.rejects(state.claims.recover('job', fromJSON('recovery')), /live claim/);
+      state.clock.now = '2026-09-10T12:10:00Z';
+      assert.ok(plain(await state.claims.recover('job', fromJSON('recovery'))).token);
+    }
+  } finally { await fixture.cleanup(); }
+});
+
+test('a complete broker request waits for a busy Store while incomplete frames still expire', { timeout: 15000 }, async () => {
+  const { open } = await import('node:fs/promises');
+  const { createConnection } = await import('node:net');
+  const fixture = await nativeFixture();
+  let running, lock, release;
+  try {
+    const state = await setup(fixture, 'slow-acquisition');
+    await state.claims.select('job', 1n, true);
+    running = runAttemptBroker(state.root, state.claims, state.provider, { idleMilliseconds: 10000 });
+    const socketPath = attemptSocketPath(state.root, process.getuid());
+    await eventually(async () => !!(await stat(socketPath).catch(() => null)));
+    lock = await open(join(state.root, '.store.lock'), 'r+');
+    assert.equal(state.provider.tryLock(lock.fd), true);
+    release = setTimeout(() => state.provider.unlock(lock.fd), 1400);
+    const started = Date.now();
+    const acquired = plain(await requestAttempt(state.root, fromJSON({ command: 'start', id: 'job', owner: 'owner', expectedRevision: 2 })));
+    assert.ok(Date.now() - started >= 1200);
+    assert.equal(acquired.event, 'acquired');
+    assert.equal(acquired.attempt.job.revision, 3);
+    await new Promise((resolve, reject) => {
+      const socket = createConnection(socketPath);
+      const timer = setTimeout(() => { socket.destroy(); reject(Error('incomplete frame did not expire')); }, 3000);
+      socket.once('connect', () => socket.write('{'));
+      socket.once('close', () => { clearTimeout(timer); resolve(); });
+      socket.on('error', reject);
+    });
+    assert.equal(plain(await requestAttempt(state.root, fromJSON({ command: 'heartbeat' }))).event, 'heartbeat');
+    assert.equal(plain(await requestAttempt(state.root, fromJSON({ command: 'handoff', status: 'needs_info', session: { status: 'active' } }))).event, 'handed_off');
+    await running;
+  } finally {
+    clearTimeout(release);
+    if (lock) { try { await lock.close(); } catch {} }
+    if (running) { process.emit('SIGTERM'); await running; }
+    await fixture.cleanup();
+  }
+});

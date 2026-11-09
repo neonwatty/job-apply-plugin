@@ -41,6 +41,8 @@ export async function companionRegressionsBrowser(buildRoot) {
     const resume = JSON.parse(await cli('resume-import', JSON.stringify({ id: 'facts-regression', label: 'Fact regression resume' }), '--path', resumeFile));
     const facts = '{"summary":"Before","skills":[["TypeScript"]],"linkedInUrl":"linkedin.com/in/synthetic","identifier":9007199254740993,"ratio":1.0,"nested":{"exact":9007199254740995}}';
     await cli('resume-facts-draft', facts, '--resume-id', resume.id, '--expected-resume-revision', '1');
+    await cli('profile-patch', '{"ratio":1.0,"identifier":9007199254740993}',
+      '--expected-revision', '1', '--source', 'user');
     let resumeRevision = 1, factRevision = 1;
     async function externalMetadata(label) {
       await cli('resume-update', JSON.stringify({ label }), '--id', resume.id, '--expected-revision', String(resumeRevision++));
@@ -165,6 +167,23 @@ export async function companionRegressionsBrowser(buildRoot) {
     assert.equal(string(get(confirmed, 'state')), 'confirmed');
     assert.equal(int(get(object(get(confirmed, 'facts'), 'facts'), 'identifier')), 9007199254740999n);
     assert.equal(serialize(get(object(get(confirmed, 'facts'), 'facts'), 'ratio')), '-0.5');
+    await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
+    await clickCompanionNav(page, 'Facts');
+    const globalRatio = page.getByLabel('ratio', { exact: true });
+    await globalRatio.fill('');
+    await globalRatio.pressSequentially('0.001', { delay: 50 });
+    assert.equal(await globalRatio.inputValue(), '0.001');
+    await page.getByRole('button', { name: 'Save facts', exact: true }).click();
+    await page.getByText('Facts saved.', { exact: true }).waitFor();
+    const global = object(parse(await cli('profile-get')), 'profile');
+    assert.equal(serialize(get(global, 'ratio')), '0.001');
+    assert.equal(int(get(global, 'identifier')), 9007199254740993n);
+    await globalRatio.fill('');
+    await globalRatio.pressSequentially('-0.5', { delay: 50 });
+    assert.equal(await globalRatio.inputValue(), '-0.5');
+    await page.getByRole('button', { name: 'Save facts', exact: true }).click();
+    await page.getByText('Facts saved.', { exact: true }).waitFor();
+    assert.equal(serialize(get(object(parse(await cli('profile-get')), 'profile'), 'ratio')), '-0.5');
     assert.deepEqual(errors, []);
     return { cachedModalNavigation: true, metadataRefreshRace: true, factConflict: true,
       losslessFacts: true, invalidNumberGuard: true, explicitDiscard: true };

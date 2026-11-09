@@ -2,8 +2,8 @@
 
 The migration gate proves that the installed-artifact contract, Companion
 launcher, and shipped skill documents contain no Python runtime target. The
-manifest is closed: any new shipped Python target, classified entrypoint, or
-packaged Python tree fails `check:migration`.
+manifest is closed: a new Python runtime target or undeclared entrypoint fails
+`check:migration`. This checks routing, not file filtering by a marketplace host.
 
 ## Supported installation
 
@@ -31,9 +31,12 @@ older versions do not participate in native ownership.
 
 ## Repository reference assets
 
-Python reference assets remain in the development repository for differential
-oracles and historical regression evidence. They are excluded from the assembled
-installed artifact and do not form a shipped workflow route. Native QA replay is
+Python reference assets remain in the repository for differential oracles and
+historical regression evidence. Raw source-checkout installations can retain
+those files. The release harness tests real source installations separately from
+its reduced assembled fixture, which excludes reference trees. Neither form
+uses those references as production workflow routes. Required runners reject
+Python execution; source-install acceptance exercises the public native paths. Native QA replay is
 part of the installed TypeScript runtime.
 
 The [native canonical Store clone](native-canonical-store-clone.md),

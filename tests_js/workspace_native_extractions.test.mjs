@@ -86,3 +86,76 @@ test('HTTP review and CLI extraction share durable revisions and browser-safe pr
     assert.equal(stdin(['resume-extraction-request-complete', '--id', largeRequest.requestId, '--expected-request-revision', '1', '--expected-profile-revision', '6']).request.status, 'completed');
   } finally { await fixture.cleanup(); }
 });
+
+test('full supported fact candidates cross the authenticated proxy and native HTTP boundaries', { timeout: 30000 }, async () => {
+  const { spawn } = await import('node:child_process');
+  const { once } = await import('node:events');
+  const { writeFile } = await import('node:fs/promises');
+  const { pathToFileURL } = await import('node:url');
+  const { default: ts } = await import('typescript');
+  const fixture = await nativeFixture();
+  let child;
+  try {
+    const root = join(await realpath(fixture.root), 'facts-http');
+    await initializeJobsFixture(root);
+    const repository = new NativeJobsRepository(root, loadPosixFlockProvider(fixture.receipt.artifact));
+    await new ResumeService(repository).import(fromJSON({ id: 'source', label: 'Source' }), 'source.txt', Buffer.from('Synthetic source'));
+    for (const name of ['config', 'routes', 'assets', 'forward']) {
+      const source = await readFile(new URL(`../apps/companion/server/${name}.ts`, import.meta.url), 'utf8');
+      const emitted = ts.transpileModule(source, { compilerOptions: {
+        target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022,
+      } }).outputText.replace(/from "\.\/(config|routes|assets)"/g, 'from "./$1.mjs"');
+      await writeFile(join(fixture.root, `${name}.mjs`), emitted);
+    }
+    const { forward } = await import(pathToFileURL(join(fixture.root, 'forward.mjs')));
+    child = spawn(process.execPath, ['runtime/cli/native-jobs-server.js', '--root', root,
+      '--native-lock', fixture.receipt.artifact], { env: { PATH: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const startup = await new Promise((resolve, reject) => {
+      let output = '', errors = '';
+      const timer = setTimeout(() => reject(Error(`Native startup timed out: ${errors}`)), 5000);
+      const fail = error => { clearTimeout(timer); reject(error); };
+      child.once('error', fail);
+      child.once('exit', () => fail(Error(`Native startup exited: ${errors}`)));
+      child.stderr.on('data', bytes => { errors += bytes; });
+      child.stdout.on('data', bytes => {
+        output += bytes;
+        if (!output.includes('\n')) return;
+        clearTimeout(timer);
+        try { resolve(JSON.parse(output.split('\n')[0])); } catch (error) { reject(error); }
+      });
+    });
+    const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
+    const config = { origin: 'http://127.0.0.1:41001', upstream: startup.origin, token };
+    const send = (path, payload, direct = false) => {
+      const body = JSON.stringify(payload), origin = direct ? config.upstream : config.origin;
+      const options = { method: 'POST', body, headers: { Host: new URL(origin).host, Origin: origin,
+        Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'Content-Length': String(Buffer.byteLength(body)) } };
+      return direct ? fetch(origin + path, options) : forward(new Request(origin + path, options), 'api', config);
+    };
+    const facts = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`section${i}`, 'a'.repeat(32000)]));
+    const payload = { facts, expectedResumeRevision: 1, expectedFactRevision: null };
+    const saved = await send('/api/resume-facts/source', payload);
+    assert.equal(saved.status, 200, await saved.clone().text());
+    assert.equal((await saved.json()).revision, 1);
+    const persisted = await fetch(config.upstream + '/api/resume-facts/source', { headers: { Authorization: `Bearer ${token}` } });
+    assert.deepEqual((await persisted.json()).facts, facts);
+    assert.equal((await send('/api/resume-facts/source', payload)).status, 409, 'stale revisions still conflict');
+    payload.expectedFactRevision = 1;
+    assert.equal((await send('/api/resume-facts/source', payload, true)).status, 200);
+    const invalid = { ...payload, expectedFactRevision: 2, facts: { ...facts, extra: 'a'.repeat(16000) } };
+    assert.equal((await send('/api/resume-facts/source', invalid)).status, 400, 'domain 256 KiB limit remains enforced');
+    const excessive = { ...payload, facts: { huge: 'x'.repeat(321 * 1024) } };
+    for (const direct of [false, true]) {
+      assert.equal((await send('/api/resume-facts/source', excessive, direct)).status, 413);
+      assert.equal((await send('/api/jobs', payload, direct)).status, 413, 'unrelated routes retain 64 KiB bound');
+    }
+  } finally {
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit');
+      child.kill('SIGTERM');
+      const timer = setTimeout(() => child.kill('SIGKILL'), 2000);
+      try { await exited; } finally { clearTimeout(timer); }
+    }
+    await fixture.cleanup();
+  }
+});

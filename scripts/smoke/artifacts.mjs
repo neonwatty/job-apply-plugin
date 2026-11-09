@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { cp, lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { criticalPaths, assertCriticalBytes } from '../../runtime/package/installed-artifacts.js';
+import { criticalPaths, assertCriticalBytes, CRITICAL_TREES } from '../../runtime/package/installed-artifacts.js';
 
 export async function copyCritical(source, target) {
   await mkdir(target, { recursive: true });
@@ -15,16 +15,21 @@ export async function verifyArtifact(root) {
   for (const name of ['.git', '.qa-private', 'qa/runs', '.job-apply-qa', 'node_modules', 'coverage', 'dist', 'build', '.worktrees', 'docs/goals', 'test_resumes']) {
     assert.equal(await lstat(join(root, name)).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; }), false, `excluded artifact ${name}`);
   }
-  async function walk(directory) {
+  await walk(root);
+}
+async function walk(directory) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       assert.equal(entry.isSymbolicLink(), false, 'artifact symlink');
       assert.equal(/\.(?:py|pyc|pyo)$/.test(entry.name) || entry.name === '__pycache__', false, 'Python content in artifact');
       if (entry.isDirectory()) await walk(join(directory, entry.name));
     }
   }
-  await walk(root);
+
+export async function verifySourceRuntime(root) {
+  for (const tree of CRITICAL_TREES) await walk(join(root, tree));
 }
-export async function installedCodex(home, listing, source) {
+
+export async function installedCodex(home, listing, source, { sourceCheckout = false } = {}) {
   const installed = listing.installed.find(plugin => plugin.pluginId === 'job-apply@neonwatty-plugins');
   const version = JSON.parse(await readFile(join(source, '.codex-plugin/plugin.json'), 'utf8')).version;
   assert.equal(installed?.enabled, true); assert.equal(installed.version, version);
@@ -32,7 +37,8 @@ export async function installedCodex(home, listing, source) {
   await assertCriticalBytes(root, source, { profile: '3.12', label: 'installed Codex' });
   const expected = ['account-setup','answer-memory','application-setup','job-apply','job-preferences','job-search','job-title-discovery','job-workspace','saved-jobs'];
   assert.deepEqual((await readdir(join(root, 'skills'))).sort(), expected.sort());
-  await verifyArtifact(root);
+  if (sourceCheckout) await verifySourceRuntime(root);
+  else await verifyArtifact(root);
   return root;
 }
 export async function preparePrior(root) {

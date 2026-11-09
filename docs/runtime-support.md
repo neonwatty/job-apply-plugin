@@ -6,9 +6,10 @@ JavaScript ES modules targeting ES2022. Each supported package carries a
 verified Node-API 8 lock artifact. Other host cells remain unsupported.
 
 The installed launcher, Store, task, attempt, policy, workspace, and QA replay
-surfaces are native TypeScript. The assembled artifact contains no Python files
-or Python launch path. Repository-only differential oracles remain development
-evidence and are excluded from that artifact.
+surfaces are native TypeScript. The assembled runtime fixture contains no Python files or Python launch path.
+Marketplace installers can also retain a full source checkout, including Python
+reference files. Those files are development evidence, not installed production
+routes; their presence does not require a Python interpreter.
 
 ## Operating requirements
 

@@ -160,9 +160,11 @@ export class ClaimsService {
       return set(result,'claim',publicClaim(claim,this.now()));
     });
   }
-  heartbeat(id:string,token:Value):Promise<Value> {
+  heartbeat(id:string,token:Value,expectedRevision?:bigint):Promise<Value> {
     return this.repository.claimTransaction(async tx => {
       const claim = requireClaim(tx.coordinator,tx.jobs,id,token,this.now());
+      if (expectedRevision !== undefined && int(get(activeJob(tx.jobs,id),'revision')) !== expectedRevision)
+        throw new JobsError('job revision conflict');
       const updated = heartbeatClaim(claim,this.now());
       await tx.saveCoordinator(set(doc({schemaVersion:1}),'claim',updated));
       return set(doc({}),'claim',publicClaim(updated,this.now()));

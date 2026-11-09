@@ -33,7 +33,8 @@ npm run test:release
   are recorded as skipped, not certified as supported.
 - Release runs production dependency auditing (blocking high/critical advisories),
   link checks, and the Node package harness, including source-only
-  Companion build, isolated Codex/Claude installation, cache replacement, native
+  Companion build from a real source-marketplace cache, isolated Codex/Claude
+  source and assembled-fixture installation, cache replacement, native
   CLI/browser journeys, critical-byte parity, and restart durability.
 
 The production Companion regressions exercise Jobs-to-Answers navigation, resume
@@ -115,6 +116,12 @@ For development, use `npm run companion:dev -- --root /absolute/path/to/private/
 The root must be private and owned; its canonical owned parent may allow group
 or other read/search permissions, but may not allow group/other writes. The
 launcher preserves the parent's permissions. Use disposable Stores for testing.
+
+Raw source-marketplace caches may retain historical reference files. The release
+harness verifies native runtime trees separately from its reduced artifact
+fixture; it does not claim that a marketplace host strips every Python file.
+An interrupted static-asset copy lacks a completed build receipt and is retried
+under the build lock on the next launch.
 
 A source-only marketplace installation uses npm and registry access to assemble
 Companion on first launch. Later launches reuse the standalone build. Runtime

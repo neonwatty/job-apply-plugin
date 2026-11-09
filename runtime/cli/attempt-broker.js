@@ -135,6 +135,8 @@ export async function runAttemptBroker(root, service, provider, options = {}, ap
                     socket.destroy();
                 return;
             }
+            // The one-second deadline bounds framing, not a Store transaction waiting on its lock.
+            socket.setTimeout(0);
             queued = true;
             const request = incoming;
             queue = queue.then(async () => {
@@ -249,8 +251,9 @@ async function exchange(path, request) {
             resolve(result);
         else
             fail(); });
+        // Store lock acquisition permits 30 seconds; allow the response to finish after that wait.
         socket.once('error', fail);
-        socket.setTimeout(1000, fail);
+        socket.setTimeout(60_000, fail);
     });
 }
 export async function requestAttempt(root, request, options = {}) {

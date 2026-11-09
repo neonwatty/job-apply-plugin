@@ -12,8 +12,13 @@ export function FactValue({ value, label, change, depth = 0 }: {
   const [error, setError] = useState('');
   const [numeric, setNumeric] = useState<string | null>(null);
   const numberInput=useRef<HTMLInputElement|null>(null);
-  useEffect(()=>{setNumeric(null);setError('');numberInput.current?.setCustomValidity('');},[value]);
-  const update = (next: Value) => { setError(''); change(next); };
+  const localValue=useRef(value);
+  useEffect(()=>{
+    if(value===localValue.current)return;
+    localValue.current=value;
+    setNumeric(null);setError('');numberInput.current?.setCustomValidity('');
+  },[value]);
+  const update = (next: Value) => { setError(''); localValue.current=next; change(next); };
   if (depth > 12) return <p>Nested value retained. Edit this deeply nested fact through the CLI.</p>;
   if (value instanceof PythonObject) return <fieldset><legend>{label}</legend>
     {keys(value).map(key => <div className="fact-entry" key={key}>
@@ -37,7 +42,7 @@ export function FactValue({ value, label, change, depth = 0 }: {
   const content=string(value);
   if (content!==null) return <label>{label}<input value={content} onChange={event=>update(text(event.target.value))}/></label>;
   if (value===null) return <div>{label}: no value <button type="button" onClick={()=>update(text(''))}>Set {label}</button></div>;
-  return <label>{label}<input ref={numberInput} value={numeric ?? serialize(value)} onChange={event=>{
+  return <label>{label}<input ref={numberInput} aria-label={label} aria-invalid={Boolean(error)} value={numeric ?? serialize(value)} onChange={event=>{
     const raw=event.target.value;
     setNumeric(raw);
     try {

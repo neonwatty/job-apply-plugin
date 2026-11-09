@@ -11,10 +11,21 @@ import { activateNativeWriter, rollbackNativeWriter } from '../runtime/store/nat
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { acquireAttemptExclusion, assertNoLiveDetachedAttempt, parseSupervisorOptions, prepareNativeDefault, resolveSupervisorRoot, runSupervisor } from '../apps/companion/supervise.mjs';
 import { attemptSocketPath } from '../runtime/cli/attempt-protocol.js';
+import { assembleStandalone, standaloneAssembled } from '../apps/companion/standalone-assets.mjs';
 import { ensureStandalone } from '../apps/companion/ensure-standalone.mjs';
 
 const app = new URL('../apps/companion/', import.meta.url).pathname;
 const execute = promisify(execFile);
+async function fixtureStandalone(appRoot, id = 'synthetic-build') {
+  const build = join(appRoot, '.next/standalone/apps/companion');
+  await mkdir(join(build, '.next'), { recursive: true });
+  await mkdir(join(appRoot, '.next/static'), { recursive: true });
+  await writeFile(join(build, 'server.js'), 'synthetic build\n');
+  await writeFile(join(appRoot, '.next/BUILD_ID'), id);
+  await writeFile(join(build, '.next/BUILD_ID'), id);
+  await writeFile(join(appRoot, '.next/static/chunk.js'), 'synthetic asset\n');
+  await assembleStandalone(appRoot);
+}
 
 test('source-only Companion builds once under a process lock before Store activation', async t => {
   const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-bootstrap-')));
@@ -26,9 +37,7 @@ test('source-only Companion builds once under a process lock before Store activa
   const runner = async (command, args) => {
     steps.push([command, ...args]);
     if (args[0] === 'run') {
-      const build = join(appRoot, '.next/standalone/apps/companion');
-      await mkdir(join(build, '.next/static'), { recursive: true });
-      await writeFile(join(build, 'server.js'), 'synthetic build\n');
+      await fixtureStandalone(appRoot);
     }
   };
   const options = { provider, runner, report: message => messages.push(message) };
@@ -50,7 +59,7 @@ test('Companion build failure does not leave a false ready marker', async t => {
   await assert.rejects(ensureStandalone(root, { provider, runner: async (command, args) => {
     if (args[0] === 'run') {
       const partial = join(appRoot, '.next/standalone/apps/companion');
-      await mkdir(partial, { recursive: true });
+      await mkdir(join(partial, '.next/static'), { recursive: true });
       await writeFile(join(partial, 'server.js'), 'incomplete build\n');
       throw Error('synthetic build failure');
     }
@@ -59,12 +68,14 @@ test('Companion build failure does not leave a false ready marker', async t => {
   await ensureStandalone(root, { provider, runner: async (command, args) => {
     steps.push(args[0]);
     if (args[0] === 'run') {
-      const build = join(appRoot, '.next/standalone/apps/companion');
-      await mkdir(join(build, '.next/static'), { recursive: true });
-      await writeFile(join(build, 'server.js'), 'synthetic retry\n');
+      await fixtureStandalone(appRoot, 'synthetic-retry');
     }
   } });
   assert.deepEqual(steps, ['ci', 'run']);
+  assert.equal(await standaloneAssembled(appRoot), true);
+  assert.equal(await readFile(join(appRoot, '.next/standalone/apps/companion/.next/static/chunk.js'), 'utf8'), 'synthetic asset\n');
+  await writeFile(join(appRoot, '.next/BUILD_ID'), 'newer-build');
+  assert.equal(await standaloneAssembled(appRoot), false);
 });
 
 test('Companion supervisor resolves the ordinary Store root with closed options', () => {
