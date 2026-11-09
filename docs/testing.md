@@ -1,5 +1,8 @@
 # Testing the TypeScript release
 
+For upgrade steps and features added since the Python release, see the
+[TypeScript transition guide](typescript-transition.md).
+
 The production plugin and required validation use Node.js 22 or newer. Required
 checks do not discover, install, or execute CPython. Supported packaged targets
 are macOS arm64 and Linux x64; Windows reference tests do not establish native
@@ -55,6 +58,10 @@ Before releasing the TypeScript transition, run:
 npm run test:migration-once
 ```
 
+Run it from a clean checkout of the exact candidate and retain its final JSON
+receipt. Use the manual workflow for both supported platform cells; required CI
+never dispatches it automatically.
+
 This explicit command needs Python and Git history. It extracts the actual
 v1.1.0 implementation at `07f18ee3c8854df74746492c7a4728fcdf302ff5`, creates
 fictional profile, answers, history and session records through that release,
@@ -74,6 +81,22 @@ with TypeScript, without running Python. `--capture-fixture` explicitly regenera
 it during historical acceptance; review fixture changes as contract changes.
 The historical release did not have the later managed-resume/job Store features;
 those remain covered by current native Store and Companion suites.
+
+## Migration inventory audit before main
+
+From a clean candidate checkout with full Git history, also run:
+
+```text
+npm run check:migration
+```
+
+This Node audit checks current source/surface bindings, reviewed inventory hashes,
+and the frozen historical boundary. Historical requirement declarations can refer
+to optional reference suites; the audit resolves those Node test bindings without
+scheduling suites or making them required CI. Unknown bindings still fail.
+A passing inventory receipt does not accept every historical DAG task or replace
+behavioral tests and the separate one-time Store migration check. Dirty checkouts
+are rejected; a disposable staged snapshot can be used for local diagnosis.
 
 ## Optional historical comparisons
 

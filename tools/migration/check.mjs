@@ -10,6 +10,7 @@ import { validateRequirements, missingRequirementCoverage } from './requirements
 import { validatePackages } from './packages.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
+import { requirementSuiteRegistry } from './requirement-suites.mjs';
 import { loadTaskEvidence } from './load-task-evidence.mjs';
 import { loadPrerequisites } from './load-prerequisites.mjs';
 import { auditHistoricalBoundary } from './historical-boundary.mjs';
@@ -205,6 +206,12 @@ export async function checkInventory(root, options = {}) {
   const historicalAudit = await auditHistoricalBoundary(root, snapshot => checkInventory(snapshot));
   if (requirements.length || packages.length) {
     const matrix = await loadMatrix(root);
+    const requirementMatrices = [matrix];
+    // Archived/current evidence may name optional reference suites after cutover.
+    // Resolve those declarations without adding them to required CI or running them.
+    if (historicalAudit && matrix.runtime === 'typescript') {
+      requirementMatrices.push(await loadMatrix(root, 'config/reference-test-matrix.json'));
+    }
     const testIds = new Map();
     const files = new Map(actual);
     const registered = new Set(allPaths);
@@ -221,12 +228,11 @@ export async function checkInventory(root, options = {}) {
     }
     const nodes = new Set(nodesFile.nodes.map((item) => item.id));
     const surfaceIds = new Set(surfaces.map((item) => item.id));
-    const planningPaths = [...allPaths, ...matrix.suites.filter(suite => suite.kind === 'node-test')
+    const planningPaths = [...allPaths, ...requirementMatrices.flatMap(item => item.suites).filter(suite => suite.kind === 'node-test')
       .flatMap(suite => (suite.include ?? []).filter(path => safePath(path) && !/[*?\[\]{}]/.test(path)))];
     const requirementContext = { nodes, surfaces: surfaceIds, files, testIds,
       platforms: new Set(['node-local']),
-      suites: new Map(matrix.suites.filter((suite) => suite.kind === 'node-test')
-        .map((suite) => [suite.id, new Set(suiteFiles(suite, planningPaths))])) };
+      suites: requirementSuiteRegistry(requirementMatrices, planningPaths) };
     if (historicalAudit) {
       // Frozen packages/prerequisites are audited at their original source. They
       // cannot unlock current code; current test bindings still must resolve.

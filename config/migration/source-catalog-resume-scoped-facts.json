@@ -55,6 +55,11 @@
       "path": "src/workspace-core/resume-facts.ts",
       "sha256": "0783562c3df640d12bd25fff125d80844b5009f6bb40c01c65d03cc485773253",
       "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/resume-facts-model.ts",
+      "sha256": "44d6cf2326cafbafd8097f8ca145e5613afa5f239bf7e7d576bd83ef109a130f",
+      "classification": "unreviewed"
     }
   ]
 }

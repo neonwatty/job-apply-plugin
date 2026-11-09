@@ -1360,7 +1360,8 @@
         "tests_js/ci-shadow.test.mjs",
         "tests_js/test-runner-execution.test.mjs",
         "tests_js/test-runner-selection.test.mjs",
-        "tests_js/typescript_ci.test.mjs"
+        "tests_js/typescript_ci.test.mjs",
+        "tests_js/migration_suite_registry.test.mjs"
       ],
       "tiers": [
         "fast",

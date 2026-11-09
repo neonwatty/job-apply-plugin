@@ -4,8 +4,25 @@ The disposable writer-switch controller holds an OS-backed ownership lease for t
 
 Activation begins only after the controller sends `SIGTERM`, waits for the owned group, escalates the same group with `SIGKILL` when necessary, and observes that the group no longer exists. The first Store rename cannot run before that proof. A Companion launched under this controller keeps its workspace and Next children in the controller's process group, so abrupt parent or descendant shutdown cannot leave a separately detached writer behind.
 
-After quiescence, the existing Store and candidate locks still protect digest verification and same-parent renames. The controller starts the native writer only after activation completes. If the switch or native readiness fails, it recovers the directory state, rolls back a completed native selection, and restarts Python before returning the original failure. Rollback applies the same rule in reverse and restarts whichever unambiguous Store state recovery finds.
+A denied exit probe does not prove that a group has gone. The controller retries
+within its bounded deadline; persistent denial blocks the transition before any
+rename. Delivery errors from termination signals still propagate.
 
-The installed-package rehearsal uses this controller for the initial Python process, native activation, native restart, Python rollback, and retained-native inspection. Its forced-shutdown fixture also proves that an uncooperative child and descendant are gone before the Store moves.
+After quiescence, Store and candidate locks protect digest verification and
+same-parent renames. The current installed supervisor selects native writers
+only and uses the same lifetime lease for its Store and Next.js children. It
+exposes no Python writer or transitional Python rollback command.
 
-This is bounded evidence on disposable owned clones. It does not discover or terminate arbitrary external processes, change the ordinary Companion default, activate an owner Store, or publish a release. Attempt-broker, final-action-policy, and remaining native Store command closure are still required before default activation.
+Historical switch rehearsals could supply a Python writer specification and
+exercise explicit rollback. Current quiescence regression fixtures use Node
+children even when their compatibility mode is named `python`. The separate
+one-time historical Store acceptance actually runs the pinned Python release,
+stops it before native activation, and reads with it again only after rollback.
+See [testing](../testing.md) for the distinction.
+
+This controller does not discover or terminate arbitrary external processes.
+Owners must stop old plugin sessions, workspaces, and attempts before upgrading
+or restoring data; a lifetime lease does not retroactively enroll older Python
+writers. See the [transition guide](../typescript-transition.md) for recovery
+boundaries. Tests use disposable fictional Stores and do not activate an owner
+Store or publish a release.

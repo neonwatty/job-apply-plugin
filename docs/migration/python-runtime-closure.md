@@ -10,15 +10,19 @@ packaged Python tree fails `check:migration`.
 Source marketplace packages include reviewed Node-API 8 lock artifacts for
 macOS arm64 and Linux x64. Their receipts bind the platform, architecture,
 source hash, and artifact hash. Unsupported hosts fail closed; the installed
-runtime never compiles or downloads native code.
+runtime never compiles the lock addon or downloads a Node interpreter. A
+source-only Companion first launch installs pinned npm dependencies and builds
+its server; those dependencies may include their own prebuilt native binaries.
 
 One installed router owns the ordinary Store, task, attempt, and final-action
 policy command surfaces. The Companion launcher owns the workspace surface.
-Before a mutating command or workspace launch, the router verifies the packaged
+Before a data command or workspace launch, the router verifies the packaged
 lock, acquires attempt exclusion and Store ownership, prepares a complete clone,
 retains the original directory as a deterministic migration backup, and
 atomically activates the native Store. A fresh Store follows the same path.
-Read-only discovery commands that are defined as non-creating remain so.
+Help does not activate a Store. `store paths` and `policy status` do not create
+an absent Store; an existing unactivated Store can still be activated by those
+commands. A read request is not generally an activation-free probe.
 
 All shipped skills and ordinary README commands use these TypeScript surfaces.
 No installed command starts or falls back to Python. Existing cached plugin

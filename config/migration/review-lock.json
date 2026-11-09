@@ -11,11 +11,11 @@
     },
     {
       "path": "resume-scoped-facts-surfaces.json",
-      "sha256": "69e96a2ef5e3739b52b6ffce4fd12edda0cc0f94b23f9bb9270099c9dff15ba9"
+      "sha256": "f377e3c40dc3a8b23d8e008bded67e2d2bab1bc5b0a29ac2542e36c31f3943f4"
     },
     {
       "path": "source-catalog-resume-scoped-facts.json",
-      "sha256": "fd6bedbbf7045351880d66f5f08b6a9c3326b23a0909f0a09109d83a4ce06696"
+      "sha256": "875b31fbd49dab7854ab65d399ae56528d204d0a97e6ec5e4104699af467d4d2"
     },
     {
       "path": "browser-app-01-surfaces.json",

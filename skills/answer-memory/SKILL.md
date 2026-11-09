@@ -34,6 +34,7 @@ Use permission-restricted temporary JSON files for `--input`, remove them on suc
 - Canonical job maintenance, history, or standalone sessions: [jobs and history](references/jobs-history.md).
 - Account and sign-in classification or redacted employer-account metadata: use [account-setup](../account-setup/SKILL.md). It owns value-free account routing; Answer Memory still owns the Store and revision rules.
 - Starting or resuming an application: use [job-apply](../job-apply/SKILL.md). Ordinary agents use the `task` and `attempt` command surfaces, never raw acquire, recovery, heartbeat, progress, or handoff commands. The broker keeps claim authority private.
+- Upgrading from the Python release or explaining migration backups/recovery: [upgrade guide](references/upgrade.md). Stop older writers before the first data operation.
 - Explicit storage compatibility/debugging: [storage contract](references/storage-contract.md).
 - Explicit inert Auto-submit policy work: [policy](references/policy.md). This never authorizes live submission.
 

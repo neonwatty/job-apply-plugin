@@ -1,7 +1,5 @@
 # Job Apply Plugin for Codex and Claude Code
 
-Run the isolated cross-client reference oracle with `npm run qa:unified-task-spine`. It uses a temporary synthetic Store, the development-only Python reference CLIs and workspace server, and Playwright; its single JSON report is value-free and cleanup-closed, and it never enables a final application action. Installed TypeScript routing and Companion coverage comes from the native Store, CLI, and workspace suites described in `docs/testing.md`.
-
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/7xsxU4ZG6A)
 
 AI-powered job application assistant for Claude Code and Codex that fills job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using visible browser automation.
@@ -73,6 +71,19 @@ In Companion, open Facts → Search preferences → Discover related titles. Ent
 - **Selective updates**: Change individual preferences while preserving the rest
 
 ## Requirements
+
+The installed plugin runs on **Node.js 22 or newer** on **macOS Apple Silicon
+(arm64)** or **Linux x64**. Make `node` available to the host's launch environment;
+the plugin includes a native lock addon, not a Node interpreter. Windows and other
+architectures are not supported by this release. Python is not required.
+
+For a source-only marketplace install, the first Companion launch also needs npm
+and package-registry access to install pinned dependencies and build the local
+server. Later launches reuse that build until the plugin is refreshed.
+
+See the [TypeScript transition guide](docs/typescript-transition.md) for features
+added since the Python release, upgrade steps, backup/recovery boundaries, and
+pre-merge acceptance checks.
 
 Choose either supported host:
 
@@ -190,7 +201,7 @@ The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **N
 node apps/companion/launch.mjs
 ```
 
-The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It uses the packaged Node runtime path and requires no Python runtime, account, cloud service, telemetry, or separate database.
+The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. Its services reuse the Node interpreter that launched it; the plugin does not bundle or download Node. The workspace requires no Python runtime, account, telemetry, or separate database. A missing standalone build needs npm and registry access as described above.
 
 Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
 
@@ -309,7 +320,7 @@ chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-jo
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
-Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first mutating command validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. The installed artifact contains no Python files or Python launcher route. See [runtime closure status](docs/migration/python-runtime-closure.md).
+Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. The installed artifact contains no Python files or Python launcher route. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
 All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 
@@ -384,7 +395,7 @@ not read `application_queue.md`, arbitrary paths, nested directories, or
 symlinks. Undocumented Markdown variants are not imported, and the helper never
 modifies report files.
 
-Discover candidates without changing or creating the canonical store:
+Preview candidate jobs without importing them or changing report files. Complete the [upgrade steps](docs/typescript-transition.md) first: the public router can initialize or activate the Store even for a preview command:
 
 ```bash
 node apps/companion/command.mjs store legacy-jobs-preview
@@ -442,6 +453,14 @@ Before posting, remove names, email addresses, phone numbers, resume content, cr
 MIT License - See [LICENSE](LICENSE) for details.
 
 ## Replay QA (developers)
+
+The capture and promotion tools below are optional repository development tools.
+Some use the historical Python reference implementation; they are excluded from
+the installed plugin and from required TypeScript CI. Running them does not prove
+live ATS support or authorize use of the owner's browser. The isolated reference
+oracle `npm run qa:unified-task-spine` also needs Python and Playwright; it uses
+only synthetic data and emits a value-free report. Use the
+[required testing tiers](docs/testing.md) for release validation.
 
 Replay fixtures are built from a tightly controlled, private recording and checked in only after they have been reduced to a generic semantic model. Follow these policies:
 
@@ -635,11 +654,8 @@ Run the deterministic checks, then prepare a supervised advisory replay through 
 ```bash
 npm ci
 npx playwright install --with-deps chromium
-python3 -m unittest discover -s tests -v
-npm run test:qa-screening
-npm run test:qa-browser
-bash scripts/smoke-plugin.sh
-bash scripts/check-links.sh
+npm run test:affected -- --base origin/staging
+npm run test:release
 git diff --check
 node runtime/cli/native-qa-replay.js prepare --fixture linkedin-easy-apply-screening-2026-08-v1 --scenario linkedin-screening
 node runtime/cli/native-qa-replay.js started --run-id GENERATED_RUN_ID

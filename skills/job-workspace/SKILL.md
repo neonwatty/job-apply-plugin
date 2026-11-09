@@ -11,6 +11,9 @@ For first use or a handoff between Companion and an agent, read the shared [work
 
 ## Launch
 
+Requires Node.js 22 or newer in the host's launch environment on macOS arm64 or
+Linux x64. The packaged native lock is an addon, not a bundled Node interpreter.
+
 1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains `apps/companion/launch.mjs` and the host's packaged native lock. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks. The launcher assembles a missing standalone build on first use, so the installed build need not exist yet.
 2. Run exactly:
 

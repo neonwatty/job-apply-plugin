@@ -4,6 +4,11 @@ Read when explaining or troubleshooting the corresponding Companion surface.
 
 ## Boundaries
 
+- For a Python-era upgrade, stop old plugin sessions and workspaces before any
+  data command or Companion launch. Follow the [upgrade guide](../../answer-memory/references/upgrade.md);
+  keep the retained migration backup and never run an older writer against an
+  activated native Store.
+
 - Start the Companion from the installed plugin directory with `node apps/companion/launch.mjs`. It binds to `127.0.0.1`, opens the complete token-bearing URL locally, and starts on Overview. Never reuse an old URL after restart.
 - The complete native navigation inventory is Overview, Jobs, Needs Attention, Facts, Resumes, Answers, Automation, Accounts & Sign-in, Settings, and Trash. Application Activity is the selected job's contextual progress view. A workflow may use only a subset; absence from a workflow map does not remove a surface from Companion.
 
