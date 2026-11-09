@@ -20,9 +20,9 @@ copied source tree, and the native repository accepts it only when it is the
 sole recognized ownership marker. Synthetic fixtures keep their existing
 marker and behavior.
 
-Shipped skills and the Companion still route to Python. This package creates a
-safe rehearsal target for the Store, task CLI, and workspace server; it does
-not adopt the live Store, enable concurrent Python and TypeScript writers, or
-activate native product routing. A later writer-switch rehearsal must validate
-the public CLI and HTTP envelopes against a disposable clone before routing can
-change.
+Clone preparation alone does not switch a writer. Current shipped skills and
+Companion use [controlled native routing](controlled-writer-routing.md), which
+prepares and activates the clone before serving native data operations. The
+installed package does not run Python. Historical writer-switch rehearsals are
+development evidence; they are not instructions to enable concurrent writers
+or to point an older package at an activated native Store.

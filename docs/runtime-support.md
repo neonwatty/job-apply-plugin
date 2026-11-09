@@ -10,7 +10,23 @@ surfaces are native TypeScript. The assembled artifact contains no Python files
 or Python launch path. Repository-only differential oracles remain development
 evidence and are excluded from that artifact.
 
-## Probe
+## Operating requirements
+
+Node must already be available in the host's launch environment. The plugin ships
+its native lock addon, not a Node interpreter, and never downloads Node or
+compiles that addon on the owner's machine. Store/CLI operations need no npm
+installation. A source-only Companion install needs npm and registry access on
+first launch to build its server; subsequent launches reuse the build until a
+plugin refresh. A prepared build does not need a new dependency download merely
+to start. No Python runtime is required for installed workflows.
+
+The supported package cells are macOS arm64 and Linux x64. CI exercises clean
+locked dependency installs, native Store/CLI/browser checks and isolated
+Codex/Claude installation on both cells. This does not establish a host guarantee
+that Node is preinstalled, Windows support, or live ATS/account acceptance. See
+[testing](testing.md) and the [transition guide](typescript-transition.md).
+
+## Development probe
 
 Run from the repository or a disposable installed fixture:
 
@@ -49,7 +65,7 @@ limits, older stable, supported stable and malformed/prerelease versions. This
 observation used the existing development environment; no fresh host-native
 installation or supported-platform acceptance was performed.
 
-## Evidence required before choosing a launch mode
+## Historical launch research and evidence limits
 
 ### Node-independent evidence harness
 
@@ -86,7 +102,7 @@ clean-machine setup and host invocation must be independently recorded by the
 operator; the harness cannot infer them from arguments or environment variables.
 Python absence is a bootstrap prerequisite, not evidence of Node absence.
 
-### Pending platform acceptance
+### Evidence required to expand platform support
 
 For each proposed supported OS/architecture, test both Codex and Claude using
 fresh host-native installations on Linux, macOS, and Windows. Record the exact
@@ -105,8 +121,8 @@ evidence. The installed runtime never downloads Node or compiles a native addon.
 source-only Companion installation explicitly runs pinned npm installation and
 its local standalone build on first launch; this requires npm and registry access.
 
-Select one final strategy only after this matrix passes: a guaranteed Node
-runtime or signed standalone executables. The current `launchMode` does not
-make that decision for another host. Fresh-host evidence remains required before
+The selected release requires an existing Node runtime. A future host guarantee
+or signed standalone runtime needs its own acceptance evidence. The diagnostic
+`launchMode` does not select or certify either strategy for another host. Fresh-host evidence remains required before
 expanding the supported platform matrix; local version output proves only the
 current process environment.
