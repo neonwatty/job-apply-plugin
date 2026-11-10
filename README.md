@@ -4,6 +4,55 @@
 
 AI-powered job application assistant for Claude Code and Codex that fills job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using visible browser automation.
 
+## Quick Start
+
+Job Apply is a plugin for Codex and Claude Code. Companion is an optional local
+app still under development. You can set up a resume, review facts, and apply
+through the plugin with Companion closed.
+
+### Requirements
+
+Install **Node.js 22 or newer** on **macOS Apple Silicon** or **Linux x64** and
+make `node` available to your host. For visible form filling, enable the Codex
+Browser plugin or [Claude in Chrome](https://chromewebstore.google.com/detail/claude-in-chrome).
+If upgrading from Python, follow the [Store upgrade guide](skills/answer-memory/references/upgrade.md)
+before your first data command.
+
+### Installation
+
+**Codex**, in a terminal:
+
+```bash
+codex plugin marketplace add neonwatty/job-apply-plugin
+codex plugin add job-apply@neonwatty-plugins
+```
+
+**Claude Code**, in a terminal:
+
+```bash
+claude plugin marketplace add neonwatty/job-apply-plugin
+claude plugin install job-apply@neonwatty-plugins
+```
+
+### Usage
+
+1. Start a new chat. Invoke `$job-apply:job-apply` in Codex or
+   `/job-apply:job-apply` in Claude Code and ask to set up your resume. Give
+   the agent its local path.
+2. Review the extracted draft privately using the local Store command the
+   agent provides. Approve the exact draft in chat. You can also review and
+   confirm it in Companion if you choose to open it.
+3. Give Job Apply the exact job URL. Confirm the resume and fact revision for
+   the application. Review the filled application and submit it yourself if ready.
+
+### Optional Companion
+
+Invoke `$job-apply:job-workspace` in Codex or `/job-apply:job-workspace` in
+Claude Code. Open the complete private local URL printed by the launcher. Keep
+the launcher running while using the app and stop it with Ctrl-C. The first
+launch from a source install needs npm and package-registry access to build the
+app. See the [workspace details](skills/job-workspace/references/workspace.md).
+
 ## Skills
 
 | Skill | Description |
@@ -63,88 +112,12 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 - **Owner control**: Review the result packet before choosing titles; discovery never changes saved preferences
 - **Clear limitations**: Login, blocked, unavailable, and empty source states are reported explicitly
 
-In Companion, open Facts → Search preferences → Discover related titles. Enter role interests or exclusions, copy the Codex or Claude Code invocation, and run it in that host. Paste the returned JSON packet into Companion to inspect evidence, edit or select titles, and preview the exact saved set. Canceling or retrying research writes nothing. After confirmation, Companion saves only approved target titles to the canonical profile; Job Search then uses those titles. The page copies an invocation but does not launch an agent. See the [workflow map](skills/answer-memory/references/workflow-map.md) for conflict and source-limitation branches.
+For the optional Companion review flow, open Facts → Search preferences → Discover related titles. Enter role interests or exclusions, copy the Codex or Claude Code invocation, and run it in that host. Paste the returned JSON packet into Companion to inspect evidence, edit or select titles, and preview the exact saved set. Canceling or retrying research writes nothing. After confirmation, Companion saves only approved target titles to the canonical profile; Job Search then uses those titles. The page copies an invocation but does not launch an agent. See the [workflow map](skills/answer-memory/references/workflow-map.md) for conflict and source-limitation branches.
 
 ### Job Preferences (`job-apply:job-preferences`)
 - **Reusable search settings**: Save target titles, salary floor, remote preference, exclusion patterns, and time range
 - **Shared profile**: Preferences are stored in `~/.job-apply/profile.json` without replacing resume profile data
 - **Selective updates**: Change individual preferences while preserving the rest
-
-## Requirements
-
-The installed plugin runs on **Node.js 22 or newer** on **macOS Apple Silicon
-(arm64)** or **Linux x64**. Make `node` available to the host's launch environment;
-the plugin includes a native lock addon, not a Node interpreter. Windows and other
-architectures are not supported by this release. Python is not required.
-
-For a source-only marketplace install, the first Companion launch also needs npm
-and package-registry access to install pinned dependencies and build the local
-server. Later launches reuse that build until the plugin is refreshed.
-
-See the [TypeScript transition guide](docs/typescript-transition.md) for features
-added since the Python release, upgrade steps, backup/recovery boundaries, and
-pre-merge acceptance checks.
-
-Choose either supported host:
-
-- **Codex**: Codex CLI or the Codex desktop app, with the Browser plugin enabled for visible navigation, form filling, authenticated Chrome sessions when selected, and local file uploads
-- **Claude Code**: [Claude Code](https://claude.ai/code) with [Claude in Chrome](https://chromewebstore.google.com/detail/claude-in-chrome)
-
-Codex stays inside its selected Browser plugin surface. Claude Code does not require Playwright; an already-configured Playwright integration may be used only for one inaccessible iframe or custom control.
-
-## Installation
-
-### Codex
-
-```bash
-codex plugin marketplace add neonwatty/job-apply-plugin
-codex plugin add job-apply@neonwatty-plugins
-```
-
-Start a new Codex task after installation, then invoke `$job-apply:job-apply`.
-
-When testing an unreleased branch, first check out the exact commit in an isolated
-worktree and pass that worktree's absolute path to `codex plugin marketplace add`.
-After installing, confirm that `codex plugin list --json` selects the manifest's
-version directory and start a new Codex task. This keeps branch tests tied to one
-explicit candidate instead of a previously cached package with the same version.
-
-The first Companion launch after a source-only marketplace install builds its
-local standalone server from the pinned npm lockfile before opening the workspace.
-This requires npm and package-registry access; later launches reuse the build
-until the plugin is refreshed.
-
-### Claude Code
-
-```bash
-claude plugin marketplace add neonwatty/job-apply-plugin
-claude plugin install job-apply@neonwatty-plugins
-```
-
-Start a new Claude Code session after installation, then invoke `/job-apply:job-apply`.
-
-## Usage
-
-The examples below use Codex syntax. In Claude Code, replace the leading `$` with `/`.
-
-### First Time Setup
-
-1. Save your application-flow preferences:
-   ```
-   $job-apply:application-setup
-   ```
-
-2. Invoke the application skill:
-   ```
-   $job-apply:job-apply
-   ```
-
-3. Provide your resume path when prompted:
-   ```
-   ~/Documents/resume.pdf
-   ```
-
-4. Review and confirm the facts extracted for that specific resume in Companion. When the draft is ready, open the optional local Companion with `$job-apply:job-workspace` in Codex or `/job-apply:job-workspace` in Claude Code. It is bundled with the plugin and starts only when requested; you can defer opening it until fact review.
 
 ### Applying to Jobs
 
@@ -201,7 +174,7 @@ The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **N
 node apps/companion/launch.mjs
 ```
 
-The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. Its services reuse the Node interpreter that launched it; the plugin does not bundle or download Node. The workspace requires no Python runtime, account, telemetry, or separate database. A missing standalone build needs npm and registry access as described above.
+The launcher binds only to `127.0.0.1`, chooses a free port, prints the complete private URL for you to open locally, and stops cleanly with Ctrl-C. Its services reuse the Node interpreter that launched it; the plugin does not bundle or download Node. The workspace requires no Python runtime, account, telemetry, or separate database. A missing standalone build needs npm and registry access as described above.
 
 Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
 
@@ -214,7 +187,7 @@ Claude Code: /job-apply:job-apply
 
 The agent acquires the Ready job from the canonical Store. Watch durable progress in **Application Activity** and use **Needs Attention** for missing information, human review, expired claims, or interrupted attempts. The agent stops before final submission; only you may submit on the third-party site.
 
-Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If read-only startup validation recognizes an unavailable, corrupt, or future-version Store, the server fails closed: it serves only the static workspace and sanitized recovery status, blocks canonical reads and mutations, and exposes no canonical values, filesystem paths, or raw exceptions to the browser. It does not automatically repair, downgrade, or overwrite the Store. If initialization itself fails after validation, startup aborts instead of presenting a degraded no-mutation claim. Stop the workspace, preserve the Store directory, and restore a known-good backup or use the matching Job Apply version.
+Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If Store validation fails during startup, Companion may exit before printing a URL. Preserve the Store directory and follow the [recovery guide](skills/answer-memory/references/upgrade.md).
 
 Use **Jobs** to manage the opportunity queue and **Resumes** to manage private files and review each resume's own facts. The separate **Facts** surface maintains the legacy applicant-wide profile and preferences, including saved path groups. Use **Answers** to search reusable answers to application questions, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library.
 
@@ -330,7 +303,7 @@ The packaged native `attempt` surface uses a detached broker scoped to one Store
 
 Version 1.3.0 is the first package identity containing this human-attention contract. Version 1.3.2 adds the explicit owner-confirmed-not-submitted review restart, and 1.3.3 adds only the fail-closed, one-time legacy review-rebuild compatibility branch. Version 1.3.4 integrates the macOS employer-account seam and labels a verified known-data entry failure as **Browser action required** rather than missing information. Version 1.3.5 adds the durable human-requested resume-extraction and grouped review workflow. None of these versions changes final-action or applied-status authority. Session additions are optional and revisioned within the existing schema: older v1 sessions remain readable, while the next coordinator write replaces legacy question/role/company/URL copies with value-free blocker, readiness, approval, and browser-handoff projections. Validation remains non-mutating on corrupt or future documents, and coordinator journal recovery remains the only crash roll-forward path.
 
-When an exact managed attempt is blocked by a referenced non-sensitive question, send a value-free `needs_info` handoff so the broker releases the claim and exits, then inspect `activity --id <job-id>`. Edit and accept the answer in Companion's canonical Answers library and explicitly resolve that pending reference against the exact job, session, and answer revisions shown there. The Store rechecks all three revisions under its lock, removes only that pending reference, and never copies the answer value into the session, journal result, history, activity, or diagnostics. The job stays in Needs Attention while another blocker remains; with no blockers it becomes Ready only after preflight. Use the returned exact Ready revision with a fresh `start` client, which creates a fresh broker acquisition for the same canonical job; the assigned/default managed resume binding and resumable session continue through the next `job-started` and `reviewed` handoff. Missing, inferred, declined, sensitive, or stale answers fail closed without retry. Refresh and review canonical state; browser drafts are not overwritten. This flow opens no portal and performs no final action.
+When an exact managed attempt is blocked by a referenced non-sensitive question, send a value-free `needs_info` handoff so the broker releases the claim and exits, then inspect `activity --id <job-id>`. Save and accept the answer through [Answer Memory](skills/answer-memory/SKILL.md) or the optional Companion Answers library, then explicitly resolve that pending reference against the exact job, session, and answer revisions shown there. The Store rechecks all three revisions under its lock, removes only that pending reference, and never copies the answer value into the session, journal result, history, activity, or diagnostics. The job stays in Needs Attention while another blocker remains; with no blockers it becomes Ready only after preflight. Use the returned exact Ready revision with a fresh `start` client, which creates a fresh broker acquisition for the same canonical job; the assigned/default managed resume binding and resumable session continue through the next `job-started` and `reviewed` handoff. Missing, inferred, declined, sensitive, or stale answers fail closed without retry. Refresh and review canonical state; browser drafts are not overwritten. This flow opens no portal and performs no final action.
 
 New resume records import a private managed copy rather than retaining the source
 path. Imports accept PDF, DOCX, and UTF-8 TXT files up to 10 MiB, reject duplicate

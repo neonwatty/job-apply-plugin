@@ -6,7 +6,7 @@ allowed-tools: Bash
 
 # Job Workspace
 
-Start the packaged, local-only companion when the user asks to review their next step, manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, edit application setup, supervise Application Activity or Needs Attention, or recover Trash in a browser.
+Start the optional local Companion only when the user asks to open it. It is still under development. Core setup, resume review, and application work use the plugin skills and Store CLI.
 For first use or a handoff between Companion and an agent, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 ## Launch
@@ -21,13 +21,13 @@ Linux x64. The packaged native lock is an addon, not a bundled Node interpreter.
    node "<plugin-root>/apps/companion/launch.mjs"
    ```
 
-3. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
+3. Leave the process attached while the user works. Open the complete private URL printed locally. Ctrl-C stops the launcher.
 
-The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and uses the canonical native Store runtime. The browser never reads or writes Store files directly. A source-only marketplace installation prepares its standalone Companion on first launch using the pinned npm lockfile; this needs npm and package-registry access once per refresh. Applicant data stays local; the workspace needs no account, telemetry, separate database, or Python runtime.
+The launcher chooses a free port, binds only to `127.0.0.1`, prints the local URL, and uses the canonical native Store runtime. The browser never reads or writes Store files directly. A source-only marketplace installation prepares its standalone Companion on first launch using the pinned npm lockfile; this needs npm and package-registry access once per refresh. Applicant data stays local; the workspace needs no account, telemetry, separate database, or Python runtime.
 
 ## Boundaries and completion
 
-The workspace uses the same canonical Store contract as the native command router; it owns no separate applicant database. Never expose its localhost service on another host or copy the printed fragment token into chat or logs. If opening fails, direct the owner to the complete URL printed locally by the launcher.
+The workspace uses the same canonical Store contract as the native command router; it owns no separate applicant database. Never expose its localhost service on another host or copy the printed fragment token into chat or logs. If startup fails before printing a URL, report the startup failure and consult the [Store upgrade and recovery guide](../answer-memory/references/upgrade.md).
 
 Confirm the launcher is serving before reporting the workspace ready. Keep the process attached while the user works; Ctrl-C stops it cleanly. Do not restart a healthy workspace merely to explain a feature.
 

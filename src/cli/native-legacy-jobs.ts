@@ -9,8 +9,8 @@ export const legacyJobCommands: Record<string,string[]> = {
   'legacy-jobs-commit':['--select','--confirm'],
 };
 export async function runLegacyJobCommand(command:string, repository:LegacyJobsRepository,
-  options:Map<string,string>, selected:string[]):Promise<Value> {
-  const provider = loadPosixDirectoryProvider(options.get('--native-lock')!);
+  options:Map<string,string>, selected:string[], nativeLock:string):Promise<Value> {
+  const provider = loadPosixDirectoryProvider(nativeLock);
   const service = new LegacyJobsService(repository, () => discoverLegacyJobs(homedir(),provider));
   if (command === 'legacy-jobs-preview') return service.preview(selected);
   if (!selected.length) throw new JobsError('required option: --select');

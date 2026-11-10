@@ -7,8 +7,8 @@ export const legacyJobCommands = {
     'legacy-jobs-preview': ['--select'],
     'legacy-jobs-commit': ['--select', '--confirm'],
 };
-export async function runLegacyJobCommand(command, repository, options, selected) {
-    const provider = loadPosixDirectoryProvider(options.get('--native-lock'));
+export async function runLegacyJobCommand(command, repository, options, selected, nativeLock) {
+    const provider = loadPosixDirectoryProvider(nativeLock);
     const service = new LegacyJobsService(repository, () => discoverLegacyJobs(homedir(), provider));
     if (command === 'legacy-jobs-preview')
         return service.preview(selected);

@@ -31,6 +31,13 @@ function uniqueTitles(choices: Choice[]): string[] {
 }
 function choicesFor(snapshot: ProfileSnapshot, packet?: TitleDiscoveryPacket): Choice[] {
   const choices: Choice[] = savedTitles(snapshot).map((title, index) => ({ id: `saved-${index}`, title, selected: true, existing: true }));
+  return mergeSuggestions(choices, packet);
+}
+
+function mergeSuggestions(draft: Choice[], packet?: TitleDiscoveryPacket): Choice[] {
+  const choices: Choice[] = draft.filter(choice => !choice.id.startsWith('suggested-')).map(choice => ({
+    id: choice.id, title: choice.title, selected: choice.selected, existing: choice.existing,
+  }));
   for (const [index, suggestion] of (packet?.suggestions ?? []).entries()) {
     const existing = choices.find(choice => titleKey(choice.title) === titleKey(suggestion.title));
     if (existing) Object.assign(existing, { category: suggestion.category, rationale: suggestion.rationale, evidence: suggestion.evidence });
@@ -90,7 +97,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
     requestAnimationFrame(() => openButton.current?.focus());
   }
   function acceptPacket() {
-    try { const parsed = parseTitleDiscoveryPacket(packetText); setPacket(parsed); if (snapshot) setChoices(choicesFor(snapshot, parsed)); setReviewedChange(false); setError(''); setConflict(false); setNotice(parsed.source.status === 'observed' ? 'Suggestions ready for your review.' : 'Source limitation recorded. You can retry research or edit titles manually.'); }
+    try { const parsed = parseTitleDiscoveryPacket(packetText); setPacket(parsed); setChoices(current => mergeSuggestions(current, parsed)); setReviewedChange(false); setError(''); setConflict(false); setNotice(parsed.source.status === 'observed' ? 'Suggestions ready for your review.' : 'Source limitation recorded. You can retry research or edit titles manually.'); }
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Invalid discovery packet.'); }
   }
   async function copyInvocation(host: 'Codex' | 'Claude Code') {
@@ -183,7 +190,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
           <textarea value={criteria} onChange={event => setCriteria(event.target.value)} rows={3} placeholder="For example: adjacent engineering leadership roles; no director titles" /></label>
         <div className="title-discovery-actions"><button type="button" className="secondary" onClick={() => void copyInvocation('Codex')}>Copy Codex invocation</button><button type="button" className="secondary" onClick={() => void copyInvocation('Claude Code')}>Copy Claude Code invocation</button></div>
         {fallback && <label>Request to copy<textarea readOnly value={fallback} onFocus={event => event.currentTarget.select()} rows={5} /></label>}
-        <label>Title discovery JSON result packet<textarea value={packetText} onChange={event => { setPacketText(event.target.value); setPacket(null); setReviewedChange(false); setChoices(choicesFor(snapshot)); }} rows={5} /></label>
+        <label>Title discovery JSON result packet<textarea value={packetText} onChange={event => { setPacketText(event.target.value); setPacket(null); setReviewedChange(false); setChoices(current => mergeSuggestions(current)); }} rows={5} /></label>
         <button type="button" className="secondary" disabled={!packetText.trim() || busy} onClick={acceptPacket}>Review packet</button>
         {packet && <div className="title-discovery-source" role="status"><strong>Research source: {packet.source.status.replace('_', ' ')}</strong><p>{packet.source.detail}</p>
           {packet.source.status === 'empty' && <p>The inspected results yielded no useful title evidence. Try different search criteria or add titles manually.</p>}

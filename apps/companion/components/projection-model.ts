@@ -21,7 +21,7 @@ export function handoffChecklistLabels(codes:string[]):string[] {
 }
 export type AttentionReason = keyof typeof attentionReasons;
 export const recoveryGuidance = {
-  expired: 'Resume this attempt using the supported CLI claim-recover command for this job.',
+  expired: 'Ask Job Apply to reset this expired attempt after confirming the application was not submitted.',
   interrupted: 'Open Job details and change this interrupted attempt to Needs information, then resolve it before starting a new attempt.',
 };
 export const attentionGuidance: Record<AttentionReason, string> = {

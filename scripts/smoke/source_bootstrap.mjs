@@ -11,7 +11,8 @@ const server = join(source, 'apps/companion/.next/standalone/apps/companion/serv
 if (await lstat(server).catch(() => null)) throw Error('source fixture already contains a Companion build');
 
 const child = spawn(process.execPath, [join(source, 'apps/companion/launch.mjs'),
-  '--plugin-root', source, '--root', join(smoke, 'source-bootstrap-store')], {
+  '--plugin-root', source, '--root', join(smoke, 'source-bootstrap-store'),
+  '--legacy-profile', join(smoke, 'absent-legacy-profile.json')], {
   cwd: source, stdio: ['ignore', 'pipe', 'pipe'],
 });
 let errors = '';

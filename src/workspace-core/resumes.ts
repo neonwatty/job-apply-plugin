@@ -87,6 +87,15 @@ export class ResumeService {
     private readonly id = () => `resume-${randomUUID()}`,
     private readonly contentRevision = () => `content_${randomBytes(24).toString('base64url')}`) {}
 
+  async legacySourcePath(id: string, expectedRevision: bigint): Promise<string> {
+    const record = await this.get(id);
+    if (record === null) throw new JobsError('resume does not exist');
+    if (int(get(record, 'revision')) !== expectedRevision) throw new JobsError('resume revision conflict');
+    const path = string(get(record, 'path'));
+    if (get(record, 'storageKind') !== null || path === null) throw new JobsError('resume is not a legacy path record');
+    return path;
+  }
+
   private uploadedFilename(filename: string, preserve: boolean): string {
     return preserve ? filename : `.browser-upload.${randomBytes(6).toString('base64url')}${resumeExtension(filename)}`;
   }

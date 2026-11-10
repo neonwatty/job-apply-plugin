@@ -112,7 +112,7 @@ export async function prepareNativeDefault(root, provider, options = {}) {
   await assertNoLiveDetachedAttempt(root);
   const candidate = `${root}.native-candidate`, retained = `${root}.native-retained`, rollback = `${root}.python-rollback`;
   if (await existing(failedActivationMarker(root)) && !options.allowFailedActivation) {
-    throw new Error('native activation previously failed; run Companion with --rollback before retrying');
+    throw new Error('native activation previously failed; consult the Store recovery guide');
   }
   if (await Promise.all([existing(candidate), existing(retained), existing(rollback)]).then(values => values.some(Boolean))) {
     const mode = await recoverNativeWriterSwitch(root, { provider, signal: options.signal });
@@ -160,13 +160,17 @@ export async function runSupervisor(options, { signal } = {}) {
   signal?.throwIfAborted();
   await validateSupervisorRoot(root);
   const provider = loadPosixFlockProvider(nativeLock);
-  const exclusion = await acquireAttemptExclusion(root, provider);
-  let controller;
+  let exclusion, controller;
   try {
     controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
-    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, {
-      signal, legacyProfile: options.legacyProfile,
-    }));
+    const prepared = await controller.prepare(async () => {
+      if (!await existing(failedActivationMarker(root)) && await existing(join(root, '.native-store-clone'))) {
+        if (await recoverNativeWriterSwitch(root, { provider, signal }) !== 'native') throw new Error('native Store is not active');
+        return { mode: 'native' };
+      }
+      exclusion = await acquireAttemptExclusion(root, provider);
+      return prepareNativeDefault(root, provider, { signal, legacyProfile: options.legacyProfile });
+    });
     if (prepared.mode === 'python') {
       if (prepared.durablePythonRollback) throw new Error('retired rollback state requires the previous package');
       await assertNoLiveDetachedAttempt(root);
@@ -189,7 +193,7 @@ export async function runSupervisor(options, { signal } = {}) {
     });
     return { controller, line, completion };
   } catch (error) { await controller?.stop().catch(() => {}); throw error; }
-  finally { await exclusion.release(); }
+  finally { await exclusion?.release(); }
 }
 
 /** Performs the one-time Store switch for ordinary native CLI entry points. */

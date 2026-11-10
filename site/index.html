@@ -258,19 +258,19 @@
         <p class="eyebrow">Install</p>
         <h2>Add the plugin and start applying.</h2>
         <p>
-          Install for Codex or Claude Code, then invoke the application skill with a job URL. Your profile and explicitly confirmed answers are stored locally and reused only when their scope still matches.
+          Install for Codex or Claude Code. In a new chat, ask Job Apply to set up your resume, review its facts privately, then give it a job URL. You decide whether to submit at final review.
         </p>
       </div>
       <div class="code-card">
         <pre><code># Codex
 codex plugin marketplace add neonwatty/job-apply-plugin
 codex plugin add job-apply@neonwatty-plugins
-$job-apply:job-apply
 
 # Claude Code
 claude plugin marketplace add neonwatty/job-apply-plugin
-claude plugin install job-apply@neonwatty-plugins
-/job-apply:job-apply</code></pre>
+claude plugin install job-apply@neonwatty-plugins</code></pre>
+        <p>In chat, use <code>$job-apply:job-apply</code> for Codex or <code>/job-apply:job-apply</code> for Claude Code.</p>
+        <p>Companion is optional and still under development. To open it, use <code>$job-apply:job-workspace</code> or <code>/job-apply:job-workspace</code> and open the private local URL printed by the launcher.</p>
       </div>
     </section>
 

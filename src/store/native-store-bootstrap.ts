@@ -24,7 +24,7 @@ import { validateApplicationAuthorityDocument } from '../contracts/workspace/app
 import { NativeAnswerJournal, validateAnswerJournal } from './native-answer-journal.js';
 import { NativeAnswerResolutionJournal, validateResolutionJournal } from './native-answer-resolution-journal.js';
 import { claimOperationKinds, NativeClaimJournal, validateClaimJournal } from './native-claim-journal.js';
-import { NativeExtractionJournal, validateExtractionJournal, validateExtractionResumes } from './native-extraction-journal.js';
+import { closeRequestsForResumes, NativeExtractionJournal, validateExtractionJournal, validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
@@ -229,6 +229,13 @@ export class NativeStoreBootstrap {
         .recover(journal, validateAnswers(await this.readDocument('answers')), sessions);
     }
   }
+  private extractionJournal(): NativeExtractionJournal {
+    return new NativeExtractionJournal(
+      async () => document((await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume extraction journal', false))!, 'resume extraction journal'),
+      (name, value) => this.writeDocument(name, value),
+    );
+  }
+
   private async recoverResumeFiles(): Promise<void> {
     const directory = join(this.root, 'resume-files'), names = await readdir(directory);
     if (names.length === 0) return;
@@ -240,7 +247,14 @@ export class NativeStoreBootstrap {
       const journal = validateResumeOperation(document(journalBytes, 'resume recovery journal'));
       const operation = get(journal, 'operation');
       await new NativeResumeFiles(this.root).recover(operation === null ? null : object(operation, 'resume recovery operation'), resumes,
-        async value => { resumes = validateExtractionResumes(value); await this.writeDocument('resumes', resumes); },
+        async value => {
+          resumes = validateExtractionResumes(value);
+          const requestBytes = await readPrivateFile(this.layout.resumeExtractionRequests, 'resume extraction requests');
+          const requests = requestBytes === null ? null
+            : closeRequestsForResumes(validateExtractionRequests(document(requestBytes, 'requests')), resumes);
+          if (requests === null) await this.writeDocument('resumes', resumes);
+          else await this.extractionJournal().commit('resume-request-close', { requests, resumes });
+        },
         () => this.writeDocument('resume-operation', object(fromJSON({ schemaVersion: 1, operation: null }), 'journal')));
       return;
     }
@@ -305,13 +319,7 @@ export class NativeStoreBootstrap {
     await mkdir(resumeFiles, { recursive: true, mode: 0o700 });
     await privateDirectory(resumeFiles, false);
     const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
-    if (extractionJournal !== null) {
-      const recovery = new NativeExtractionJournal(
-        async () => document((await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json', false))!, 'resume extraction journal'),
-        (name, value) => this.writeDocument(name, value),
-      );
-      await recovery.recover();
-    }
+    if (extractionJournal !== null) await this.extractionJournal().recover();
     await this.recoverResumeFiles();
     let migrated = false;
     if (await readPrivateFile(this.layout.profile, 'profile') === null) {

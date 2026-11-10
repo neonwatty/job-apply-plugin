@@ -4,7 +4,7 @@ import { validateJobsDocument, safeId } from '../contracts/workspace/jobs.js';
 import { fromJSON, get, has, int, integer, keys, object, parse, serialize, set, string, JobsError } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateApplicationAuthorityDocument } from '../contracts/workspace/application-authority.js';
-export const claimOperationKinds = new Set(['acquire', 'review_restart', 'recover', 'handoff']);
+export const claimOperationKinds = new Set(['acquire', 'review_restart', 'recover', 'handoff', 'expire']);
 export function validateClaimJournal(journal) {
     if (journal.size !== 2 || int(get(journal, 'schemaVersion')) !== 1n || !has(journal, 'operation'))
         throw new JobsError('invalid coordinator journal');
@@ -39,6 +39,12 @@ export function validateClaimJournal(journal) {
                 throw new JobsError('application authority can only complete at review');
             validateApplicationAuthorityDocument(get(operation, 'applicationAuthority'));
         }
+    }
+    else if (kind === 'expire') {
+        if (string(get(operation, 'sourceStatus')) !== 'in_progress'
+            || string(get(operation, 'targetStatus')) !== 'needs_info'
+            || get(operation, 'resultClaim') !== null || hasAuthority)
+            throw new JobsError('coordinator expired attempt reset is invalid');
     }
     else {
         const coordinator = object(fromJSON({ schemaVersion: 1, claim: null }), 'coordinator');

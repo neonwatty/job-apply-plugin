@@ -9,6 +9,19 @@ import { fileURLToPath } from "node:url";
 import { collectChanges, parseNameStatus, trackedPaths } from "../tools/test-runner/git.mjs";
 import { loadMatrix, selectAffected, validateMatrix } from "../tools/test-runner/matrix.mjs";
 
+import { selectLocalPlan } from '../tools/local-checks/policy.mjs';
+
+test('ordinary TypeScript pushes accept the same suite identity as the prescribed deep run', () => {
+  const matrix = JSON.parse(fs.readFileSync(new URL('../config/test-matrix.json', import.meta.url)));
+  const paths = ['src/store/native-jobs.ts'];
+  const push = selectLocalPlan(matrix, paths, paths, { mode: 'push' });
+  const deep = selectLocalPlan(matrix, paths, paths, { mode: 'deep' });
+  assert.ok(push.heavy.length);
+  assert.deepEqual(deep, push);
+  const release = selectLocalPlan(matrix, paths, paths, { mode: 'deep', tag: true });
+  assert.ok(release.heavy.some(suite => suite.id === 'release-package'));
+});
+
 const matrix = {
   schemaVersion: 1,
   inventory: { include: ["tests/**", "src/**"] },
