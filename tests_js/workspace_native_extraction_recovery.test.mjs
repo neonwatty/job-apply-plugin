@@ -6,6 +6,7 @@ import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { NativeJobsRepository, initializeJobsFixture } from '../runtime/store/native-jobs.js';
 import { atomicWritePointJson } from '../runtime/store/point-persistence.js';
+import { createNativeStoreBootstrap } from '../runtime/store/native-store-bootstrap.js';
 import { NativeExtractionJournal } from '../runtime/store/native-extraction-journal.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
 import { fromJSON, get, object, serialize, set, text } from '../runtime/contracts/workspace/values.js';
@@ -102,6 +103,20 @@ test('resume replacement and extraction closure recover together under the share
         assert.equal((await json(root, 'resume-extraction-requests')).requests['request-one'].revision, 2);
       });
     }
+    await t.test('bootstrap closes stale requests when interrupted before replacing resume bytes', async () => {
+      const { root } = await seeded(base, provider, 'bootstrap');
+      const failing = new NativeJobsRepository(root, provider, async (file, ...args) => {
+        await atomicWritePointJson(file, ...args);
+        if (basename(file) === 'resume-operation.json') throw Error('interrupted after intent');
+      });
+      const service = new ResumeService(failing, () => now, () => 'unused', () => `content_${'b'.repeat(32)}`);
+      await assert.rejects(service.replace('resume-one', 'next.txt', Buffer.from('new bytes'), 1n), /interrupted after intent/);
+      assert.equal((await json(root, 'resume-extraction-requests')).requests['request-one'].status, 'requested');
+      await createNativeStoreBootstrap(root, join(base, 'absent-legacy.json')).initialize();
+      assert.equal((await json(root, 'resume-extraction-requests')).requests['request-one'].status, 'stale');
+      assert.equal((await json(root, 'resume-operation')).operation, null);
+      assert.equal(await readFile(join(root, 'resume-files/resume-one.txt'), 'utf8'), 'new bytes');
+    });
     await t.test('metadata changes retain requests and trash cancels them', async () => {
       const { root, repository, resumes } = await seeded(base, provider, 'metadata');
       await resumes.update('resume-one', fromJSON({ label: 'Renamed' }), 1n);

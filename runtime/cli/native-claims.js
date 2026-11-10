@@ -11,6 +11,7 @@ export const claimCommands = {
     'job-input-confirm': ['--id', '--resume-id', '--expected-revision', '--expected-resume-revision', '--expected-fact-revision', '--owner-confirmed'],
     'job-acquire': ['--id', '--owner', '--expected-revision'], 'claim-status': [],
     'claim-heartbeat': ['--id', '--token'], 'claim-recover': ['--id', '--owner'],
+    'claim-reset-expired': ['--id', '--expected-revision', '--owner-confirmed-not-submitted'],
     'claim-progress': ['--id', '--token', '--input'],
     'claim-handoff': ['--id', '--token', '--status', '--input', '--expected-revision'],
 };
@@ -56,6 +57,8 @@ export async function runClaimCommand(command, repository, options, payload) {
         return service.acquire(id, text(required('--owner')), revision());
     if (command === 'claim-recover')
         return service.recover(id, text(required('--owner')));
+    if (command === 'claim-reset-expired')
+        return service.resetExpired(id, revision(), options.has('--owner-confirmed-not-submitted'));
     const token = text(required('--token'));
     if (command === 'claim-heartbeat')
         return service.heartbeat(id, token);

@@ -12,6 +12,8 @@ node "<plugin-root>/apps/companion/command.mjs" store resume-list
 node "<plugin-root>/apps/companion/command.mjs" store resume-get --id <resume-id>
 node "<plugin-root>/apps/companion/command.mjs" store resume-update \
   --id <resume-id> --expected-revision <revision> --input <patch.json>
+node "<plugin-root>/apps/companion/command.mjs" store resume-replace \
+  --id <resume-id> --expected-revision <revision> --path <absolute-source-path>
 node "<plugin-root>/apps/companion/command.mjs" store resume-adopt \
   --id <legacy-resume-id> --expected-revision <revision> [--path <source-path>]
 node "<plugin-root>/apps/companion/command.mjs" store resume-set-default \
@@ -26,9 +28,10 @@ node "<plugin-root>/apps/companion/command.mjs" store resume-delete \
 ```
 
 `resume-create` remains compatible and now performs the same managed import as the
-preferred `resume-import`. A `path` patch replaces bytes atomically for a managed
-record while preserving its ID and job assignments; legacy records require
-`resume-adopt`. The first active resume becomes the default unless explicitly
+preferred `resume-import`. For import JSON, use an absolute local `path`.
+Use `resume-update` for label or tags and `resume-replace --path` to replace
+bytes under the same managed ID. For legacy records, `resume-adopt` uses the
+stored path unless the owner supplies a different source. The first active resume becomes the default unless explicitly
 declined. Trashing fails while a resume is explicitly assigned to an active job,
 or while the default is implicitly selected by an active job with no assignment.
 Restore selects the resume only when it is the sole active record. Permanent
@@ -39,7 +42,7 @@ deletion requires trash and no job reference, and releases the content digest.
 
 Companion requests extraction by default on import or replacement. After CLI import or replacement, the agent creates a scoped request with `resume-extraction-request-create --resume-id <id> --expected-resume-revision <revision> --scope resume` unless the owner opted out. The extraction agent completes only that request with `resume-extraction-request-complete-scoped --id <request-id> --expected-request-revision <revision> --input <private-candidate.json>`. This creates a draft in `resume-facts.json` and leaves `profile.json` unchanged.
 
-Use `resume-facts-list` for value-free status. `resume-facts-get --resume-id <id>` returns the latest version and history privately for owner review. The owner may edit a draft in Companion and confirm it with `resume-facts-confirm --resume-id <id> --expected-fact-revision <revision> --expected-content-revision <content-revision>`. A replacement makes earlier facts stale; editing appends a new draft. Confirmed versions are immutable.
+Use `resume-facts-list` for value-free status. `resume-facts-get --resume-id <id>` returns the latest version and history privately for owner review. Review the draft in a private local terminal or the optional Companion. After the owner explicitly approves the exact draft, confirm it with `resume-facts-confirm --resume-id <id> --expected-fact-revision <revision> --expected-content-revision <content-revision>`. A replacement makes earlier facts stale; editing appends a new draft. Confirmed versions are immutable.
 
 At the start of an application run, `application-run-start` binds one exact resume and confirmed fact revision. An exact-job request to use Job Apply through manual review authorizes the sole active default resume when it has current confirmed facts; ambiguous or multiple-resume cases require the owner's explicit choice. Every queued application inherits the bound selection, and `application-run-update` may append a revisioned queue version without changing it. Complete the run before choosing another resume or fact revision. Reusable application answers stay in the separate answer library.
 

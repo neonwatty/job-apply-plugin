@@ -1,6 +1,6 @@
 # Testing the TypeScript release
 
-For upgrade steps and features added since the Python release, see the
+For install, upgrade, and recovery guidance, see the
 [TypeScript transition guide](typescript-transition.md).
 
 The production plugin and required validation use Node.js 22 or newer. Required

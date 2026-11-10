@@ -1,12 +1,13 @@
 import { taskJobProjection } from './task-job-projection.js';
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
+import { activeApplicationRun } from '../contracts/workspace/application-runs.js';
 import { claimExpired } from '../contracts/workspace/claims.js';
 import { currentClaimApprovals } from '../contracts/workspace/claim-session-pending.js';
 import { pendingResolutionProjection, sessionRevision } from '../contracts/workspace/answer-resolution.js';
 import { validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
 import { safeId } from '../contracts/workspace/jobs.js';
-import { fromJSON, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
+import { fromJSON, get, has, int, integer, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import type { ClaimTransaction } from './claims.js';
 import { preflightJobRecord } from './job-preflight.js';
@@ -47,7 +48,7 @@ function selectedClaim(tx: ProjectionTransaction, id: string): Document | null {
 }
 const sessionFields = ['attemptRevision', 'readiness', 'blockers', 'browserHandoff', 'handoffChecklist'];
 const reasons = [
-  ['expired_agent_attempt', 'Expired agent attempt', 'Resume this attempt with the CLI claim-recover command for this job.'],
+  ['expired_agent_attempt', 'Expired agent attempt', 'Ask Job Apply to reset this expired attempt after confirming the application was not submitted.'],
   ['claimless_interrupted_attempt', 'Interrupted agent attempt', 'Reset this claimless attempt to needs_info with the revision-bound CLI job-transition command, then resolve it before starting a new attempt.'],
   ['awaiting_human_review', 'Awaiting your review', 'Open Job details. After you personally submit on the third-party site, confirm Applied, or close the job with an outcome.'],
   ['browser_action_required', 'Browser action required', 'Open Job details and continue in the visible browser. The saved information is already known; do not create or re-enter an answer in Companion.'],
@@ -136,21 +137,20 @@ function attentionLocked(tx: ProjectionTransaction, now: string): Document {
 async function overviewLocked(tx: ProjectionTransaction, now: string): Promise<Document> {
   const jobs = active(records(tx.jobs, 'jobs')), resumes = active(records(tx.resumes, 'resumes'));
   const answers = active(records(tx.answers, 'answers')).filter(item => !has(item, 'reviewStatus') || label(item, 'reviewStatus') === 'accepted');
-  const profile = object(get(tx.profile, 'profile'), 'profile');
   const scoped = tx.facts ? object(get(tx.facts, 'sets'), 'resume fact sets') : null;
-  const scopedRequests = tx.requests ? records(tx.requests, 'requests') : [];
-  const hasScopedWorkflow = resumes.some(resume => scoped !== null && has(scoped, label(resume, 'id'))
-    || scopedRequests.some(request => label(request, 'resumeId') === label(resume, 'id')
-      && label(request, 'scope') === 'resume'));
-  const hasScopedFacts = resumes.some(resume => {
+  const run = activeApplicationRun(tx.jobs);
+  const selection = run === null ? null : object(get(run, 'selection'), 'application run selection');
+  const hasProfileFacts = resumes.some(resume => {
+    if (label(resume, 'storageKind') !== 'managed'
+      || selection !== null && label(selection, 'resumeId') !== label(resume, 'id')) return false;
     const raw = scoped === null ? null : get(scoped, label(resume, 'id'));
     const versions = raw === null ? null : get(object(raw, 'resume fact set'), 'versions');
     const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1]!, 'resume fact version') : null;
     return latest !== null && label(latest, 'state') === 'confirmed'
-      && label(latest, 'contentRevision') === label(resume, 'contentRevision');
+      && label(latest, 'contentRevision') === label(resume, 'contentRevision')
+      && (selection === null || same(get(latest, 'revision'), get(selection, 'factRevision'))
+        && same(get(latest, 'contentRevision'), get(selection, 'contentRevision')));
   });
-  const hasProfileFacts = hasScopedWorkflow ? hasScopedFacts
-    : keys(profile).some(key => !['preferences','applicationPreferences','agentModelPreferences'].includes(key));
   const attentionJobs = jobs.filter(job => {
     const status = label(job, 'status'), id = label(job, 'id');
     if (['needs_info', 'awaiting_review'].includes(status)) return true;
@@ -170,12 +170,12 @@ async function overviewLocked(tx: ProjectionTransaction, now: string): Promise<D
     }
   }
   const [nextAction, targetWorkspace] = !resumes.length ? ['import_resume', 'resumes']
-    : !hasProfileFacts ? ['review_facts', hasScopedWorkflow ? 'resumes' : 'facts']
+    : !hasProfileFacts ? ['review_facts', 'resumes']
     : attentionJobs ? ['resolve_attention', 'attention']
     : acquirable ? ['handoff_ready_job', 'jobs']
     : !jobs.length ? ['capture_job', 'jobs'] : ['prepare_job', 'jobs'];
   const setup = doc({hasProfileFacts, hasResume:resumes.length > 0});
-  if (hasScopedWorkflow) set(setup, 'factsWorkspace', text('resumes'));
+  if (resumes.length) set(setup, 'factsWorkspace', text('resumes'));
   const result = doc({counts:{jobs:jobs.length, readyJobs:jobs.filter(item => label(item, 'status') === 'ready').length,
     attentionJobs, resumes:resumes.length, answers:answers.length}, nextAction, targetWorkspace});
   return set(result, 'setup', setup);

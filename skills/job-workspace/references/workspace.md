@@ -9,7 +9,7 @@ Read when explaining or troubleshooting the corresponding Companion surface.
   keep the retained migration backup and never run an older writer against an
   activated native Store.
 
-- Start the Companion from the installed plugin directory with `node apps/companion/launch.mjs`. It binds to `127.0.0.1`, opens the complete token-bearing URL locally, and starts on Overview. Never reuse an old URL after restart.
+- Start the Companion from the installed plugin directory with `node apps/companion/launch.mjs`. It binds to `127.0.0.1` and prints a private local URL. Open the complete URL to start on Overview. Never reuse an old URL after restart.
 - The complete native navigation inventory is Overview, Jobs, Needs Attention, Facts, Resumes, Answers, Automation, Accounts & Sign-in, Settings, and Trash. Application Activity is the selected job's contextual progress view. A workflow may use only a subset; absence from a workflow map does not remove a surface from Companion.
 
 - Never copy the printed fragment token into chat, logs, or another URL. If the browser did not open, tell the user to open the complete URL printed locally by the launcher.

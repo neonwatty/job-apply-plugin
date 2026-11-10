@@ -128,7 +128,7 @@ test('failed native activation marker blocks native recovery until explicit roll
   const root = join(await realpath(fixture.root), 'failed-native-marker'), provider = loadPosixFlockProvider(fixture.receipt.artifact);
   const prepared = await prepareNativeDefault(root, provider); await activateNativeWriter(root, prepared.candidate, { provider });
   await writeFile(`${root}.native-activation-failed`, 'rollback required\n', { mode: 0o600 });
-  await assert.rejects(prepareNativeDefault(root, provider), /run Companion with --rollback/);
+  await assert.rejects(prepareNativeDefault(root, provider), /consult the Store recovery guide/);
   assert.equal((await prepareNativeDefault(root, provider, { allowFailedActivation: true })).mode, 'native');
 });
 
@@ -139,7 +139,7 @@ test('completed rollback remains identifiable while a stale failure marker await
   await writeFile(`${root}.native-activation-failed`, 'rollback required\n', { mode: 0o600 });
   const rollback = await prepareNativeDefault(root, provider, { allowFailedActivation: true });
   assert.equal(rollback.mode, 'python'); assert.equal(rollback.durablePythonRollback, true);
-  await assert.rejects(prepareNativeDefault(root, provider), /run Companion with --rollback/);
+  await assert.rejects(prepareNativeDefault(root, provider), /consult the Store recovery guide/);
 });
 
 test('rollback interruption recovers original Python jobs before bootstrap', { timeout: 60_000 }, async t => {

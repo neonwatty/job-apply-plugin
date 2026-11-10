@@ -56,7 +56,7 @@ test('native recovery and review guidance describes only supported authority',()
  assert.match(model.recoveryGuidance.interrupted, /change this interrupted attempt to Needs information/);
  assert.equal(model.attentionGuidance.claimless_interrupted_attempt, model.recoveryGuidance.interrupted);
  assert.doesNotMatch(model.attentionGuidance.claimless_interrupted_attempt, /job-transition/);
- assert.match(model.recoveryGuidance.expired, /claim-recover/);
+ assert.match(model.recoveryGuidance.expired, /reset this expired attempt/);
  assert.match(model.attentionGuidance.awaiting_human_review, /Personally review and submit on the third-party site/);
  assert.match(model.attentionGuidance.awaiting_human_review, /confirm Applied in Job details/);
 });

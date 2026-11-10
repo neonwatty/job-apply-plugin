@@ -175,13 +175,17 @@ async function group1(t) {
   const extractionDocument = 'skills/job-apply/references/extraction.md';
   const companionLauncherInputs = ['apps/companion/launch.mjs', 'apps/companion/writer-route.mjs',
     'apps/companion/supervise.mjs'];
+  // This fixture replays the previously reviewed documentation variant.
+  const previousSkill = file => execFileSync('git', ['--no-replace-objects', 'show',
+    `19e71631342f9e48988b3dc344a53533b0e7f1d0:${file}`], { cwd: GRAPH_ROOT });
   for (const file of [...liveSkillFiles.filter(file => ![workspaceDocument, extractionDocument].includes(file)),
     ...companionLauncherInputs,
     'tests_js/workspace_skill_support.mjs',
     'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
-    await f.write(file, await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
+    await f.write(file, liveSkillFiles.includes(file) ? previousSkill(file)
+      : await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
   }
-  let priorWorkspaceDocument = await fs.promises.readFile(path.join(GRAPH_ROOT, workspaceDocument), 'utf8');
+  let priorWorkspaceDocument = previousSkill(workspaceDocument).toString('utf8');
   const reviewedLauncherDocumentation = '- Start the Companion from the installed plugin directory with `node apps/companion/launch.mjs`. It binds to `127.0.0.1`, opens the complete token-bearing URL locally, and starts on Overview. Never reuse an old URL after restart.\n- The complete native navigation inventory is Overview, Jobs, Needs Attention, Facts, Resumes, Answers, Automation, Accounts & Sign-in, Settings, and Trash. Application Activity is the selected job\'s contextual progress view. A workflow may use only a subset; absence from a workflow map does not remove a surface from Companion.\n\n';
   assert.equal(priorWorkspaceDocument.split(reviewedLauncherDocumentation).length, 2);
   priorWorkspaceDocument = priorWorkspaceDocument.replace(reviewedLauncherDocumentation, '');
@@ -190,7 +194,7 @@ async function group1(t) {
   assert.equal(priorWorkspaceDocument.split(liveExtractionDocumentation).length, 2);
   await f.write(workspaceDocument, priorWorkspaceDocument.replace(liveExtractionDocumentation,
     reviewedExtractionDocumentation));
-  let priorExtractionDocument = await fs.promises.readFile(path.join(GRAPH_ROOT, extractionDocument), 'utf8');
+  let priorExtractionDocument = previousSkill(extractionDocument).toString('utf8');
   const reviewedExtractionPrivacy = '   For a copied Companion handoff, the opaque request ID is the only mutable value. Do not ask the owner to share, or echo back, resume data, candidate data, file paths, or filenames.\n';
   assert.equal(priorExtractionDocument.split(reviewedExtractionPrivacy).length, 2);
   priorExtractionDocument = priorExtractionDocument.replace(reviewedExtractionPrivacy, '');

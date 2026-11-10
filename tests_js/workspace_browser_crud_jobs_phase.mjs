@@ -132,7 +132,7 @@ export async function runBrowserCrudJobsPhase(context) {
     await writeFile(coordinatorPath, JSON.stringify(coordinator));
     await activityCard().click();
     await activityPanel.getByText(/lease expired/).waitFor();
-    assert.match(await activityPanel.innerText(), /CLI claim-recover/);
+    assert.match(await activityPanel.innerText(), /reset this expired attempt/);
     assert.equal((await activityPanel.innerText()).includes(coordinator.claim.claimId), false);
     await closeDetails.click();
 

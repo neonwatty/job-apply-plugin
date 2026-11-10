@@ -73,7 +73,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
       if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
         throw new JobsError("native fixture file must be private and owned, without links");
       }
-      if (stat.size > 32 * 1024 * 1024) throw new JobsError("native fixture document exceeds supported size");
+      // Read the same private documents that Store writers and migration accept.
       return await handle.readFile();
     } finally { await handle.close(); }
   }

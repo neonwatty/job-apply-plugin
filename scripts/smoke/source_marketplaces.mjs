@@ -27,7 +27,7 @@ export async function installSourceCheckouts(source, temporary, run) {
   await assertCriticalBytes(claudeRoot, source, { profile: '3.12', label: 'source Claude' });
   await verifySourceRuntime(claudeRoot);
   const store = join(temporary, 'source-claude-store');
-  await run(process.execPath, [join(claudeRoot, 'apps/companion/command.mjs'), 'store', '--root', store, 'init'],
+  await run(process.execPath, [join(claudeRoot, 'apps/companion/command.mjs'), 'store', '--root', store, '--legacy-profile', join(temporary, 'absent-legacy-profile.json'), 'init'],
     { PATH: '', HOME: temporary }, true);
   const profile = await run(process.execPath, [join(claudeRoot, 'apps/companion/command.mjs'), 'store', '--root', store, 'profile-get'],
     { PATH: '', HOME: temporary }, true);

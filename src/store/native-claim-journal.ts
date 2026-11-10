@@ -6,7 +6,7 @@ import type { Document } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateApplicationAuthorityDocument } from '../contracts/workspace/application-authority.js';
 
-export const claimOperationKinds = new Set(['acquire','review_restart','recover','handoff']);
+export const claimOperationKinds = new Set(['acquire','review_restart','recover','handoff','expire']);
 export function validateClaimJournal(journal: Document): Document {
   if (journal.size !== 2 || int(get(journal,'schemaVersion')) !== 1n || !has(journal,'operation')) throw new JobsError('invalid coordinator journal');
   const operation = object(get(journal,'operation'),'coordinator journal operation');
@@ -30,6 +30,11 @@ export function validateClaimJournal(journal: Document): Document {
       if (string(get(operation, 'targetStatus')) !== 'awaiting_review') throw new JobsError('application authority can only complete at review');
       validateApplicationAuthorityDocument(get(operation, 'applicationAuthority'));
     }
+  } else if (kind === 'expire') {
+    if (string(get(operation, 'sourceStatus')) !== 'in_progress'
+      || string(get(operation, 'targetStatus')) !== 'needs_info'
+      || get(operation, 'resultClaim') !== null || hasAuthority)
+      throw new JobsError('coordinator expired attempt reset is invalid');
   } else {
     const coordinator = object(fromJSON({schemaVersion:1,claim:null}),'coordinator');
     set(coordinator,'claim',get(operation,'resultClaim'));

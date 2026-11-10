@@ -184,6 +184,22 @@ export class ClaimsService {
       return set(result,'claim',publicClaim(claim,this.now()));
     });
   }
+  resetExpired(id: string, expectedRevision: bigint, ownerConfirmedNotSubmitted: boolean): Promise<Value> {
+    safeId(id);
+    if (!ownerConfirmedNotSubmitted) throw new JobsError('expired attempt reset requires owner confirmation that it was not submitted');
+    return this.repository.claimTransaction(async tx => {
+      const now = this.now(), claim = get(tx.coordinator, 'claim');
+      if (claim === null || string(get(object(claim, 'claim'), 'jobId')) !== id)
+        throw new JobsError('expired attempt reset must name the claimed job');
+      if (!claimExpired(object(claim, 'claim'), now)) throw new JobsError('live claim cannot be reset');
+      const job = activeJob(tx.jobs, id);
+      if (int(get(job, 'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
+      if (string(get(job, 'status')) !== 'in_progress') throw new JobsError('expired claim job is not in progress');
+      await tx.commit(operation('expire', job, now, 'job-blocked', 'needs_info', null));
+      return set(doc({ claim: null }), 'job', projectJob(transitioned(job, 'needs_info', now)));
+    });
+  }
+
   progress(id:string,token:Value,incoming:Document):Promise<Value> {
     return this.repository.claimTransaction(async tx => {
       requireClaim(tx.coordinator,tx.jobs,id,token,this.now());

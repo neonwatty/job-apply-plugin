@@ -55,8 +55,9 @@
   numeric text blocks saving and confirmation until corrected or discarded.
 - Overview sends scoped fact review to Resumes, including its setup link, so a
   first import does not lead to the applicant-wide legacy Facts page.
-- The agent asks for the run's resume and facts choice in chat. The UX is for detailed
-  review and correction; a UI click alone cannot authorize application use.
+- The owner can inspect and approve a draft through the plugin and private Store
+  CLI. Companion is optional for detailed review and correction. The agent asks
+  for the run’s resume and fact choice in chat.
 - Run, job, and attempt views show the selected resume label and closed fact status,
   with no applicant values in value-free activity or diagnostic projections.
 - Claim tokens, managed paths, candidate values, and browser state never enter

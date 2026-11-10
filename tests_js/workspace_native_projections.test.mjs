@@ -138,7 +138,11 @@ test('overview setup precedence and accepted active counts',async()=>{
   tx.profile=fromJSON({profile:{applicationPreferences:{preferredBrowser:'chrome',browserFallback:'ask',progressionMode:'guided',preferredAutomationMode:'campaign_to_review'}}});
   assert.equal(plain(await service.overview()).nextAction,'review_facts','setup preferences are not applicant facts');
   tx.profile=fromJSON({profile:{name:'PRIVATE'}});
-  assert.equal(plain(await service.overview()).nextAction,'prepare_job');
+  assert.equal(plain(await service.overview()).nextAction,'review_facts');
+  const contentRevision = `content_${'a'.repeat(32)}`;
+  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,storageKind:'managed',contentRevision,observedSize:1,digest:'synthetic-digest'}}});
+  tx.files.observation = async () => ({ exists: true, size: 1, digest: 'synthetic-digest' });
+  tx.facts=fromJSON({sets:{r:{versions:[{revision:1,state:'confirmed',contentRevision}]}}});
   const jobs=plain(tx.jobs),run={runId:'run-unit',status:'active',revision:1,
     selection:{resumeId:'r',contentRevision:`content_${'a'.repeat(32)}`,factRevision:1,confirmedAt:now},
     queueVersions:[{revision:1,jobIds:['ready'],updatedAt:now}],createdAt:now,updatedAt:now,completedAt:null};
@@ -153,7 +157,7 @@ test('overview setup precedence and accepted active counts',async()=>{
 
 test('scoped resume onboarding does not treat applicant-wide profile facts as confirmed resume facts',async()=>{
   const {service,tx}=setup();
-  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,contentRevision:'content_current'}}});
+  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,storageKind:'managed',contentRevision:'content_current'}}});
   tx.profile=fromJSON({profile:{name:'PRIVATE LEGACY FACT'}});
   tx.requests=fromJSON({requests:{request:{requestId:'request',resumeId:'r',scope:'resume',status:'requested'}}});
   const pending=plain(await service.overview());
