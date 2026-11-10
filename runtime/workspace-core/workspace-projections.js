@@ -148,18 +148,19 @@ async function overviewLocked(tx, now) {
     const scoped = tx.facts ? object(get(tx.facts, 'sets'), 'resume fact sets') : null;
     const run = activeApplicationRun(tx.jobs);
     const selection = run === null ? null : object(get(run, 'selection'), 'application run selection');
-    const hasProfileFacts = resumes.some(resume => {
-        if (label(resume, 'storageKind') !== 'managed'
-            || selection !== null && label(selection, 'resumeId') !== label(resume, 'id'))
-            return false;
-        const raw = scoped === null ? null : get(scoped, label(resume, 'id'));
+    const confirmedFacts = resumes.flatMap(resume => {
+        if (label(resume, 'storageKind') !== 'managed')
+            return [];
+        const resumeId = label(resume, 'id');
+        const raw = scoped === null ? null : get(scoped, resumeId);
         const versions = raw === null ? null : get(object(raw, 'resume fact set'), 'versions');
         const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1], 'resume fact version') : null;
         return latest !== null && label(latest, 'state') === 'confirmed'
-            && label(latest, 'contentRevision') === label(resume, 'contentRevision')
-            && (selection === null || same(get(latest, 'revision'), get(selection, 'factRevision'))
-                && same(get(latest, 'contentRevision'), get(selection, 'contentRevision')));
+            && label(latest, 'contentRevision') === label(resume, 'contentRevision') ? [{ resumeId, latest }] : [];
     });
+    const hasProfileFacts = confirmedFacts.length > 0;
+    const runFactsCurrent = selection === null || confirmedFacts.some(({ resumeId, latest }) => label(selection, 'resumeId') === resumeId && same(get(latest, 'revision'), get(selection, 'factRevision'))
+        && same(get(latest, 'contentRevision'), get(selection, 'contentRevision')));
     const attentionJobs = jobs.filter(job => {
         const status = label(job, 'status'), id = label(job, 'id');
         if (['needs_info', 'awaiting_review'].includes(status))
@@ -183,8 +184,9 @@ async function overviewLocked(tx, now) {
     const [nextAction, targetWorkspace] = !resumes.length ? ['import_resume', 'resumes']
         : !hasProfileFacts ? ['review_facts', 'resumes']
             : attentionJobs ? ['resolve_attention', 'attention']
-                : acquirable ? ['handoff_ready_job', 'jobs']
-                    : !jobs.length ? ['capture_job', 'jobs'] : ['prepare_job', 'jobs'];
+                : !runFactsCurrent ? ['refresh_application_run', 'jobs']
+                    : acquirable ? ['handoff_ready_job', 'jobs']
+                        : !jobs.length ? ['capture_job', 'jobs'] : ['prepare_job', 'jobs'];
     const setup = doc({ hasProfileFacts, hasResume: resumes.length > 0 });
     if (resumes.length)
         set(setup, 'factsWorkspace', text('resumes'));

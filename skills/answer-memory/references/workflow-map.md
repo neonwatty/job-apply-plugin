@@ -155,7 +155,7 @@ flowchart LR
   Review -->|owner submits externally and confirms outcome| Applied[Submission recorded]
   Review -->|owner confirms not submitted; explicit restart| Claimed
   Claimed -->|lease expires| Expired[Expired same-job claim]
-  Expired -->|explicit same-job recovery| Claimed
+  Expired -->|owner confirms no submission; reset releases claim| NeedsInfo
   Claimed -->|claimless interruption| Interrupted[Interrupted job needs attention]
   Interrupted -->|owner resolves exact state| NeedsInfo
 ```
@@ -167,7 +167,7 @@ flowchart LR
 | Fill or pause | Job Apply visible browser and `attempt` clients; optionally one owner-requested Codex task or capable worker | Claiming or choosing a model does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. Only one filling agent owns the visible browser and live claim. |
 | Hand off | Job Apply readiness check and `attempt handoff` | A current-form packet must pass Store checks before `awaiting_review`; the agent leaves final submission untouched. |
 | Finish | Owner in the external application and Job Workspace activity | Only the owner submits. Record `applied` only after the owner confirms that submission. |
-| Recover or restart | Job Apply recovery route | An accepted, confirmed non-sensitive pending answer can resolve directly to Ready while the run selection stays current. A sensitive pending answer requires a same-job new attempt and fresh approval at the live control; selecting it Ready does not resolve or approve the old answer. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |
+| Recover or restart | Job Apply recovery route | An accepted, confirmed non-sensitive pending answer can resolve directly to Ready while the run selection stays current. A sensitive pending answer requires a same-job new attempt and fresh approval at the live control; selecting it Ready does not resolve or approve the old answer. For an expired same-job claim, confirm with the owner that the application was never submitted. Reset the exact job revision to Needs information and clear the claim. Then follow ordinary selection and acquisition. A reviewed job also needs owner confirmation before restart. |
 
 Application question answers live in the separate reusable answer library. Job revisions and queue changes do not require resume reconfirmation. A resume content or fact revision change ends the run before another attempt. An interrupted claim is handled through explicit recovery, never silently replaced.
 

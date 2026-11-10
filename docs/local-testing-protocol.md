@@ -1,4 +1,8 @@
-# Local testing during the TypeScript migration
+# Historical local testing protocol
+
+This page records the temporary migration-era checks. For current required
+checks and the separate one-time Python Store migration check, see
+[Testing the TypeScript release](testing.md).
 
 Staging commit `2ca9d6e2c47948df57e7649a2211d4ec523bb364`
 recorded the temporary exception on 2026-09-06. As of 2026-09-15, automatic

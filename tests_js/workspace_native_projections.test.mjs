@@ -151,6 +151,16 @@ test('overview setup precedence and accepted active counts',async()=>{
   assert.equal(plain(await service.overview()).nextAction,'handoff_ready_job');
   tx.coordinator=fromJSON({claim:{jobId:'other',expiresAt:'2026-09-10T12:00:01Z'}});
   assert.equal(plain(await service.overview()).nextAction,'prepare_job');
+  tx.coordinator=fromJSON({claim:null});
+  tx.facts=fromJSON({sets:{r:{versions:[
+    {revision:1,state:'confirmed',contentRevision},
+    {revision:2,state:'draft',contentRevision},
+    {revision:3,state:'confirmed',contentRevision},
+  ]}}});
+  const staleRun=plain(await service.overview());
+  assert.equal(staleRun.setup.hasProfileFacts,true);
+  assert.equal(staleRun.nextAction,'refresh_application_run');
+  assert.equal(staleRun.targetWorkspace,'jobs');
   tx.answers=fromJSON({answers:{a:{},b:{reviewStatus:'proposed'},c:{deletedAt:now}}});
   assert.equal(plain(await service.overview()).counts.answers,1);
 });

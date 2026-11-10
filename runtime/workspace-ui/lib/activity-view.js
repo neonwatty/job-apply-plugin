@@ -105,6 +105,7 @@ export function ownerBetaNextStep(action) {
         import_resume: ["Import a resume", "Add a private managed resume so agents have an approved document to use."],
         review_facts: ["Review your application facts", "Confirm the local facts agents may use before you prepare a job."],
         resolve_attention: ["Resolve Needs Attention", "A job needs human review, missing information, or interrupted-work recovery."],
+        refresh_application_run: ["Refresh your application run", "Resolve any active attempt first. Ask Job Apply in chat to complete the old run and confirm the inputs for a replacement."],
         handoff_ready_job: ["Hand off a ready job", "Copy the supported invocation below and let the agent acquire the canonical Ready job."],
         capture_job: ["Capture your first job", "Save an opportunity, run its ready check, and mark it Ready for an agent."],
         prepare_job: ["Prepare the next job", "Open Jobs, complete missing setup, run the ready check, and mark a job Ready."],
