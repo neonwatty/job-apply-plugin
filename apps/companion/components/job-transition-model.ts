@@ -3,9 +3,9 @@ import { job as decodeJob, object, type Job } from './contracts';
 export type TransitionTarget = 'saved' | 'needs_info' | 'ready' | 'awaiting_review' | 'applied' | 'closed';
 export const closedOutcomes = ['rejected', 'withdrawn', 'expired', 'duplicate', 'not_interested'] as const;
 const transitions: Record<string, TransitionTarget[]> = {
-  saved: ['needs_info', 'ready', 'closed'],
-  needs_info: ['saved', 'ready', 'closed'],
-  ready: ['saved', 'needs_info', 'closed'],
+  saved: ['needs_info', 'ready', 'applied', 'closed'],
+  needs_info: ['saved', 'ready', 'applied', 'closed'],
+  ready: ['saved', 'needs_info', 'applied', 'closed'],
   in_progress: ['needs_info', 'awaiting_review', 'closed'],
   awaiting_review: ['applied', 'closed'],
   applied: ['closed'],

@@ -56,12 +56,14 @@ test('native transitions preserve Python lifecycle and durable write boundaries'
     const { root, repository } = state;
     const service = new JobTransitionsService(repository, () => fixed);
     await t.test('actual Python differential for every status pair, outcomes, revisions and invalid inputs', async () => {
-      const cases = statuses.flatMap(source => statuses.map(target => ({source, target, outcome:'rejected', confirmed:true})));
+      const cases = statuses.flatMap(source => statuses.map(target => ({source, target, outcome:'rejected', confirmed:true})))
+        .filter(item => !(item.target === 'applied' && ['saved','needs_info','ready'].includes(item.source)));
       for (const outcome of [null, '', 'unknown', true, 3, 'withdrawn', 'expired', 'duplicate', 'not_interested']) {
         cases.push({source:'saved',target:'closed',outcome});
       }
       cases.push({source:'saved',target:'ready',emptyProfile:true}, {source:'saved',target:'ready',missingResume:true},
-        {source:'ready',target:'ready',emptyProfile:true}, {source:'awaiting_review',target:'applied'}, {source:'saved',target:'saved',outcome:'invalid'},
+        {source:'ready',target:'ready',emptyProfile:true}, {source:'awaiting_review',target:'applied'},
+ {source:'saved',target:'saved',outcome:'invalid'},
         {source:'closed',target:'closed',outcome:null}, {source:'saved',target:'closed',revision:2},
         {source:'saved',target:'invalid'}, {source:'saved',target:'saved',id:'missing'},
         {source:'saved',target:'saved',id:'../bad'}, {source:'saved',target:'saved',deletedAt:fixed});
@@ -94,6 +96,23 @@ test('native transitions preserve Python lifecycle and durable write boundaries'
       await write(root,'profile.json',profile);
       await write(root,'resumes.json',resumes);
     });
+    await t.test('owner can record an external submission from an unclaimed pre-review state', async () => {
+      for (const source of ['saved', 'needs_info', 'ready']) {
+        const isolated = await setup(fixture, `owner-completion-${source}`);
+        const document = await read(isolated.root, 'jobs.json');
+        document.jobs.job.status = source;
+        await write(isolated.root, 'jobs.json', document);
+        const transitions = new JobTransitionsService(isolated.repository, () => fixed);
+        await unchanged(isolated.root, () => transitions.transition('job', 'applied', 1n), /explicit user confirmation/);
+        await unchanged(isolated.root, () => transitions.transition('job', 'applied', 2n, null, true), /revision conflict/);
+        const before = await snapshot(isolated.root);
+        const updated = plain(await transitions.transition('job', 'applied', 1n, null, true));
+        assert.deepEqual(updated, {...document.jobs.job, status: 'applied', revision: 2, updatedAt: fixed});
+        const after = await snapshot(isolated.root);
+        delete before['jobs.json']; delete after['jobs.json'];
+        assert.deepEqual(after, before);
+      }
+    });
     await t.test('strict revisions and confirmation reject ambiguous direct callers without writes', async () => {
       for (const revision of [0n,-1n,1,1.0,true,'1',null,undefined]) {
         await unchanged(root, () => service.transition('job','saved',revision), /job revision is invalid/);
@@ -113,6 +132,7 @@ test('native transitions preserve Python lifecycle and durable write boundaries'
         state.clock.now = at;
         await unchanged(root, () => guarded.transition('job','in_progress',3n), /claimed job requires/);
         await unchanged(root, () => guarded.transition('job','closed',3n,text('expired')), /claimed job requires/);
+        await unchanged(root, () => guarded.transition('job','applied',3n,null,true), /claimed job requires/);
         await unchanged(root, () => guarded.transition('job','in_progress',2n), /revision conflict/);
       }
       const claimCases = [

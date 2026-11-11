@@ -59,3 +59,30 @@ test('site-required opt-in conflict has a distinct value-free attention state', 
     assert.deepEqual(await cli(fixture, root, 'needs-attention'), attention);
   } finally { await fixture.cleanup(); }
 });
+
+
+test('attention snooze persists with revision protection and preserves job/session state', async () => {
+  const fixture=await nativeFixture();
+  try {
+    const {repository,jobs,claims}=await setup(fixture,'attention-snooze');
+    await claims.select('job',1n,true);
+    const acquired=JSON.parse((await import('../runtime/contracts/workspace/values.js')).serialize(await claims.acquire('job',text('owner'),2n)));
+    await claims.handoff('job',text(acquired.token),'needs_info',fromJSON({status:'active',attemptRevision:3,blockers:[{type:'information',code:'owner-input-required'}]}),3n);
+    const get=async path=>JSON.parse((await jobsHttp(jobs,repository,'GET',path)).body);
+    const before=await get('/api/jobs/job/activity');
+    const row=(await get('/api/attention')).items[0];
+    const patch={expectedRevision:row.revision,patch:{attentionSnoozedUntil:'2099-01-01T00:00:00.000Z'}};
+    assert.equal((await jobsHttp(jobs,repository,'PATCH','/api/jobs/job',JSON.stringify(patch))).status,200);
+    assert.equal((await get('/api/overview')).counts.attentionJobs,0);
+    assert.equal((await get('/api/attention')).items[0].attentionSnoozedUntil,patch.patch.attentionSnoozedUntil);
+    const after=await get('/api/jobs/job/activity');
+    assert.equal(after.job.status,'needs_info');assert.deepEqual(after.session,before.session);
+    assert.equal((await jobsHttp(jobs,repository,'PATCH','/api/jobs/job',JSON.stringify(patch))).status,409);
+    patch.expectedRevision=after.job.revision;patch.patch.attentionSnoozedUntil=null;
+    assert.equal((await jobsHttp(jobs,repository,'PATCH','/api/jobs/job',JSON.stringify(patch))).status,200);
+    assert.equal((await get('/api/overview')).counts.attentionJobs,1);
+    patch.expectedRevision++;
+    patch.patch.attentionSnoozedUntil='not-a-date';
+    assert.notEqual((await jobsHttp(jobs,repository,'PATCH','/api/jobs/job',JSON.stringify(patch))).status,200);
+  } finally {await fixture.cleanup();}
+});

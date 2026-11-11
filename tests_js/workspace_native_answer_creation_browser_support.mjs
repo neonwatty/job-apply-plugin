@@ -27,7 +27,7 @@ export async function nativeAnswerCreationBrowser(page, root) {
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
   assert.equal((await answers()).find(record => record.question === 'Browser-created question?').value, 'Created in the browser');
   page.once('dialog', dialog => dialog.dismiss());
-  await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Jobs')?.click());
+  await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Saved jobs')?.click());
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
   await page.getByLabel('Question', { exact: true }).fill('Private browser-created question?');
   await page.getByText('Advanced details', { exact: true }).click();

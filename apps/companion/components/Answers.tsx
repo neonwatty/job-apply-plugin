@@ -92,7 +92,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
         setNotice('Latest answer loaded. Your draft is retained.');
       } else {
         setCreating(false);
-        setEditing(reveal);
+        setEditing(false);
         setBase(next);
         setDraft(answerDraft(next));
         setInvalid(false);
@@ -239,6 +239,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
         return <li key={key}><div><span className="answer-question-mark" aria-hidden="true">Q</span><button className="text-action" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(key)}>{string(get(item, 'question')) || key}</button></div>
           {consentOnly && <span className="answer-value-state">{purpose} · {kind} · {scopeLabel} · {string(get(item, 'source')) ?? 'Unknown source'}</span>}
           <span className={get(item, 'valueRedacted') === true ? 'answer-value-state sensitive' : 'answer-value-state'}>{state}</span>
+          {get(item, 'valueRedacted') === true && <button type="button" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={()=>void select(key,false,true)}>Show value</button>}
           <span className="answer-row-action" aria-hidden="true">Open →</span>
         </li>;
       })}</ul>
@@ -253,7 +254,7 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
     {draft && (base || creating) ? <div className="answer-editor-body">
       {creating && <p>Save an answer for future review. Sensitive values require consent.</p>}
       {base && <><div className="button-row answer-editor-tools"><button className="secondary" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(string(get(base, 'key'))!, true)}>Refresh selected answer</button>
-      {get(base, 'valueRedacted') === true && <button className="secondary" disabled={pendingBusy || mergeBusy || busy || dirty} onClick={() => void select(string(get(base, 'key'))!, false, true)}>Reveal sensitive value</button>}</div>
+      {get(base, 'valueRedacted') === true && !has(base,'value') && <button className="secondary" disabled={pendingBusy || mergeBusy || busy || dirty} onClick={() => void select(string(get(base, 'key'))!, false, true)}>Show value</button>}</div>
       {latest && <aside className="notice" role="alert"><p>Your draft is retained. Review the latest revision before saving.</p>
         <button disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => {
           try {
@@ -277,11 +278,11 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
       {!editing && base ? <>
         <div className="detail-drawer-summary"><dl>
           <div><dt>Status</dt><dd>{string(get(base, 'reviewStatus')) ?? 'Unknown'}</dd></div>
-          <div><dt>Value</dt><dd>{get(base, 'valueRedacted') === true ? 'Sensitive value hidden' : get(base, 'hasValue') === true ? 'Value retained' : 'No retained value'}</dd></div>
+          <div><dt>Value</dt><dd>{get(base, 'valueRedacted') === true && !has(base,'value') ? 'Sensitive value hidden' : has(base, 'value') ? <span style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{string(get(base,'value')) ?? serialize(get(base,'value'))}</span> : 'No retained value'}</dd></div>
           <div><dt>Scope</dt><dd>{get(base, 'scope') && object(get(base, 'scope'), 'scope').size ? 'Saved for the selected scope' : 'General'}</dd></div>
           {get(base, 'consentIntent') && <div><dt>Purpose</dt><dd>{string(get(object(get(base, 'consentIntent'), 'intent'), 'purpose')) ?? 'Not set'}</dd></div>}
         </dl></div>
-        <div className="detail-drawer-actions"><button className="primary" type="button" disabled={busy || Boolean(latest)} onClick={() => setEditing(true)}>Edit {consentOnly ? 'default' : 'answer'}</button></div>
+        <div className="detail-drawer-actions">{has(base,'value') && (get(base,'valueRedacted') === true || string(get(base,'state')) === 'sensitive' || (get(base,'sensitivity') !== null && string(get(base,'sensitivity')) !== 'none')) && <button type="button" disabled={busy} onClick={()=>void select(string(get(base,'key'))!)}>Hide value</button>}<button className="primary" type="button" disabled={busy || Boolean(latest)} onClick={() => setEditing(true)}>Edit {consentOnly ? 'default' : 'answer'}</button></div>
       </> :
       <form className="answer-editor-form" ref={editorForm} onChange={event => setInvalid(!event.currentTarget.checkValidity())} onSubmit={event => { event.preventDefault(); void save(); }}>
         <fieldset disabled={pendingBusy || mergeBusy || busy}>

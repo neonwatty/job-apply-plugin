@@ -106,7 +106,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   // The rejected method is synthetic and page-scoped. Reload through the normal
   // application lifecycle so later copy assertions exercise the real clipboard.
   await page.reload();
-  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
   await clickCompanionNav(page, 'Resumes');
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();

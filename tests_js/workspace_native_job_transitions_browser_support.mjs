@@ -107,7 +107,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await change('Mark needs info', 'needs_info');
   const attentionCount = (await api('/api/overview')).counts.attentionJobs;
   await page.waitForFunction(count =>
-    document.querySelector('#workspace-navigation button[aria-label="Needs Attention"] .nav-count')?.textContent?.trim() === String(count), attentionCount);
+    document.querySelector('#workspace-navigation button[aria-label="Applications"] .nav-count')?.textContent?.trim() === String(count), attentionCount);
 
   // Hold a write, then hold only its background refresh: write guards must end at acknowledgement.
   let releasePost, postSeen, releaseGet, getSeen;
@@ -138,7 +138,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
     page.on('dialog', dismiss);
     try {
       await clickCompanionNav(page, 'Overview');
-      await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
+      await page.getByRole('heading', { name: 'Applications', exact: true }).waitFor();
       assert.equal(navigationPrompts, 0);
     } finally { page.off('dialog', dismiss); }
     assert.equal((await readJob()).status, 'saved');

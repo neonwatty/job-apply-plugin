@@ -76,7 +76,7 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     assert.equal(prompts, 1);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Unsaved import');
-    await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Jobs')?.click());
+    await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === 'Saved jobs')?.click());
     assert.equal(prompts, 2);
     assert.equal(await page.getByLabel('Label', { exact: true }).inputValue(), 'Unsaved import');
     page.off('dialog', dismiss);

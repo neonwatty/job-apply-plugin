@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { canonicalJson } from '../runtime/contracts/workspace/canonical-json.js';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
@@ -166,7 +168,7 @@ test('scoped resume onboarding does not treat applicant-wide profile facts as co
   assert.equal(confirmed.nextAction,'capture_job');
 });
 
-test('all modern projection payloads and signatures match authoritative Python',async()=>{
+test('legacy projections retain parity with explicit attention identity extension',async()=>{
   const {service,tx}=setup([job('α','needs_info'),job('one','awaiting_review'),job('two','in_progress'),job('deleted','saved',{deletedAt:now})]);
   // Canonical job ids are ASCII; unicode in projected labels still tests canonical hashing.
   tx.jobs=fromJSON({jobs:{one:job('one','awaiting_review',{company:'会社',notes:'PRIVATE'}),two:job('two','in_progress'),three:job('three','needs_info'),deleted:job('deleted','saved',{deletedAt:now})}});
@@ -177,6 +179,12 @@ test('all modern projection payloads and signatures match authoritative Python',
   const result=spawnSync(process.env.JOB_APPLY_CONTRACT_PYTHON || 'python3',['tools/contracts/workspace-projections/reference.py'],{input:JSON.stringify(input),encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
   const expected=JSON.parse(result.stdout);
+  // The frozen Python oracle predates user-facing job identities in attention.
+  const digest=value=>createHash('sha256').update(canonicalJson(fromJSON(value))).digest('hex');
+  expected.attention.items.find(item=>item.jobId==='one').company='会社';
+  expected.attention.snapshotSignature=digest(expected.attention.items);
+  expected.snapshot.attention=expected.attention;
+  expected.snapshot.snapshotSignature=digest({overview:expected.snapshot.overview,jobs:expected.snapshot.jobs,attentionSignature:expected.attention.snapshotSignature});
   assert.deepEqual(plain(await service.overview()),expected.overview);
   assert.deepEqual(plain(await service.attention()),expected.attention);
   assert.deepEqual(plain(await service.taskSnapshot()),expected.snapshot);
@@ -200,4 +208,12 @@ test('native fixture projections are read-only and reject corrupt persisted sess
     await assert.rejects(service.activity('job'),/pending field/);
     assert.deepEqual(await snapshot(state.root),corrupted);
   } finally { await fixture.cleanup(); }
+});
+
+
+test('attention identifies jobs and snoozes expire at their deadline',async()=>{
+  const {service}=setup([job('one','needs_info',{company:'Acme',role:'AI Engineer',attentionSnoozedUntil:'2026-09-10T12:00:00.000Z'})]);
+  const item=plain(await service.attention()).items[0];
+  assert.equal(item.company,'Acme');assert.equal(item.role,'AI Engineer');
+  assert.equal(plain(await service.overview()).counts.attentionJobs,1);
 });
