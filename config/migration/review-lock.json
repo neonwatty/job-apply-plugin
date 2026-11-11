@@ -331,7 +331,7 @@
     },
     {
       "path": "requirements-current-pure-browser-01.json",
-      "sha256": "6075764e2a3c32be1290b2f8eef393ee7c2a1cb455952092ea1fec8354242073"
+      "sha256": "280e7cde1fd56d2caf586991ca477eee2ea02291d3bf0b23c87aa4cc18d1f38c"
     },
     {
       "path": "requirements-current-resume-cli-01.json",
