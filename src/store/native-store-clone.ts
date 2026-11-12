@@ -12,6 +12,9 @@ import { atomicWritePointJson } from './point-persistence.js';
 import { nativeApplicationAuthorityName, nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
 import type { NativePolicyTreeEntry } from './native-policy-tree.js';
+import { syncDirectory } from './directory-sync.js';
+import { deviceId, isOwnedNotOthersWritable, isPrivateOwned } from './private-metadata.js';
+import { restrictToOwner } from './windows-acl.js';
 
 const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'),
   nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json']);
@@ -24,18 +27,18 @@ async function privateDirectory(path: string, label: string, parent = false): Pr
   const canonical = await realpath(path).catch(() => null);
   const metadata = await lstat(path).catch(() => null);
   if (canonical !== path || !metadata?.isDirectory() || metadata.isSymbolicLink()
-    || metadata.uid !== process.getuid?.() || metadata.mode & (parent ? 0o022 : 0o077)) throw new JobsError(`${label} has unsafe permissions or ownership`);
+    || !(parent ? isOwnedNotOthersWritable(metadata) : isPrivateOwned(metadata))) throw new JobsError(`${label} has unsafe permissions or ownership`);
 }
 
 async function privateBytes(path: string, limit = 32 * 1024 * 1024): Promise<Buffer> {
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const before = await handle.stat({ bigint: true });
-    if (!before.isFile() || before.nlink !== 1n || before.uid !== BigInt(process.getuid!())
-      || before.mode & 0o077n || before.size > BigInt(limit)) throw new JobsError('canonical clone source file is unsupported');
+    if (!before.isFile() || before.nlink !== 1n || !isPrivateOwned(before)
+      || before.size > BigInt(limit)) throw new JobsError('canonical clone source file is unsupported');
     const bytes = await handle.readFile();
     const after = await handle.stat({ bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size
+    if (deviceId(before) !== deviceId(after) || before.ino !== after.ino || before.size !== after.size
       || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs) throw new JobsError('canonical clone source changed');
     return bytes;
   } finally { await handle.close(); }
@@ -61,8 +64,7 @@ async function copyDirectory(source: string, target: string, digest: ReturnType<
     await writePrivate(destination, bytes);
     await utimes(destination, metadata.atime, metadata.mtime);
   }
-  const handle = await open(target, constants.O_RDONLY);
-  try { await handle.sync(); } finally { await handle.close(); }
+  await syncDirectory(target);
 }
 
 async function missingDocuments(target: string, names: Set<string>, now: string): Promise<void> {
@@ -158,7 +160,7 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
         throw new JobsError('canonical clone source contains unsupported or incomplete state');
       }
       for (const name of directories) await privateDirectory(join(source, name), `canonical ${name}`);
-      await mkdir(target, { mode: 0o700 }); created = true; await chmod(target, 0o700);
+      await mkdir(target, { mode: 0o700 }); created = true; await chmod(target, 0o700); await restrictToOwner(target);
       const digest = createHash('sha256'), copied = new Set<string>();
       for (const name of [...entries].sort()) {
         if (name === '.store.lock') continue;
@@ -189,8 +191,7 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
           sourceTree, candidateTree }) + '\n');
         await writePrivate(join(target, nativeCloneMarkerName), marker);
       }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
-      const directory = await open(target, constants.O_RDONLY);
-      try { await directory.sync(); } finally { await directory.close(); }
+      await syncDirectory(target);
     }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
   } catch (error) {
     if (created) await rm(target, { recursive: true, force: true });

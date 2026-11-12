@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { activateNativeWriter, recoverNativeWriterSwitch, rollbackNativeWriter } from './native-writer-switch.js';
+import { isOwnedNotOthersWritable, isPrivateOwned } from './private-metadata.js';
 function positiveMilliseconds(value, name) {
     if (!Number.isSafeInteger(value) || value < 1 || value > 2_147_483_647) {
         throw new RangeError(`${name} must be a positive timer interval`);
@@ -14,7 +15,12 @@ function signalGroup(child, signal) {
     if (!Number.isSafeInteger(child.pid) || (child.pid ?? 0) <= 0)
         return;
     try {
-        if (process.platform === 'win32')
+        // Windows has no process groups, and SIGTERM there terminates only the launcher, which
+        // would orphan its writer and server. Closing the owner channel (fd 4) asks it to stop
+        // its children first; SIGKILL after the grace period remains the forced fallback.
+        if (process.platform === 'win32' && signal === 'SIGTERM')
+            child.stdio[4]?.destroy();
+        else if (process.platform === 'win32')
             child.kill(signal);
         else
             process.kill(-child.pid, signal);
@@ -74,9 +80,9 @@ class WriterOwnershipLease {
         ]);
         if (!isAbsolute(active) || active !== resolve(active) || canonicalParent !== parent
             || !parentMetadata?.isDirectory() || parentMetadata.isSymbolicLink()
-            || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o022
+            || !isOwnedNotOthersWritable(parentMetadata)
             || (activeMetadata && (canonicalActive !== active || !activeMetadata.isDirectory() || activeMetadata.isSymbolicLink()
-                || activeMetadata.uid !== process.getuid?.() || activeMetadata.mode & 0o077))) {
+                || !isPrivateOwned(activeMetadata)))) {
             throw new Error('writer ownership Store is invalid');
         }
         const handle = await open(join(parent, `.${basename(active)}.writer-owner.lock`), constants.O_RDWR | constants.O_CREAT, 0o600);
@@ -125,7 +131,7 @@ class OwnedWriterProcess {
         const child = spawn(spec.command, [...spec.argv], {
             cwd: spec.cwd,
             ...(spec.env === undefined ? {} : { env: spec.env }),
-            detached: process.platform !== 'win32',
+            detached: process.platform !== 'win32', windowsHide: true,
             // fd 3 holds the lease; fd 4 lets the inner launcher observe owner death.
             stdio: ['ignore', 'pipe', 'pipe', ownershipDescriptor, 'pipe'],
         });

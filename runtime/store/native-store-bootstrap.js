@@ -1,4 +1,5 @@
 import { constants } from 'node:fs';
+import { constructPosixPath } from '../contracts/posix-path.js';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { homedir, userInfo } from 'node:os';
@@ -26,9 +27,16 @@ import { closeRequestsForResumes, NativeExtractionJournal, validateExtractionJou
 import { NativeClaimHistory } from './native-claim-history.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
+import { syncDirectory } from './directory-sync.js';
+import { deviceId, ownedByCurrentUser, permissionBits } from './private-metadata.js';
+import { restrictToOwner } from './windows-acl.js';
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 const schemaVersion = 1;
-function child(root, name) { return root === '/' || root === '//' ? root + name : `${root}/${name}`; }
+function child(root, name) {
+    if (process.platform === 'win32')
+        return constructPosixPath(root, name);
+    return root === '/' || root === '//' ? root + name : `${root}/${name}`;
+}
 export function nativeStorePaths(root, legacyProfile) {
     root = pythonPath(root);
     legacyProfile = pythonPath(legacyProfile);
@@ -61,13 +69,13 @@ const documentValidators = {
     'coordinator.json': validateCoordinator,
 };
 function identity(metadata) {
-    return { dev: Number(metadata.dev), ino: Number(metadata.ino) };
+    return { dev: Number(deviceId(metadata)), ino: Number(metadata.ino) };
 }
 function sameIdentity(left, right) {
     return left.dev === right.dev && left.ino === right.ino;
 }
 function privateOwner(metadata) {
-    return process.getuid === undefined || metadata.uid === process.getuid();
+    return ownedByCurrentUser(metadata);
 }
 async function privateDirectory(path, optional) {
     let metadata;
@@ -81,7 +89,7 @@ async function privateDirectory(path, optional) {
     }
     if (metadata.isSymbolicLink() || !metadata.isDirectory())
         throw new JobsError(`${path} must be a directory without links`);
-    if (!privateOwner(metadata) || (metadata.mode & 0o777) !== 0o700)
+    if (!privateOwner(metadata) || permissionBits(metadata) !== 0o700)
         throw new JobsError(`${path} must be a private owned directory`);
     return identity(metadata);
 }
@@ -97,7 +105,7 @@ async function readPrivateFile(path, label, optional = true) {
     }
     if (metadata.isSymbolicLink() || !metadata.isFile() || metadata.nlink !== 1)
         throw new JobsError(`${label} must be a regular file without links`);
-    if (!privateOwner(metadata) || (metadata.mode & 0o777) !== 0o600)
+    if (!privateOwner(metadata) || permissionBits(metadata) !== 0o600)
         throw new JobsError(`${label} must be private and owned`);
     const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
@@ -330,13 +338,7 @@ export class NativeStoreBootstrap {
                 await unlink(join(directory, name)).catch(error => { if (error.code !== 'ENOENT')
                     throw error; });
             }
-        const handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
-        try {
-            await handle.sync();
-        }
-        finally {
-            await handle.close();
-        }
+        await syncDirectory(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
     }
     async initialize() { return this.locked(() => this.initializeLocked()); }
     async initializeLocked() {
@@ -349,6 +351,7 @@ export class NativeStoreBootstrap {
         }
         else {
             await mkdir(this.root, { recursive: true, mode: 0o700 });
+            await restrictToOwner(this.root);
             await privateDirectory(this.root, false);
         }
         const confirmed = await this.preflight();
@@ -413,6 +416,8 @@ function expandUser(path, home) {
     return path;
 }
 function pythonPath(path) {
+    if (process.platform === 'win32')
+        return constructPosixPath('', path);
     const prefix = path.startsWith('//') && !path.startsWith('///') ? '//' : path.startsWith('/') ? '/' : '';
     const parts = path.split('/').filter(part => part !== '' && part !== '.');
     const result = prefix + parts.join('/');

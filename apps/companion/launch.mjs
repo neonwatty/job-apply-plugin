@@ -19,7 +19,7 @@ let ownerChannel;
 function stopChild(child, signal) {
   if (!Number.isSafeInteger(child.pid) || child.pid <= 0) return;
   try {
-    if (externalProcessOwner) child.kill(signal);
+    if (externalProcessOwner || process.platform === "win32") child.kill(signal);
     else process.kill(-child.pid, signal);
   } catch (error) { if (error.code !== "ESRCH") throw error; }
 }
@@ -39,7 +39,7 @@ async function shutdown(code) {
 function owned(command, argv, env = process.env) {
   if (stopping) throw new Error("Companion startup cancelled");
   const child = spawn(command, argv, {
-    cwd: app, env, detached: !externalProcessOwner,
+    cwd: app, env, detached: !externalProcessOwner && process.platform !== "win32", windowsHide: true,
     stdio: ["ignore", "pipe", "pipe", externalProcessOwner ? 3 : "ignore"],
   });
   children.add(child);

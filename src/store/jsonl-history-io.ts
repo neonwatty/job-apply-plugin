@@ -35,7 +35,6 @@ function nativePath(path: string): Buffer {
 /** Native POSIX descriptor IO. Callers must separately own an exclusive lock. */
 export function createNativeJsonlHistoryIO(profile: PythonPathProfile): JsonlHistoryIO {
   validatePathProfile(profile);
-  if (process.platform === "win32") throw new Error("Native Windows JSONL history IO is not supported by this POSIX adapter");
   return {
     async exists(path) {
       try {

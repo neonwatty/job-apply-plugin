@@ -1,4 +1,5 @@
 import { constants } from 'node:fs';
+import { constructPosixPath } from '../contracts/posix-path.js';
 import type { Stats } from 'node:fs';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -28,6 +29,9 @@ import { closeRequestsForResumes, NativeExtractionJournal, validateExtractionJou
 import { NativeClaimHistory } from './native-claim-history.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
+import { syncDirectory } from './directory-sync.js';
+import { deviceId, ownedByCurrentUser, permissionBits } from './private-metadata.js';
+import { restrictToOwner } from './windows-acl.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 const schemaVersion = 1;
@@ -37,7 +41,10 @@ export interface NativeStorePathEnvelope {
   coordinator: string; coordinatorJournal: string; automationSettings: string; employerAccounts: string;
   accountOperationJournal: string; trustedFill: string; autoSubmitPolicy: string; legacyProfile: string;
 }
-function child(root: string, name: string): string { return root === '/' || root === '//' ? root + name : `${root}/${name}`; }
+function child(root: string, name: string): string {
+  if (process.platform === 'win32') return constructPosixPath(root, name);
+  return root === '/' || root === '//' ? root + name : `${root}/${name}`;
+}
 export function nativeStorePaths(root: string, legacyProfile: string): NativeStorePathEnvelope {
   root = pythonPath(root); legacyProfile = pythonPath(legacyProfile);
   return {
@@ -75,13 +82,13 @@ const documentValidators: Record<string, Validator> = {
 };
 
 function identity(metadata: Stats): Identity {
-  return { dev: Number(metadata.dev), ino: Number(metadata.ino) };
+  return { dev: Number(deviceId(metadata)), ino: Number(metadata.ino) };
 }
 function sameIdentity(left: Identity, right: Identity): boolean {
   return left.dev === right.dev && left.ino === right.ino;
 }
 function privateOwner(metadata: Stats): boolean {
-  return process.getuid === undefined || metadata.uid === process.getuid();
+  return ownedByCurrentUser(metadata);
 }
 async function privateDirectory(path: string, optional: boolean): Promise<Identity | null> {
   let metadata;
@@ -91,7 +98,7 @@ async function privateDirectory(path: string, optional: boolean): Promise<Identi
     throw error;
   }
   if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new JobsError(`${path} must be a directory without links`);
-  if (!privateOwner(metadata) || (metadata.mode & 0o777) !== 0o700) throw new JobsError(`${path} must be a private owned directory`);
+  if (!privateOwner(metadata) || permissionBits(metadata) !== 0o700) throw new JobsError(`${path} must be a private owned directory`);
   return identity(metadata);
 }
 async function readPrivateFile(path: string, label: string, optional = true): Promise<Buffer | null> {
@@ -102,7 +109,7 @@ async function readPrivateFile(path: string, label: string, optional = true): Pr
     throw error;
   }
   if (metadata.isSymbolicLink() || !metadata.isFile() || metadata.nlink !== 1) throw new JobsError(`${label} must be a regular file without links`);
-  if (!privateOwner(metadata) || (metadata.mode & 0o777) !== 0o600) throw new JobsError(`${label} must be private and owned`);
+  if (!privateOwner(metadata) || permissionBits(metadata) !== 0o600) throw new JobsError(`${label} must be private and owned`);
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const opened = await handle.stat();
@@ -294,8 +301,7 @@ export class NativeStoreBootstrap {
     for (const name of names) if (!name.startsWith('.') && /\.(?:pdf|docx|txt)$/i.test(name) && !referenced.has(name)) {
       await unlink(join(directory, name)).catch(error => { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; });
     }
-    const handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
-    try { await handle.sync(); } finally { await handle.close(); }
+    await syncDirectory(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
   }
   async initialize(): Promise<Value> { return this.locked(() => this.initializeLocked()); }
   private async initializeLocked(): Promise<Value> {
@@ -306,6 +312,7 @@ export class NativeStoreBootstrap {
       if (!sameIdentity(checked.root, current!)) throw new JobsError('Store root identity changed');
     } else {
       await mkdir(this.root, { recursive: true, mode: 0o700 });
+      await restrictToOwner(this.root);
       await privateDirectory(this.root, false);
     }
     const confirmed = await this.preflight();
@@ -357,6 +364,7 @@ function expandUser(path: string, home: string): string {
   return path;
 }
 function pythonPath(path: string): string {
+  if (process.platform === 'win32') return constructPosixPath('', path);
   const prefix = path.startsWith('//') && !path.startsWith('///') ? '//' : path.startsWith('/') ? '/' : '';
   const parts = path.split('/').filter(part => part !== '' && part !== '.');
   const result = prefix + parts.join('/');

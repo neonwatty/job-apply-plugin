@@ -5,8 +5,9 @@ For install, upgrade, and recovery guidance, see the
 
 The production plugin and required validation use Node.js 22 or newer. Required
 checks do not discover, install, or execute CPython. Supported packaged targets
-are macOS arm64 and Linux x64; Windows reference tests do not establish native
-Windows support. The shipped C/Swift adapters retain their platform checks.
+are macOS arm64, Linux x64, and Windows x64. On Windows, run native checks from a
+Visual Studio x64 developer prompt after `npx node-gyp install`, so the native lock
+can be compiled with `cl` against node.lib. The shipped C/Swift adapters retain their platform checks.
 
 Run `npm ci` at the repository root. Install Chromium for browser checks with
 `npx playwright install chromium` (CI uses `--with-deps`).

@@ -1465,6 +1465,7 @@
         "tests_js/native_email_canary_composition.test.mjs",
         "tests_js/native_installed_entrypoints.test.mjs",
         "tests_js/native_store_activation_command.test.mjs",
+        "tests_js/windows_native_lock.test.mjs",
         "tests_js/native_writer_switch_policy_tamper.test.mjs",
         "tests_js/native_writer_switch_rehearsal.test.mjs",
         "tests_js/process_owned_writer_quiescence.test.mjs",

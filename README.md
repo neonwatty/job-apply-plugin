@@ -12,8 +12,8 @@ through the plugin with Companion closed.
 
 ### Requirements
 
-Install **Node.js 22 or newer** on **macOS Apple Silicon** or **Linux x64** and
-make `node` available to your host. For visible form filling, enable the Codex
+Install **Node.js 22 or newer** on **macOS Apple Silicon**, **Linux x64**, or
+**Windows x64** and make `node` available to your host. For visible form filling, enable the Codex
 Browser plugin or [Claude in Chrome](https://chromewebstore.google.com/detail/claude-in-chrome).
 If upgrading from Python, follow the [Store upgrade guide](skills/answer-memory/references/upgrade.md)
 before your first data command.
@@ -281,7 +281,7 @@ These files can include sensitive personal information such as:
 
 The repository contains no telemetry or analytics integration, and the store is not uploaded to a plugin service. It remains on your computer until you direct Codex or Claude Code to use values in browser forms or searches; those third-party sites receive the information you choose to enter there.
 
-Protect the directory like a resume. Do not attach its files to issues or share them in logs. The helper creates user-only permissions on supported systems. On macOS or Linux, you can verify or restore them with:
+Protect the directory like a resume. Do not attach its files to issues or share them in logs. The helper creates user-only permissions on supported systems. On Windows the Store directory gets a protected access list that grants only your account, and every file created inside inherits it; `icacls %USERPROFILE%.job-apply` should list only your user. On macOS or Linux, you can verify or restore them with:
 
 ```bash
 chmod 700 ~/.job-apply
@@ -293,7 +293,7 @@ chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-jo
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
-Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. Installed production routes require no Python interpreter and have no Python fallback. A source-checkout installation can retain historical Python reference files; those files are not production entrypoints. See [runtime closure status](docs/migration/python-runtime-closure.md).
+Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64, Linux x64, and Windows x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. Installed production routes require no Python interpreter and have no Python fallback. A source-checkout installation can retain historical Python reference files; those files are not production entrypoints. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
 All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 

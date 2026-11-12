@@ -17,12 +17,12 @@ export async function resolvePackagedNativeLock(pluginRoot: string): Promise<str
     || await realpath(pluginRoot).catch(() => null) !== pluginRoot) {
     throw new TypeError("Plugin root must be an absolute canonical directory");
   }
-  if (!['darwin', 'linux'].includes(process.platform)) throw new Error("Packaged native lock is unavailable on this platform");
+  if (!['darwin', 'linux', 'win32'].includes(process.platform)) throw new Error("Packaged native lock is unavailable on this platform");
   const napi = Number(process.versions.napi);
   if (!Number.isInteger(napi) || napi < 8) throw new Error("Packaged native lock requires Node-API 8");
   const directory = join(pluginRoot, "native", "packaged-lock", `${process.platform}-${process.arch}-napi8`);
   if (await realpath(directory).catch(() => null) !== directory) throw new Error("Packaged native lock directory is unavailable");
-  const sourcePath = join(pluginRoot, "native", "posix", "flock.c");
+  const sourcePath = join(pluginRoot, "native", process.platform === "win32" ? "windows" : "posix", "flock.c");
   if (await realpath(sourcePath).catch(() => null) !== sourcePath) throw new Error("Packaged native lock source is unavailable");
   const source = await regular(sourcePath, "source");
   const artifactPath = join(directory, "flock.node");

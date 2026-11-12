@@ -1,11 +1,12 @@
-import { constants } from 'node:fs';
-import { lstat, open, readFile, realpath, rename } from 'node:fs/promises';
+import { lstat, readFile, realpath, rename } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import { canonicalStoreCandidateTreeLocked, canonicalStoreSourceTreeLocked } from './native-store-clone.js';
 import { nativeCloneMarkerName, nativeCloneTrees, nativeFixtureMarkerName, validateNativeStoreMarker } from './native-store-layout.js';
 import { withNativePolicyTree } from './native-policy-tree.js';
+import { syncDirectory } from './directory-sync.js';
+import { isOwnedNotOthersWritable, isPrivateOwned } from './private-metadata.js';
 function paths(active, candidate = `${active}.native-candidate`) {
     if (![active, candidate].every(path => isAbsolute(path) && path === resolve(path))
         || candidate !== `${active}.native-candidate` || dirname(active) !== dirname(candidate)) {
@@ -24,7 +25,7 @@ async function kind(path) {
         throw error;
     }
     if (!metadata.isDirectory() || metadata.isSymbolicLink() || await realpath(path) !== path
-        || metadata.uid !== process.getuid?.() || metadata.mode & 0o077)
+        || !isPrivateOwned(metadata))
         throw new JobsError('writer switch Store is invalid');
     let ownership = null;
     for (const name of [nativeFixtureMarkerName, nativeCloneMarkerName]) {
@@ -44,75 +45,101 @@ async function kind(path) {
     }
     return ownership ? 'native' : 'python';
 }
-async function syncDirectory(path) {
-    const handle = await open(path, constants.O_RDONLY);
-    try {
-        await handle.sync();
-    }
-    finally {
-        await handle.close();
-    }
-}
 async function locked(active, options, callback) {
     const parent = dirname(active);
     const canonical = await realpath(parent).catch(() => null), metadata = await lstat(parent).catch(() => null);
     if (canonical !== parent || !metadata?.isDirectory() || metadata.isSymbolicLink()
-        || metadata.uid !== process.getuid?.() || metadata.mode & 0o022)
+        || !isOwnedNotOthersWritable(metadata))
         throw new JobsError('writer switch parent must be owned and not writable by others');
     return withExclusiveFileLock(join(parent, `.${basename(active)}.writer-switch.lock`), async () => callback(), {
         provider: options.provider, pathProfile: '3.12', preserveParentPermissions: true,
         signal: options.signal ?? AbortSignal.timeout(30_000),
     });
 }
+/**
+ * Hold both Store locks and both policy trees for `work`. POSIX keeps them across the
+ * directory renames. Windows cannot rename a directory that has open handles inside it,
+ * so there the caller renames after release and re-verifies under fresh locks.
+ */
+const holdLocksAcrossRename = process.platform !== 'win32';
+async function underStoreLocks(first, second, options, work) {
+    const lockOptions = { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) };
+    return withExclusiveFileLock(join(first, '.store.lock'), async () => withExclusiveFileLock(join(second, '.store.lock'), async () => withNativePolicyTree(first, options.provider, async (firstPolicy) => withNativePolicyTree(second, options.provider, async (secondPolicy) => work(firstPolicy, secondPolicy), options.signal), options.signal), lockOptions), lockOptions);
+}
+async function moveDirectory(from, to) {
+    await rename(from, to);
+    await syncDirectory(dirname(to));
+}
 /** Atomically selects a prepared native clone by directory entry, retaining the Python Store for rollback. */
 export async function activateNativeWriter(active, candidate, options) {
     const value = paths(active, candidate), boundary = options.boundary ?? (() => { });
+    const verify = async (source, sourcePolicy, candidatePolicy) => {
+        const expected = nativeCloneTrees(await readFile(join(value.candidate, nativeCloneMarkerName)));
+        const sourceTree = await canonicalStoreSourceTreeLocked(source, options.provider, options.signal, sourcePolicy);
+        const candidateTree = await canonicalStoreCandidateTreeLocked(value.candidate, options.provider, options.signal, candidatePolicy);
+        if (sourceTree !== expected.sourceTree)
+            throw new JobsError('native candidate does not match the active Python Store');
+        if (candidateTree !== expected.candidateTree)
+            throw new JobsError('native candidate content changed after preparation');
+    };
+    const retainSource = async () => {
+        await boundary('before-source-rename');
+        await moveDirectory(value.active, value.pythonRollback);
+        await boundary('after-source-rename');
+    };
+    const selectCandidate = async () => {
+        await moveDirectory(value.candidate, value.active);
+        await boundary('after-candidate-rename');
+        return value;
+    };
     return locked(active, options, async () => {
         if (await kind(value.active) !== 'python' || await kind(value.candidate) !== 'native'
             || await kind(value.pythonRollback) !== 'missing' || await kind(value.nativeRetained) !== 'missing') {
             throw new JobsError('writer switch activation state is invalid');
         }
-        return withExclusiveFileLock(join(value.active, '.store.lock'), async () => withExclusiveFileLock(join(value.candidate, '.store.lock'), async () => {
-            const expected = nativeCloneTrees(await readFile(join(value.candidate, nativeCloneMarkerName)));
-            return withNativePolicyTree(value.active, options.provider, async (sourcePolicy) => withNativePolicyTree(value.candidate, options.provider, async (candidatePolicy) => {
-                const sourceTree = await canonicalStoreSourceTreeLocked(value.active, options.provider, options.signal, sourcePolicy);
-                const candidateTree = await canonicalStoreCandidateTreeLocked(value.candidate, options.provider, options.signal, candidatePolicy);
-                if (sourceTree !== expected.sourceTree)
-                    throw new JobsError('native candidate does not match the active Python Store');
-                if (candidateTree !== expected.candidateTree)
-                    throw new JobsError('native candidate content changed after preparation');
-                await boundary('before-source-rename');
-                await rename(value.active, value.pythonRollback);
-                await syncDirectory(dirname(active));
-                await boundary('after-source-rename');
-                await rename(value.candidate, value.active);
-                await syncDirectory(dirname(active));
-                await boundary('after-candidate-rename');
-                return value;
-            }, options.signal), options.signal);
-        }, { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) }), { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) });
+        if (holdLocksAcrossRename) {
+            return underStoreLocks(value.active, value.candidate, options, async (sourcePolicy, candidatePolicy) => {
+                await verify(value.active, sourcePolicy, candidatePolicy);
+                await retainSource();
+                return selectCandidate();
+            });
+        }
+        await underStoreLocks(value.active, value.candidate, options, (sourcePolicy, candidatePolicy) => verify(value.active, sourcePolicy, candidatePolicy));
+        // The rename fails while any writer still holds a handle inside the Store. A write
+        // that finished between release and rename is caught here and the rename is undone.
+        await retainSource();
+        try {
+            await underStoreLocks(value.pythonRollback, value.candidate, options, (sourcePolicy, candidatePolicy) => verify(value.pythonRollback, sourcePolicy, candidatePolicy));
+        }
+        catch (error) {
+            await moveDirectory(value.pythonRollback, value.active);
+            throw error;
+        }
+        return selectCandidate();
     });
 }
 /** Restores the retained Python Store and keeps the post-write native Store for diagnosis. */
 export async function rollbackNativeWriter(active, options) {
     const value = paths(active), boundary = options.boundary ?? (() => { });
+    const renames = async () => {
+        await boundary('before-native-rename');
+        await moveDirectory(value.active, value.nativeRetained);
+        await boundary('after-native-rename');
+        await moveDirectory(value.pythonRollback, value.active);
+        await boundary('after-python-rename');
+        return value;
+    };
     return locked(active, options, async () => {
         if (await kind(value.active) !== 'native' || await kind(value.pythonRollback) !== 'python'
             || await kind(value.candidate) !== 'missing' || await kind(value.nativeRetained) !== 'missing') {
             throw new JobsError('writer switch rollback state is invalid');
         }
-        return withExclusiveFileLock(join(value.active, '.store.lock'), async () => withExclusiveFileLock(join(value.pythonRollback, '.store.lock'), async () => {
-            return withNativePolicyTree(value.active, options.provider, async () => withNativePolicyTree(value.pythonRollback, options.provider, async () => {
-                await boundary('before-native-rename');
-                await rename(value.active, value.nativeRetained);
-                await syncDirectory(dirname(active));
-                await boundary('after-native-rename');
-                await rename(value.pythonRollback, value.active);
-                await syncDirectory(dirname(active));
-                await boundary('after-python-rename');
-                return value;
-            }, options.signal), options.signal);
-        }, { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) }), { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) });
+        // Windows: acquiring proves no writer is mid-transaction; the renames then refuse
+        // to proceed while any handle remains open inside either Store.
+        if (holdLocksAcrossRename)
+            return underStoreLocks(value.active, value.pythonRollback, options, renames);
+        await underStoreLocks(value.active, value.pythonRollback, options, async () => { });
+        return renames();
     });
 }
 /** Resolves only incomplete rename states; completed transitions remain untouched. */

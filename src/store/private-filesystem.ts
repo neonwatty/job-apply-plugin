@@ -9,6 +9,7 @@ import { linkLegacyContext } from "../contracts/persistence-exception.js";
 import type { ContextLinker } from "../contracts/persistence-exception.js";
 import { encodePersistedUtf8 } from "../contracts/persisted-json.js";
 import { pythonFilesystemError, withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
+import { restrictToOwner } from "./windows-acl.js";
 
 export interface DirectoryHandle {
   sync(): Promise<void>;
@@ -52,6 +53,7 @@ function nativePath(path: string): Buffer {
 export async function ensurePrivateDirectory<T>(path: string, io: AtomicWriteIOFor<T>): Promise<void> {
   await io.mkdir(path, { mode: 0o700, parents: true, existOk: true });
   await io.chmod(path, 0o700);
+  await restrictToOwner(path);
 }
 
 export async function fsyncDirectory<T>(path: string, io: AtomicWriteIOFor<T>, linkContext: ContextLinker = linkLegacyContext): Promise<void> {
@@ -92,7 +94,6 @@ export function createNativeAtomicWriteIOFor<T>(
   linkContext: ContextLinker,
 ): AtomicWriteIOFor<T> {
   validatePathProfile(profile);
-  if (process.platform === "win32") throw new Error("Native Windows atomic writes are not supported by this POSIX adapter");
   async function isDirectory(path: string): Promise<boolean> {
     try {
       return (await withPythonFilesystemErrors(stat(nativePath(path)))).isDirectory();

@@ -6,6 +6,7 @@ import { constructPosixPath, posixParent, validatePathProfile } from "../contrac
 import { linkLegacyContext } from "../contracts/persistence-exception.js";
 import { encodePersistedUtf8 } from "../contracts/persisted-json.js";
 import { pythonFilesystemError, withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
+import { restrictToOwner } from "./windows-acl.js";
 export function isFilesystemError(error) {
     return error instanceof Error && "errno" in error && typeof error.errno === "number";
 }
@@ -24,6 +25,7 @@ function nativePath(path) {
 export async function ensurePrivateDirectory(path, io) {
     await io.mkdir(path, { mode: 0o700, parents: true, existOk: true });
     await io.chmod(path, 0o700);
+    await restrictToOwner(path);
 }
 export async function fsyncDirectory(path, io, linkContext = linkLegacyContext) {
     let handle;
@@ -64,8 +66,6 @@ export function createNativeAtomicWriteIO(profile) {
 }
 export function createNativeAtomicWriteIOFor(profile, encode, linkContext) {
     validatePathProfile(profile);
-    if (process.platform === "win32")
-        throw new Error("Native Windows atomic writes are not supported by this POSIX adapter");
     async function isDirectory(path) {
         try {
             return (await withPythonFilesystemErrors(stat(nativePath(path)))).isDirectory();

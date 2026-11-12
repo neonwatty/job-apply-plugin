@@ -19,6 +19,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
+import { isPrivateOwned } from './private-metadata.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 export interface NativeStoreStateStorage {
@@ -45,7 +46,7 @@ export async function runHistoryTransaction<T>(storage: NativeStoreStateStorage,
 export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
   operation: (transaction: SessionTransaction) => Promise<T>): Promise<T> {
   const directory = join(storage.root, 'sessions'), metadata = await lstat(directory);
-  if (!metadata.isDirectory() || metadata.isSymbolicLink() || metadata.uid !== process.getuid?.() || metadata.mode & 0o077) {
+  if (!metadata.isDirectory() || metadata.isSymbolicLink() || !isPrivateOwned(metadata)) {
     throw new JobsError('native sessions directory must be private and owned');
   }
   const load = async (id: string): Promise<Value | null> => {

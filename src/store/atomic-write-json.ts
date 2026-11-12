@@ -31,7 +31,8 @@ export async function atomicWriteJsonFor<T>(
   let temporaryPath: string | undefined;
   let failure: unknown;
   try {
-    const name = path === "/" || path === "//" || path === "." ? "" : path.slice(path.lastIndexOf("/") + 1);
+    const name = path === "/" || path === "//" || path === "." ? ""
+      : path.slice(Math.max(path.lastIndexOf("/"), process.platform === "win32" ? path.lastIndexOf("\\") : -1) + 1);
     const temporary = await io.createTemporary({ directory: parent, prefix: `.${name}.`, suffix: ".tmp" });
     temporaryPath = temporary.path;
     let writeFailure: unknown;

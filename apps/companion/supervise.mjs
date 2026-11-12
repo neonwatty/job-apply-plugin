@@ -10,8 +10,10 @@ import { ProcessOwnedWriterController } from '../../runtime/store/process-owned-
 import { withExclusiveFileLock } from '../../runtime/store/exclusive-file-lock.js';
 import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
-import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
+import { attemptEndpoint } from '../../runtime/cli/attempt-endpoint.js';
 import { ensureStandalone } from './ensure-standalone.mjs';
+import { deviceId, isOwnedNotOthersWritable, isPrivateOwned, ownedByCurrentUser, permissionBits } from '../../runtime/store/private-metadata.js';
+import { isOwnerOnly, restrictToOwner } from '../../runtime/store/windows-acl.js';
 
 const values = new Set(['--root', '--plugin-root', '--port', '--native-lock', '--legacy-profile']);
 export function parseSupervisorOptions(args, app) {
@@ -50,9 +52,9 @@ export async function validateSupervisorRoot(root) {
     lstat(root).catch(error => error?.code === 'ENOENT' ? null : Promise.reject(error)), realpath(root).catch(() => null),
   ]);
   if (!isAbsolute(root) || root !== resolve(root) || canonicalParent !== parent || !parentInfo?.isDirectory()
-    || parentInfo.isSymbolicLink() || parentInfo.uid !== process.getuid?.() || parentInfo.mode & 0o022
+    || parentInfo.isSymbolicLink() || !isOwnedNotOthersWritable(parentInfo)
     || (rootInfo && (!rootInfo.isDirectory() || rootInfo.isSymbolicLink() || canonicalRoot !== root
-      || rootInfo.uid !== process.getuid?.() || rootInfo.mode & 0o077))) throw new Error('Companion Store root is invalid');
+      || !isPrivateOwned(rootInfo) || !await isOwnerOnly(root)))) throw new Error('Companion Store root is invalid');
 }
 export async function assertNoLiveDetachedAttempt(root) {
   const path = join(root, '.job-apply-attempt.pid');
@@ -61,7 +63,7 @@ export async function assertNoLiveDetachedAttempt(root) {
   catch (error) { if (error?.code === 'ENOENT') return; throw new Error('detached attempt broker metadata is unavailable'); }
   try {
     const metadata = await handle.stat(), text = (await handle.readFile()).toString('ascii');
-    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.() || (metadata.mode & 0o777) !== 0o600
+    if (!metadata.isFile() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata) || permissionBits(metadata) !== 0o600
       || !/^[1-9][0-9]{0,19}\n$/.test(text)) throw new Error('detached attempt broker metadata is invalid');
     try { process.kill(Number(text.slice(0, -1)), 0); }
     catch (error) { if (error?.code === 'ESRCH') return; throw error; }
@@ -74,13 +76,13 @@ async function clearStaleDetachedAttempt(root) {
   catch (error) { if (error?.code === 'ENOENT') return; throw new Error('detached attempt broker metadata is unavailable'); }
   try {
     const metadata = await handle.stat(), text = (await handle.readFile()).toString('ascii');
-    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.() || (metadata.mode & 0o777) !== 0o600
+    if (!metadata.isFile() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata) || permissionBits(metadata) !== 0o600
       || !/^[1-9][0-9]{0,19}\n$/.test(text)) throw new Error('detached attempt broker metadata is invalid');
     try { process.kill(Number(text.slice(0, -1)), 0); }
     catch (error) {
       if (error?.code !== 'ESRCH') throw error;
       const current = await lstat(path);
-      if (current.dev !== metadata.dev || current.ino !== metadata.ino) throw new Error('detached attempt broker metadata changed');
+      if (deviceId(current) !== deviceId(metadata) || current.ino !== metadata.ino) throw new Error('detached attempt broker metadata changed');
       await unlink(path); return;
     }
     throw new Error('detached attempt broker is live; stop it before switching writers');
@@ -88,18 +90,19 @@ async function clearStaleDetachedAttempt(root) {
 }
 function failedActivationMarker(root) { return `${root}.native-activation-failed`; }
 export async function acquireAttemptExclusion(root, provider) {
-  if (!process.getuid) throw new Error('attempt broker exclusion is unavailable');
-  const path = attemptSocketPath(root, process.getuid()), directory = dirname(path);
+  if (!process.getuid && process.platform !== 'win32') throw new Error('attempt broker exclusion is unavailable');
+  const { lockPath, directory } = attemptEndpoint(root);
   try { await mkdir(directory, { mode: 0o700 }); }
   catch (error) { if (error?.code !== 'EEXIST') throw error; }
+  await restrictToOwner(directory);
   const directoryInfo = await lstat(directory);
-  if (!directoryInfo.isDirectory() || directoryInfo.isSymbolicLink() || directoryInfo.uid !== process.getuid()
-    || (directoryInfo.mode & 0o777) !== 0o700) throw new Error('attempt broker exclusion is unavailable');
-  const handle = await open(`${path}.lock`, constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+  if (!directoryInfo.isDirectory() || directoryInfo.isSymbolicLink() || !ownedByCurrentUser(directoryInfo)
+    || permissionBits(directoryInfo) !== 0o700) throw new Error('attempt broker exclusion is unavailable');
+  const handle = await open(lockPath, constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
   let locked = false;
   try {
     const info = await handle.stat();
-    if (!info.isFile() || info.nlink !== 1 || info.uid !== process.getuid() || (info.mode & 0o777) !== 0o600) {
+    if (!info.isFile() || info.nlink !== 1 || !ownedByCurrentUser(info) || permissionBits(info) !== 0o600) {
       throw new Error('attempt broker exclusion is unavailable');
     }
     locked = provider.tryLock(handle.fd);
@@ -118,7 +121,7 @@ export async function prepareNativeDefault(root, provider, options = {}) {
     const mode = await recoverNativeWriterSwitch(root, { provider, signal: options.signal });
     return { mode, candidate, durablePythonRollback: mode === 'python' && await existing(retained) };
   }
-  await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
+  await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700); await restrictToOwner(root);
   const bootstrap = createNativeStoreBootstrap(root, options.legacyProfile, process.env, undefined, {
     ...(options.now ? { clock: options.now } : {}),
     locked: operation => withExclusiveFileLock(join(root, '.store.lock'), async () => {
