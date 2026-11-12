@@ -7,7 +7,7 @@ function basename(name) {
 }
 /** Explicit artifact only; operations remain relative to the caller's pinned fd. */
 export function loadPosixDirectoryProvider(absoluteAddonPath) {
-    if (!['darwin', 'linux'].includes(process.platform))
+    if (!['darwin', 'linux', 'win32'].includes(process.platform))
         throw new Error('POSIX directory access is unavailable');
     if (!isAbsolute(absoluteAddonPath))
         throw new TypeError('Native directory artifact path must be absolute');

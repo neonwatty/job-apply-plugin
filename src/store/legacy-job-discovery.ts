@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { parseLegacyJobReport } from '../contracts/workspace/legacy-job-report.js';
 import { fromJSON, object, set, JobsError, type Document } from '../contracts/workspace/values.js';
 import type { PosixDirectoryProvider } from './posix-directory.js';
+import { deviceId } from './private-metadata.js';
 
 const rootName = '.claude-job-searches';
 const maxFile = 2 * 1024 * 1024;
@@ -19,7 +20,7 @@ async function report(provider: PosixDirectoryProvider, root: number, name: stri
   catch { return fail('legacy search report cannot be opened safely'); }
   try {
     const opened = await statDescriptor(descriptor, {bigint:true});
-    if (!opened.isFile() || opened.dev !== metadata.dev || opened.ino !== metadata.ino || opened.size !== metadata.size) {
+    if (!opened.isFile() || deviceId(opened) !== deviceId(metadata) || opened.ino !== metadata.ino || opened.size !== metadata.size) {
       return fail('legacy search report changed during discovery');
     }
     const chunks: Buffer[] = [];
@@ -53,7 +54,7 @@ export async function discoverLegacyJobs(home: string, provider: PosixDirectoryP
   catch { return fail('legacy search root cannot be opened safely'); }
   try {
     const opened = await handle.stat({bigint:true});
-    if (!opened.isDirectory() || opened.dev !== metadata.dev || opened.ino !== metadata.ino) return fail('legacy search root changed during discovery');
+    if (!opened.isDirectory() || deviceId(opened) !== deviceId(metadata) || opened.ino !== metadata.ino) return fail('legacy search root changed during discovery');
     // Python sorts Unicode code points rather than UTF-16 code units.
     const names = provider.listNames(handle.fd)
       .filter(name => name.subarray(0,7).equals(Buffer.from('search-')) && name.subarray(-3).equals(Buffer.from('.md')))

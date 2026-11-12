@@ -1,4 +1,5 @@
-import { lstat, readlink, stat } from "node:fs/promises";
+import { lstat, readlink, realpath, stat } from "node:fs/promises";
+import { win32 } from "node:path";
 import { filesystemDecode, filesystemEncode } from "./posix-path-bytes.js";
 
 export type PythonPathProfile = "3.12" | "3.13" | "3.14";
@@ -23,8 +24,13 @@ export function validatePathProfile(profile: PythonPathProfile): void {
   }
 }
 
-/** Python PurePosixPath construction, retaining parent components and // anchor. */
+/**
+ * Python PurePosixPath construction, retaining parent components and // anchor.
+ * On native Windows the host path flavour is PureWindowsPath, so drive and UNC
+ * anchors and both separators are honoured instead.
+ */
 export function constructPosixPath(base: string, child: string): string {
+  if (process.platform === "win32") return win32.normalize(base && !win32.isAbsolute(child) ? win32.join(base, child) : child || ".");
   const raw = child.startsWith("/") || !base ? child : `${base}${base.endsWith("/") ? "" : "/"}${child}`;
   const anchor = raw.startsWith("//") && !raw.startsWith("///") ? "//" : raw.startsWith("/") ? "/" : "";
   const parts = raw.split("/").filter((part) => part !== "" && part !== ".");
@@ -32,6 +38,7 @@ export function constructPosixPath(base: string, child: string): string {
 }
 
 export function posixParent(path: string): string {
+  if (process.platform === "win32") return win32.dirname(constructPosixPath("", path));
   const normalized = constructPosixPath("", path);
   if (normalized === "/" || normalized === "//" || normalized === ".") return normalized;
   const separator = normalized.lastIndexOf("/");
@@ -65,6 +72,22 @@ function isOSFailure(error: unknown): boolean {
   return error instanceof Error && "errno" in error && typeof error.errno === "number";
 }
 
+/** Windows Path.resolve(strict=False): resolve the longest existing prefix, keep the rest lexical. */
+async function resolveWindowsPath(path: string): Promise<string> {
+  let current = win32.resolve(path);
+  const missing: string[] = [];
+  for (;;) {
+    try { return win32.join(await realpath(current), ...missing.reverse()); }
+    catch (error) {
+      if (!isOSFailure(error)) throw error;
+      const parent = win32.dirname(current);
+      if (parent === current) return win32.resolve(path);
+      missing.push(win32.basename(current));
+      current = parent;
+    }
+  }
+}
+
 /** Non-strict parent resolution; missing/non-directory components remain lexical. */
 export async function resolvePosixPath(
   path: string,
@@ -72,9 +95,7 @@ export async function resolvePosixPath(
   io: PosixPathIO = nativeIO,
 ): Promise<string> {
   validatePathProfile(profile);
-  if (io === nativeIO && process.platform === "win32") {
-    throw new Error("Native Windows path resolution is not supported by this inert POSIX adapter");
-  }
+  if (io === nativeIO && process.platform === "win32") return resolveWindowsPath(path);
   const seen = new Map<string, string | null>();
 
   async function walk(initial: string, remainder: string): Promise<{ path: string; unresolved: boolean }> {

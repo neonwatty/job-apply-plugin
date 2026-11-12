@@ -13,7 +13,7 @@ export async function packageNativeLock(packageRoot) {
   if (!isAbsolute(packageRoot)) throw new TypeError('Package root must be absolute');
   const root = await realpath(packageRoot);
   if (root === await realpath(repository)) throw new Error('Native lock packaging requires a disposable package copy');
-  const sourcePath = join(root, 'native/posix/flock.c');
+  const sourcePath = join(root, process.platform === 'win32' ? 'native/windows/flock.c' : 'native/posix/flock.c');
   const sourceMetadata = await lstat(sourcePath).catch(() => null);
   if (!sourceMetadata?.isFile() || sourceMetadata.isSymbolicLink() || await realpath(sourcePath).catch(() => null) !== sourcePath) {
     throw new Error('Package native lock source is unavailable');

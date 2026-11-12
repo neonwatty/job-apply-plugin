@@ -104,6 +104,23 @@ jobs:
         with:
           name: package-${{ matrix.os }}
           path: ci-receipts/release.json
+  windows-native:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - run: npx --yes node-gyp install
+      - name: Verify the packaged Windows lock
+        run: node -e "import('./runtime/package/native-lock-artifact.js').then(m => m.resolvePackagedNativeLock(process.cwd())).then(p => console.log(p))"
+      - run: node --test tests_js/windows_native_lock.test.mjs tests_js/native_installed_entrypoints.test.mjs
   pr-gate:
     name: PR gate
     if: always()
