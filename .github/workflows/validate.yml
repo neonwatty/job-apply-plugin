@@ -42,12 +42,19 @@ jobs:
       - run: npm run check:size -- --base "$BASE_REF"
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+      - name: Check migration inventory
+        shell: bash
+        run: |
+          set -o pipefail
+          npm --silent run check:migration 2>&1 | tee "$RUNNER_TEMP/migration-inventory.log"
       - run: npm run test:fast -- --concurrency 1 --receipt ci-receipts/fast.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: policy
-          path: ci-receipts/fast.json
+          path: |
+            ci-receipts/fast.json
+            ${{ runner.temp }}/migration-inventory.log
   native-shards:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdir, readFile, realpath } from 'node:fs/promises';
+import { lstat, mkdir, readFile, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { prepareCanonicalStoreClone } from '../runtime/store/native-store-clone.js';
@@ -127,6 +127,33 @@ test('termination probes retry permission errors and never equate denial with ex
       await controller.stop();
     }
   });
+});
+
+test('a denied termination signal blocks Store activation and retains writer ownership', { timeout: 60000 }, async t => {
+  const { controller, active, candidate, records, state } = await setup(t, { python: 'ignore' });
+  await controller.start('python');
+  const writer = await record(state, records.at(-1));
+  const activeInode = (await lstat(active, { bigint: true })).ino;
+  const candidateInode = (await lstat(candidate, { bigint: true })).ino;
+  const denied = Object.assign(new Error('synthetic denied termination signal'), { code: 'EPERM' });
+  const originalKill = process.kill;
+  const signal = t.mock.method(process, 'kill', (pid, name) => {
+    if (pid === -writer.parent && name === 'SIGKILL') throw denied;
+    return originalKill(pid, name);
+  });
+  const boundary = t.mock.fn();
+  try {
+    await assert.rejects(controller.activate({ boundary }), error => error === denied);
+    assert.equal(boundary.mock.callCount(), 0);
+    assert.equal((await lstat(active, { bigint: true })).ino, activeInode);
+    assert.equal((await lstat(candidate, { bigint: true })).ino, candidateInode);
+    await assert.rejects(lstat(active + '.python-rollback'), { code: 'ENOENT' });
+    assert.equal(controller.mode, 'python');
+    assert.equal(alive(writer.parent), true);
+  } finally {
+    signal.mock.restore();
+    await controller.stop();
+  }
 });
 
 test('a Store lifetime lease excludes a second process owner before it can start a writer', { timeout: 60000 }, async t => {
