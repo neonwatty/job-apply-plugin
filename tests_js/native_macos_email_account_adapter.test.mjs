@@ -59,8 +59,11 @@ test('native macOS email adapter uses pinned binary and inherited value-free cha
     const identity = await ReviewedMacOSHelperIdentity.pin(binary);
     await assert.rejects(new NativeMacOSEmailOnlyExecutor(identity, 124, 3000)
       .execute(request(), () => 'private@example.invalid'), /attestation is invalid/);
-    await assert.rejects(new NativeMacOSEmailOnlyExecutor(identity, 125, 3000)
-      .execute(request(), () => 'private@example.invalid'), /failed closed \(effect\)/);
+    // Early exit can close the private pipe before the exit result arrives.
+    await assert.rejects(
+      new NativeMacOSEmailOnlyExecutor(identity, 125, 3000).execute(request(), () => 'private@example.invalid'),
+      { message: /^(?:native email-only execution failed closed \(effect\)|native email-only private channel failed closed)$/ },
+    );
     await assert.rejects(new NativeMacOSEmailOnlyExecutor(identity, 126, 50)
       .execute(request(), () => 'private@example.invalid'), /execution timed out/);
     await assert.rejects(new NativeMacOSEmailOnlyExecutor(identity, 127, 3000)

@@ -85,7 +85,8 @@ those remain covered by current native Store and Companion suites.
 
 ## Migration inventory audit before main
 
-From a clean candidate checkout with full Git history, also run:
+The Validate Plugin policy job runs this audit and attaches its report to the
+policy artifact. To check locally, use a clean checkout with full Git history:
 
 ```text
 npm run check:migration
