@@ -2,11 +2,6 @@
   "schemaVersion": 1,
   "sources": [
     {
-      "path": "scripts/smoke-plugin.sh",
-      "sha256": "643fe8747c6904ecfb72a32b3cdb1289770219132ea83aef4376dd405b40c606",
-      "classification": "unreviewed"
-    },
-    {
       "path": "scripts/smoke/artifacts.py",
       "sha256": "37b551faaadc35341d9b5c17b8f96031eca24bfffad25e7342112e80cd8d11c0",
       "classification": "unreviewed"
