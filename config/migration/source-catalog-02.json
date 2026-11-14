@@ -3,7 +3,37 @@
   "sources": [
     {
       "path": "qa/recorder/broker-client.mjs",
-      "sha256": "bf273e6bb9ac43a33da640c2645008e410825a9540d01581ecaf64c8919f2c26",
+      "sha256": "269a9aa8a642923e8045d2ebf0b0e62875a8a5c09b2b848f4de91fb0bb020adf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/broker-build.mjs",
+      "sha256": "fdb55e458e22b0bda0a2e365bc5b358cbdd7e1a69d20ba2d8741b4f307f42666",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/broker-directory.c",
+      "sha256": "da5fc55450be42576aa58ca4ad0a521f071d42af3434278d7bb35c76c0a5861a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/broker-guardian.mjs",
+      "sha256": "57b3ac848ecfe535a7fce96536f84333f1beff7dc97f14c86d81fc0cf7d373f8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/broker-protocol.mjs",
+      "sha256": "4fe776a5e143673e211c2a1c1248cc2bb3b47a80595af9a0243e8d6cbfc16e3d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/broker-server.mjs",
+      "sha256": "53a4a06d89e33659a7e4cbc0d238f119579257ccdd51ea1b25049e3d8ce85df9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/broker-session.mjs",
+      "sha256": "5d7d8bbee81c1291329752eadbeb6601f8d7a3279472f17aedda5e905b5986bd",
       "classification": "unreviewed"
     },
     {
