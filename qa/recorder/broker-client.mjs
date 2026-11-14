@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { RecorderError } from "./errors.mjs";
 
+const BROKER_STARTUP_DEADLINE_MS = 12_000;
 const BROKER_REQUEST_DEADLINE_MS = 1000;
 const BROKER_EOF_GRACE_MS = 250;
 const BROKER_TERMINATE_GRACE_MS = 1500;
@@ -55,7 +56,8 @@ export class BrokerClient {
       path.dirname(fileURLToPath(import.meta.url)),
       "../..",
     );
-    const child = spawn("python3", ["-m", "qa.recorder_fs", "--root", root], {
+    const brokerPath = fileURLToPath(new URL("./broker-server.mjs", import.meta.url));
+    const child = spawn(process.execPath, [brokerPath, "--root", root], {
       cwd: repositoryRoot,
       detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],
@@ -76,7 +78,7 @@ export class BrokerClient {
         });
         child.once("exit", () => reject(new RecorderError("filesystem broker unavailable")));
         child.once("error", () => reject(new RecorderError("filesystem broker unavailable")));
-      }), 2000);
+      }), BROKER_STARTUP_DEADLINE_MS);
     } catch (error) {
       lines.close();
       child.kill("SIGTERM");

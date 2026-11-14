@@ -43,6 +43,11 @@ drafts, and exact numeric preservation through native Store writes. They use
 fictional disposable Stores and headless Chromium. `npm run audit:dependencies`
 can also run the release dependency check directly; it needs npm registry access.
 
+The developer recorder uses Node and a small native filesystem helper on macOS
+and Linux. Running recorder checks needs a C compiler and Node development
+headers, which are also used by the native Store checks. The recorder browser
+tests use isolated Chromium and synthetic pages.
+
 Pass `--receipt /absolute/path/result.json` for a value-free suite receipt and
 `--concurrency N` to bound parallelism. Receipts report failed checks as failed.
 

@@ -964,19 +964,7 @@
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
-      "path": "tests_js/recorder_broker.test.mjs",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
-      "path": "tests_js/recorder_capture_browser.test.mjs",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
       "path": "tests_js/recorder_capture_checkpoint_scenario.test.mjs",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
-      "path": "tests_js/recorder_capture_safety.test.mjs",
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
@@ -985,10 +973,6 @@
     },
     {
       "path": "tests_js/recorder_capture_workday.test.mjs",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
-      "path": "tests_js/recorder_checkpoint_basics.test.mjs",
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
@@ -1436,7 +1420,10 @@
         "tests_js/workspace_title_discovery_contract.test.mjs",
         "tests_js/workspace_trash_reference.test.mjs",
         "tests_js/workspace_trash_view_ts.test.mjs",
-        "tests_js/resume_facts_model.test.mjs"
+        "tests_js/resume_facts_model.test.mjs",
+        "tests_js/recorder_broker.test.mjs",
+        "tests_js/recorder_checkpoint_basics.test.mjs",
+        "tests_js/recorder_filesystem_broker.test.mjs"
       ],
       "tiers": [
         "full"
@@ -1476,7 +1463,9 @@
       "id": "node-native-browser",
       "kind": "node-test",
       "include": [
-        "tests_js/required_companion.test.mjs"
+        "tests_js/required_companion.test.mjs",
+        "tests_js/recorder_capture_browser.test.mjs",
+        "tests_js/recorder_capture_safety.test.mjs"
       ],
       "tiers": [
         "full"
