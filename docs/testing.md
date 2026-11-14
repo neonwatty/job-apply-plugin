@@ -106,6 +106,9 @@ are rejected; a disposable staged snapshot can be used for local diagnosis.
 `config/reference-test-matrix.json` for development diagnosis. It may require
 specific CPython builds and old implementation contracts. It is not a required
 release gate and does not establish current platform or live ATS acceptance.
+The frozen CPython parser-profile check and Python package smoke are archived
+at the [pre-cleanup commit](https://github.com/neonwatty/job-apply-plugin/tree/2c7f787d6aecad845d57b5990755aef1bd4eca7a).
+Required tests use their captured parser vectors and the Node package smoke.
 The former CPython 3.13 atomic-write oracle timeout is outside required CI;
 a demonstrated TypeScript persistence defect remains a release issue.
 
