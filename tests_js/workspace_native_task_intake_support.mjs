@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { cp, readFile } from 'node:fs/promises';
-import { execFile, spawn } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { parse } from '../runtime/contracts/workspace/values.js';
@@ -26,20 +26,4 @@ export async function differential(service, root, referenceRoot, operations) {
     delete before['jobs.json']; delete after['jobs.json'];
     assert.deepEqual(after,before,'intake changes only jobs.json');
   }
-}
-export function stdin(fixture,root,payload,args=[]) {
-  return new Promise((resolve,reject) => {
-    const child = spawn(process.execPath,['runtime/cli/native-jobs.js','--root',root,'--native-lock',fixture.receipt.artifact,
-      'task-intake','--input','-',...args],{cwd:new URL('../',import.meta.url),env:{PATH:''}});
-    let stdout='',stderr='';
-    child.stdout.on('data',bytes=>{stdout+=bytes;});
-    child.stderr.on('data',bytes=>{stderr+=bytes;});
-    child.on('error',reject);
-    child.on('close',code=>{
-      if(code!==0 || stderr) return reject(Error(stderr || `exit ${code}`));
-      try {resolve(JSON.parse(stdout));} catch(error){reject(error);}
-    });
-    child.stdin.on('error',()=>{});
-    child.stdin.end(JSON.stringify(payload));
-  });
 }

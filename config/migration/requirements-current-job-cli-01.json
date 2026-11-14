@@ -37,25 +37,25 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job lifecycle CLI matches Python responses and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI completes the full lifecycle across independent processes",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
         },
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "installed Store router preserves Python job CLI behavior and rollback bytes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Installed Store runs the job lifecycle without changing the historical rollback bytes",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -97,13 +97,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI rejects conflicts and invalid transitions and preserves bytes on no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -149,13 +149,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI rejects conflicts and invalid transitions and preserves bytes on no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -196,13 +196,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job lifecycle CLI matches Python responses and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI completes the full lifecycle across independent processes",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -243,13 +243,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI rejects conflicts and invalid transitions and preserves bytes on no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -292,13 +292,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI rejects conflicts and invalid transitions and preserves bytes on no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536

@@ -70,3 +70,20 @@ test('triage loader combines sorted inventory shards', async () => {
     });
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('triage loader accepts updated bindings for an archived requirement and rejects contract drift', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'migration-triage-bindings-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const directory = join(root, 'config/migration');
+  await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, 'fixture-surfaces.json'), JSON.stringify({ schemaVersion: 1, surfaces }));
+  const archive = { ...planned, testBindings: [{ suiteId: 'previous' }] };
+  const current = { ...planned, testBindings: [{ suiteId: 'required' }] };
+  const writeRequirements = (name, requirements) => writeFile(join(directory, name), JSON.stringify({ schemaVersion: 1, requirements }));
+  await writeRequirements('requirements-archive.json', [archive, inapplicable]);
+  const expected = await loadTriageReport(root);
+  await writeRequirements('requirements-current-fixture.json', [current]);
+  assert.deepEqual(await loadTriageReport(root), expected);
+  await writeRequirements('requirements-current-fixture.json', [{ ...current, category: 'noop' }]);
+  await assert.rejects(loadTriageReport(root), /changes an archived requirement contract: A-valid/);
+});

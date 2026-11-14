@@ -37,13 +37,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_answer_cli_parity.test.mjs",
-          "testId": "native answer CLI matches Python lifecycle and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store answer CLI covers reads and the full revisioned lifecycle",
           "command": [
             "node",
             "--test",
-            "tests_js/native_answer_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -84,13 +84,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_answer_cli_parity.test.mjs",
-          "testId": "native answer CLI matches Python lifecycle and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store answer CLI covers reads and the full revisioned lifecycle",
           "command": [
             "node",
             "--test",
-            "tests_js/native_answer_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -133,13 +133,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_answer_cli_parity.test.mjs",
-          "testId": "native answer CLI matches Python privacy, conflicts and invalid writes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store answer CLI requires consent for private values and rejects stale and invalid edits",
           "command": [
             "node",
             "--test",
-            "tests_js/native_answer_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -180,13 +180,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_answer_cli_parity.test.mjs",
-          "testId": "native answer CLI matches Python privacy, conflicts and invalid writes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store answer CLI requires consent for private values and rejects stale and invalid edits",
           "command": [
             "node",
             "--test",
-            "tests_js/native_answer_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -227,13 +227,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_answer_cli_parity.test.mjs",
-          "testId": "native answer CLI matches Python privacy, conflicts and invalid writes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store answer CLI requires consent for private values and rejects stale and invalid edits",
           "command": [
             "node",
             "--test",
-            "tests_js/native_answer_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536

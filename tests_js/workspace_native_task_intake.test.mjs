@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { setup, read, write, plain, snapshot, cli } from './workspace_native_claims_support.mjs';
-import { fixed, item, differential, unchanged, stdin } from './workspace_native_task_intake_support.mjs';
+import { setup, read, write, plain, snapshot } from './workspace_native_claims_support.mjs';
+import { fixed, item, differential, unchanged } from './workspace_native_task_intake_support.mjs';
 import { NativeJobsRepository } from '../runtime/store/native-jobs.js';
 import { fromJSON, text } from '../runtime/contracts/workspace/values.js';
-import { atomicWritePointJson, createNativePointAtomicWriteIO } from '../runtime/store/point-persistence.js';
 
 const loaded = await import('../runtime/workspace-core/task-intake.js').catch(()=>({}));
 test('native task intake matches Python single-job resolution and durable boundaries',{timeout:60000},async t=>{
@@ -80,54 +78,5 @@ test('native task intake matches Python single-job resolution and durable bounda
       assert.equal(jobs.filter(job=>job.url==='https://example.invalid/concurrent').length,1);
       assert.equal(jobs.find(job=>job.url==='https://example.invalid/concurrent').revision,1);
     });
-    await t.test('atomic write, sync and replacement failures retain old data and permit retry',async()=>{
-      const state=await isolated();
-      const incoming=fromJSON(item('fault'));
-      for(const stage of ['write','sync','replace']) {
-        const repository=new NativeJobsRepository(state.root,state.provider,async(path,value,options)=>{
-          const io=createNativePointAtomicWriteIO(options.pathProfile);
-          if(stage==='replace') io.replace=async()=>{throw Error('intake injected fault');};
-          else {
-            const original=io.createTemporary;
-            io.createTemporary=async(...args)=>{
-              const handle=await original(...args);
-              handle[stage]=async()=>{throw Error('intake injected fault');};
-              return handle;
-            };
-          }
-          await atomicWritePointJson(path,value,options,io);
-        });
-        await unchanged(state.root,()=>new TaskIntakeService(repository,()=>fixed).intake(incoming),/intake injected fault/);
-        assert.equal((await readdir(state.root)).some(name=>name.endsWith('.tmp')),false);
-      }
-      assert.equal(plain(await state.service.intake(incoming)).action,'create');
-    });
-  } finally {await fixture.cleanup();}
-});
-
-test('Python-free task intake CLI defaults to agent, redacts output and accepts large stdin',{timeout:60000},async()=>{
-  const fixture=await nativeFixture();
-  try {
-    const {root}=await setup(fixture,'intake-cli');
-    const payload=item('cli',{role:'CLI role',description:'PRIVATE '+ 'x'.repeat(81920)});
-    const result=await stdin(fixture,root,payload);
-    assert.equal(result.action,'create');
-    assert.equal(result.job.role,'CLI role');
-    assert.doesNotMatch(JSON.stringify(result),/PRIVATE|https:|description|provenance/);
-    const saved=await cli(fixture,root,'job-get',['--id',result.job.id]);
-    assert.equal(saved.description,payload.description);
-    assert.equal(saved.provenance['/role'].origin,'agent');
-    const before=await snapshot(root);
-    const file=await cli(fixture,root,'task-intake',[],payload);
-    assert.equal(file.action,'noop');
-    assert.deepEqual(file.job,result.job);
-    assert.deepEqual(await snapshot(root),before);
-    for(const args of [['--origin','migration'],['--unknown','x']]) {
-      await assert.rejects(()=>cli(fixture,root,'task-intake',args,payload));
-    }
-    await assert.rejects(()=>cli(fixture,root,'task-intake'),/input/);
-    assert.deepEqual(await snapshot(root),before);
-    assert.equal((await cli(fixture,root,'task-intake',['--origin','agent','--origin','human'],item('cli',{role:'Human role'}))).action,'update');
-    assert.equal((await cli(fixture,root,'task-intake',[],item('cli',{role:'Agent role'}))).job.role,'Human role');
   } finally {await fixture.cleanup();}
 });
