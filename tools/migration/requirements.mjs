@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 // Requirements describe the work to verify. They never grant passing evidence.
 const CATEGORIES = new Set(['valid', 'invalid', 'missing', 'noop', 'privacy',
   'conflict', 'concurrency', 'interruption', 'recovery', 'platform']);
@@ -8,6 +10,23 @@ const closed = (value, keys) => value && typeof value === 'object' && !Array.isA
   && Object.keys(value).every((key) => keys.includes(key)) && keys.every((key) => Object.hasOwn(value, key));
 const list = (value) => Array.isArray(value) && value.length > 0
   && value.every(nonempty) && new Set(value).size === value.length;
+
+export function currentRequirementBindings(current, archived) {
+  const byId = new Map(current.map(item => [item?.id, item]));
+  const replaced = new Set();
+  const unchanged = archived.filter(item => {
+    const candidate = byId.get(item?.id);
+    if (!candidate) return true;
+    const { testBindings: _previous, ...originalContract } = item;
+    const { testBindings: _updated, ...currentContract } = candidate;
+    if (replaced.has(item.id) || !isDeepStrictEqual(originalContract, currentContract)) {
+      throw new Error(`Current binding changes an archived requirement contract: ${item.id}`);
+    }
+    replaced.add(item.id);
+    return false;
+  });
+  return [...current, ...unchanged];
+}
 
 // Context uses concrete registries: surfaces/nodes/platforms are Sets,
 // files is Map(path, sha256), suites is Map(suiteId, Set(exact test paths)),

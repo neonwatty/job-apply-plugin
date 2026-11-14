@@ -93,9 +93,11 @@ npm run check:migration
 ```
 
 This Node audit checks current source/surface bindings, reviewed inventory hashes,
-and the frozen historical boundary. Historical requirement declarations can refer
-to optional reference suites; the audit resolves those Node test bindings without
-scheduling suites or making them required CI. Unknown bindings still fail.
+and the frozen historical boundary. Current requirements bind to exact test
+names in the required Node matrix. The audit checks the frozen requirements at
+their original snapshot. The CLI help tests compare against the
+command and option inventory captured in `test/fixtures/native-cli-help/options.json`
+from its pinned pre-change Git revision. The audit rejects unknown bindings.
 A passing inventory receipt does not accept every historical DAG task or replace
 behavioral tests and the separate one-time Store migration check. Dirty checkouts
 are rejected; a disposable staged snapshot can be used for local diagnosis.

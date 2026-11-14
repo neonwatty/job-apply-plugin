@@ -38,13 +38,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "concurrent job CLI creates converge to one Python-equivalent writer",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI serializes concurrent creation, update, and trash by revision",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -94,13 +94,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "concurrent job CLI updates and trash serialize revision checks like Python",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job CLI serializes concurrent creation, update, and trash by revision",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -149,13 +149,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job-get repairs interrupted coordinator history exactly once",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -204,13 +204,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_jobs_contracts.test.mjs",
+          "testId": "Store job-get repairs interrupted coordinator history exactly once",
           "command": [
             "node",
             "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
+            "tests_js/native_cli_jobs_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536

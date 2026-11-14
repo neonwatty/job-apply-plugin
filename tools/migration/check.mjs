@@ -6,14 +6,14 @@ import { execFileSync } from 'node:child_process';
 import { discoverBrowserExports, checkBrowserBindings } from './browser-exports.mjs';
 import { discoverNextBrowserExports, isNextComponentSource } from './next-surfaces.mjs';
 import { detectServingMap, HYBRID_RUNTIME_PATHS } from './browser-serving-map.mjs';
-import { validateRequirements, missingRequirementCoverage } from './requirements.mjs';
+import { currentRequirementBindings, validateRequirements, missingRequirementCoverage } from './requirements.mjs';
 import { validatePackages } from './packages.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
 import { requirementSuiteRegistry } from './requirement-suites.mjs';
 import { loadTaskEvidence } from './load-task-evidence.mjs';
 import { loadPrerequisites } from './load-prerequisites.mjs';
-import { auditHistoricalBoundary } from './historical-boundary.mjs';
+import { auditHistoricalBoundary, historicalRecord } from './historical-boundary.mjs';
 import { checkPythonRuntimeClosure } from './python-runtime-closure.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
@@ -147,7 +147,8 @@ export async function checkInventory(root, options = {}) {
   if (nodesFile.schemaVersion !== 1) throw new Error('Unknown node schema');
   const sources = [];
   const surfaces = [];
-  const requirements = [];
+  const currentRequirements = [];
+  const archivedRequirements = [];
   const packages = [];
   const hashes = new Map();
   for (const name of (await readdir(directory)).sort()) {
@@ -158,7 +159,11 @@ export async function checkInventory(root, options = {}) {
       const data = JSON.parse(await readFile(resolve(directory, name), 'utf8'));
       const key = name === 'packages.json' ? 'packages' : 'requirements';
       if (data.schemaVersion !== 1 || !Array.isArray(data[key])) throw new Error(`Invalid ${key} schema`);
-      (key === 'packages' ? packages : requirements).push(...data[key]);
+      if (key === 'packages') packages.push(...data[key]);
+      else {
+        const records = historicalRecord('config/migration/' + name) ? archivedRequirements : currentRequirements;
+        records.push(...data[key]);
+      }
     }
     const kind = name.startsWith('source-catalog-') ? 'sources' : name.endsWith('-surfaces.json') ? 'surfaces' : null;
     if (!kind) continue;
@@ -204,14 +209,9 @@ export async function checkInventory(root, options = {}) {
     ...discoverNextBrowserExports(nextComponentFiles)];
   errors.push(...checkBrowserBindings(browserExports, surfaces));
   const historicalAudit = await auditHistoricalBoundary(root, snapshot => checkInventory(snapshot));
+  const requirements = currentRequirementBindings(currentRequirements, archivedRequirements);
   if (requirements.length || packages.length) {
     const matrix = await loadMatrix(root);
-    const requirementMatrices = [matrix];
-    // Archived/current evidence may name optional reference suites after cutover.
-    // Resolve those declarations without adding them to required CI or running them.
-    if (historicalAudit && matrix.runtime === 'typescript') {
-      requirementMatrices.push(await loadMatrix(root, 'config/reference-test-matrix.json'));
-    }
     const testIds = new Map();
     const files = new Map(actual);
     const registered = new Set(allPaths);
@@ -228,11 +228,11 @@ export async function checkInventory(root, options = {}) {
     }
     const nodes = new Set(nodesFile.nodes.map((item) => item.id));
     const surfaceIds = new Set(surfaces.map((item) => item.id));
-    const planningPaths = [...allPaths, ...requirementMatrices.flatMap(item => item.suites).filter(suite => suite.kind === 'node-test')
+    const planningPaths = [...allPaths, ...matrix.suites.filter(suite => suite.kind === 'node-test')
       .flatMap(suite => (suite.include ?? []).filter(path => safePath(path) && !/[*?\[\]{}]/.test(path)))];
     const requirementContext = { nodes, surfaces: surfaceIds, files, testIds,
       platforms: new Set(['node-local']),
-      suites: requirementSuiteRegistry(requirementMatrices, planningPaths) };
+      suites: requirementSuiteRegistry([matrix], planningPaths) };
     if (historicalAudit) {
       // Frozen packages/prerequisites are audited at their original source. They
       // cannot unlock current code; current test bindings still must resolve.

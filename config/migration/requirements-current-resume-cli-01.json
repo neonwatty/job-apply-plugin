@@ -47,13 +47,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_resume_cli_parity.test.mjs",
-          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store resume CLI covers lifecycle, private managed bytes, and missing reads",
           "command": [
             "node",
             "--test",
-            "tests_js/native_resume_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 90000,
           "maxOutputBytes": 65536
@@ -106,13 +106,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_resume_cli_parity.test.mjs",
-          "testId": "native resume CLI rejects conflicts and invalid inputs without side effects",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store resume CLI rejects stale and invalid changes and preserves bytes on lifecycle no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_resume_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 90000,
           "maxOutputBytes": 65536
@@ -162,13 +162,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_resume_cli_parity.test.mjs",
-          "testId": "native resume CLI rejects conflicts and invalid inputs without side effects",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store resume CLI rejects stale and invalid changes and preserves bytes on lifecycle no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_resume_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 90000,
           "maxOutputBytes": 65536
@@ -217,13 +217,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_resume_cli_parity.test.mjs",
-          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store resume CLI covers lifecycle, private managed bytes, and missing reads",
           "command": [
             "node",
             "--test",
-            "tests_js/native_resume_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 90000,
           "maxOutputBytes": 65536
@@ -274,13 +274,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_resume_cli_parity.test.mjs",
-          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store resume CLI rejects stale and invalid changes and preserves bytes on lifecycle no-ops",
           "command": [
             "node",
             "--test",
-            "tests_js/native_resume_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 90000,
           "maxOutputBytes": 65536
@@ -329,13 +329,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_resume_cli_parity.test.mjs",
-          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store resume CLI covers lifecycle, private managed bytes, and missing reads",
           "command": [
             "node",
             "--test",
-            "tests_js/native_resume_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 90000,
           "maxOutputBytes": 65536

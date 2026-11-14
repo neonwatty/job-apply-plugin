@@ -1457,7 +1457,11 @@
         "tests_js/native_writer_switch_policy_tamper.test.mjs",
         "tests_js/native_writer_switch_rehearsal.test.mjs",
         "tests_js/process_owned_writer_quiescence.test.mjs",
-        "tests_js/legacy_store_migration.test.mjs"
+        "tests_js/legacy_store_migration.test.mjs",
+        "tests_js/native_cli_data_contracts.test.mjs",
+        "tests_js/native_cli_jobs_contracts.test.mjs",
+        "tests_js/native_cli_parser_contract.test.mjs",
+        "tests_js/native_cli_task_intake_contract.test.mjs"
       ],
       "tiers": [
         "full",
