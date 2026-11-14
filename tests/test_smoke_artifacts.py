@@ -1,12 +1,33 @@
 """Regression tests for smoke artifact containment at fixture boundaries."""
 
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from tests.test_smoke_harness_split import source_fixture
-from artifacts import assert_critical_bytes, copy_critical, critical_paths
+ROOT = Path(__file__).resolve().parents[1]
+SMOKE = ROOT / "scripts" / "smoke"
+sys.path.insert(0, str(SMOKE))
+from artifacts import (  # noqa: E402
+    CRITICAL_TREES,
+    FIXED_CRITICAL_FILES,
+    assert_critical_bytes,
+    copy_critical,
+    critical_paths,
+)
+
+
+def source_fixture(root: Path) -> Path:
+    for relative in FIXED_CRITICAL_FILES:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(f"fixed:{relative}\n".encode())
+    for relative in CRITICAL_TREES:
+        nested = root / relative / "nested" / "module.test"
+        nested.parent.mkdir(parents=True, exist_ok=True)
+        nested.write_bytes(f"tree:{relative}\n".encode())
+    return root
 
 
 class SmokeArtifactContainmentTests(unittest.TestCase):

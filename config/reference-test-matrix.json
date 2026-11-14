@@ -11,7 +11,6 @@
       "tests/test_answer_resume.py",
       "tests/test_answer_skill.py",
       "tests/test_ast_contract.py",
-      "tests/test_final_action_docs.py",
       "tests/test_job_apply_account_canary.py",
       "tests/test_job_apply_account_canary_executor.py",
       "tests/test_job_apply_account_executor.py",
@@ -80,7 +79,6 @@
       "tests/test_search_saved_skills.py",
       "tests/test_skill_documents.py",
       "tests/test_smoke_artifacts.py",
-      "tests/test_smoke_harness_split.py",
       "tests/test_source_size_policy.py",
       "tests/test_store_account_email_execution_extraction.py",
       "tests/test_store_account_email_scope_extraction.py",
@@ -302,7 +300,6 @@
       "tests_js/typed_json_points.test.mjs",
       "tests_js/typed_json_points_compat.test.mjs",
       "tests_js/typed_json_points_portable.test.mjs",
-      "tests_js/typed_json_points_profiles.test.mjs",
       "tests_js/unified_task_spine_oracle.test.mjs",
       "tests_js/workspace.test.mjs",
       "tests_js/workspace_accounts_sign_in.test.mjs",
@@ -535,7 +532,6 @@
       "kind": "python-unittest",
       "include": [
         "tests/test_source_size_policy.py",
-        "tests/test_final_action_docs.py",
         "tests/test_skill_documents.py",
         "tests/test_job_apply_skill_contract.py",
         "tests/test_job_apply_policy_split.py",
@@ -591,7 +587,6 @@
       ],
       "exclude": [
         "tests/test_source_size_policy.py",
-        "tests/test_final_action_docs.py",
         "tests/test_skill_documents.py",
         "tests/test_job_apply_skill_contract.py",
         "tests/test_job_apply_policy_split.py",
@@ -685,7 +680,6 @@
       "kind": "node-test",
       "include": [
         "tests_js/typed_json_points.test.mjs",
-        "tests_js/typed_json_points_profiles.test.mjs",
         "tests_js/typed_json_points_compat.test.mjs",
         "tests_js/workspace*.test.mjs",
         "tests_js/unified_task_spine_oracle.test.mjs",
@@ -736,25 +730,8 @@
         "tests_js/python_object_ts.test.mjs",
         "tests_js/python_json_bytes_ts.test.mjs"
       ],
-      "exclude": [
-        "tests_js/typed_json_points_profiles.test.mjs"
-      ],
       "tiers": [
         "full"
-      ]
-    },
-    {
-      "id": "native-frozen-reference-profiles",
-      "kind": "node-test",
-      "include": [
-        "tests_js/typed_json_points_profiles.test.mjs"
-      ],
-      "platforms": [
-        "darwin"
-      ],
-      "tiers": [
-        "full",
-        "platform"
       ]
     },
     {
@@ -911,8 +888,8 @@
       "id": "release-package",
       "kind": "command",
       "command": [
-        "bash",
-        "scripts/smoke-plugin.sh"
+        "node",
+        "scripts/smoke-plugin.mjs"
       ],
       "tiers": [
         "release"
@@ -1174,7 +1151,7 @@
     },
     {
       "paths": [
-        "scripts/smoke-plugin.sh"
+        "scripts/smoke-plugin.mjs"
       ],
       "suites": [
         "release-package"

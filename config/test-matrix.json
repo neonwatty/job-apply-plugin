@@ -44,10 +44,6 @@
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
-      "path": "tests/test_final_action_docs.py",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
       "path": "tests/test_job_apply_account_canary.py",
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
@@ -317,10 +313,6 @@
     },
     {
       "path": "tests/test_smoke_artifacts.py",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
-      "path": "tests/test_smoke_harness_split.py",
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
@@ -1068,10 +1060,6 @@
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
-      "path": "tests_js/typed_json_points_profiles.test.mjs",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
       "path": "tests_js/unified_task_spine_oracle.test.mjs",
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
@@ -1362,7 +1350,8 @@
         "tests_js/test-runner-selection.test.mjs",
         "tests_js/typescript_ci.test.mjs",
         "tests_js/migration_suite_registry.test.mjs",
-        "tests_js/site_metadata.test.mjs"
+        "tests_js/site_metadata.test.mjs",
+        "tests_js/final_action_docs.test.mjs"
       ],
       "tiers": [
         "fast",
