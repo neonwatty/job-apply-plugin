@@ -48,6 +48,9 @@ and Linux. Running recorder checks needs a C compiler and Node development
 headers, which are also used by the native Store checks. The recorder browser
 tests use isolated Chromium and synthetic pages.
 
+Run `npm run test:qa-screening` for the native LinkedIn replay. It exercises
+validation, resume upload, manual review, and cleanup with a synthetic form.
+
 Pass `--receipt /absolute/path/result.json` for a value-free suite receipt and
 `--concurrency N` to bound parallelism. Receipts report failed checks as failed.
 

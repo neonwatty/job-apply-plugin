@@ -1465,7 +1465,8 @@
       "include": [
         "tests_js/required_companion.test.mjs",
         "tests_js/recorder_capture_browser.test.mjs",
-        "tests_js/recorder_capture_safety.test.mjs"
+        "tests_js/recorder_capture_safety.test.mjs",
+        "tests_js/renderer_linkedin_screening.test.mjs"
       ],
       "tiers": [
         "full"

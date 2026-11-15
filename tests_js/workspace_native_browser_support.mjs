@@ -161,7 +161,11 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
     await page.getByLabel('Label', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    const savedName = resumeFacts.getByRole('textbox', { name: 'Name', exact: true });
+    await savedName.waitFor();
+    assert.equal(await savedName.inputValue(), 'Synthetic Browser Candidate');
     await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
+    await page.locator('dialog[aria-labelledby="resume-editor-title"]').waitFor({ state: 'hidden' });
     const runInput = join(fixture.root, 'browser-application-run.json');
     await writeFile(runInput, JSON.stringify({ jobIds: [job.id] }), { mode: 0o600 });
     await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
