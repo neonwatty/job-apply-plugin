@@ -8,7 +8,7 @@ Determine the repository boundary with `git rev-parse --show-toplevel`. Keep sea
 
 Finish the requested change, run affected checks, and fix failures caused by the change. Read documentation relevant to the changed workflow; no full repository survey is required for a small edit.
 
-Use `npm run test:affected -- --base origin/staging` for the affected suite selection; see [testing tiers](docs/testing.md) for options and broader release checks. Required tiers and CI must run without CPython. Keep live Python comparisons optional; use `npm run test:migration-once` only for the separate historical Store migration acceptance.
+Use `npm run test:affected -- --base origin/staging` for the affected suite selection; see [testing tiers](docs/testing.md) for options and broader release checks. Required tiers and CI must run without CPython. Use the pinned historical checkout in [testing tiers](docs/testing.md#archived-reference-testing) for Python comparisons. Use `npm run test:migration-once` for the separate historical Store migration acceptance.
 
 Use the existing commit/push hooks rather than repeating a successful unchanged suite. Isolated fixture checks may run without repeated approval. Disruptive visible-browser/native account tests retain their explicit opt-in; never run them against the owner’s active browser merely because another local check needs them.
 

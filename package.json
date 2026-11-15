@@ -18,10 +18,7 @@
     "test:full": "node tools/test-runner.mjs full",
     "test:platform": "node tools/test-runner.mjs platform",
     "test:release": "node tools/test-runner.mjs release",
-    "test:qa-browser": "node tools/run-qa-browser.mjs",
     "test:agent-local": "node tools/local-agent-acceptance.mjs",
-    "qa:unified-task-spine": "node qa/unified_task_spine_oracle.mjs --json",
-    "qa:resume-extraction-onboarding": "python3 qa/resume_extraction_onboarding_oracle.py --json",
     "test:auto-submit": "node runtime/cli/native-qa-replay.js verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json",
     "test:qa-screening": "node --test tests_js/renderer_linkedin_screening.test.mjs",
     "qa:record": "node qa/recorder.mjs",
@@ -30,7 +27,6 @@
     "companion:start": "node apps/companion/supervise.mjs",
     "companion:dev": "node apps/companion/supervise.mjs --dev",
     "companion:typecheck": "npm run typecheck --workspace job-apply-companion",
-    "test:reference": "node tools/test-runner.mjs reference",
     "test:migration-once": "node tools/python-store-migration-once.mjs",
     "test:required": "node tools/test-runner.mjs full",
     "audit:dependencies": "npm audit --omit=dev --audit-level=high"

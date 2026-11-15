@@ -110,12 +110,24 @@ A passing inventory receipt does not accept every historical DAG task or replace
 behavioral tests and the separate one-time Store migration check. Dirty checkouts
 are rejected; a disposable staged snapshot can be used for local diagnosis.
 
-## Optional historical comparisons
+## Archived reference testing
 
-`npm run test:reference` retains the historical matrix in
-`config/reference-test-matrix.json` for development diagnosis. It may require
-specific CPython builds and old implementation contracts. It is not a required
-release gate and does not establish current platform or live ATS acceptance.
+The previous reference matrix and commands are available at
+[`2906b63f`](https://github.com/neonwatty/job-apply-plugin/tree/2906b63fee587fad6e89043af890d06f3f3b6152).
+To reproduce historical comparisons, use a separate checkout.
+
+```sh
+git worktree add --detach ../job-apply-reference 2906b63fee587fad6e89043af890d06f3f3b6152
+cd ../job-apply-reference
+npm ci
+npm run test:reference
+```
+
+Use the archived checkout's CPython versions and Chromium prerequisites for its
+browser suites. It also retains the old browser, task-spine, and resume onboarding
+commands. Historical runs provide comparison evidence for that revision.
+The one-time Store migration check above verifies the current plugin's upgrade path.
+
 The frozen CPython parser-profile check and Python package smoke are archived
 at the [pre-cleanup commit](https://github.com/neonwatty/job-apply-plugin/tree/2c7f787d6aecad845d57b5990755aef1bd4eca7a).
 Required tests use their captured parser vectors and the Node package smoke.

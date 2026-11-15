@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { suiteCommand } from '../tools/test-runner/execute.mjs';
 import { selectAffected, suiteFiles, tierSuites, validateMatrix } from '../tools/test-runner/matrix.mjs';
+
+const REFERENCE_REVISION = '2906b63fee587fad6e89043af890d06f3f3b6152';
+
+export function archivedReferenceMatrix(root) {
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^GIT_/i.test(key)));
+  const read = args => execFileSync('git', ['--no-replace-objects', ...args], {
+    cwd: root, env: environment, encoding: 'utf8', timeout: 5000, maxBuffer: 8 * 1024 * 1024,
+  });
+  try {
+    const matrix = JSON.parse(read(['show', REFERENCE_REVISION + ':config/reference-test-matrix.json']));
+    const paths = read(['ls-tree', '-r', '-z', '--name-only', REFERENCE_REVISION]).split('\0').filter(Boolean);
+    return [matrix, paths];
+  } catch (cause) {
+    throw new Error('Archived reference matrix requires Git revision ' + REFERENCE_REVISION, { cause });
+  }
+}
 
 const S04 = 'node-reference-s04';
 const S05 = 'node-reference-s05';
