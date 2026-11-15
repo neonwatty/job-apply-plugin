@@ -177,6 +177,8 @@ React app under `apps/companion/`. Python trees are historical reference code.
 Preserve exact revisions, selective writes, user provenance, browser drafts,
 managed-resume identity, consent, and human-only final submission.
 
+## Core workflow evidence audit
+
 Core workflow auditing validates registry consistency and schema validity; it
 does not prove live agent or ATS behavior. The live-agent command
 `npm run test:agent-local` remains explicit, consumes model capacity, and runs

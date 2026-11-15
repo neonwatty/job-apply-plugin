@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { physicalLines, loadBaseline, checkSize } from '../tools/check-source-size.mjs';
@@ -81,4 +81,98 @@ test('release links reject broken and escaping symlinks while accepting reachabl
   await checkLinks(root, { network: false });
   await writeFile(join(root, 'README.md'), '[![badge](https://127.0.0.1:1/badge)](inside.md)');
   await checkLinks(root); // Remote image URLs are cosmetic; the surrounding link is checked.
+});
+
+test('release links resolve local Markdown headings, duplicate slugs and explicit anchors', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'markdown-links-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'site'));
+  await writeFile(join(root, 'site/index.html'), '<main id="content"><a href="#content">Skip</a></main>');
+  await writeFile(join(root, 'README.md'), [
+    '# Start *here*',
+    '[Same file](#start-here) and [guide][guide].',
+    '',
+    '[guide]: <guide notes.md#quick-start>',
+    '',
+    '[Same heading name in another file](/guide%20notes.md#start-here)',
+    '[Repeated](guide%20notes.md#quick-start-2)',
+    '[Case and Unicode](guide%20notes.md#caf%C3%A9--cli)',
+    '[Custom anchor](guide%20notes.md#install-here)',
+    '[Source line](guide%20notes.md?plain=1#L2)',
+    '[HTML source](site/index.html#L1)',
+    '[Text source](README.txt#L1)',
+    '[Top](#)',
+    '',
+  ].join('\n'));
+  await writeFile(join(root, 'guide notes.md'), [
+    '# Start here',
+    '# Quick Start',
+    '# Quick Start-1',
+    'Quick Start',
+    '-----------',
+    '## **Café** &amp; `CLI`!',
+    '<a name="install-here"></a>',
+    '',
+  ].join('\n'));
+  await rename(join(root, 'README.md'), join(root, 'README.txt'));
+  await symlink('README.txt', join(root, 'README.md'));
+  await rename(join(root, 'guide notes.md'), join(root, 'guide.source'));
+  await symlink('guide.source', join(root, 'guide notes.md'));
+  await checkLinks(root, { network: false });
+});
+
+test('release links fail missing Markdown fragments even when the destination exists', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'markdown-links-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'site'));
+  await writeFile(join(root, 'site/index.html'), '<main></main>');
+  await writeFile(join(root, 'guide.md'), [
+    '# Existing heading',
+    '',
+    '```md',
+    '# Code sample',
+    '<a name="sample-anchor"></a>',
+    '```',
+    '<!-- <a id="hidden-anchor"></a> -->',
+    '',
+  ].join('\n'));
+  for (const [target, diagnostic] of [
+    ['#existing-heading', 'missing anchor #existing-heading in README.md'],
+    ['guide.md#existing-heading-1', 'missing anchor #existing-heading-1 in guide.md'],
+    ['guide.md#code-sample', 'missing anchor #code-sample in guide.md'],
+    ['guide.md#sample-anchor', 'missing anchor #sample-anchor in guide.md'],
+    ['guide.md#hidden-anchor', 'missing anchor #hidden-anchor in guide.md'],
+  ]) {
+    await writeFile(join(root, 'README.md'), `[Broken link](${target})`);
+    await assert.rejects(checkLinks(root, { network: false }), { message: `README.md: ${diagnostic}` });
+  }
+  await rename(join(root, 'guide.md'), join(root, 'guide.source'));
+  await symlink('guide.source', join(root, 'guide.md'));
+  await writeFile(join(root, 'README.md'), '[Broken link](guide.md#missing)');
+  await assert.rejects(checkLinks(root, { network: false }), { message: 'README.md: missing anchor #missing in guide.source' });
+  await writeFile(join(root, 'README.md'), '[Broken link](#missing)');
+  await rename(join(root, 'README.md'), join(root, 'README.source'));
+  await symlink('README.source', join(root, 'README.md'));
+  await assert.rejects(checkLinks(root, { network: false }), { message: 'README.md: missing anchor #missing in README.source' });
+});
+
+test('release links match HTML fragment values without treating markup displayed as text as anchors', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'html-links-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'site'));
+  await writeFile(join(root, 'README.md'), '# Documentation');
+  const site = join(root, 'site/index.html');
+  const page = [
+    '<p id="100%"><a href="#100%">Percent</a></p>',
+    '<p id="name%20literal"><a href="#name%20literal">Literal escape</a></p>',
+    '<p id="name\\-literal"><a href="#name\\-literal">Backslash</a></p>',
+    '<textarea><span id=sample-anchor>Sample</span></textarea>',
+  ].join('\n');
+  await writeFile(site, page);
+  await checkLinks(root, { network: false });
+  await writeFile(site, `${page}\n<a href="#sample-anchor">Broken jump</a>`);
+  await assert.rejects(checkLinks(root, { network: false }), { message: 'site/index.html: missing anchor #sample-anchor in site/index.html' });
+  await rename(site, join(root, 'site/page.html'));
+  await symlink('page.html', site);
+  await assert.rejects(checkLinks(root, { network: false }), { message: 'site/index.html: missing anchor #sample-anchor in site/page.html' });
 });
