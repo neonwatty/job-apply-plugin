@@ -35,6 +35,9 @@
     "@neonwatty/agent-workflows": "0.1.0",
     "@types/node": "22.20.1",
     "ajv": "8.20.0",
+    "github-slugger": "2.0.0",
+    "markdown-it": "15.0.3",
+    "parse5": "8.1.1",
     "playwright": "1.62.1",
     "typescript": "5.9.3"
   },
