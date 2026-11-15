@@ -168,10 +168,6 @@
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },
     {
-      "path": "tests/test_macos_workday_account_flow_helper.py",
-      "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
-    },
-    {
       "path": "tests/test_qa_account.py",
       "reason": "Historical Python/reference comparison or legacy implementation coverage; optional test:reference only."
     },

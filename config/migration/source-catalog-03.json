@@ -112,11 +112,6 @@
       "classification": "unreviewed"
     },
     {
-      "path": "scripts/job_apply_password_account_flows_macos.py",
-      "sha256": "8e54657608447c415d09e59aab655ad59c676093c125e5c98d60e4797d02ea6e",
-      "classification": "unreviewed"
-    },
-    {
       "path": "scripts/job_apply_policy.py",
       "sha256": "b20b45c19ae91ea7a5d1b1410720d31c235e8734bfbf5379fb7bdb4c781cef93",
       "classification": "unreviewed"

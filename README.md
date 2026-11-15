@@ -396,7 +396,7 @@ mutation, and two-way sync are not supported.
 ## Safety Features
 
 - **Never handles credentials** - Pauses for you to complete login, password, CAPTCHA, or MFA steps
-- **Account handling stays explicit** - Ordinary flows pause. Reviewed Greenhouse application URLs need no account; a private macOS Workday seam remains disabled unless you separately approve one exact one-shot canary.
+- **Account handling stays explicit** - The plugin pauses for Workday sign-in and other account steps. Reviewed direct Greenhouse application URLs need no account.
 - **Never submits applications** - Stops at final review, summarizes entered fields, and leaves Submit or Send for you
 - **Never enters payment info** - Skips premium features
 - **Confirms sensitive questions** - Salary, visa status, etc.
