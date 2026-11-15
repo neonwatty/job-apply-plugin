@@ -42,7 +42,6 @@
       "tests/test_job_title_discovery_skill.py",
       "tests/test_macos_account_flow_helper.py",
       "tests/test_macos_credential_helper.py",
-      "tests/test_macos_workday_account_flow_helper.py",
       "tests/test_qa_account.py",
       "tests/test_qa_chrome_control.py",
       "tests/test_qa_chrome_facade.py",
@@ -845,8 +844,7 @@
         "unittest",
         "-v",
         "tests.test_macos_credential_helper",
-        "tests.test_macos_account_flow_helper",
-        "tests.test_macos_workday_account_flow_helper"
+        "tests.test_macos_account_flow_helper"
       ],
       "platforms": [
         "darwin"

@@ -122,6 +122,10 @@ Required tests use their captured parser vectors and the Node package smoke.
 The former CPython 3.13 atomic-write oracle timeout is outside required CI;
 a demonstrated TypeScript persistence defect remains a release issue.
 
+The retired macOS Workday helper and its dedicated tests are available at the
+[pre-retirement commit](https://github.com/neonwatty/job-apply-plugin/tree/1572b244f9e5e103c4022a73ef3109a9909bf642).
+The required macOS checks use the shipped Oracle helper source list.
+
 ## Companion development
 
 Use `npm run companion:build`, then

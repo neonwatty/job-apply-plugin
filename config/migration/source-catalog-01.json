@@ -72,16 +72,6 @@
       "classification": "unreviewed"
     },
     {
-      "path": "native/macos/job_apply_workday_account_flow_helper.swift",
-      "sha256": "4d14745effce37501c4dcbd8b073f1b2519d0e319b654db394f90df300c2fc74",
-      "classification": "unreviewed"
-    },
-    {
-      "path": "native/macos/job_apply_workday_account_flow_main.swift",
-      "sha256": "fa6d79af8d42e2b9ffa6830047feb99d0d8234bfcf9c09f1a08efce1dfde8504",
-      "classification": "unreviewed"
-    },
-    {
       "path": "package.json",
       "sha256": "d472f9e4d38a75208bcd14003c24cffbf3cf32c7c5011c43f4ff4da9f9dd88e8",
       "classification": "unreviewed"
