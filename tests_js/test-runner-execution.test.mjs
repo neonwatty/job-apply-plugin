@@ -195,6 +195,7 @@ test("receipts contain selection and timing metadata but no commands, output, or
 });
 
 test("CLI parsing rejects ambiguity and accepts bounded concurrency", () => {
+  assert.throws(() => parseArguments(["reference"]), /unknown test tier/);
   assert.deepEqual(parseArguments(["affected", "--base", "origin/staging", "--receipt", "out.json"]), {
     tier: "affected", base: "origin/staging", receipt: "out.json", concurrency: null,
   });

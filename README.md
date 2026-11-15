@@ -430,10 +430,9 @@ MIT License - See [LICENSE](LICENSE) for details.
 The capture and promotion tools below are optional repository development tools.
 Some use the historical Python reference implementation; they are excluded from
 the installed plugin and from required TypeScript CI. Running them does not prove
-live ATS support or authorize use of the owner's browser. The isolated reference
-oracle `npm run qa:unified-task-spine` also needs Python and Playwright; it uses
-only synthetic data and emits a value-free report. Use the
-[required testing tiers](docs/testing.md) for release validation.
+live ATS support or authorize use of the owner's browser. The
+[testing guide](docs/testing.md#archived-reference-testing) lists the pinned
+checkout for historical comparisons and the required release checks.
 
 Replay fixtures are built from a tightly controlled, private recording and checked in only after they have been reduced to a generic semantic model. Follow these policies:
 
