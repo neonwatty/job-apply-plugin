@@ -7,6 +7,7 @@ import type { PythonPathProfile } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 import { createNativeAtomicWriteIO, ensurePrivateDirectory } from "./private-filesystem.js";
 import type { PosixFlockProvider } from "./posix-flock.js";
+import { isOwnedNotOthersWritable } from './private-metadata.js';
 
 export interface LockFileHandle {
   fd: number;
@@ -33,7 +34,7 @@ function nativeIO(profile: PythonPathProfile, preserveParentPermissions = false)
       if (!preserveParentPermissions) return ensurePrivateDirectory(path, filesystem);
       const metadata = await lstat(path);
       if (!metadata.isDirectory() || metadata.isSymbolicLink() || await realpath(path) !== path
-        || metadata.uid !== process.getuid?.() || metadata.mode & 0o022) {
+        || !isOwnedNotOthersWritable(metadata)) {
         throw new Error('Lock parent must be owned and not writable by others');
       }
     },

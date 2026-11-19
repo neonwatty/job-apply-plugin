@@ -15,7 +15,7 @@ function basename(name:string):void {
 }
 /** Explicit artifact only; operations remain relative to the caller's pinned fd. */
 export function loadPosixDirectoryProvider(absoluteAddonPath:string):PosixDirectoryProvider {
-  if (!['darwin','linux'].includes(process.platform)) throw new Error('POSIX directory access is unavailable');
+  if (!['darwin','linux','win32'].includes(process.platform)) throw new Error('POSIX directory access is unavailable');
   if (!isAbsolute(absoluteAddonPath)) throw new TypeError('Native directory artifact path must be absolute');
   const native:unknown = createRequire(import.meta.url)(absoluteAddonPath);
   if (native === null || typeof native !== 'object' || !('listNames' in native) || typeof native.listNames !== 'function'

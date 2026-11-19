@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
 import { parseLegacyJobReport } from '../contracts/workspace/legacy-job-report.js';
 import { fromJSON, object, set, JobsError } from '../contracts/workspace/values.js';
+import { deviceId } from './private-metadata.js';
 const rootName = '.claude-job-searches';
 const maxFile = 2 * 1024 * 1024;
 const statDescriptor = promisify(fstat), closeDescriptor = promisify(close), readDescriptor = promisify(read);
@@ -19,7 +20,7 @@ async function report(provider, root, name, metadata) {
     }
     try {
         const opened = await statDescriptor(descriptor, { bigint: true });
-        if (!opened.isFile() || opened.dev !== metadata.dev || opened.ino !== metadata.ino || opened.size !== metadata.size) {
+        if (!opened.isFile() || deviceId(opened) !== deviceId(metadata) || opened.ino !== metadata.ino || opened.size !== metadata.size) {
             return fail('legacy search report changed during discovery');
         }
         const chunks = [];
@@ -66,7 +67,7 @@ export async function discoverLegacyJobs(home, provider) {
     }
     try {
         const opened = await handle.stat({ bigint: true });
-        if (!opened.isDirectory() || opened.dev !== metadata.dev || opened.ino !== metadata.ino)
+        if (!opened.isDirectory() || deviceId(opened) !== deviceId(metadata) || opened.ino !== metadata.ino)
             return fail('legacy search root changed during discovery');
         // Python sorts Unicode code points rather than UTF-16 code units.
         const names = provider.listNames(handle.fd)

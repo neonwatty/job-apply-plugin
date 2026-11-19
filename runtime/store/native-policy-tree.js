@@ -3,6 +3,8 @@ import { chmod, lstat, mkdir, open, readdir, realpath } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { dirname, join } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
+import { syncDirectory } from './directory-sync.js';
+import { deviceId, isOwnedNotOthersWritable, isPrivateOwned, permissionBits } from './private-metadata.js';
 const policyName = 'auto-submit';
 const maximumEntries = 4096;
 const maximumFileBytes = 16 * 1024 * 1024;
@@ -12,10 +14,10 @@ function failure(message = 'native policy tree is unsupported') {
     return new JobsError(message);
 }
 function ownedPrivate(metadata) {
-    return metadata.uid === BigInt(process.getuid()) && (metadata.mode & 63n) === 0n;
+    return isPrivateOwned(metadata);
 }
 function ownedStructural(metadata) {
-    return metadata.uid === BigInt(process.getuid()) && (metadata.mode & 18n) === 0n;
+    return isOwnedNotOthersWritable(metadata);
 }
 async function privateDirectory(path, structural = false) {
     const canonical = await realpath(path).catch(() => null);
@@ -23,14 +25,14 @@ async function privateDirectory(path, structural = false) {
     if (canonical !== path || !metadata?.isDirectory() || metadata.isSymbolicLink()
         || !(structural ? ownedStructural(metadata) : ownedPrivate(metadata)))
         throw failure();
-    return { dev: metadata.dev, ino: metadata.ino, mtimeNs: metadata.mtimeNs, ctimeNs: metadata.ctimeNs,
-        mode: Number(metadata.mode & 511n) };
+    return { dev: deviceId(metadata), ino: metadata.ino, mtimeNs: metadata.mtimeNs, ctimeNs: metadata.ctimeNs,
+        mode: permissionBits(metadata) };
 }
 async function unchangedDirectory(path, before, structural = false) {
     const after = await lstat(path, { bigint: true }).catch(() => null);
-    if (!after?.isDirectory() || after.isSymbolicLink() || after.dev !== before.dev || after.ino !== before.ino
+    if (!after?.isDirectory() || after.isSymbolicLink() || deviceId(after) !== deviceId(before) || after.ino !== before.ino
         || after.mtimeNs !== before.mtimeNs || after.ctimeNs !== before.ctimeNs
-        || Number(after.mode & 511n) !== before.mode
+        || permissionBits(after) !== before.mode
         || !(structural ? ownedStructural(after) : ownedPrivate(after)))
         throw failure('native policy tree changed');
 }
@@ -51,16 +53,16 @@ async function privateBytes(path) {
         const before = await handle.stat({ bigint: true });
         validateFile(before);
         const linked = await lstat(path, { bigint: true }).catch(() => null);
-        if (!linked || linked.dev !== before.dev || linked.ino !== before.ino)
+        if (!linked || deviceId(linked) !== deviceId(before) || linked.ino !== before.ino)
             throw failure('native policy tree changed');
         const bytes = await handle.readFile();
         const after = await handle.stat({ bigint: true });
         const final = await lstat(path, { bigint: true }).catch(() => null);
-        if (!final || before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size
+        if (!final || deviceId(before) !== deviceId(after) || before.ino !== after.ino || before.size !== after.size
             || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs
-            || final.dev !== after.dev || final.ino !== after.ino)
+            || deviceId(final) !== deviceId(after) || final.ino !== after.ino)
             throw failure('native policy tree changed');
-        return { bytes, mode: Number(after.mode & 511n) };
+        return { bytes, mode: permissionBits(after) };
     }
     finally {
         await handle.close();
@@ -85,7 +87,7 @@ async function acquirePolicyLock(path, provider, signal) {
         }
         const linked = await lstat(path, { bigint: true }).catch(() => null);
         const locked = await handle.stat({ bigint: true });
-        if (!linked || linked.dev !== locked.dev || linked.ino !== locked.ino)
+        if (!linked || deviceId(linked) !== deviceId(locked) || linked.ino !== locked.ino)
             throw failure('native policy lock changed');
         return handle;
     }
@@ -204,15 +206,6 @@ async function writePrivate(path, bytes) {
     try {
         await handle.chmod(0o600);
         await handle.writeFile(bytes);
-        await handle.sync();
-    }
-    finally {
-        await handle.close();
-    }
-}
-async function syncDirectory(path) {
-    const handle = await open(path, constants.O_RDONLY);
-    try {
         await handle.sync();
     }
     finally {

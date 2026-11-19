@@ -1,11 +1,10 @@
-import { createHash } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, join, isAbsolute } from 'node:path';
-import { filesystemEncode } from '../contracts/posix-path-bytes.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fromJSON, integer, object, parse, set, type Document, type Value } from '../contracts/workspace/values.js';
 import { parseTaskRevision } from './task-protocol.js';
+import { attemptEndpoint, resolveWindowsAttemptRoot } from './attempt-endpoint.js';
 
 export type AttemptInvocation =
   | { kind: 'start'; root: string; id: string; owner: string; expectedRevision: bigint }
@@ -34,6 +33,7 @@ export const attemptSuccess = (event: string): AttemptResponse => attemptDocumen
 export function resolveAttemptRoot(root: string | undefined, env: NodeJS.ProcessEnv, home: string): string {
   let configured = root || env.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
   if (configured === '~' || configured.startsWith('~/')) configured = home + configured.slice(1);
+  if (process.platform === 'win32') return resolveWindowsAttemptRoot(configured);
   const absolute = isAbsolute(configured) ? configured : process.cwd() + '/' + configured;
   let current = '/';
   for (const component of absolute.split('/')) {
@@ -48,7 +48,7 @@ export function resolveAttemptRoot(root: string | undefined, env: NodeJS.Process
   return current;
 }
 export function attemptSocketPath(root: string, uid: number): string {
-  return `/tmp/job-apply-attempt-${uid}/${createHash('sha256').update(filesystemEncode(root)).digest('hex')}.sock`;
+  return attemptEndpoint(root, uid).path;
 }
 const fields: Record<string, string[]> = {
   start: ['--id', '--owner', '--expected-revision'],

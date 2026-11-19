@@ -7,6 +7,7 @@ import { validateAnswerHistory } from '../contracts/workspace/answer-session-val
 import { get, string, JobsError } from '../contracts/workspace/values.js';
 import { strip } from '../contracts/workspace/job-url.js';
 import { encodePointJsonlJson } from './point-persistence.js';
+import { isPrivateOwned } from './private-metadata.js';
 /** Caller holds the Store lock. Descriptor checks also apply during recovery. */
 export class NativeClaimHistory {
     root;
@@ -17,7 +18,7 @@ export class NativeClaimHistory {
         const handle = await open(join(this.root, 'applications.jsonl'), (writable ? constants.O_RDWR : constants.O_RDONLY) | constants.O_NOFOLLOW);
         try {
             const stat = await handle.stat();
-            if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
+            if (!stat.isFile() || stat.nlink !== 1 || !isPrivateOwned(stat)) {
                 throw new JobsError('native history must be private and owned, without links');
             }
             if (stat.size > 32 * 1024 * 1024)

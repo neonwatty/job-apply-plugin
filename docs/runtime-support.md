@@ -1,6 +1,6 @@
 # TypeScript runtime launch gate
 
-Status: **native artifact selected for macOS arm64 and Linux x64**. The installed
+Status: **native artifact selected for macOS arm64, Linux x64, and Windows x64**. The installed
 runtime uses stable Node.js 22.0.0 or newer, with TypeScript compiled to
 JavaScript ES modules targeting ES2022. Each supported package carries a
 verified Node-API 8 lock artifact. Other host cells remain unsupported.
@@ -21,10 +21,28 @@ first launch to build its server; subsequent launches reuse the build until a
 plugin refresh. A prepared build does not need a new dependency download merely
 to start. No Python runtime is required for installed workflows.
 
-The supported package cells are macOS arm64 and Linux x64. CI exercises clean
-locked dependency installs, native Store/CLI/browser checks and isolated
-Codex/Claude installation on both cells. This does not establish a host guarantee
-that Node is preinstalled, Windows support, or live ATS/account acceptance. See
+The supported package cells are macOS arm64, Linux x64, and Windows x64. CI
+exercises clean locked dependency installs, native Store/CLI/browser checks and
+isolated Codex/Claude installation on the POSIX cells; the Windows cell runs the
+installed-entrypoint journey (Store, task, attempt broker, recovery, and review
+handoff). This does not establish a host guarantee that Node is preinstalled or
+live ATS/account acceptance.
+
+### Windows x64 mapping
+
+The Windows artifact is built from `native/windows/flock.c` and keeps the POSIX
+contracts with Windows primitives:
+
+- Exclusive non-blocking advisory locks use `LockFileEx` on one sentinel byte past
+  any real file size, so locked lock/PID files stay readable.
+- "Private and owned" (`0700`/`0600`, owner uid) is a protected DACL granting only
+  the current user, applied where Store, candidate, and broker directories are
+  created and inherited by every entry inside. Root validation checks that DACL.
+- The attempt broker listens on a per-user, per-Store named pipe. Pipes cannot
+  half-close, so the newline-terminated frame marks a complete request there.
+- Directory `fsync` is skipped (NTFS journals directory metadata); file contents are
+  still flushed. Writer switching re-verifies the retained Store after its rename,
+  because Windows cannot rename a directory while handles inside it are open. See
 [testing](testing.md) and the [transition guide](typescript-transition.md).
 
 ## Development probe

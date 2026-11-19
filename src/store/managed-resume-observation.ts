@@ -1,6 +1,7 @@
 import type { PythonJson } from "../contracts/raw-json/value.js";
 import type { NumericAtom } from "../contracts/raw-json/numeric-atom.js";
 import { resumeModifiedAt } from "./resume-modified-at.js";
+import { deviceId } from './private-metadata.js';
 
 export interface ObservationMetadata {
   dev: bigint;
@@ -42,7 +43,7 @@ export class ObservationKeyError extends Error {
 }
 
 function identity(metadata: ObservationMetadata): ObservationIdentity {
-  return [metadata.dev, metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs];
+  return [deviceId(metadata), metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs];
 }
 
 function sameIdentity(left: readonly CachedIdentityValue[] | null | undefined, right: ObservationIdentity): boolean {

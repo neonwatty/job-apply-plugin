@@ -3,6 +3,7 @@ import { open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
+import { ownedByCurrentUser, permissionBits } from './private-metadata.js';
 
 export const nativeAttemptPidName = '.job-apply-attempt.pid';
 export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
@@ -59,8 +60,8 @@ async function validatePidFile(root: string, name: string, incomplete: boolean):
   }
   try {
     const metadata = await handle.stat();
-    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.()
-      || (metadata.mode & 0o777) !== 0o600 || metadata.size > 21) {
+    if (!metadata.isFile() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata)
+      || permissionBits(metadata) !== 0o600 || metadata.size > 21) {
       throw new JobsError('native attempt PID must be private, owned and bounded');
     }
     const bytes = await handle.readFile();

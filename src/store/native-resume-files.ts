@@ -9,6 +9,8 @@ import type { Document, Value } from '../contracts/workspace/values.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
 import { resumeModifiedAt } from './resume-modified-at.js';
+import { syncDirectory as syncPrivateDirectory } from './directory-sync.js';
+import { deviceId, isPrivateOwned } from './private-metadata.js';
 export type StagedResume = { temporary: string; managedFile: string; originalFilename: string; mediaType: string; digest: string; observedSize: number; observedModifiedAt: string };
 const filePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(pdf|docx|txt)$/;
 const tempPattern = /^\.native-[a-f0-9-]{36}\.tmp$/;
@@ -16,8 +18,7 @@ const quarantinePattern = /^\.([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:pdf|docx|txt
 const hash = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
 const absent = (error: unknown): boolean => error instanceof Error && 'code' in error && error.code === 'ENOENT';
 export async function syncDirectory(path: string): Promise<void> {
-  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try { await handle.sync(); } finally { await handle.close(); }
+  await syncPrivateDirectory(path, constants.O_RDONLY | constants.O_NOFOLLOW);
 }
 export class NativeResumeFiles {
   readonly directory: string;
@@ -26,13 +27,13 @@ export class NativeResumeFiles {
   }
   async validate(): Promise<void> {
     const metadata = await lstat(this.directory);
-    if (!metadata.isDirectory() || metadata.isSymbolicLink() || metadata.uid !== process.getuid?.() || metadata.mode & 0o077) throw new JobsError('resume directory must be private and owned');
+    if (!metadata.isDirectory() || metadata.isSymbolicLink() || !isPrivateOwned(metadata)) throw new JobsError('resume directory must be private and owned');
     for (const name of await readdir(this.directory)) {
       if (!filePattern.test(name) && !tempPattern.test(name) && !quarantinePattern.test(name)) {
         throw new JobsError('unsupported resume recovery state');
       }
       const stat = await lstat(join(this.directory, name));
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== process.getuid?.() || stat.mode & 0o077) throw new JobsError('resume file must be private and owned, without links');
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || !isPrivateOwned(stat)) throw new JobsError('resume file must be private and owned, without links');
     }
   }
   async readPath(path: string, privateFile = false): Promise<Buffer> {
@@ -40,7 +41,7 @@ export class NativeResumeFiles {
     try {
       handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
       const before = await handle.stat({ bigint: true });
-      if (!before.isFile() || before.size > BigInt(resumeLimit) || privateFile && (before.nlink !== 1n || before.uid !== BigInt(process.getuid!()) || (before.mode & 0o077n) !== 0n)) throw Error('file');
+      if (!before.isFile() || before.size > BigInt(resumeLimit) || privateFile && (before.nlink !== 1n || !isPrivateOwned(before))) throw Error('file');
       const parts: Buffer[] = [];
       let size = 0;
       while (true) {
@@ -52,7 +53,7 @@ export class NativeResumeFiles {
       }
       const after = await handle.stat({ bigint: true }), pathStat = await lstat(path, { bigint: true });
       if (size !== Number(before.size) || ['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs'].some(key => before[key as keyof typeof before] !== after[key as keyof typeof after])
-        || pathStat.dev !== after.dev || pathStat.ino !== after.ino || pathStat.isSymbolicLink()) throw new JobsError('resume source changed during import');
+        || deviceId(pathStat) !== deviceId(after) || pathStat.ino !== after.ino || pathStat.isSymbolicLink()) throw new JobsError('resume source changed during import');
       return Buffer.concat(parts);
     } catch (error) {
       if (error instanceof JobsError) throw error;

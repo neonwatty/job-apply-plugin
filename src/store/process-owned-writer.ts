@@ -6,6 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { activateNativeWriter, recoverNativeWriterSwitch, rollbackNativeWriter } from './native-writer-switch.js';
 import type { NativeWriterSwitchOptions, NativeWriterSwitchPaths } from './native-writer-switch.js';
 import type { PosixFlockProvider } from './posix-flock.js';
+import { isOwnedNotOthersWritable, isPrivateOwned } from './private-metadata.js';
 
 export type OwnedWriterMode = 'python' | 'native';
 
@@ -39,7 +40,11 @@ function positiveMilliseconds(value: number, name: string): number {
 function signalGroup(child: ChildProcess, signal: NodeJS.Signals): void {
   if (!Number.isSafeInteger(child.pid) || (child.pid ?? 0) <= 0) return;
   try {
-    if (process.platform === 'win32') child.kill(signal);
+    // Windows has no process groups, and SIGTERM there terminates only the launcher, which
+    // would orphan its writer and server. Closing the owner channel (fd 4) asks it to stop
+    // its children first; SIGKILL after the grace period remains the forced fallback.
+    if (process.platform === 'win32' && signal === 'SIGTERM') (child.stdio[4] as { destroy(): void } | undefined)?.destroy();
+    else if (process.platform === 'win32') child.kill(signal);
     else process.kill(-(child.pid as number), signal);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
@@ -92,9 +97,9 @@ class WriterOwnershipLease {
     ]);
     if (!isAbsolute(active) || active !== resolve(active) || canonicalParent !== parent
       || !parentMetadata?.isDirectory() || parentMetadata.isSymbolicLink()
-      || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o022
+      || !isOwnedNotOthersWritable(parentMetadata)
       || (activeMetadata && (canonicalActive !== active || !activeMetadata.isDirectory() || activeMetadata.isSymbolicLink()
-        || activeMetadata.uid !== process.getuid?.() || activeMetadata.mode & 0o077))) {
+        || !isPrivateOwned(activeMetadata)))) {
       throw new Error('writer ownership Store is invalid');
     }
     const handle = await open(join(parent, `.${basename(active)}.writer-owner.lock`),
@@ -146,7 +151,7 @@ class OwnedWriterProcess {
     const child = spawn(spec.command, [...spec.argv], {
       cwd: spec.cwd,
       ...(spec.env === undefined ? {} : { env: spec.env }),
-      detached: process.platform !== 'win32',
+      detached: process.platform !== 'win32', windowsHide: true,
       // fd 3 holds the lease; fd 4 lets the inner launcher observe owner death.
       stdio: ['ignore', 'pipe', 'pipe', ownershipDescriptor, 'pipe'],
     });

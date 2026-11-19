@@ -5,6 +5,7 @@ import { validatePathProfile } from "../contracts/posix-path.js";
 import { statSecondsFromNanoseconds } from "../contracts/stat-time.js";
 import { managedResumePath } from "./managed-resume-path.js";
 import { privateFileDigest } from "./private-file-digest.js";
+import { deviceId } from './private-metadata.js';
 class NativePathValueError extends Error {
     constructor() {
         super("embedded null byte");
@@ -55,7 +56,7 @@ export function createManagedResumeNativeIO(root, options) {
         async lstat(path) {
             const metadata = await lstat(nativePath(path), { bigint: true });
             return {
-                dev: metadata.dev,
+                dev: deviceId(metadata),
                 ino: metadata.ino,
                 size: metadata.size,
                 mtimeNs: metadata.mtimeNs,
@@ -67,6 +68,6 @@ export function createManagedResumeNativeIO(root, options) {
         isSymlink,
         privateFileDigest: (path) => privateFileDigest(path, digestIO),
         nowMicroseconds,
-        cacheIdentity: (metadata) => [metadata.dev, metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs],
+        cacheIdentity: (metadata) => [deviceId(metadata), metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs],
     };
 }

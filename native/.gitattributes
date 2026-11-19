@@ -1,0 +1,3 @@
+# Native lock receipts hash these sources byte-for-byte. Keep LF on every checkout,
+# including Windows installs where core.autocrlf=true would otherwise convert them.
+* -text

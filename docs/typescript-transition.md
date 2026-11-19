@@ -1,6 +1,6 @@
 # Upgrading to the TypeScript plugin
 
-The plugin runs on Node.js 22 or newer on macOS Apple Silicon and Linux x64.
+The plugin runs on Node.js 22 or newer on macOS Apple Silicon, Linux x64, and Windows x64.
 [Install the plugin](../README.md#installation), then start a new Codex or
 Claude Code chat. Companion is an optional local app still under development.
 The plugin supports resume setup, fact review, and applications with the app closed.

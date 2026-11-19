@@ -4,10 +4,11 @@ import { lstat, open, realpath } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { withExclusiveFileLock } from '../store/exclusive-file-lock.js';
+import { ownedByCurrentUser } from '../store/private-metadata.js';
 async function validateParent(path) {
     const metadata = await lstat(path);
     if (!metadata.isDirectory() || metadata.isSymbolicLink() || await realpath(path) !== path
-        || metadata.uid !== process.getuid?.())
+        || !ownedByCurrentUser(metadata))
         throw new JobsError('Store bootstrap lock parent is unsafe');
 }
 const io = {
@@ -16,7 +17,7 @@ const io = {
         const handle = await open(path, flags | constants.O_NOFOLLOW, mode);
         try {
             const metadata = await handle.stat();
-            if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.()) {
+            if (!metadata.isFile() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata)) {
                 throw new JobsError('Store bootstrap lock is unsafe');
             }
             return { fd: handle.fd, close: () => handle.close() };
@@ -28,7 +29,7 @@ const io = {
     },
     async chmod(path, mode) {
         const metadata = await lstat(path);
-        if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.()) {
+        if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata)) {
             throw new JobsError('Store bootstrap lock is unsafe');
         }
         const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);

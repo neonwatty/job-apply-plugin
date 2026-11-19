@@ -1,4 +1,3 @@
-import { constants } from 'node:fs';
 import { chmod, mkdir, open } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { emptyAccountOperationJournal } from '../contracts/workspace/account-operation.js';
@@ -6,6 +5,8 @@ import { fromJSON, JobsError } from '../contracts/workspace/values.js';
 import { initialAutomationDocuments } from './native-automation.js';
 import { nativeFixtureMarker, nativeFixtureMarkerName } from './native-store-layout.js';
 import { atomicWritePointJson } from './point-persistence.js';
+import { syncDirectory } from './directory-sync.js';
+import { restrictToOwner } from './windows-acl.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 
@@ -13,6 +14,7 @@ const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 export async function initializeJobsFixture(root: string): Promise<void> {
   if (!isAbsolute(root) || root !== resolve(root)) throw new JobsError('fixture root must be an absolute normalized path');
   await mkdir(root, { mode: 0o700 });
+  await restrictToOwner(root);
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   for (const name of ['jobs', 'profile', 'resumes', 'fact-groups', 'answers']) {
     const payload = name === 'fact-groups' ? { schemaVersion: 1, groups: {}, metadata: { createdAt: now, updatedAt: now } }
@@ -44,6 +46,5 @@ export async function initializeJobsFixture(root: string): Promise<void> {
     metadata: { createdAt: now, updatedAt: now } }), pointOptions);
   const handle = await open(join(root, nativeFixtureMarkerName), 'wx', 0o600);
   try { await handle.writeFile(nativeFixtureMarker); await handle.sync(); } finally { await handle.close(); }
-  const directory = await open(root, constants.O_RDONLY);
-  try { await directory.sync(); } finally { await directory.close(); }
+  await syncDirectory(root);
 }

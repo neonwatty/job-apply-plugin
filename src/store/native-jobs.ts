@@ -49,6 +49,7 @@ import { nativePendingAnswerState } from './native-pending-answer-state.js';
 import type { ApplicationAuthorityRepository, ApplicationAuthorityTransaction } from '../workspace-core/application-authority.js';
 import { applicationAuthorityTransaction as runApplicationAuthorityTransaction, loadApplicationAuthority } from './native-application-authority.js';
 import { nativeResumeSummaries } from './native-resume-summaries.js';
+import { isPrivateOwned } from './private-metadata.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -70,7 +71,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     const handle = await open(join(this.root, name), constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
       const stat = await handle.stat();
-      if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
+      if (!stat.isFile() || stat.nlink !== 1 || !isPrivateOwned(stat)) {
         throw new JobsError("native fixture file must be private and owned, without links");
       }
       // Read the same private documents that Store writers and migration accept.
@@ -310,7 +311,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
 
   private async answerSessions(): Promise<Document[]> {
     const directory = join(this.root, "sessions"), stat = await lstat(directory);
-    if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) throw new JobsError("native sessions directory must be private and owned");
+    if (!stat.isDirectory() || stat.isSymbolicLink() || !isPrivateOwned(stat)) throw new JobsError("native sessions directory must be private and owned");
     const sessions: Document[] = [];
     for (const name of (await readdir(directory)).sort()) {
       if (!name.endsWith('.json')) continue;

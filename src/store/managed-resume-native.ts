@@ -9,6 +9,7 @@ import { managedResumePath } from "./managed-resume-path.js";
 import { privateFileDigest } from "./private-file-digest.js";
 import type { DigestIO } from "./private-file-digest.js";
 import type { ManagedObservationIO } from "./managed-resume-observation.js";
+import { deviceId } from './private-metadata.js';
 
 export interface ManagedResumeNativeOptions {
   pathProfile: PythonPathProfile;
@@ -71,7 +72,7 @@ export function createManagedResumeNativeIO(
     async lstat(path) {
       const metadata = await lstat(nativePath(path), { bigint: true });
       return {
-        dev: metadata.dev,
+        dev: deviceId(metadata),
         ino: metadata.ino,
         size: metadata.size,
         mtimeNs: metadata.mtimeNs,
@@ -83,6 +84,6 @@ export function createManagedResumeNativeIO(
     isSymlink,
     privateFileDigest: (path) => privateFileDigest(path, digestIO),
     nowMicroseconds,
-    cacheIdentity: (metadata) => [metadata.dev, metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs],
+    cacheIdentity: (metadata) => [deviceId(metadata), metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs],
   };
 }

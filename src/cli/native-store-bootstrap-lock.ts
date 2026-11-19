@@ -6,11 +6,12 @@ import { JobsError } from '../contracts/workspace/values.js';
 import { withExclusiveFileLock } from '../store/exclusive-file-lock.js';
 import type { ExclusiveLockIO, LockFileHandle } from '../store/exclusive-file-lock.js';
 import type { PosixFlockProvider } from '../store/posix-flock.js';
+import { ownedByCurrentUser } from '../store/private-metadata.js';
 
 async function validateParent(path: string): Promise<void> {
   const metadata = await lstat(path);
   if (!metadata.isDirectory() || metadata.isSymbolicLink() || await realpath(path) !== path
-    || metadata.uid !== process.getuid?.()) throw new JobsError('Store bootstrap lock parent is unsafe');
+    || !ownedByCurrentUser(metadata)) throw new JobsError('Store bootstrap lock parent is unsafe');
 }
 const io: ExclusiveLockIO = {
   ensurePrivateDirectory: validateParent,
@@ -18,7 +19,7 @@ const io: ExclusiveLockIO = {
     const handle = await open(path, flags | constants.O_NOFOLLOW, mode);
     try {
       const metadata = await handle.stat();
-      if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.()) {
+      if (!metadata.isFile() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata)) {
         throw new JobsError('Store bootstrap lock is unsafe');
       }
       return { fd: handle.fd, close: () => handle.close() };
@@ -26,7 +27,7 @@ const io: ExclusiveLockIO = {
   },
   async chmod(path, mode) {
     const metadata = await lstat(path);
-    if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.()) {
+    if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.nlink !== 1 || !ownedByCurrentUser(metadata)) {
       throw new JobsError('Store bootstrap lock is unsafe');
     }
     const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);

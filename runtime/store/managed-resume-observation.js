@@ -1,4 +1,5 @@
 import { resumeModifiedAt } from "./resume-modified-at.js";
+import { deviceId } from './private-metadata.js';
 export class ObservationKeyError extends Error {
     constructor(key) {
         super(key);
@@ -6,7 +7,7 @@ export class ObservationKeyError extends Error {
     }
 }
 function identity(metadata) {
-    return [metadata.dev, metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs];
+    return [deviceId(metadata), metadata.ino, metadata.size, metadata.mtimeNs, metadata.ctimeNs];
 }
 function sameIdentity(left, right) {
     if (left === null || left === undefined || left.length !== right.length)
