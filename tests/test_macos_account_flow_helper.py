@@ -5,12 +5,6 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from tests.support.macos_workflow_contract import (
-    workflow_typecheck_command,
-    workflow_typecheck_sources,
-)
-
-
 ROOT = Path(__file__).resolve().parents[1]
 
 ACCOUNT_FLOW_SWIFT_SOURCES = (
@@ -29,23 +23,6 @@ ORACLE_SWIFT_SOURCES = (
     "job_apply_credential_helper_tests.swift",
     "job_apply_credential_helper_main.swift",
 )
-WORKDAY_SWIFT_SOURCES = (
-    "job_apply_credential_helper.swift",
-    "job_apply_browser_bridge.swift",
-    *ACCOUNT_FLOW_SWIFT_SOURCES,
-    "job_apply_workday_account_flow_helper.swift",
-    "job_apply_workday_account_flow_main.swift",
-)
-WORKFLOW_TYPECHECK_SOURCES = {
-    (
-        "macos-credential-helper",
-        "Typecheck isolated Security.framework helper",
-    ): ORACLE_SWIFT_SOURCES,
-    (
-        "macos-account-flow-helper",
-        "Verify reviewed Workday account boundary",
-    ): WORKDAY_SWIFT_SOURCES,
-}
 
 
 def account_flow_source() -> str:
@@ -85,148 +62,6 @@ def function_swift_literals(path: Path, function_name: str) -> tuple[str, ...]:
 
 
 class MacOSAccountFlowHelperTests(unittest.TestCase):
-    def assert_workflow_source_contract_rejects(self, workflow: str) -> None:
-        with self.assertRaises(AssertionError):
-            self.assertEqual(workflow_typecheck_sources(workflow), WORKFLOW_TYPECHECK_SOURCES)
-
-    def replace_workflow_once(self, workflow: str, before: str, after: str) -> str:
-        self.assertEqual(workflow.count(before), 1)
-        return workflow.replace(before, after)
-
-    def test_workflow_source_contract_rejects_commented_typecheck_decoys(self):
-        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        for sources in (ORACLE_SWIFT_SOURCES, WORKDAY_SWIFT_SOURCES):
-            command = workflow_typecheck_command(sources)
-            workflow = self.replace_workflow_once(
-                workflow, command, f"# description only: {command}"
-            )
-        self.assert_workflow_source_contract_rejects(workflow)
-
-    def test_workflow_source_contract_rejects_inert_yaml_values(self):
-        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
-        workflow = self.replace_workflow_once(
-            workflow,
-            f"        run: {oracle_command}",
-            f"        env:\n          INERT_TYPECHECK: {oracle_command}\n        run: true",
-        )
-        workflow = self.replace_workflow_once(
-            workflow,
-            f"        run: |\n          {workday_command}",
-            f"        env:\n          INERT_TYPECHECK: {workday_command}\n        run: true",
-        )
-        self.assert_workflow_source_contract_rejects(workflow)
-
-    def test_workflow_source_contract_rejects_echo_and_printf_typechecks(self):
-        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
-        inline_wrappers = self.replace_workflow_once(
-            original, oracle_command, f"echo {oracle_command}"
-        )
-        inline_wrappers = self.replace_workflow_once(
-            inline_wrappers, workday_command, f"printf '%s\\n' {workday_command}"
-        )
-        continued_wrappers = self.replace_workflow_once(
-            original,
-            f"        run: {oracle_command}",
-            f"        run: |\n          echo \\\n            {oracle_command}",
-        )
-        continued_wrappers = self.replace_workflow_once(
-            continued_wrappers,
-            f"        run: |\n          {workday_command}",
-            f"        run: >\n          printf '%s\\n'\n          {workday_command}",
-        )
-        for label, workflow in (
-            ("inline", inline_wrappers),
-            ("continued-and-folded", continued_wrappers),
-        ):
-            with self.subTest(label=label):
-                self.assert_workflow_source_contract_rejects(workflow)
-
-    def test_workflow_source_contract_accepts_executable_inline_and_block_forms(self):
-        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
-        oracle_inline = f"        run: {oracle_command}"
-        workday_block = f"        run: |\n          {workday_command}"
-        for indicator in ("|", "|-", ">", ">-"):
-            with self.subTest(indicator=indicator):
-                workflow = self.replace_workflow_once(
-                    original, oracle_inline, f"        run: {indicator}\n          {oracle_command}"
-                )
-                workflow = self.replace_workflow_once(
-                    workflow, workday_block, f"        run: {workday_command}"
-                )
-                self.assertEqual(
-                    workflow_typecheck_sources(workflow), WORKFLOW_TYPECHECK_SOURCES
-                )
-
-    def test_workflow_source_contract_rejects_unnamed_step_reassignment(self):
-        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        workflow = self.replace_workflow_once(
-            workflow,
-            f"        run: {command}",
-            f"        run: true\n      - shell: bash\n        run: {command}",
-        )
-        self.assert_workflow_source_contract_rejects(workflow)
-
-    def test_workflow_source_contract_preserves_block_scalar_indentation(self):
-        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        tokens = command.split()
-        for indicator in (">", "|"):
-            with self.subTest(indicator=indicator):
-                workflow = self.replace_workflow_once(
-                    original,
-                    f"        run: {command}",
-                    f"        run: {indicator}\n          {' '.join(tokens[:4])}"
-                    f"\n            {' '.join(tokens[4:])}",
-                )
-                self.assert_workflow_source_contract_rejects(workflow)
-
-    def test_workflow_source_contract_distinguishes_folded_backslash(self):
-        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        tokens = command.split()
-        scalar = "          " + " ".join(tokens[:4]) + " \\\n          " + " ".join(tokens[4:])
-        folded = self.replace_workflow_once(
-            original, f"        run: {command}", f"        run: >\n{scalar}"
-        )
-        self.assert_workflow_source_contract_rejects(folded)
-        literal = self.replace_workflow_once(
-            original, f"        run: {command}", f"        run: |\n{scalar}"
-        )
-        self.assertEqual(workflow_typecheck_sources(literal), WORKFLOW_TYPECHECK_SOURCES)
-        for trailing in (" ", "  ", "\t", " \t"):
-            with self.subTest(trailing=repr(trailing)):
-                invalid_scalar = scalar.replace("\\\n", f"\\{trailing}\n", 1)
-                invalid = self.replace_workflow_once(
-                    original, f"        run: {command}", f"        run: |\n{invalid_scalar}"
-                )
-                self.assert_workflow_source_contract_rejects(invalid)
-        doubled_scalar = scalar.replace("\\\n", "\\\\\n", 1)
-        doubled = self.replace_workflow_once(
-            original, f"        run: {command}", f"        run: |\n{doubled_scalar}"
-        )
-        self.assert_workflow_source_contract_rejects(doubled)
-        quoted_command = command.replace(tokens[3], f"'{tokens[3]}'", 1)
-        quoted = self.replace_workflow_once(original, command, quoted_command)
-        self.assertEqual(workflow_typecheck_sources(quoted), WORKFLOW_TYPECHECK_SOURCES)
-
-    def test_workflow_source_contract_rejects_oracle_workday_command_swap(self):
-        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
-        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
-        self.assertEqual(workflow.count(oracle_command), 1)
-        self.assertEqual(workflow.count(workday_command), 1)
-        sentinel = "xcrun swiftc -typecheck __cross-lane-swap__"
-        swapped = workflow.replace(oracle_command, sentinel)
-        swapped = swapped.replace(workday_command, oracle_command).replace(sentinel, workday_command)
-        self.assert_workflow_source_contract_rejects(swapped)
-
     def test_native_failure_statuses_distinguish_value_free_binding_stages(self):
         source = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
         for case_name, status in (
@@ -300,38 +135,20 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertEqual(helper.count(") == .literalAnchorUnproven"), 2)
         self.assertIn("!oracleSecondExecutableProofMatches(", helper)
 
-    def test_production_source_compositions_keep_workday_independent_of_test_support(self):
+    def test_oracle_source_compositions_use_the_same_reviewed_helpers(self):
         oracle_sources = assigned_swift_tuple(
             ROOT / "scripts/job_apply_account_flows_macos.py",
             "_reviewed_sources", "NativeMacOSAccessibilityProvider",
-        )
-        workday_sources = assigned_swift_tuple(
-            ROOT / "scripts/job_apply_password_account_flows_macos.py",
-            "_reviewed_sources", "NativeMacOSWorkdayAccountProvider",
         )
         visible_qa_sources = function_swift_literals(ROOT / "qa/account_environment.py", "_compile_native")
         credential_test_sources = assigned_swift_tuple(
             ROOT / "tests/test_macos_credential_helper.py", "ORACLE_SWIFT_SOURCES"
         )
-        workflow_sources = workflow_typecheck_sources()
         self.assertEqual(oracle_sources, ORACLE_SWIFT_SOURCES)
-        self.assertEqual(workday_sources, WORKDAY_SWIFT_SOURCES)
         self.assertEqual(visible_qa_sources, ORACLE_SWIFT_SOURCES)
         self.assertEqual(credential_test_sources, ORACLE_SWIFT_SOURCES)
-        self.assertEqual(workflow_sources, WORKFLOW_TYPECHECK_SOURCES)
-        self.assertIn("job_apply_credential_helper_tests.swift", ORACLE_SWIFT_SOURCES)
-        self.assertNotIn("job_apply_credential_helper_tests.swift", WORKDAY_SWIFT_SOURCES)
-        obsolete_source = "job_apply_" + "account_flow_helper.swift"
-        self.assertNotIn(obsolete_source, oracle_sources + workday_sources)
-
-        if not __import__("sys").platform.startswith("darwin"):
-            return
-        for sources in (WORKDAY_SWIFT_SOURCES, ORACLE_SWIFT_SOURCES):
-            completed = subprocess.run([
-                "xcrun", "swiftc", "-typecheck",
-                *native_paths(sources),
-            ], capture_output=True, check=False)
-            self.assertEqual(completed.returncode, 0, completed.stderr.decode(errors="replace"))
+        self.assertIn("job_apply_credential_helper_tests.swift", oracle_sources)
+        self.assertNotIn("job_apply_" + "account_flow_helper.swift", oracle_sources)
 
     # These contract tests are intentionally quiet. Visible/native integration
     # lives behind the separately owner-approved qa-account gate.

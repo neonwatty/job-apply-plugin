@@ -44,6 +44,14 @@ drafts, and exact numeric preservation through native Store writes. They use
 fictional disposable Stores and headless Chromium. `npm run audit:dependencies`
 can also run the release dependency check directly; it needs npm registry access.
 
+The developer recorder uses Node and a small native filesystem helper on macOS
+and Linux. Running recorder checks needs a C compiler and Node development
+headers, which are also used by the native Store checks. The recorder browser
+tests use isolated Chromium and synthetic pages.
+
+Run `npm run test:qa-screening` for the native LinkedIn replay. It exercises
+validation, resume upload, manual review, and cleanup with a synthetic form.
+
 Pass `--receipt /absolute/path/result.json` for a value-free suite receipt and
 `--concurrency N` to bound parallelism. Receipts report failed checks as failed.
 
@@ -94,21 +102,42 @@ npm run check:migration
 ```
 
 This Node audit checks current source/surface bindings, reviewed inventory hashes,
-and the frozen historical boundary. Historical requirement declarations can refer
-to optional reference suites; the audit resolves those Node test bindings without
-scheduling suites or making them required CI. Unknown bindings still fail.
+and the frozen historical boundary. Current requirements bind to exact test
+names in the required Node matrix. The audit checks the frozen requirements at
+their original snapshot. The CLI help tests compare against the
+command and option inventory captured in `test/fixtures/native-cli-help/options.json`
+from its pinned pre-change Git revision. The audit rejects unknown bindings.
 A passing inventory receipt does not accept every historical DAG task or replace
 behavioral tests and the separate one-time Store migration check. Dirty checkouts
 are rejected; a disposable staged snapshot can be used for local diagnosis.
 
-## Optional historical comparisons
+## Archived reference testing
 
-`npm run test:reference` retains the historical matrix in
-`config/reference-test-matrix.json` for development diagnosis. It may require
-specific CPython builds and old implementation contracts. It is not a required
-release gate and does not establish current platform or live ATS acceptance.
+The previous reference matrix and commands are available at
+[`2906b63f`](https://github.com/neonwatty/job-apply-plugin/tree/2906b63fee587fad6e89043af890d06f3f3b6152).
+To reproduce historical comparisons, use a separate checkout.
+
+```sh
+git worktree add --detach ../job-apply-reference 2906b63fee587fad6e89043af890d06f3f3b6152
+cd ../job-apply-reference
+npm ci
+npm run test:reference
+```
+
+Use the archived checkout's CPython versions and Chromium prerequisites for its
+browser suites. It also retains the old browser, task-spine, and resume onboarding
+commands. Historical runs provide comparison evidence for that revision.
+The one-time Store migration check above verifies the current plugin's upgrade path.
+
+The frozen CPython parser-profile check and Python package smoke are archived
+at the [pre-cleanup commit](https://github.com/neonwatty/job-apply-plugin/tree/2c7f787d6aecad845d57b5990755aef1bd4eca7a).
+Required tests use their captured parser vectors and the Node package smoke.
 The former CPython 3.13 atomic-write oracle timeout is outside required CI;
 a demonstrated TypeScript persistence defect remains a release issue.
+
+The retired macOS Workday helper and its dedicated tests are available at the
+[pre-retirement commit](https://github.com/neonwatty/job-apply-plugin/tree/1572b244f9e5e103c4022a73ef3109a9909bf642).
+The required macOS checks use the shipped Oracle helper source list.
 
 ## Companion development
 
@@ -148,6 +177,8 @@ Production code lives under `src/`, checked-in output under `runtime/`, and the
 React app under `apps/companion/`. Python trees are historical reference code.
 Preserve exact revisions, selective writes, user provenance, browser drafts,
 managed-resume identity, consent, and human-only final submission.
+
+## Core workflow evidence audit
 
 Core workflow auditing validates registry consistency and schema validity; it
 does not prove live agent or ATS behavior. The live-agent command

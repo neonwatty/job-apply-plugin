@@ -396,7 +396,7 @@ mutation, and two-way sync are not supported.
 ## Safety Features
 
 - **Never handles credentials** - Pauses for you to complete login, password, CAPTCHA, or MFA steps
-- **Account handling stays explicit** - Ordinary flows pause. Reviewed Greenhouse application URLs need no account; a private macOS Workday seam remains disabled unless you separately approve one exact one-shot canary.
+- **Account handling stays explicit** - The plugin pauses for Workday sign-in and other account steps. Reviewed direct Greenhouse application URLs need no account.
 - **Never submits applications** - Stops at final review, summarizes entered fields, and leaves Submit or Send for you
 - **Never enters payment info** - Skips premium features
 - **Confirms sensitive questions** - Salary, visa status, etc.
@@ -430,10 +430,9 @@ MIT License - See [LICENSE](LICENSE) for details.
 The capture and promotion tools below are optional repository development tools.
 Some use the historical Python reference implementation; they are excluded from
 the installed plugin and from required TypeScript CI. Running them does not prove
-live ATS support or authorize use of the owner's browser. The isolated reference
-oracle `npm run qa:unified-task-spine` also needs Python and Playwright; it uses
-only synthetic data and emits a value-free report. Use the
-[required testing tiers](docs/testing.md) for release validation.
+live ATS support or authorize use of the owner's browser. The
+[testing guide](docs/testing.md#archived-reference-testing) lists the pinned
+checkout for historical comparisons and the required release checks.
 
 Replay fixtures are built from a tightly controlled, private recording and checked in only after they have been reduced to a generic semantic model. Follow these policies:
 

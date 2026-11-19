@@ -1,6 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { historicalRecord } from './historical-boundary.mjs';
+import { currentRequirementBindings } from './requirements.mjs';
 
 // Keep this order aligned with SCENARIOS in check.mjs and requirements.mjs.
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy',
@@ -70,16 +72,21 @@ export async function loadTriageReport(root) {
   const directory = resolve(root, 'config/migration');
   const names = (await readdir(directory)).sort();
   const surfaces = [];
-  const requirements = [];
+  const currentRequirements = [];
+  const archivedRequirements = [];
   for (const name of names) {
     const key = name.endsWith('-surfaces.json') ? 'surfaces'
       : name.startsWith('requirements-') && name.endsWith('.json') ? 'requirements' : null;
     if (!key) continue;
     const document = JSON.parse(await readFile(resolve(directory, name), 'utf8'));
     if (document.schemaVersion !== 1 || !Array.isArray(document[key])) throw new Error(`Invalid shard: ${name}`);
-    (key === 'surfaces' ? surfaces : requirements).push(...document[key]);
+    if (key === 'surfaces') surfaces.push(...document[key]);
+    else {
+      const records = historicalRecord('config/migration/' + name) ? archivedRequirements : currentRequirements;
+      records.push(...document[key]);
+    }
   }
-  return buildTriageReport(surfaces, requirements);
+  return buildTriageReport(surfaces, currentRequirementBindings(currentRequirements, archivedRequirements));
 }
 
 function textSummary(report) {

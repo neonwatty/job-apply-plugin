@@ -24,3 +24,20 @@ test('aggregate gate rejects failures, cancellation, skips and missing required 
   assert.equal(evaluateGate({}, ['policy']).ok, false);
   assert.equal(evaluateGate({ policy: { result: 'success' } }, ['policy']).ok, true);
 });
+
+test('required validation runs native resume onboarding through the CLI and Companion', () => {
+  const { suites } = JSON.parse(read('config/test-matrix.json'));
+  for (const [id, path] of [
+    ['node-native-cli', 'tests_js/native_installed_entrypoints.test.mjs'],
+    ['node-native-unit', 'tests_js/workspace_native_extractions.test.mjs'],
+    ['node-native-browser', 'tests_js/required_companion.test.mjs'],
+  ]) {
+    const suite = suites.find(row => row.id === id);
+    assert.ok(suite?.tiers.includes('full'), id);
+    assert.ok(suite.include.includes(path), path);
+    assert.ok(read(path));
+  }
+  const workflow = read('.github/workflows/validate.yml');
+  assert.match(workflow, /suite: \[node-native-unit, node-native-cli, node-native-browser\]/);
+  assert.doesNotMatch(workflow, /qa:resume-extraction-onboarding/);
+});

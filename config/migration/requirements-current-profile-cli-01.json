@@ -35,13 +35,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_profile_cli_parity.test.mjs",
-          "testId": "native profile CLI matches Python reads, writes and durable state",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store profile CLI preserves unrelated facts and provenance across revisioned writes",
           "command": [
             "node",
             "--test",
-            "tests_js/native_profile_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -84,13 +84,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_profile_cli_parity.test.mjs",
-          "testId": "native profile CLI matches Python conflicts, invalid inputs and no-op writes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store profile CLI rejects stale and invalid writes and preserves exact bytes on a no-op",
           "command": [
             "node",
             "--test",
-            "tests_js/native_profile_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -131,13 +131,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_profile_cli_parity.test.mjs",
-          "testId": "native profile CLI matches Python conflicts, invalid inputs and no-op writes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store profile CLI rejects stale and invalid writes and preserves exact bytes on a no-op",
           "command": [
             "node",
             "--test",
-            "tests_js/native_profile_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -178,13 +178,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_profile_cli_parity.test.mjs",
-          "testId": "native profile CLI matches Python conflicts, invalid inputs and no-op writes",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_data_contracts.test.mjs",
+          "testId": "Store profile CLI rejects stale and invalid writes and preserves exact bytes on a no-op",
           "command": [
             "node",
             "--test",
-            "tests_js/native_profile_cli_parity.test.mjs"
+            "tests_js/native_cli_data_contracts.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536

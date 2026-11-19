@@ -24,7 +24,7 @@ class JobTitleDiscoverySkillTests(unittest.TestCase):
         self.assertIn('logged out', text)
 
     def test_packaged_inventory_mentions_new_skill(self):
-        for relative in ('README.md', 'site/index.html', 'scripts/smoke-plugin.sh',
+        for relative in ('README.md', 'site/index.html', 'scripts/smoke/artifacts.mjs',
                          'scripts/smoke/plugin_install_verify.py', 'scripts/smoke/repository_contracts.py'):
             with self.subTest(relative=relative):
                 self.assertIn('job-title-discovery', (ROOT / relative).read_text())

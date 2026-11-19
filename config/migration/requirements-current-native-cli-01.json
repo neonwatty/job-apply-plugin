@@ -22,13 +22,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_cli_parser_parity.test.mjs",
-          "testId": "Store help covers every Python command and its long options without a Store",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_parser_contract.test.mjs",
+          "testId": "Store help preserves the pinned command and long option inventory without creating a Store",
           "command": [
             "node",
             "--test",
-            "tests_js/native_cli_parser_parity.test.mjs"
+            "tests_js/native_cli_parser_contract.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -60,13 +60,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_cli_parser_parity.test.mjs",
-          "testId": "policy global and subcommand help match Python success protocol",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_parser_contract.test.mjs",
+          "testId": "Policy help preserves root and subcommand usage without creating a Store",
           "command": [
             "node",
             "--test",
-            "tests_js/native_cli_parser_parity.test.mjs"
+            "tests_js/native_cli_parser_contract.test.mjs"
           ],
           "timeoutMs": 30000,
           "maxOutputBytes": 65536
@@ -98,13 +98,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_cli_parser_parity.test.mjs",
-          "testId": "Store parse errors match Python exit status and do not create a Store",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_parser_contract.test.mjs",
+          "testId": "Store parser reports all missing required options without creating a Store",
           "command": [
             "node",
             "--test",
-            "tests_js/native_cli_parser_parity.test.mjs"
+            "tests_js/native_cli_parser_contract.test.mjs"
           ],
           "timeoutMs": 30000,
           "maxOutputBytes": 65536
@@ -136,13 +136,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_cli_parser_parity.test.mjs",
-          "testId": "Store repeated scalar options use the last value as Python does",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_parser_contract.test.mjs",
+          "testId": "Store parser uses the last occurrence of a repeated scalar option",
           "command": [
             "node",
             "--test",
-            "tests_js/native_cli_parser_parity.test.mjs"
+            "tests_js/native_cli_parser_contract.test.mjs"
           ],
           "timeoutMs": 30000,
           "maxOutputBytes": 65536
@@ -178,13 +178,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "node-workspace-other",
-          "file": "tests_js/workspace_native_task_intake.test.mjs",
-          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_task_intake_contract.test.mjs",
+          "testId": "Store task intake defaults to agent, accepts large stdin, and preserves private data and no-op bytes",
           "command": [
             "node",
             "--test",
-            "tests_js/workspace_native_task_intake.test.mjs"
+            "tests_js/native_cli_task_intake_contract.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -220,13 +220,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "node-workspace-other",
-          "file": "tests_js/workspace_native_task_intake.test.mjs",
-          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_task_intake_contract.test.mjs",
+          "testId": "Store task intake defaults to agent, accepts large stdin, and preserves private data and no-op bytes",
           "command": [
             "node",
             "--test",
-            "tests_js/workspace_native_task_intake.test.mjs"
+            "tests_js/native_cli_task_intake_contract.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -262,13 +262,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "node-workspace-other",
-          "file": "tests_js/workspace_native_task_intake.test.mjs",
-          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_task_intake_contract.test.mjs",
+          "testId": "Store task intake defaults to agent, accepts large stdin, and preserves private data and no-op bytes",
           "command": [
             "node",
             "--test",
-            "tests_js/workspace_native_task_intake.test.mjs"
+            "tests_js/native_cli_task_intake_contract.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -304,13 +304,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "node-workspace-other",
-          "file": "tests_js/workspace_native_task_intake.test.mjs",
-          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_task_intake_contract.test.mjs",
+          "testId": "Store task intake defaults to agent, accepts large stdin, and preserves private data and no-op bytes",
           "command": [
             "node",
             "--test",
-            "tests_js/workspace_native_task_intake.test.mjs"
+            "tests_js/native_cli_task_intake_contract.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
@@ -346,13 +346,13 @@
       ],
       "testBindings": [
         {
-          "suiteId": "node-workspace-other",
-          "file": "tests_js/workspace_native_task_intake.test.mjs",
-          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "suiteId": "node-native-cli",
+          "file": "tests_js/native_cli_task_intake_contract.test.mjs",
+          "testId": "Store task intake defaults to agent, accepts large stdin, and preserves private data and no-op bytes",
           "command": [
             "node",
             "--test",
-            "tests_js/workspace_native_task_intake.test.mjs"
+            "tests_js/native_cli_task_intake_contract.test.mjs"
           ],
           "timeoutMs": 60000,
           "maxOutputBytes": 65536
