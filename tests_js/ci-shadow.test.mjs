@@ -34,6 +34,19 @@ test('only a published stable release can promote after installed-package valida
   assert.equal([...workflow.matchAll(/^\s+contents: write$/gm)].length, 1);
 });
 
+test('public Codex and Claude Code catalogs resolve the stable Git ref', () => {
+  const codex = JSON.parse(read('.agents/plugins/marketplace.json'));
+  const claude = JSON.parse(read('.claude-plugin/marketplace.json'));
+  assert.equal(codex.name, 'neonwatty-plugins');
+  assert.equal(claude.name, codex.name);
+  assert.deepEqual(codex.plugins.find(plugin => plugin.name === 'job-apply').source, {
+    source: 'url', url: 'https://github.com/neonwatty/job-apply-plugin.git', ref: 'stable',
+  });
+  assert.deepEqual(claude.plugins.find(plugin => plugin.name === 'job-apply').source, {
+    source: 'github', repo: 'neonwatty/job-apply-plugin', ref: 'stable',
+  });
+});
+
 test('required validation runs native resume onboarding through the CLI and Companion', () => {
   const { suites } = JSON.parse(read('config/test-matrix.json'));
   for (const [id, path] of [
