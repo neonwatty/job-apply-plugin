@@ -2,9 +2,10 @@ import { constants } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { filesystemEncode } from "../contracts/posix-path-bytes.js";
-import { constructPosixPath, posixParent, validatePathProfile } from "../contracts/posix-path.js";
+import { constructNativePath, nativeParent, validatePathProfile } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 import { createNativeAtomicWriteIO, ensurePrivateDirectory } from "./private-filesystem.js";
+import { openWindowsStoreFile } from "./windows-store.js";
 function nativeIO(profile, preserveParentPermissions = false) {
     const filesystem = createNativeAtomicWriteIO(profile);
     return {
@@ -19,6 +20,10 @@ function nativeIO(profile, preserveParentPermissions = false) {
         },
         chmod: filesystem.chmod,
         async open(path, flags, mode) {
+            if (process.platform === "win32") {
+                const handle = await withPythonFilesystemErrors(openWindowsStoreFile(path, flags));
+                return { fd: handle.fd, close: () => withPythonFilesystemErrors(handle.close()) };
+            }
             const bytes = filesystemEncode(path);
             if (bytes.includes(0)) {
                 const error = new Error("embedded null byte");
@@ -46,12 +51,13 @@ export async function withExclusiveFileLock(path, callback, options) {
     const signal = options.signal ?? new AbortController().signal;
     signal.throwIfAborted();
     const io = options.io ?? nativeIO(options.pathProfile, options.preserveParentPermissions);
-    path = constructPosixPath("", path);
-    await io.ensurePrivateDirectory(posixParent(path));
+    path = constructNativePath("", path);
+    await io.ensurePrivateDirectory(nativeParent(path));
     const handle = await io.open(path, constants.O_RDWR | constants.O_CREAT, 0o600);
     // Baseline parity: chmod precedes the protected block. A chmod failure does
     // not explicitly close this descriptor; native FileHandle GC is not a receipt.
-    await io.chmod(path, 0o600);
+    if (process.platform !== "win32" || options.io)
+        await io.chmod(path, 0o600);
     let failure;
     try {
         while (true) {

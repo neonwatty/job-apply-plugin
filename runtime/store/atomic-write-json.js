@@ -1,5 +1,6 @@
 import { iterPersistedJson } from "../contracts/persisted-json.js";
-import { constructPosixPath, posixParent } from "../contracts/posix-path.js";
+import { win32 } from "node:path";
+import { constructNativePath, nativeParent } from "../contracts/posix-path.js";
 import { createNativeAtomicWriteIO, ensurePrivateDirectory, fsyncDirectory, isFilesystemError } from "./private-filesystem.js";
 import { linkLegacyContext } from "../contracts/persistence-exception.js";
 /** Atomic document replacement; failures after rename do not roll back installed bytes. */
@@ -8,13 +9,14 @@ export async function atomicWriteJson(path, payload, options, io = createNativeA
 }
 /** One replacement state machine for explicitly selected text and context policies. */
 export async function atomicWriteJsonFor(path, chunks, newline, io, linkContext) {
-    path = constructPosixPath("", path);
-    const parent = posixParent(path);
+    path = constructNativePath("", path);
+    const parent = nativeParent(path);
     await ensurePrivateDirectory(parent, io);
     let temporaryPath;
     let failure;
     try {
-        const name = path === "/" || path === "//" || path === "." ? "" : path.slice(path.lastIndexOf("/") + 1);
+        const name = process.platform === "win32" ? win32.basename(path)
+            : path === "/" || path === "//" || path === "." ? "" : path.slice(path.lastIndexOf("/") + 1);
         const temporary = await io.createTemporary({ directory: parent, prefix: `.${name}.`, suffix: ".tmp" });
         temporaryPath = temporary.path;
         let writeFailure;

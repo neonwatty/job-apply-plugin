@@ -9,11 +9,21 @@ import { emptyObject } from '../contracts/workspace/jobs.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
 import { syncDirectory as syncStoreDirectory } from './directory-sync.js';
 import { resumeModifiedAt } from './resume-modified-at.js';
+import { requirePrivateStoreDirectory } from './private-store-entry.js';
+import { openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata } from './windows-store.js';
 const filePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(pdf|docx|txt)$/;
 const tempPattern = /^\.native-[a-f0-9-]{36}\.tmp$/;
 const quarantinePattern = /^\.([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:pdf|docx|txt))\.([a-f0-9]{32})\.quarantine$/;
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const absent = (error) => error instanceof Error && 'code' in error && error.code === 'ENOENT';
+async function sameResumePath(path, descriptor, after, windows, privateFile) {
+    if (windows) {
+        const metadata = privateFile ? requireWindowsPrivate : windowsMetadata;
+        return windowsFileIdentity(metadata(path)) === windowsFileIdentity(metadata(descriptor));
+    }
+    const stat = await lstat(path, { bigint: true });
+    return stat.dev === after.dev && stat.ino === after.ino && !stat.isSymbolicLink();
+}
 export async function syncDirectory(path) {
     await syncStoreDirectory(path, constants.O_RDONLY | constants.O_NOFOLLOW);
 }
@@ -25,24 +35,30 @@ export class NativeResumeFiles {
         this.directory = join(root, 'resume-files');
     }
     async validate() {
-        const metadata = await lstat(this.directory);
-        if (!metadata.isDirectory() || metadata.isSymbolicLink() || metadata.uid !== process.getuid?.() || metadata.mode & 0o077)
-            throw new JobsError('resume directory must be private and owned');
+        await requirePrivateStoreDirectory(this.directory, 'resume directory must be private and owned');
         for (const name of await readdir(this.directory)) {
             if (!filePattern.test(name) && !tempPattern.test(name) && !quarantinePattern.test(name)) {
                 throw new JobsError('unsupported resume recovery state');
             }
-            const stat = await lstat(join(this.directory, name));
-            if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== process.getuid?.() || stat.mode & 0o077)
-                throw new JobsError('resume file must be private and owned, without links');
+            const path = join(this.directory, name);
+            if (process.platform === 'win32')
+                requireWindowsPrivate(path, false);
+            else {
+                const stat = await lstat(path);
+                if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== process.getuid?.() || stat.mode & 0o077)
+                    throw new JobsError('resume file must be private and owned, without links');
+            }
         }
     }
     async readPath(path, privateFile = false) {
         let handle;
         try {
-            handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+            const windows = process.platform === 'win32';
+            handle = windows ? await openWindowsStoreFile(path, constants.O_RDONLY, privateFile)
+                : await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
             const before = await handle.stat({ bigint: true });
-            if (!before.isFile() || before.size > BigInt(resumeLimit) || privateFile && (before.nlink !== 1n || before.uid !== BigInt(process.getuid()) || (before.mode & 63n) !== 0n))
+            if (!before.isFile() || before.size > BigInt(resumeLimit)
+                || !windows && privateFile && (before.nlink !== 1n || before.uid !== BigInt(process.getuid()) || (before.mode & 63n) !== 0n))
                 throw Error('file');
             const parts = [];
             let size = 0;
@@ -56,9 +72,9 @@ export class NativeResumeFiles {
                 if (size > resumeLimit)
                     throw new JobsError('resume file exceeds the 10 MiB limit');
             }
-            const after = await handle.stat({ bigint: true }), pathStat = await lstat(path, { bigint: true });
+            const after = await handle.stat({ bigint: true });
             if (size !== Number(before.size) || ['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs'].some(key => before[key] !== after[key])
-                || pathStat.dev !== after.dev || pathStat.ino !== after.ino || pathStat.isSymbolicLink())
+                || !await sameResumePath(path, handle.fd, after, windows, privateFile))
                 throw new JobsError('resume source changed during import');
             return Buffer.concat(parts);
         }
@@ -74,7 +90,9 @@ export class NativeResumeFiles {
     async stage(id, filename, content) {
         const { extension, mediaType } = validateResumeContent(filename, content);
         const temporary = `.native-${randomUUID()}.tmp`, path = join(this.directory, temporary);
-        const handle = await open(path, 'wx', 0o600);
+        const handle = process.platform === 'win32'
+            ? await openWindowsStoreFile(path, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL)
+            : await open(path, 'wx', 0o600);
         try {
             await handle.writeFile(content);
             await handle.sync();

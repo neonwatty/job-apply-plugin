@@ -4,6 +4,7 @@ import { filesystemEncode, FilesystemEncodeError } from "../contracts/posix-path
 import { validatePathProfile } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 import { isFilesystemError } from "./private-filesystem.js";
+import { openWindowsStoreFile, requireWindowsPrivate } from "./windows-store.js";
 class NullPathError extends Error {
     constructor() {
         super("embedded null byte");
@@ -19,12 +20,14 @@ function nativePath(path) {
 /** Native POSIX descriptor IO. Callers must separately own an exclusive lock. */
 export function createNativeJsonlHistoryIO(profile) {
     validatePathProfile(profile);
-    if (process.platform === "win32")
-        throw new Error("Native Windows JSONL history IO is not supported by this POSIX adapter");
+    const windows = process.platform === "win32";
     return {
         async exists(path) {
             try {
-                await withPythonFilesystemErrors(stat(nativePath(path)));
+                if (windows)
+                    requireWindowsPrivate(path, false);
+                else
+                    await withPythonFilesystemErrors(stat(nativePath(path)));
                 return true;
             }
             catch (error) {
@@ -36,9 +39,10 @@ export function createNativeJsonlHistoryIO(profile) {
                 throw error;
             }
         },
-        chmod: (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
+        chmod: windows ? async (path) => { requireWindowsPrivate(path, false); }
+            : (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
         async open(path, flags, mode) {
-            const handle = await withPythonFilesystemErrors(open(nativePath(path), flags, mode));
+            const handle = await withPythonFilesystemErrors(windows ? openWindowsStoreFile(path, flags) : open(nativePath(path), flags, mode));
             return {
                 stat: () => withPythonFilesystemErrors(handle.stat({ bigint: true })),
                 async write(bytes) {

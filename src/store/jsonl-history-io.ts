@@ -5,6 +5,7 @@ import { validatePathProfile } from "../contracts/posix-path.js";
 import type { PythonPathProfile } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 import { isFilesystemError } from "./private-filesystem.js";
+import { openWindowsStoreFile, requireWindowsPrivate } from "./windows-store.js";
 
 export interface JsonlHandle {
   stat(): Promise<{ size: bigint }>;
@@ -35,11 +36,12 @@ function nativePath(path: string): Buffer {
 /** Native POSIX descriptor IO. Callers must separately own an exclusive lock. */
 export function createNativeJsonlHistoryIO(profile: PythonPathProfile): JsonlHistoryIO {
   validatePathProfile(profile);
-  if (process.platform === "win32") throw new Error("Native Windows JSONL history IO is not supported by this POSIX adapter");
+  const windows = process.platform === "win32";
   return {
     async exists(path) {
       try {
-        await withPythonFilesystemErrors(stat(nativePath(path)));
+        if (windows) requireWindowsPrivate(path, false);
+        else await withPythonFilesystemErrors(stat(nativePath(path)));
         return true;
       } catch (error) {
         if (error instanceof NullPathError || error instanceof FilesystemEncodeError) return false;
@@ -48,9 +50,10 @@ export function createNativeJsonlHistoryIO(profile: PythonPathProfile): JsonlHis
         throw error;
       }
     },
-    chmod: (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
+    chmod: windows ? async path => { requireWindowsPrivate(path, false); }
+      : (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
     async open(path, flags, mode) {
-      const handle = await withPythonFilesystemErrors(open(nativePath(path), flags, mode));
+      const handle = await withPythonFilesystemErrors(windows ? openWindowsStoreFile(path, flags) : open(nativePath(path), flags, mode));
       return {
         stat: () => withPythonFilesystemErrors(handle.stat({ bigint: true })),
         async write(bytes) {

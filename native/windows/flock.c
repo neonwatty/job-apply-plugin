@@ -460,12 +460,15 @@ static napi_value open_entry(napi_env env, napi_callback_info info) {
     return result;
 }
 
+#include "store-metadata.h"
+
 static napi_value initialize(napi_env env, napi_value exports) {
     napi_property_descriptor properties[] = {
         { "tryLock", NULL, try_lock, NULL, NULL, NULL, napi_default, NULL },
         { "unlock", NULL, unlock, NULL, NULL, NULL, napi_default, NULL },
         { "restrictToOwner", NULL, restrict_to_owner, NULL, NULL, NULL, napi_default, NULL },
         { "isOwnerOnly", NULL, is_owner_only, NULL, NULL, NULL, napi_default, NULL },
+        { "storeMetadata", NULL, store_metadata, NULL, NULL, NULL, napi_default, NULL },
         { "listNames", NULL, list_names, NULL, NULL, NULL, napi_default, NULL },
         { "inspect", NULL, inspect_entry, NULL, NULL, NULL, napi_default, NULL },
         { "openFile", NULL, open_entry, NULL, NULL, NULL, napi_default, NULL },

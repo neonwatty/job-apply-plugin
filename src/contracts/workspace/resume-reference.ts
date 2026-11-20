@@ -1,4 +1,4 @@
-import { posix } from "node:path";
+import { posix, win32 } from "node:path";
 import { PythonText } from "../python-text.js";
 import { safeId } from "./jobs.js";
 import { strip } from "./job-url.js";
@@ -28,7 +28,10 @@ export function validateResumeReferences(resumes: Document): void {
       const path = string(get(record, "path"));
       const normalized = path?.startsWith("//") && !path.startsWith("///")
         ? '/' + posix.normalize(path) : path === null ? null : posix.normalize(path);
-      if (!path || !posix.isAbsolute(path) || path.includes('\0') || strip(path) !== path || normalized !== path) {
+      const nativeWindows = process.platform === "win32" && path !== null && win32.isAbsolute(path)
+        && win32.normalize(path) === path && !path.slice(win32.parse(path).root.length).includes(':');
+      if (!path || path.includes('\0') || strip(path) !== path
+        || !nativeWindows && (!posix.isAbsolute(path) || normalized !== path)) {
         throw new JobsError("resume path is not normalized");
       }
       if (["managedFile", "originalFilename", "mediaType", "digest", "contentRevision"].some(field => has(record, field))) {
