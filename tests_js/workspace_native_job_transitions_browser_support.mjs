@@ -80,24 +80,101 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   assert.deepEqual(await readJob(), latest);
   await close.click();
 
-  // Prepare review through the real claim API; no browser or employer submission occurs.
+  // Exercise recorded browser tasks and the review checkpoint through the synthetic Store.
   const selected = await confirmInputs(latest);
-  const acquired = await api('/api/claims/acquire', { jobId, expectedRevision: selected.jobRevision, ownerLabel: 'Transition fixture' });
-  const reviewed = await api('/api/claims/handoff', { jobId, token: acquired.token, status: 'awaiting_review',
-    expectedRevision: acquired.job.revision, session: { status: 'review', readinessInput: readyPacket(acquired.job.revision) } });
-  assert.equal(reviewed.job.status, 'awaiting_review');
-  await page.reload();
-  await open();
-  const beforeApplied = requests;
-  page.once('dialog', async dialog => { confirmation = dialog.message(); await dialog.dismiss(); });
-  await status.getByRole('button', { name: 'Mark applied', exact: true }).click();
-  assert.match(confirmation, /I personally submitted/i);
-  assert.equal(requests, beforeApplied);
-  assert.equal((await readJob()).status, 'awaiting_review');
-  const appliedResponse = transitionResponse();
-  await change('Mark applied', 'applied');
-  assert.equal((await appliedResponse).request().postDataJSON().userConfirmed, true);
+  const acquired = await api('/api/claims/acquire', {
+    jobId, expectedRevision: selected.jobRevision, ownerLabel: 'Transition fixture',
+  });
+  const blocked = await api('/api/claims/handoff', {
+    jobId, token: acquired.token, status: 'needs_info', expectedRevision: acquired.job.revision,
+    session: { status: 'active', handoffChecklist: ['resume_upload'], blockers: [
+      { type: 'browser_handoff', code: 'unsupported-control' },
+      { type: 'information', code: 'owner-input-required' },
+    ] },
+  });
+  assert.equal(blocked.job.status, 'needs_info');
+  await clickCompanionNav(page, 'Needs Attention');
+  const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
+  await attention.getByRole('button', {name:'Refresh attention',exact:true}).click();
+  await attention.getByRole('button', { name: /Transition conflict writer Native fixture role Browser action required/ }).click();
+  await attention.getByText('Attach resume', {exact:true}).waitFor();
+  await attention.getByRole('button', {name:'See upload steps',exact:true}).click();
+  const handoff = modal.locator('.job-handoff');
+  await handoff.getByRole('heading', {name:'Attach resume in browser',exact:true}).waitFor();
+  assert.equal(await modal.getByRole('button', {name:'Record as submitted',exact:true}).count(), 0);
+  const readyJob = await change('Mark ready', 'ready');
   await close.click();
+
+  const resumed = await api('/api/claims/acquire', {
+    jobId, expectedRevision: readyJob.revision, ownerLabel: 'Transition fixture',
+  });
+  const reviewInput = readyPacket(resumed.job.revision);
+  reviewInput.observation.controls = reviewInput.observation.controls.filter(control => control.controlId !== 'profile.website');
+  const reviewed = await api('/api/claims/handoff', {
+    jobId, token: resumed.token, status:'awaiting_review', expectedRevision: resumed.job.revision,
+    session: { status:'review', readinessInput:reviewInput, handoffChecklist:[] },
+  });
+  assert.equal(reviewed.job.status, 'awaiting_review');
+  assert.deepEqual(reviewed.session.readiness.optionalUnansweredControlIds, ['profile.website']);
+  await page.reload();
+  await clickCompanionNav(page, 'Needs Attention');
+  await attention.getByRole('button', {name:/Transition conflict writer Native fixture role Awaiting your review/}).click();
+  await attention.getByRole('button', {name:'See review steps',exact:true}).click();
+  await handoff.getByRole('heading', {name:'Ready for your review',exact:true}).waitFor();
+  await handoff.getByText('Optional fields left blank', {exact:true}).waitFor();
+  await handoff.getByText('profile website', {exact:true}).waitFor();
+  assert.equal(await modal.evaluate(drawer =>
+    Boolean(drawer.querySelector('.job-handoff').compareDocumentPosition(drawer.querySelector('.job-drawer-summary'))
+      & Node.DOCUMENT_POSITION_FOLLOWING)), true);
+  assert.equal(await modal.getByRole('link', {name:/Open job posting/}).getAttribute('href'), reviewed.job.url);
+
+  // Missing or stale form evidence must never look like a fresh check.
+  const disclose = modal.getByText('Full job activity', {exact:true});
+  const refresh = modal.getByRole('button', {name:'Refresh activity',exact:true});
+  const activityPath = `**/api/jobs/${jobId}/activity`;
+  await disclose.click();
+  await page.route(activityPath,async route=>{
+    const response = await route.fetch();
+    const data = await response.json();
+    data.session.readiness = null;
+    await route.fulfill({response,json:data});
+  });
+  await refresh.click();
+  await handoff.getByRole('heading', {name:'Review details unavailable',exact:true}).waitFor();
+  assert.equal(await handoff.getByText('Required fields reported complete', {exact:true}).count(), 0);
+  await page.unroute(activityPath);
+  await refresh.click();
+  await handoff.getByRole('heading', {name:'Ready for your review',exact:true}).waitFor();
+
+  // Cancel leaves the exact record intact. Confirm records only the user's local status.
+  let externalRequests = 0;
+  const rejectExternal = route => { externalRequests++; return route.abort(); };
+  const context = page.context();
+  const tabsBeforeApply = context.pages().length;
+  await context.route('https://example.invalid/**', rejectExternal);
+  const beforeApplied = requests;
+  const beforeRecord = await readJob();
+  await handoff.getByRole('button', {name:'Record as submitted',exact:true}).click();
+  await handoff.getByText('Did you personally submit this application on the employer site?').waitFor();
+  await handoff.getByRole('button', {name:'Cancel',exact:true}).click();
+  assert.equal(requests, beforeApplied);
+  assert.deepEqual(await readJob(), beforeRecord);
+  await handoff.getByRole('button', {name:'Record as submitted',exact:true}).click();
+  const appliedResponse = transitionResponse();
+  await handoff.getByRole('button', {name:'Yes, record as submitted',exact:true}).click();
+  const submission = await appliedResponse;
+  assert.equal(submission.status(), 200, await submission.text());
+  assert.deepEqual(submission.request().postDataJSON(), {
+    status:'applied', expectedRevision:reviewed.job.revision, userConfirmed:true,
+  });
+  await modal.getByText('Submission recorded in Companion.', {exact:true}).waitFor();
+  assert.equal((await readJob()).status, 'applied');
+  assert.equal(externalRequests, 0);
+  assert.equal(context.pages().length, tabsBeforeApply);
+  await context.unroute('https://example.invalid/**', rejectExternal);
+  await close.click();
+  await clickCompanionNav(page, 'Needs Attention');
+  await attention.getByRole('button', {name:/Transition conflict writer Native fixture role/}).waitFor({state:'hidden'});
 
   // This explicitly synthetic crash fixture has an in_progress record and no live claim.
   await prepareInterrupted();

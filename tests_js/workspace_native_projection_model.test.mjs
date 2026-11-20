@@ -24,6 +24,10 @@ test('Companion parses and labels closed handoff actions',()=>{
  assert.equal(older.items[0].session.handoffChecklistRecorded,false);
  assert.equal(model.handoffActionLabels.resume_upload,'Attach resume');
  assert.deepEqual(model.handoffChecklistLabels(['resume_upload','required_question','required_question']),['Attach resume','Answer required question (2)']);
+ const uploadFallback=model.attentionProjection(JSON.stringify({items:[{...row,session:{
+   handoffChecklist:['required_question'],browserHandoff:{state:'required',reasonCode:'owner-upload-required'},
+ }}]})).items[0].session;
+ assert.deepEqual(model.recordedFormActions(uploadFallback),['Attach resume','Answer required question']);
  assert.throws(()=>model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:['PRIVATE_VALUE']}}],snapshotSignature:'x'})));
 });
 test('Companion distinguishes recorded optional blanks from older reports',()=>{
@@ -57,8 +61,8 @@ test('native recovery and review guidance describes only supported authority',()
  assert.equal(model.attentionGuidance.claimless_interrupted_attempt, model.recoveryGuidance.interrupted);
  assert.doesNotMatch(model.attentionGuidance.claimless_interrupted_attempt, /job-transition/);
  assert.match(model.recoveryGuidance.expired, /reset this expired attempt/);
- assert.match(model.attentionGuidance.awaiting_human_review, /Personally review and submit on the third-party site/);
- assert.match(model.attentionGuidance.awaiting_human_review, /confirm Applied in Job details/);
+ assert.match(model.attentionGuidance.awaiting_human_review, /check the draft in your application tab/);
+ assert.match(model.attentionGuidance.awaiting_human_review, /After you submit on the employer site, record submission in Companion/);
 });
 
 test('attention and activity allow a null unbound attempt revision but reject malformed bindings',()=>{
@@ -70,4 +74,20 @@ test('attention and activity allow a null unbound attempt revision but reject ma
    assert.equal(project(3).attemptRevision,3n);
    for (const invalid of [0,-1,true,1.5,'3',{},[]]) assert.throws(()=>project(invalid));
  }
+});
+
+test('Companion only describes recorded form checks from the matching agent-attested review', () => {
+ const assertions={'required-controls-complete':'passed','validation-clear':'passed','final-action-untouched':'passed'};
+ const readiness={attemptRevision:3,status:'ready',evidenceKind:'agent_attested_current_attempt',assertions};
+ const browserHandoff={state:'ready_for_owner',reasonCode:'final-review-required'};
+ const check=(report,handoff=browserHandoff)=>model.activityProjection(JSON.stringify({
+   job:{status:'awaiting_review',revision:4},claim:{state:'none'},history:[],
+   session:{revision:1,attemptRevision:3,status:'review',readiness:report,browserHandoff:handoff},
+ })).session.reviewChecksRecorded;
+ assert.equal(check(readiness),true);
+ assert.equal(check(null),false);
+ assert.equal(check({...readiness,attemptRevision:2}),false);
+ assert.equal(check({...readiness,evidenceKind:'repository_replay'}),false);
+ assert.equal(check({...readiness,assertions:{...assertions,'final-action-untouched':'failed'}}),false);
+ assert.equal(check(readiness,{state:'required',reasonCode:'unsupported-control'}),false);
 });

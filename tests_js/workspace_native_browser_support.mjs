@@ -185,7 +185,7 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
     await page.setViewportSize({width:390,height:844});
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
-    const projections = await projectionsBrowser(page,{jobId:job.id,markReady:async()=>{
+    const projections = await projectionsBrowser(page,{markReady:async()=>{
       const current = JSON.parse(await readFile(join(root,'jobs.json'),'utf8')).jobs[job.id];
       await execute(process.execPath,[cli,'--root',root,'--native-lock',fixture.receipt.artifact,
         'task-select','--id',job.id,'--expected-revision',String(current.revision),'--owner-confirmed'],{env:{PATH:''}});

@@ -25,9 +25,8 @@ export function transitionBody(job: Job, status: string, closedOutcome = '', use
     ...(status === 'applied' ? { userConfirmed: true } : {}),
   });
 }
-export function transitionConfirmation(job: Job, status: TransitionTarget, closedOutcome = ''): string {
+export function transitionConfirmation(job: Job, status: Exclude<TransitionTarget, 'applied'>, closedOutcome = ''): string {
   const local = 'This updates local status only; it does not submit the application.';
-  if (status === 'applied') return `I confirm that I personally submitted this application. Mark it as applied? ${local}`;
   if (status === 'closed') return `Close this job as ${closedOutcome.replaceAll('_', ' ')}? ${local}`;
   if (status === 'ready') return `Mark this job ready? The workspace will run preflight checks first. ${local}`;
   if (status === 'saved' && job.status === 'closed') return `Reopen this job as saved? ${local}`;

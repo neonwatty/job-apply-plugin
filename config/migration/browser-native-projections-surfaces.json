@@ -248,6 +248,72 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "browser:apps/companion/components/JobHandoff.tsx:JobHandoff",
+      "kind": "browser",
+      "export": "JobHandoff",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/JobHandoff.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:recordedFormActions",
+      "kind": "browser",
+      "export": "recordedFormActions",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-view.ts:formatActivityTime",
+      "kind": "browser",
+      "export": "formatActivityTime",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-view.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

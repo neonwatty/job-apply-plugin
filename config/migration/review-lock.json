@@ -75,7 +75,7 @@
     },
     {
       "path": "browser-native-projections-surfaces.json",
-      "sha256": "951b88a81f5e5ebb797657b544e995b222ed59b32e9a4be8885c009345580eca"
+      "sha256": "1081ca4d19f0546fc0dd0714a0d8ac8a519fc55759b6817fbe3ee42c319eba09"
     },
     {
       "path": "browser-react-trash-surfaces.json",
@@ -491,7 +491,7 @@
     },
     {
       "path": "source-catalog-native-projections.json",
-      "sha256": "361455617ff86a220afb145d869cb5e03f34ac19a0c6e3cfd92eb1e0107c0ef8"
+      "sha256": "5bf76321990f3a219dc605c3682e33089725c9f36c3229195f9c0cb03e85fe59"
     },
     {
       "path": "source-catalog-native-qa-replay.json",

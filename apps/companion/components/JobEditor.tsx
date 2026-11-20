@@ -3,8 +3,10 @@ import type { ReactNode } from 'react';
 import { object,textFields,type JobFields,type Resume } from './contracts';
 import type { Editor } from './job-editor-state';
 
-export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,reapply,load,refresh,children }: {
+export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,reapply,load,refresh,handoff,notice,children }: {
     children?: ReactNode;
+    handoff?: ReactNode;
+    notice?: string;
     editor: Editor;
     resumes: Resume[];
     busy: boolean;
@@ -42,6 +44,9 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
             });
         };
     }, []);
+    useEffect(() => {
+        if (notice) heading.current?.focus();
+    }, [notice]);
     function cancelEdit() {
         if (!editor.selected) { close(); return; }
         if (editor.dirty.size && !confirm('Discard unsaved job changes?')) return;
@@ -68,6 +73,7 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
             <button className="job-drawer-close" type="button" onClick={close} disabled={busy} aria-label="Close job details">×</button>
         </header>
         {error && <p role="alert" className="error">{error}</p>}
+        {notice && <p role="status" className="notice">{notice}</p>}
         {editor.missing && <section className="notice" role="alert">
             <h3>This job is no longer available</h3>
             <p>Your draft is preserved. Saving is disabled until this record is available again.</p>
@@ -80,6 +86,7 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
             <div className="button-row"><button type="button" disabled={busy} onClick={load}>Load latest values</button>
                 {editing && editor.dirty.size > 0 && <button type="button" disabled={busy} onClick={reapply}>Reapply my draft</button>}</div>
         </section>}
+        {!editing && editor.selected && handoff}
         {selection && <p className="notice">{String(selection.jobRevision) === String(editor.selected?.revision)
             ? `Application inputs selected · ${selectedResume?.label ?? String(selection.resumeId)}. Checked again before applying.`
             : `Application inputs need reconfirmation · ${selectedResume?.label ?? String(selection.resumeId)}.`}</p>}

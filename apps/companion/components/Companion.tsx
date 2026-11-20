@@ -63,7 +63,7 @@ export default function Companion() {
     const [tab,setTab]=useState<WorkspaceTab>('overview');
     const [visitedTabs,setVisitedTabs]=useState<WorkspaceTab[]>(['overview']);
     const [refreshKeys,setRefreshKeys]=useState<Partial<Record<WorkspaceTab,number>>>({});
-    const [requestedJob,setRequestedJob]=useState<string|null>(null);
+    const [requestedJob,setRequestedJob]=useState<{id:string;revision:bigint}|null>(null);
     const [dirty,setDirty]=useState(false);
     const [collapsed,setCollapsed]=useState(false);
     const [attempt,setAttempt]=useState(0);
@@ -191,7 +191,7 @@ export default function Companion() {
             case 'overview': return <Overview client={client} openJobs={() => navigate('jobs')}
                 openWorkspace={nativeWorkspace ? navigate : undefined} legacyHref={legacyHref} refreshKey={refreshKeys[view]??0}/>;
             case 'attention': return <NeedsAttention client={client} refreshKey={refreshKeys[view]??0}
-                openJob={id => { if(navigate('jobs'))setRequestedJob(id); }}/>;
+                openJob={job => { if(navigate('jobs'))setRequestedJob(job); }}/>;
             case 'facts': return <Facts client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'resumes': return <Resumes client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
                 openExtractions={()=>navigate('extractions')}/>;
@@ -202,7 +202,7 @@ export default function Companion() {
                 consentOnly={view==='consents'}/>;
             case 'settings': return <ApplicationSettings client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'jobs': return <Jobs client={client} dirtyChanged={markDirty} active={view===tab} claimsEnabled={nativeWorkspace}
-                refreshKey={refreshKeys[view]??0} requestedJobId={view===tab?requestedJob:null} jobOpened={jobOpened} openAnswers={() => navigate('answers')}
+                refreshKey={refreshKeys[view]??0} requestedJob={view===tab?requestedJob:null} jobOpened={jobOpened} openAnswers={() => navigate('answers')}
                 workspaceChanged={refreshShellCounts}/>;
         }
     }
