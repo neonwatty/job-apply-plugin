@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installSourceCheckouts } from './smoke/source_marketplaces.mjs';
+import { smokeGitMarketplaces } from './smoke/git_marketplaces.mjs';
 import { copyCritical, installedCodex, preparePrior, verifyArtifact } from './smoke/artifacts.mjs';
 import { packagedTitleDiscoveryJourney } from '../tests_js/workspace_title_discovery_packaged_support.mjs';
 
@@ -29,6 +30,7 @@ try {
     await cp(join(root, path), join(source, path), { recursive: true });
   }
   const sourceInstalls = await installSourceCheckouts(source, temporary, run);
+  await smokeGitMarketplaces(source, temporary, run);
   await run(process.execPath, ['scripts/smoke/source_bootstrap.mjs', sourceInstalls.codexRoot, temporary]);
   const fixture = join(temporary, 'package'); await copyCritical(sourceInstalls.codexRoot, fixture); await verifyArtifact(fixture);
   // Cache replacement is independent of actual Python Store migration acceptance.
