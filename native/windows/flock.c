@@ -18,6 +18,9 @@
 #include <string.h>
 #include <wchar.h>
 
+/* The user-mode SDK header declares NtCreateFile but omits this ntdll export. */
+NTSYSAPI NTSTATUS NTAPI NtSetSecurityObject(HANDLE file, SECURITY_INFORMATION flags, PSECURITY_DESCRIPTOR security);
+
 #define LOCK_OFFSET_HIGH 0x7FFFFFFFu
 #define LOCK_OFFSET_LOW 0xFFFFFFF0u
 
@@ -207,9 +210,19 @@ static DWORD set_owner_only_dacl(HANDLE file, PSID user, BOOL change_owner, BOOL
     PACL acl = NULL;
     DWORD failure = SetEntriesInAclW(1, &access, NULL, &acl);
     if (failure == ERROR_SUCCESS) {
-        SECURITY_INFORMATION flags = DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION;
-        if (change_owner) flags |= OWNER_SECURITY_INFORMATION;
-        failure = SetSecurityInfo(file, SE_FILE_OBJECT, flags, change_owner ? user : NULL, NULL, acl, NULL);
+        SECURITY_DESCRIPTOR security;
+        if (!InitializeSecurityDescriptor(&security, SECURITY_DESCRIPTOR_REVISION)
+            || !SetSecurityDescriptorDacl(&security, TRUE, acl, FALSE)
+            || !SetSecurityDescriptorControl(&security, SE_DACL_PROTECTED, SE_DACL_PROTECTED)
+            || (change_owner && !SetSecurityDescriptorOwner(&security, user, FALSE))) {
+            failure = GetLastError();
+        } else {
+            /* Apply to the pinned object without propagating edits to existing children. */
+            SECURITY_INFORMATION flags = DACL_SECURITY_INFORMATION;
+            if (change_owner) flags |= OWNER_SECURITY_INFORMATION;
+            NTSTATUS status = NtSetSecurityObject(file, flags, &security);
+            if (status < 0) failure = RtlNtStatusToDosError(status);
+        }
     }
     if (acl) LocalFree(acl);
     return failure;
@@ -224,7 +237,6 @@ static napi_value owner_acl(napi_env env, napi_callback_info info, BOOL restrict
     }
     wchar_t *path = wide_string(env, arguments[0], 32767, &length);
     if (!path) return NULL;
-    /* MAXIMUM_ALLOWED prevents SetSecurityInfo from rewriting existing children. */
     HANDLE file = CreateFileW(path, restrict_owner ? MAXIMUM_ALLOWED : READ_CONTROL | FILE_READ_ATTRIBUTES,
         file_sharing, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
     DWORD failure = file == INVALID_HANDLE_VALUE ? GetLastError() : ERROR_SUCCESS;
@@ -391,11 +403,18 @@ static napi_value scan_names(napi_env env, HANDLE scan) {
 static napi_value list_names(napi_env env, napi_callback_info info) {
     HANDLE directory;
     if (!descriptor_handle(env, info, &directory) || !check_directory(env, directory)) return NULL;
-    /* A fresh handle has its own enumeration cursor, even for concurrent callers. */
-    HANDLE scan = ReOpenFile(directory, FILE_GENERIC_READ, file_sharing,
+    BY_HANDLE_FILE_INFORMATION metadata;
+    if (!GetFileInformationByHandle(directory, &metadata)) return throw_win32_at(env, GetLastError(), "Read directory identity");
+    FILE_ID_DESCRIPTOR identity = {0};
+    identity.dwSize = sizeof(identity);
+    identity.Type = FileIdType;
+    identity.FileId.LowPart = metadata.nFileIndexLow;
+    identity.FileId.HighPart = (LONG)metadata.nFileIndexHigh;
+    /* Open the same object with a fresh scan cursor, even if its name changed. */
+    HANDLE scan = OpenFileById(directory, &identity, FILE_GENERIC_READ, file_sharing, NULL,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT);
     if (scan == INVALID_HANDLE_VALUE) return throw_win32_at(env, GetLastError(), "Open independent directory scan");
-    napi_value result = scan_names(env, scan);
+    napi_value result = check_directory(env, scan) ? scan_names(env, scan) : NULL;
     CloseHandle(scan);
     return result;
 }
