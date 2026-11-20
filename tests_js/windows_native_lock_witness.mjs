@@ -150,19 +150,18 @@ function verifyAcl() {
 }
 
 async function verifyIndependentScans(descriptor, names) {
-  const barrier = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  const barrier = new SharedArrayBuffer(12 * Int32Array.BYTES_PER_ELEMENT);
   const script = `
     const assert = require('node:assert/strict');
     const { workerData } = require('node:worker_threads');
     const { artifact, descriptor, names, barrier } = workerData;
     const native = require(artifact);
     const ready = new Int32Array(barrier);
-    for (let index = 0; index < 12; index++) {
-      const previous = Atomics.add(ready, 0, 1);
-      if (previous % 2 === 0) {
-        assert.notEqual(Atomics.wait(ready, 0, previous + 1, 5_000), 'timed-out');
+    for (let index = 0; index < ready.length; index++) {
+      if (Atomics.add(ready, index, 1) === 0) {
+        assert.notEqual(Atomics.wait(ready, index, 1, 5_000), 'timed-out');
       } else {
-        Atomics.notify(ready, 0);
+        Atomics.notify(ready, index);
       }
       assert.deepEqual(native.listNames(descriptor).map(name => name.toString('utf8')).sort(), names);
     }

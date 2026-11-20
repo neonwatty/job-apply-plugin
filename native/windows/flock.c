@@ -319,7 +319,10 @@ static HANDLE open_entry_handle(napi_env env, napi_callback_info info, ACCESS_MA
         napi_throw_type_error(env, NULL, "Directory basename is invalid");
         return INVALID_HANDLE_VALUE;
     }
-    UNICODE_STRING basename = { (USHORT)(length * sizeof(wchar_t)), (USHORT)((length + 1) * sizeof(wchar_t)), name };
+    UNICODE_STRING basename;
+    basename.Length = (USHORT)(length * sizeof(wchar_t));
+    basename.MaximumLength = (USHORT)((length + 1) * sizeof(wchar_t));
+    basename.Buffer = name;
     OBJECT_ATTRIBUTES attributes;
     InitializeObjectAttributes(&attributes, &basename, OBJ_CASE_INSENSITIVE, directory, NULL);
     IO_STATUS_BLOCK io;
