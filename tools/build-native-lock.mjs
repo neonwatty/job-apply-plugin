@@ -47,7 +47,7 @@ export async function buildNativeLock({ outputDirectory, headers, nodeLib, compi
     if (windows) {
       scratch = await mkdtemp(join(tmpdir(), 'job-apply-native-lock-'));
       args = ['/nologo', '/LD', '/O2', '/W4', '/WX', '/I', include, source, `/Fo${join(scratch, 'flock.obj')}`,
-        `/Fe${artifact}`, '/link', '/MACHINE:X64', `/IMPLIB:${join(scratch, 'flock.lib')}`, importLibrary];
+        `/Fe${artifact}`, '/link', '/MACHINE:X64', `/IMPLIB:${join(scratch, 'flock.lib')}`, importLibrary, 'advapi32.lib', 'ntdll.lib'];
     }
     const run = spawnSync(compiler ?? (windows ? 'cl' : 'cc'), args, {
       cwd: scratch ?? root, encoding: 'utf8', timeout: windows ? 120000 : 30000, maxBuffer: 1024 * 1024,
