@@ -20,6 +20,10 @@ before your first data command.
 
 ### Installation
 
+#### Install stable
+
+The default marketplace installs the validated release of Job Apply and its optional Companion.
+
 **Codex**, in a terminal:
 
 ```bash
@@ -33,6 +37,40 @@ codex plugin add job-apply@neonwatty-plugins
 claude plugin marketplace add neonwatty/job-apply-plugin
 claude plugin install job-apply@neonwatty-plugins
 ```
+
+#### Update an existing install
+
+Use the commands for your host, then start a new session.
+
+```bash
+# Codex
+codex plugin marketplace upgrade neonwatty-plugins
+codex plugin add job-apply@neonwatty-plugins
+
+# Claude Code
+claude plugin marketplace update neonwatty-plugins
+claude plugin update job-apply@neonwatty-plugins
+```
+
+#### Try preview
+
+The preview marketplace follows `main`. Use an isolated host profile and
+disposable local Store when testing a preview.
+
+```bash
+# Codex
+codex plugin marketplace add neonwatty/job-apply-plugin --ref preview-catalog
+codex plugin add job-apply@neonwatty-plugins-preview
+
+# Claude Code
+claude plugin marketplace add 'neonwatty/job-apply-plugin#preview-catalog'
+claude plugin install job-apply@neonwatty-plugins-preview
+```
+
+To refresh preview, use the update commands above with
+`neonwatty-plugins-preview` as the marketplace name.
+
+See the [release runbook](docs/releasing.md) for how a tagged commit reaches stable.
 
 ### Usage
 
