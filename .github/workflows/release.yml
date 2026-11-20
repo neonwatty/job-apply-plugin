@@ -4,10 +4,19 @@ on:
     branches: [main, staging]
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      checkout_sha:
+        description: Exact candidate SHA. Defaults to the selected ref's commit.
+        type: string
+  workflow_call:
+    inputs:
+      checkout_sha:
+        type: string
+        required: true
 permissions:
   contents: read
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-validation-${{ github.event_name }}-${{ github.ref }}-${{ inputs.checkout_sha }}
   cancel-in-progress: true
 jobs:
   installed-package:
@@ -18,7 +27,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
+      - name: Require a full checkout SHA
+        if: inputs.checkout_sha != ''
+        env:
+          CHECKOUT_SHA: ${{ inputs.checkout_sha }}
+        run: |
+          if [[ ! "$CHECKOUT_SHA" =~ ^[a-f0-9]{40}$ ]]; then
+            echo "checkout_sha must be a full commit SHA"
+            exit 1
+          fi
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout_sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: '22'

@@ -25,6 +25,15 @@ test('aggregate gate rejects failures, cancellation, skips and missing required 
   assert.equal(evaluateGate({ policy: { result: 'success' } }, ['policy']).ok, true);
 });
 
+test('only a published stable release can promote after installed-package validation', () => {
+  const workflow = read('.github/workflows/promote-release.yml');
+  assert.match(workflow, /^on:\n  release:\n    types: \[published\]\n\npermissions:/m);
+  assert.match(workflow, /candidate:\n    if: github\.event\.release\.prerelease == false && github\.event\.release\.draft == false/);
+  assert.match(workflow, /validate:\n    needs: candidate\n    uses: \.\/\.github\/workflows\/release\.yml/);
+  assert.match(workflow, /promote:\n    needs: \[candidate, validate\]\n    runs-on:/);
+  assert.equal([...workflow.matchAll(/^\s+contents: write$/gm)].length, 1);
+});
+
 test('required validation runs native resume onboarding through the CLI and Companion', () => {
   const { suites } = JSON.parse(read('config/test-matrix.json'));
   for (const [id, path] of [
