@@ -13,6 +13,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
@@ -45,7 +46,7 @@ static const error_map errors[] = {
     { ERROR_NO_UNICODE_TRANSLATION, EILSEQ, "EILSEQ" },
 };
 
-static napi_value throw_win32(napi_env env, DWORD status) {
+static napi_value throw_win32_at(napi_env env, DWORD status, const char *operation) {
     int number = EIO;
     const char *code = "EIO";
     for (size_t index = 0; index < sizeof(errors) / sizeof(errors[0]); index++) {
@@ -62,8 +63,10 @@ static napi_value throw_win32(napi_env env, DWORD status) {
         text[--length] = 0;
     }
     if (length == 0) strcpy_s(text, sizeof(text), "Windows filesystem operation failed");
+    char description[320];
+    snprintf(description, sizeof(description), "%s%s%s", operation ? operation : "", operation ? ": " : "", text);
     napi_value message, error, code_value, numeric;
-    CHECK_NAPI(env, napi_create_string_utf8(env, text, NAPI_AUTO_LENGTH, &message));
+    CHECK_NAPI(env, napi_create_string_utf8(env, description, NAPI_AUTO_LENGTH, &message));
     CHECK_NAPI(env, napi_create_error(env, NULL, message, &error));
     CHECK_NAPI(env, napi_create_string_utf8(env, code, NAPI_AUTO_LENGTH, &code_value));
     CHECK_NAPI(env, napi_create_int32(env, number, &numeric));
@@ -71,6 +74,10 @@ static napi_value throw_win32(napi_env env, DWORD status) {
     CHECK_NAPI(env, napi_set_named_property(env, error, "errno", numeric));
     CHECK_NAPI(env, napi_throw(env, error));
     return NULL;
+}
+
+static napi_value throw_win32(napi_env env, DWORD status) {
+    return throw_win32_at(env, status, NULL);
 }
 
 static BOOL get_descriptor(napi_env env, napi_value argument, HANDLE *handle) {
@@ -222,7 +229,7 @@ static napi_value owner_acl(napi_env env, napi_callback_info info, BOOL restrict
         file_sharing, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
     DWORD failure = file == INVALID_HANDLE_VALUE ? GetLastError() : ERROR_SUCCESS;
     free(path);
-    if (failure != ERROR_SUCCESS) return throw_win32(env, failure);
+    if (failure != ERROR_SUCCESS) return throw_win32_at(env, failure, "Open ACL path");
 
     FILE_ATTRIBUTE_TAG_INFO metadata;
     HANDLE token = NULL;
@@ -275,7 +282,9 @@ cleanup:
     free(user);
     if (token) CloseHandle(token);
     CloseHandle(file);
-    if (failure != ERROR_SUCCESS) return throw_win32(env, failure);
+    if (failure != ERROR_SUCCESS) {
+        return throw_win32_at(env, failure, restrict_owner ? "Set owner-only ACL" : "Inspect owner ACL");
+    }
     CHECK_NAPI(env, restrict_owner ? napi_get_undefined(env, &result) : napi_get_boolean(env, valid != FALSE, &result));
     return result;
 }
@@ -349,7 +358,7 @@ static napi_value scan_names(napi_env env, HANDLE scan) {
             DWORD failure = GetLastError();
             free(buffer);
             if (failure == ERROR_NO_MORE_FILES) return result;
-            return throw_win32(env, failure);
+            return throw_win32_at(env, failure, "Read directory entries");
         }
         kind = FileFullDirectoryInfo;
         for (FILE_FULL_DIR_INFO *entry = (FILE_FULL_DIR_INFO *)buffer;;
@@ -383,9 +392,9 @@ static napi_value list_names(napi_env env, napi_callback_info info) {
     HANDLE directory;
     if (!descriptor_handle(env, info, &directory) || !check_directory(env, directory)) return NULL;
     /* A fresh handle has its own enumeration cursor, even for concurrent callers. */
-    HANDLE scan = ReOpenFile(directory, FILE_LIST_DIRECTORY, file_sharing,
+    HANDLE scan = ReOpenFile(directory, FILE_GENERIC_READ, file_sharing,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT);
-    if (scan == INVALID_HANDLE_VALUE) return throw_win32(env, GetLastError());
+    if (scan == INVALID_HANDLE_VALUE) return throw_win32_at(env, GetLastError(), "Open independent directory scan");
     napi_value result = scan_names(env, scan);
     CloseHandle(scan);
     return result;

@@ -69,6 +69,11 @@ async function verifyLock() {
 }
 
 function windowsAcl(path, script) {
+  const env = { ...process.env, JOB_APPLY_TEST_ACL_PATH: path };
+  // Windows PowerShell must resolve its own modules when launched from PowerShell 7.
+  for (const name of Object.keys(env)) {
+    if (name.toLowerCase() === 'psmodulepath') delete env[name];
+  }
   const result = spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', `
     $ErrorActionPreference = 'Stop'
     $path = $env:JOB_APPLY_TEST_ACL_PATH
@@ -76,7 +81,7 @@ function windowsAcl(path, script) {
     ${script}
   `], {
     encoding: 'utf8',
-    env: { ...process.env, JOB_APPLY_TEST_ACL_PATH: path },
+    env,
     timeout: 5_000,
     windowsHide: true,
   });
