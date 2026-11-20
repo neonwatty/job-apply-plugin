@@ -104,14 +104,33 @@ jobs:
         with:
           name: package-${{ matrix.os }}
           path: ci-receipts/release.json
+  windows-native:
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          architecture: x64
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        with:
+          arch: x64
+      - run: npm exec --yes --package=node-gyp@11.5.0 -- node-gyp install --ensure
+      - run: node tools/ci/run-suite.mjs windows-native-lock ci-receipts/native.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-windows-x64
+          path: ci-receipts/native.json
   pr-gate:
     name: PR gate
     if: always()
-    needs: [classify, policy, native-shards, package-contract]
+    needs: [classify, policy, native-shards, package-contract, windows-native]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - run: node tools/ci/gate.mjs
         env:
           CI_RESULTS_JSON: ${{ toJSON(needs) }}
-          CI_SELECTED_JOBS: '["classify","policy","native-shards","package-contract"]'
+          CI_SELECTED_JOBS: '["classify","policy","native-shards","package-contract","windows-native"]'
