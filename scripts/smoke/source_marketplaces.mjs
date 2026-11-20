@@ -5,20 +5,27 @@ import { assertCriticalBytes } from '../../runtime/package/installed-artifacts.j
 import { installedCodex, verifySourceRuntime } from './artifacts.mjs';
 
 /** Exercise the full source checkout, without the assembled-fixture whitelist. */
-export async function installSourceCheckouts(source, temporary, run) {
-  // Redirect only the fixture marketplace address, so Claude does not fetch main.
-  const manifestPath = join(source, '.claude-plugin/marketplace.json');
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  manifest.plugins[0].source = './';
-  await writeFile(manifestPath, JSON.stringify(manifest));
+export async function installSourceCheckouts(source, temporary, run, marketplace = source) {
+  if (marketplace === source) {
+    // Candidate validation uses only the source checkout under test.
+    for (const [path, entry] of [
+      ['.agents/plugins/marketplace.json', { source: 'local', path: './' }],
+      ['.claude-plugin/marketplace.json', './'],
+    ]) {
+      const manifestPath = join(source, path);
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+      manifest.plugins.find(plugin => plugin.name === 'job-apply').source = entry;
+      await writeFile(manifestPath, JSON.stringify(manifest));
+    }
+  }
   const codexHome = join(temporary, 'codex-source'), claudeHome = join(temporary, 'claude-source');
   await mkdir(codexHome, { mode: 0o700 });
   await mkdir(claudeHome, { mode: 0o700 });
-  await run('codex', ['plugin', 'marketplace', 'add', source, '--json'], { CODEX_HOME: codexHome });
+  await run('codex', ['plugin', 'marketplace', 'add', marketplace, '--json'], { CODEX_HOME: codexHome });
   await run('codex', ['plugin', 'add', 'job-apply@neonwatty-plugins', '--json'], { CODEX_HOME: codexHome });
   const listing = JSON.parse(await run('codex', ['plugin', 'list', '--json'], { CODEX_HOME: codexHome }));
   const codexRoot = await installedCodex(codexHome, listing, source, { sourceCheckout: true });
-  await run('claude', ['plugin', 'marketplace', 'add', source], { CLAUDE_CONFIG_DIR: claudeHome });
+  await run('claude', ['plugin', 'marketplace', 'add', marketplace], { CLAUDE_CONFIG_DIR: claudeHome });
   await run('claude', ['plugin', 'install', 'job-apply@neonwatty-plugins'], { CLAUDE_CONFIG_DIR: claudeHome });
   const versions = join(claudeHome, 'plugins/cache/neonwatty-plugins/job-apply');
   const names = await readdir(versions);

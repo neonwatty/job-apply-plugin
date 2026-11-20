@@ -1,0 +1,117 @@
+name: Promote Stable Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    if: github.event.release.prerelease == false && github.event.release.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.admit.outputs.candidate_sha }}
+      previous_stable: ${{ steps.admit.outputs.previous_stable }}
+      policy_sha: ${{ steps.policy.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/heads/main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: policy
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - id: admit
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: node tools/ci/promote-release.mjs admit "$RELEASE_TAG" "$RELEASE_SHA"
+
+  validate:
+    needs: candidate
+    uses: ./.github/workflows/release.yml
+    with:
+      checkout_sha: ${{ needs.candidate.outputs.sha }}
+
+  promote:
+    needs: [candidate, validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: stable-release
+    permissions:
+      contents: write
+    concurrency:
+      group: job-apply-stable-promotion
+      queue: max
+    outputs:
+      previous_stable: ${{ steps.advance.outputs.previous_stable }}
+      outcome: ${{ steps.advance.outputs.outcome }}
+    steps:
+      - name: Recheck the published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ github.event.release.id }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" |
+            jq --exit-status --arg tag "$RELEASE_TAG" '
+              .tag_name == $tag and .draft == false and .prerelease == false and .published_at != null
+            '
+      - name: Get a release app token when configured
+        id: app-token
+        if: vars.JOB_APPLY_RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.JOB_APPLY_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.JOB_APPLY_RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.candidate.outputs.policy_sha }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || github.token }}
+      - name: Advance stable to the validated commit
+        id: advance
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_SHA: ${{ needs.candidate.outputs.sha }}
+        run: node tools/ci/promote-release.mjs promote "$RELEASE_TAG" "$RELEASE_SHA"
+
+  report:
+    if: always()
+    needs: [candidate, validate, promote]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Report the release and current stable ref
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REQUESTED_SHA: ${{ github.sha }}
+          CANDIDATE_SHA: ${{ needs.candidate.outputs.sha }}
+          PREVIOUS_STABLE: ${{ needs.promote.outputs.previous_stable || needs.candidate.outputs.previous_stable }}
+          ADMISSION: ${{ needs.candidate.result }}
+          VALIDATION: ${{ needs.validate.result }}
+          PROMOTION: ${{ needs.promote.outputs.outcome || needs.promote.result }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          if stable_ref=$(git ls-remote --refs "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" refs/heads/stable); then
+            stable_sha="${stable_ref%%$'\t'*}"
+          else
+            stable_sha=unavailable
+          fi
+          if [[ "$PRERELEASE" == true ]]; then
+            PROMOTION='skipped (prerelease)'
+          fi
+          {
+            echo '## Stable release'
+            printf -- '- Requested release: %s\n' "$RELEASE_TAG"
+            printf -- '- Candidate SHA: %s\n' "${CANDIDATE_SHA:-$REQUESTED_SHA}"
+            printf -- '- Admission: %s\n' "$ADMISSION"
+            printf -- '- Installed-package validation: %s\n' "$VALIDATION"
+            printf -- '- Promotion: %s\n' "$PROMOTION"
+            printf -- '- Previous stable SHA: %s\n' "${PREVIOUS_STABLE:-unavailable}"
+            printf -- '- Stable SHA at report time: %s\n' "${stable_sha:-branch not created}"
+          } >> "$GITHUB_STEP_SUMMARY"
