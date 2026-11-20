@@ -9,17 +9,18 @@ const labels: Record<Exclude<TransitionTarget, 'closed' | 'applied'>, string> = 
   saved: 'Mark saved', needs_info: 'Mark needs info', ready: 'Mark ready',
   awaiting_review: 'Mark awaiting review',
 };
-export function JobTransitions({ client, job, disabled, runSetup, recordInHandoff = false, onBusyChanged, onChanged }: {
+export function JobTransitions({ client, job, disabled, outcome, onOutcomeChanged, runSetup, recordInHandoff = false, onBusyChanged, onChanged }: {
   client: Client;
   job: Job;
   disabled: boolean;
+  outcome: string;
+  onOutcomeChanged: (outcome: string) => void;
   runSetup?: 'start-run' | 'add-job';
   recordInHandoff?: boolean;
   onBusyChanged: (busy: boolean) => void;
   onChanged: (job: Job) => void;
 }) {
   const headingId = useId();
-  const [outcome, setOutcome] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -34,7 +35,6 @@ export function JobTransitions({ client, job, disabled, runSetup, recordInHandof
   currentJobId.current = job.id;
   busyChanged.current = onBusyChanged;
   useEffect(() => {
-    setOutcome('');
     setError('');
     setNotice('');
     setBusy(false);
@@ -96,7 +96,7 @@ export function JobTransitions({ client, job, disabled, runSetup, recordInHandof
   </>;
   const closeFields = targets.includes('closed') && <div>
     <label>Closing outcome
-      <select value={outcome} onChange={event => setOutcome(event.target.value)}>
+      <select value={outcome} onChange={event => onOutcomeChanged(event.target.value)}>
         <option value="">Choose an outcome</option>
         {closedOutcomes.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
       </select>

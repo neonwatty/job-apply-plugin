@@ -16,10 +16,6 @@ const attentionActionLabels: Record<AttentionReason, string> = {
   claimless_interrupted_attempt: 'See recovery steps',
 };
 
-const uploadBlockerCodes = new Set([
-  'owner-upload-required', 'required-upload-missing', 'external-upload-capability-unavailable',
-]);
-
 function displayAttention(item: AttentionItem) {
   const {session, missingInformationCount} = item;
   const currentHandoff = item.status === 'needs_info' && isCurrentHandoff(session, item.revision);
@@ -28,8 +24,7 @@ function displayAttention(item: AttentionItem) {
   let {reasonCode} = item;
   if (!browserHandoff && reasonCode === 'browser_action_required') reasonCode = 'needs_information';
   if (reasonCode === 'needs_information' && browserHandoff && session.handoffReason === 'owner-upload-required'
-    && missingInformationCount === 0n && checklist.length === 1 && checklist[0] === handoffActionLabels.resume_upload
-    && session.blockers.every(({code}) => uploadBlockerCodes.has(code))) reasonCode = 'browser_action_required';
+    && missingInformationCount === 0n) reasonCode = 'browser_action_required';
   return {...item, reasonCode, checklist};
 }
 

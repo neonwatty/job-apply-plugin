@@ -126,8 +126,18 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByLabel('Label', { exact: true }).fill('Browser resume updated');
     await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume details saved', { exact: true }).waitFor();
+    const extractionStatus = page.getByRole('region', {name:'Facts for Browser resume updated'});
+    await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    await page.getByLabel('Replacement file').setInputFiles({ name: 'intermediate.txt', mimeType: 'text/plain', buffer: Buffer.from('intermediate resume') });
+    const requestExtraction = page.getByLabel('Request fact extraction after saving', {exact:true});
+    await requestExtraction.uncheck();
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
+    await page.getByText('Resume file replaced.', {exact:true}).waitFor();
+    await extractionStatus.getByText('No facts have been extracted for this resume yet.', {exact:true}).waitFor();
     await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
     await page.getByLabel('Replacement file').setInputFiles({ name: 'updated.txt', mimeType: 'text/plain', buffer: Buffer.from('updated browser resume') });
+    await requestExtraction.check();
     await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume file replaced. Fact extraction requested.', { exact: true }).waitFor();
     const resumeDocument = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8'));
@@ -135,7 +145,6 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.equal(browserResume.label, 'Browser resume updated');
     assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
     const extractionRequests = '**/api/resume-extraction-requests';
-    const extractionStatus = page.getByRole('region', {name:'Facts for Browser resume updated'});
     await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
     await page.route(extractionRequests, route => route.fulfill({status:503}), {times:1});
     const checkAgent = extractionStatus.getByRole('button', {name:'Check for agent updates',exact:true});

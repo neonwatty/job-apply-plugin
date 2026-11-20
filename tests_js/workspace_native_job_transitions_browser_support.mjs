@@ -106,8 +106,28 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   const readyJob = await change('Mark ready', 'ready');
   await close.click();
 
-  const resumed = await api('/api/claims/acquire', {
+  // An observation that omits the upload cannot establish it is the sole remaining step.
+  const incomplete = await api('/api/claims/acquire', {
     jobId, expectedRevision: readyJob.revision, ownerLabel: 'Transition fixture',
+  });
+  const omittedUpload = readyPacket(incomplete.job.revision);
+  omittedUpload.observation.uploadCapability = 'external-runtime-unavailable';
+  omittedUpload.observation.controls = omittedUpload.observation.controls.filter(control => control.kind !== 'upload');
+  await api('/api/claims/handoff', {
+    jobId, token: incomplete.token, status:'needs_info', expectedRevision: incomplete.job.revision,
+    session:{status:'active',readinessInput:omittedUpload},
+  });
+  await clickCompanionNav(page, 'Needs Attention');
+  await attention.getByRole('button', {name:/Transition conflict writer Native fixture role Browser action required/}).click();
+  await attention.getByText('Attach resume · Review the remaining form checks',{exact:true}).waitFor();
+  await attention.getByRole('button', {name:'See browser steps',exact:true}).click();
+  await handoff.getByRole('heading', {name:'Browser action required',exact:true}).waitFor();
+  await handoff.getByText('Attach resume',{exact:true}).waitFor();
+  const readyForReview = await change('Mark ready', 'ready');
+  await close.click();
+
+  const resumed = await api('/api/claims/acquire', {
+    jobId, expectedRevision: readyForReview.revision, ownerLabel: 'Transition fixture',
   });
   const reviewInput = readyPacket(resumed.job.revision);
   reviewInput.observation.controls = reviewInput.observation.controls.filter(control => control.controlId !== 'profile.website');
@@ -159,6 +179,22 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await handoff.getByRole('heading', {name:'Review details unavailable',exact:true}).waitFor();
   assert.equal(await handoff.getByText('Required fields reported complete',{exact:true}).count(), 0);
 
+  // Reloading a conflicting review revision preserves the owner's closing outcome.
+  const closeDisclosure = handoff.getByText('Close this job',{exact:true});
+  await closeDisclosure.click();
+  const closingOutcome = handoff.getByLabel('Closing outcome');
+  await closingOutcome.selectOption('withdrawn');
+  await api('/api/jobs/' + jobId, {expectedRevision:edited.revision, patch:{notes:'Synthetic review update'}}, 'PATCH');
+  const closeConflict = transitionResponse();
+  page.once('dialog', dialog => dialog.accept());
+  await handoff.getByRole('button',{name:'Close job',exact:true}).click();
+  assert.equal((await closeConflict).status(),409);
+  await handoff.getByRole('alert').filter({hasText:/closing outcome choice is retained/}).waitFor();
+  await modal.getByRole('button',{name:'Refresh latest values',exact:true}).click();
+  await modal.getByRole('button',{name:'Load latest values',exact:true}).click();
+  await closeDisclosure.click();
+  assert.equal(await closingOutcome.inputValue(),'withdrawn');
+
   // Cancel leaves the exact record intact. Confirm records only the user's local status.
   let externalRequests = 0;
   const rejectExternal = route => { externalRequests++; return route.abort(); };
@@ -178,7 +214,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   const submission = await appliedResponse;
   assert.equal(submission.status(), 200, await submission.text());
   assert.deepEqual(submission.request().postDataJSON(), {
-    status:'applied', expectedRevision:edited.revision, userConfirmed:true,
+    status:'applied', expectedRevision:beforeRecord.revision, userConfirmed:true,
   });
   await modal.getByText('Submission recorded in Companion.', {exact:true}).waitFor();
   assert.equal((await readJob()).status, 'applied');

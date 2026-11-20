@@ -33,6 +33,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const [editor, setEditor] = useState<Editor | null>(null);
     const [busy, setBusy] = useState(false);
     const [transitionBusy, setTransitionBusy] = useState(false);
+    const [closingOutcome, setClosingOutcome] = useState('');
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [error, setError] = useState('');
@@ -148,12 +149,14 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         setError('');
         setNotice('');
         setEditorNotice('');
+        setClosingOutcome('');
         setEditor(openEditor(job));
     }
     function close() {
         if (mutation.current || transitionBusy) return;
         if (editor?.dirty.size && !confirm('Discard unsaved job changes?')) return;
         generation.current++;
+        setClosingOutcome('');
         setEditor(null);
         setError('');
     }
@@ -220,6 +223,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const reviewRecordUnavailable = activity.loading || Boolean(selectedJob && activity.data
         && (activity.data.job.revision > selectedJob.revision || activity.data.claim.state !== 'none'));
     const transitions = editor && selectedJob && <JobTransitions key={selectedJob.id} client={client} job={selectedJob}
+        outcome={closingOutcome} onOutcomeChanged={setClosingOutcome}
         runSetup={run ? runQueue.has(selectedJob.id) ? undefined : 'add-job' : 'start-run'}
         recordInHandoff={awaitingReview && !editor.latest && !editor.missing}
         disabled={busy || loading || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing || (awaitingReview && reviewRecordUnavailable)}

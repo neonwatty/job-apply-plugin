@@ -183,7 +183,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
             setEditing(false);
             if (fileInput.current) fileInput.current.value = '';
             setNotice(message + queueNotice);
-            if (queueFacts) queued.refresh();
+            queued.refresh();
             await refresh();
         } catch (cause) {
             if (alive.current && !controller.signal.aborted) {

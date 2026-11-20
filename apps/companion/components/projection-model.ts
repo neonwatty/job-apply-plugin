@@ -101,11 +101,18 @@ function summary(d: Document | null): SessionSummary {
     ...(d && has(d,'attemptRevision') && get(d,'attemptRevision') !== null ? {attemptRevision:revision(d,'attemptRevision')} : {}),
   };
 }
+const uploadBlockerCodes = new Set([
+  'owner-upload-required', 'required-upload-missing', 'external-upload-capability-unavailable',
+]);
 export function recordedFormActions(session: SessionSummary): string[] {
   const checklist = session.handoffChecklist;
   const uploadRequired = session.handoff === 'required' && session.handoffReason === 'owner-upload-required';
-  return handoffChecklistLabels(uploadRequired && !checklist.includes('resume_upload')
+  const actions = handoffChecklistLabels(uploadRequired && !checklist.includes('resume_upload')
     ? ['resume_upload', ...checklist] : checklist);
+  if (uploadRequired && actions.length === 1 && session.blockers.some(({code}) => !uploadBlockerCodes.has(code))) {
+    actions.push('Review the remaining form checks');
+  }
+  return actions;
 }
 export function isCurrentHandoff(session: SessionSummary, jobRevision: bigint): boolean {
   // A claim writes evidence for its attempt, then advances the job once on handoff.
