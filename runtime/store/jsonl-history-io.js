@@ -1,5 +1,6 @@
 import { chmod, open, stat } from "node:fs/promises";
 import { constants as bufferConstants } from "node:buffer";
+import { constants } from "node:fs";
 import { filesystemEncode, FilesystemEncodeError } from "../contracts/posix-path-bytes.js";
 import { validatePathProfile } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
@@ -42,11 +43,19 @@ export function createNativeJsonlHistoryIO(profile) {
         chmod: windows ? async (path) => { requireWindowsPrivate(path, false); }
             : (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
         async open(path, flags, mode) {
-            const handle = await withPythonFilesystemErrors(windows ? openWindowsStoreFile(path, flags) : open(nativePath(path), flags, mode));
+            // Windows append-only descriptors cannot truncate a failed append. The
+            // caller holds the Store lock, so Windows writes at an explicit EOF.
+            const windowsAppend = windows && Boolean(flags & constants.O_APPEND);
+            const handle = await withPythonFilesystemErrors(windows
+                ? openWindowsStoreFile(path, flags & ~constants.O_APPEND) : open(nativePath(path), flags, mode));
             return {
                 stat: () => withPythonFilesystemErrors(handle.stat({ bigint: true })),
                 async write(bytes) {
-                    return (await withPythonFilesystemErrors(handle.write(bytes, 0, bytes.length, null))).bytesWritten;
+                    const offset = windowsAppend ? (await withPythonFilesystemErrors(handle.stat({ bigint: true }))).size : null;
+                    if (offset !== null && offset > BigInt(Number.MAX_SAFE_INTEGER)) {
+                        throw new RangeError("History append exceeds the native Node exact integer range");
+                    }
+                    return (await withPythonFilesystemErrors(handle.write(bytes, 0, bytes.length, offset === null ? null : Number(offset)))).bytesWritten;
                 },
                 async read(length) {
                     if (length < 0n || length > BigInt(bufferConstants.MAX_LENGTH)) {

@@ -18,6 +18,7 @@ const matches = (pattern: RegExp, value: Value): boolean => {
 /** Registry validation only: selection never reads files or asserts upload readiness. */
 export function validateResumeReferences(resumes: Document): void {
   let defaults = 0;
+  const windowsFiles = new Set<string>();
   for (const [key, value] of resumes.entries()) {
     const id = safeId(string(key)), record = object(value, "resume record");
     if (keys(record).some(key => !fields.has(key))) throw new JobsError("resume record contains unsupported fields");
@@ -28,10 +29,12 @@ export function validateResumeReferences(resumes: Document): void {
       const path = string(get(record, "path"));
       const normalized = path?.startsWith("//") && !path.startsWith("///")
         ? '/' + posix.normalize(path) : path === null ? null : posix.normalize(path);
-      const nativeWindows = process.platform === "win32" && path !== null && win32.isAbsolute(path)
-        && win32.normalize(path) === path && !path.slice(win32.parse(path).root.length).includes(':');
-      if (!path || path.includes('\0') || strip(path) !== path
-        || !nativeWindows && (!posix.isAbsolute(path) || normalized !== path)) {
+      const root = path === null ? '' : win32.parse(path).root;
+      const nativeWindows = path !== null && (/^[A-Za-z]:\\$/.test(root) || root.startsWith('\\\\'))
+        && !root.startsWith('\\\\?\\') && !root.startsWith('\\\\.\\')
+        && win32.normalize(path) === path && !path.slice(root.length).includes(':');
+      const valid = process.platform === "win32" ? nativeWindows : path !== null && posix.isAbsolute(path) && normalized === path;
+      if (!path || path.includes('\0') || strip(path) !== path || !valid) {
         throw new JobsError("resume path is not normalized");
       }
       if (["managedFile", "originalFilename", "mediaType", "digest", "contentRevision"].some(field => has(record, field))) {
@@ -41,6 +44,11 @@ export function validateResumeReferences(resumes: Document): void {
       if (has(record, "path")) throw new JobsError("managed resume record must not contain a source path");
       const file = string(get(record, "managedFile"));
       if (!Object.keys(media).some(extension => file === id + extension)) throw new JobsError("managed resume file identity is invalid");
+      if (process.platform === "win32") {
+        const name = file!.toLowerCase();
+        if (windowsFiles.has(name)) throw new JobsError("managed resume filenames collide on Windows");
+        windowsFiles.add(name);
+      }
       const original = string(get(record, "originalFilename"));
       if (!original || original.includes('/') || original.includes('\0') || ['.', '..'].includes(original)) {
         throw new JobsError("managed resume original filename is invalid");

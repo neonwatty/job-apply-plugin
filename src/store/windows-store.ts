@@ -1,9 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { constants } from 'node:fs';
-import { mkdir, open, realpath, rmdir, unlink } from 'node:fs/promises';
+import { mkdir, open, realpath, unlink } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { win32 } from 'node:path';
+import { resolvePosixPath } from '../contracts/posix-path.js';
 import type { PosixFlockProvider } from './posix-flock.js';
 
 interface WindowsMetadata {
@@ -29,7 +30,7 @@ export function windowsPath(path: string): string {
   return path;
 }
 
-/** The addon is explicitly selected by our caller. Store mutations stay within the selected root. */
+/** The addon is explicitly selected by our caller. Store data mutations stay within the selected root. */
 export async function withWindowsStore<T>(root: string, addonPath: string,
   operation: (provider: PosixFlockProvider) => Promise<T>): Promise<T> {
   if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Windows x64 Store required');
@@ -56,9 +57,9 @@ function store() {
 
 function insideStore(path: string): void {
   const { root } = store();
-  const relative = win32.relative(root, path);
+  const prefix = root.endsWith('\\') ? root : root + '\\';
   if (!win32.isAbsolute(path) || win32.normalize(path) !== path
-    || relative === '..' || relative.startsWith('..\\') || win32.isAbsolute(relative)) {
+    || (path !== root && !path.startsWith(prefix))) {
     throw new Error('Path is outside the selected Windows Store');
   }
 }
@@ -95,20 +96,23 @@ export async function ensureWindowsPrivateDirectory(path: string, existOk = true
       await ensureWindowsPrivateDirectory(parent);
     }
   }
-  if (await realpath(parent) !== parent) throw new Error('Windows Store directory parent must be canonical');
+  let canonicalParent: string;
+  try { canonicalParent = await realpath(parent); }
+  catch (error) {
+    if (path !== root || !missingWindowsEntry(error)) throw error;
+    if (await resolvePosixPath(parent, '3.12') !== parent) throw new Error('Windows Store directory parent must be canonical');
+    await mkdir(parent, { recursive: true });
+    canonicalParent = await realpath(parent);
+  }
+  if (canonicalParent !== parent) throw new Error('Windows Store directory parent must be canonical');
   try { await mkdir(windowsPath(path)); }
   catch (error) {
     if (!existOk || (error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
     requireWindowsPrivate(path, true);
     return;
   }
-  try {
-    addon.restrictToOwner(path);
-    requireWindowsPrivate(path, true);
-  } catch (error) {
-    await rmdir(path).catch(() => {});
-    throw error;
-  }
+  addon.restrictToOwner(path);
+  requireWindowsPrivate(path, true);
 }
 
 export async function openWindowsStoreFile(path: string, flags: number, privateFile = true): Promise<FileHandle> {
@@ -121,6 +125,9 @@ export async function openWindowsStoreFile(path: string, flags: number, privateF
   }
   const initial = creating ? undefined : (privateFile ? requireWindowsPrivate(path, false) : windowsMetadata(path));
   if (initial?.directory) throw new Error('Windows Store entry must be a file');
+  if (initial && privateFile && await realpath(path) !== path) {
+    throw new Error('Windows Store file path must use its canonical spelling');
+  }
   let handle: FileHandle;
   try {
     const access = flags & constants.O_WRONLY ? (flags & ~constants.O_WRONLY) | constants.O_RDWR : flags;
@@ -159,6 +166,9 @@ export async function checkWindowsStoreWrite(path: string): Promise<void> {
   const parent = win32.dirname(path);
   if (await realpath(parent) !== parent) throw new Error('Windows Store file parent must be canonical');
   requireWindowsPrivate(parent, true);
-  try { requireWindowsPrivate(path, false); }
+  try {
+    requireWindowsPrivate(path, false);
+    if (await realpath(path) !== path) throw new Error('Windows Store file path must use its canonical spelling');
+  }
   catch (error) { if (!missingWindowsEntry(error)) throw error; }
 }

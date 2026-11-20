@@ -12,7 +12,7 @@ import { validateExtractionResumes } from './native-extraction-journal.js';
 import { syncDirectory as syncStoreDirectory } from './directory-sync.js';
 import { resumeModifiedAt } from './resume-modified-at.js';
 import { requirePrivateStoreDirectory } from './private-store-entry.js';
-import { openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata } from './windows-store.js';
+import { checkWindowsStoreWrite, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata } from './windows-store.js';
 export type StagedResume = { temporary: string; managedFile: string; originalFilename: string; mediaType: string; digest: string; observedSize: number; observedModifiedAt: string };
 const filePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(pdf|docx|txt)$/;
 const tempPattern = /^\.native-[a-f0-9-]{36}\.tmp$/;
@@ -79,6 +79,7 @@ export class NativeResumeFiles {
   }
   async stage(id: string, filename: string, content: Buffer): Promise<StagedResume> {
     const { extension, mediaType } = validateResumeContent(filename, content);
+    if (process.platform === 'win32') await checkWindowsStoreWrite(join(this.directory, id + extension));
     const temporary = `.native-${randomUUID()}.tmp`, path = join(this.directory, temporary);
     const handle = process.platform === 'win32'
       ? await openWindowsStoreFile(path, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL)
@@ -161,6 +162,7 @@ export class NativeResumeFiles {
     readCurrent: () => Promise<Document>): Promise<void> {
     if (string(get(record, 'storageKind')) !== 'managed') { await save(document); return; }
     const source = string(get(record, 'managedFile'))!, sourcePath = this.path(record);
+    if (process.platform === 'win32') await checkWindowsStoreWrite(sourcePath);
     try { await lstat(sourcePath); }
     catch (error) { if (absent(error)) { await save(document); return; } throw error; }
     const quarantine = `.${source}.${randomUUID().replaceAll('-', '')}.quarantine`;
@@ -204,6 +206,10 @@ export class NativeResumeFiles {
         if (!temporary || !tempPattern.test(temporary) || !destination || !filePattern.test(destination) || !digest || !/^[a-f0-9]{64}$/.test(digest)
           || get(journal, 'previous') !== null && (!previous || !filePattern.test(previous))) throw new JobsError('invalid resume recovery journal');
         const document = object(get(journal, 'document'), 'resume recovery document');
+        if (process.platform === 'win32') {
+          await checkWindowsStoreWrite(join(this.directory, destination));
+          if (previous) await checkWindowsStoreWrite(join(this.directory, previous));
+        }
         const records = object(get(document, 'resumes'), 'resumes.resumes');
         const matches = records.entries().filter(([, value]) => string(get(object(value, 'resume'), 'managedFile')) === destination
           && string(get(object(value, 'resume'), 'digest')) === digest);
@@ -259,6 +265,10 @@ export class NativeResumeFiles {
     const before = same(current, previous), after = same(current, intended);
     if (!before && !after) throw new JobsError('resume recovery document differs');
     const sourcePath = join(this.directory, source), quarantinePath = join(this.directory, quarantine);
+    if (process.platform === 'win32') {
+      await checkWindowsStoreWrite(sourcePath);
+      await checkWindowsStoreWrite(quarantinePath);
+    }
     const sourceExists = await lstat(sourcePath).then(() => true, error => absent(error) ? false : Promise.reject(error));
     const quarantineExists = await lstat(quarantinePath).then(() => true, error => absent(error) ? false : Promise.reject(error));
     if (before) {

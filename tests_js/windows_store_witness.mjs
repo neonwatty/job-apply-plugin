@@ -7,12 +7,14 @@ import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { resolvePosixPath } from '../runtime/contracts/posix-path.js';
 import { canonicalJson } from '../runtime/contracts/workspace/canonical-json.js';
+import { validateResumeReferences } from '../runtime/contracts/workspace/resume-reference.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 import { withExclusiveFileLock } from '../runtime/store/exclusive-file-lock.js';
+import { createNativeJsonlHistoryIO } from '../runtime/store/jsonl-history-io.js';
 import { initializeJobsFixture, NativeJobsRepository } from '../runtime/store/native-jobs.js';
 import { createNativeStoreBootstrap, NativeStoreBootstrap } from '../runtime/store/native-store-bootstrap.js';
 import { appendPointHistoryEvent, atomicWritePointJson } from '../runtime/store/point-persistence.js';
-import { openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata, withWindowsStore } from '../runtime/store/windows-store.js';
+import { checkWindowsStoreWrite, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata, withWindowsStore } from '../runtime/store/windows-store.js';
 import { JobUpsertService } from '../runtime/workspace-core/job-upsert.js';
 
 const [artifact, temporary] = process.argv.slice(2);
@@ -21,13 +23,19 @@ const options = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 const plain = value => JSON.parse(canonicalJson(value));
 const now = () => '2026-11-20T00:00:00Z';
 
-const bootRoot = join(temporary, 'fresh café');
+const bootRoot = join(temporary, 'new parent', 'fresh café');
 const legacy = join(temporary, 'legacy profile.json');
 await writeFile(legacy, '{"firstName":"Ada","exact":9007199254740993}\n');
 addon.restrictToOwner(legacy);
-const service = createNativeStoreBootstrap('~\\fresh café', '~/legacy profile.json', {}, temporary, { clock: now });
+const service = createNativeStoreBootstrap('~\\new parent\\fresh café', '~/legacy profile.json', {}, temporary, { clock: now });
 assert.equal(service.root, bootRoot);
 assert.equal(plain(service.paths()).profile, join(bootRoot, 'profile.json'));
+const legacyReference = path => fromJSON({ legacy: {
+  id: 'legacy', label: 'Legacy', path, default: false, revision: 1, createdAt: now(),
+} });
+validateResumeReferences(legacyReference(join(temporary, 'source.txt')));
+assert.throws(() => validateResumeReferences(legacyReference('\\resumes\\source.txt')), /not normalized/);
+assert.throws(() => validateResumeReferences(legacyReference('/resumes/source.txt')), /not normalized/);
 
 await withWindowsStore(bootRoot, artifact, async () => {
   const first = plain(await service.initialize());
@@ -48,7 +56,26 @@ await withWindowsStore(bootRoot, artifact, async () => {
   });
   await append({ value: 'first' });
   await append({ value: 'second' });
-  assert.equal(await readFile(history, 'utf8'), '{"value":"first"}\n{"value":"second"}\n');
+  const historyBytes = '{"value": "first"}\n{"value": "second"}\n';
+  assert.equal(await readFile(history, 'utf8'), historyBytes);
+  const historyIO = createNativeJsonlHistoryIO('3.12');
+  await assert.rejects(appendPointHistoryEvent(history, fromJSON({ value: 'failed' }), {
+    serialization: options, isIdempotent: async () => false,
+    io: {
+      ...historyIO,
+      async open(...args) {
+        const handle = await historyIO.open(...args);
+        return {
+          ...handle,
+          async write(bytes) {
+            await handle.write(bytes.subarray(0, 4));
+            throw new Error('injected append failure');
+          },
+        };
+      },
+    },
+  }), /injected append failure/);
+  assert.equal(await readFile(history, 'utf8'), historyBytes);
   requireWindowsPrivate(history, false);
 
   const alias = join(bootRoot, 'alias');
@@ -61,6 +88,8 @@ await withWindowsStore(bootRoot, artifact, async () => {
   assert.deepEqual(await readdir(external), []);
   await assert.rejects(atomicWritePointJson(join(bootRoot, 'profile.json:stream'), fromJSON({}), options), /Windows Store path/);
   await assert.rejects(atomicWritePointJson(join(temporary, 'outside.json'), fromJSON({}), options), /outside the selected Windows Store/);
+  await assert.rejects(checkWindowsStoreWrite(join(temporary, 'new parent', 'FRESH CAFÉ', 'profile.json')),
+    /outside the selected Windows Store/);
 
   const hardlink = join(bootRoot, 'hardlink.json');
   await link(profile, hardlink);
@@ -109,7 +138,10 @@ await withWindowsStore(root, artifact, async provider => {
   assert.deepEqual(await readFile(originalAnswers), untouched);
   const source = join(temporary, 'résumé.txt');
   await writeFile(source, 'Synthetic resume\n');
-  await repository.resumeImport(fromJSON({ label: 'Resume' }), 'résumé.txt', await readFile(source), true);
+  await repository.resumeImport(fromJSON({ id: 'Sample', label: 'Resume' }), 'résumé.txt', await readFile(source), true);
+  await assert.rejects(repository.resumeImport(fromJSON({ id: 'sample', label: 'Different' }),
+    'different.txt', Buffer.from('Different resume\n'), true), /canonical spelling|filenames collide/);
+  assert.equal(await readFile(join(root, 'resume-files', 'Sample.txt'), 'utf8'), 'Synthetic resume\n');
   assert.equal((await repository.resumeSummaries()).length, 1);
 
   const different = join(temporary, 'public profile.json');
