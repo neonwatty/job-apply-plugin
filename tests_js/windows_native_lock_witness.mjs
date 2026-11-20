@@ -113,7 +113,9 @@ function verifyAcl() {
   mkdirSync(directory);
   const existing = join(directory, 'existing.txt');
   writeFileSync(existing, 'existing');
+  native.restrictToOwner(existing);
   const existingAcl = describeAcl(existing);
+  assert.equal(existingAcl.protected, true);
 
   native.restrictToOwner(directory);
   assert.equal(native.isOwnerOnly(directory), true);
@@ -121,7 +123,7 @@ function verifyAcl() {
   assert.equal(applied.owner, applied.current);
   assert.equal(applied.protected, true);
   assert.deepEqual(applied.rules, [{ sid: applied.current, inherited: false, kind: 'Allow' }]);
-  assert.deepEqual(describeAcl(existing), existingAcl, 'Existing child ACLs are preserved');
+  assert.deepEqual(describeAcl(existing), existingAcl, 'Existing protected child ACLs are preserved');
 
   const nested = join(directory, 'nested');
   mkdirSync(nested);
