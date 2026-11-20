@@ -1,0 +1,21 @@
+{
+  "name": "neonwatty-plugins-preview",
+  "interface": {
+    "displayName": "Neonwatty Plugins Preview"
+  },
+  "plugins": [
+    {
+      "name": "job-apply",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/neonwatty/job-apply-plugin.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

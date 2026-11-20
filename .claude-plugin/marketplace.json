@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "neonwatty-plugins-preview",
+  "description": "Job Apply preview builds from main for Codex and Claude Code",
+  "owner": {
+    "name": "Jeremy Watt",
+    "github": "neonwatty"
+  },
+  "plugins": [
+    {
+      "name": "job-apply",
+      "source": {
+        "source": "github",
+        "repo": "neonwatty/job-apply-plugin",
+        "ref": "main"
+      },
+      "description": "Preview build of Job Apply from main",
+      "category": "productivity"
+    }
+  ]
+}
