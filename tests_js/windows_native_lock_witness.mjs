@@ -4,6 +4,7 @@ import { closeSync, fstatSync, mkdirSync, openSync, readFileSync, renameSync, sy
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { Worker } from 'node:worker_threads';
 
 const [artifact, root, scenario] = process.argv.slice(2);
 const native = createRequire(import.meta.url)(artifact);
@@ -148,7 +149,39 @@ function verifyAcl() {
   assert.throws(() => native.restrictToOwner(directory + '\0extra'), TypeError);
 }
 
-function verifyDirectory() {
+async function verifyIndependentScans(descriptor, names) {
+  const barrier = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  const script = `
+    const assert = require('node:assert/strict');
+    const { workerData } = require('node:worker_threads');
+    const { artifact, descriptor, names, barrier } = workerData;
+    const native = require(artifact);
+    const ready = new Int32Array(barrier);
+    for (let index = 0; index < 12; index++) {
+      const previous = Atomics.add(ready, 0, 1);
+      if (previous % 2 === 0) {
+        assert.notEqual(Atomics.wait(ready, 0, previous + 1, 5_000), 'timed-out');
+      } else {
+        Atomics.notify(ready, 0);
+      }
+      assert.deepEqual(native.listNames(descriptor).map(name => name.toString('utf8')).sort(), names);
+    }
+  `;
+  const runs = Array.from({ length: 2 }, () => new Promise((resolve, reject) => {
+    const worker = new Worker(script, { eval: true, execArgv: [], workerData: { artifact, descriptor, names, barrier } });
+    let failure;
+    worker.on('error', error => { failure = error; });
+    worker.once('exit', code => {
+      if (code === 0 && !failure) resolve();
+      else reject(failure ?? new Error(`Directory scan worker exited with code ${code}`));
+    });
+  }));
+  for (const result of await Promise.allSettled(runs)) {
+    if (result.status === 'rejected') throw result.reason;
+  }
+}
+
+async function verifyDirectory() {
   const directory = join(root, 'reports');
   const moved = join(root, 'moved-reports');
   const target = join(root, 'junction-target');
@@ -173,6 +206,7 @@ function verifyDirectory() {
     }).sort();
     assert.deepEqual(names(), expected.sort());
     assert.deepEqual(names(), expected, 'Repeated listings restart the directory scan');
+    await verifyIndependentScans(descriptor, expected);
     assert.equal(native.inspect(descriptor, 'sub').mode, 0o040000);
     assert.equal(native.inspect(descriptor, 'junction').mode, 0o120000);
     assert.throws(() => native.openFile(descriptor, 'junction'), { code: 'ELOOP' });

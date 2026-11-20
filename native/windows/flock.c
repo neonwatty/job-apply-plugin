@@ -333,10 +333,8 @@ static HANDLE open_entry_handle(napi_env env, napi_callback_info info, ACCESS_MA
     return entry;
 }
 
-static napi_value list_names(napi_env env, napi_callback_info info) {
-    HANDLE directory;
+static napi_value scan_names(napi_env env, HANDLE scan) {
     napi_value result;
-    if (!descriptor_handle(env, info, &directory) || !check_directory(env, directory)) return NULL;
     CHECK_NAPI(env, napi_create_array(env, &result));
     const DWORD capacity = 64 * 1024;
     unsigned char *buffer = malloc(capacity);
@@ -344,7 +342,7 @@ static napi_value list_names(napi_env env, napi_callback_info info) {
     uint32_t index = 0;
     FILE_INFO_BY_HANDLE_CLASS kind = FileFullDirectoryRestartInfo;
     for (;;) {
-        if (!GetFileInformationByHandleEx(directory, kind, buffer, capacity)) {
+        if (!GetFileInformationByHandleEx(scan, kind, buffer, capacity)) {
             DWORD failure = GetLastError();
             free(buffer);
             if (failure == ERROR_NO_MORE_FILES) return result;
@@ -376,6 +374,18 @@ static napi_value list_names(napi_env env, napi_callback_info info) {
             if (entry->NextEntryOffset == 0) break;
         }
     }
+}
+
+static napi_value list_names(napi_env env, napi_callback_info info) {
+    HANDLE directory;
+    if (!descriptor_handle(env, info, &directory) || !check_directory(env, directory)) return NULL;
+    /* A fresh handle has its own enumeration cursor, even for concurrent callers. */
+    HANDLE scan = ReOpenFile(directory, FILE_LIST_DIRECTORY, file_sharing,
+        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT);
+    if (scan == INVALID_HANDLE_VALUE) return throw_win32(env, GetLastError());
+    napi_value result = scan_names(env, scan);
+    CloseHandle(scan);
+    return result;
 }
 
 static napi_value inspect_entry(napi_env env, napi_callback_info info) {
