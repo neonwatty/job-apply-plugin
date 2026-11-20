@@ -1484,6 +1484,20 @@
       ]
     },
     {
+      "id": "windows-native-lock",
+      "kind": "node-test",
+      "include": [
+        "tests_js/windows_native_lock.test.mjs"
+      ],
+      "tiers": [
+        "full",
+        "platform"
+      ],
+      "platforms": [
+        "win32"
+      ]
+    },
+    {
       "id": "docs-links",
       "kind": "command",
       "command": [
