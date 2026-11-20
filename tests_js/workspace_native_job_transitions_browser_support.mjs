@@ -85,14 +85,15 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   const acquired = await api('/api/claims/acquire', {
     jobId, expectedRevision: selected.jobRevision, ownerLabel: 'Transition fixture',
   });
+  const uploadInput = readyPacket(acquired.job.revision);
+  uploadInput.observation.uploadCapability = 'external-runtime-unavailable';
+  uploadInput.observation.controls.find(control => control.kind === 'upload').state = 'missing';
   const blocked = await api('/api/claims/handoff', {
     jobId, token: acquired.token, status: 'needs_info', expectedRevision: acquired.job.revision,
-    session: { status: 'active', handoffChecklist: ['resume_upload'], blockers: [
-      { type: 'browser_handoff', code: 'unsupported-control' },
-      { type: 'information', code: 'owner-input-required' },
-    ] },
+    session: { status: 'active', readinessInput: uploadInput },
   });
   assert.equal(blocked.job.status, 'needs_info');
+  assert.equal(blocked.session.browserHandoff.reasonCode, 'owner-upload-required');
   await clickCompanionNav(page, 'Needs Attention');
   const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
   await attention.getByRole('button', {name:'Refresh attention',exact:true}).click();
@@ -146,6 +147,18 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await refresh.click();
   await handoff.getByRole('heading', {name:'Ready for your review',exact:true}).waitFor();
 
+  // Changing the saved posting keeps its history, but invalidates the current handoff evidence.
+  await modal.getByRole('button', {name:'Edit job',exact:true}).click();
+  const correctedUrl = 'https://example.invalid/corrected-posting';
+  await modal.getByLabel('Job URL',{exact:true}).fill(correctedUrl);
+  await modal.getByRole('button', {name:'Save job',exact:true}).click();
+  await modal.waitFor({state:'hidden'});
+  const edited = await readJob();
+  assert.equal(edited.url, correctedUrl);
+  await page.getByRole('button', {name:/Native fixture role.*Awaiting your review/}).click();
+  await handoff.getByRole('heading', {name:'Review details unavailable',exact:true}).waitFor();
+  assert.equal(await handoff.getByText('Required fields reported complete',{exact:true}).count(), 0);
+
   // Cancel leaves the exact record intact. Confirm records only the user's local status.
   let externalRequests = 0;
   const rejectExternal = route => { externalRequests++; return route.abort(); };
@@ -165,7 +178,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   const submission = await appliedResponse;
   assert.equal(submission.status(), 200, await submission.text());
   assert.deepEqual(submission.request().postDataJSON(), {
-    status:'applied', expectedRevision:reviewed.job.revision, userConfirmed:true,
+    status:'applied', expectedRevision:edited.revision, userConfirmed:true,
   });
   await modal.getByText('Submission recorded in Companion.', {exact:true}).waitFor();
   assert.equal((await readJob()).status, 'applied');

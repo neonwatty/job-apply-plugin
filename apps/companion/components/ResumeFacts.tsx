@@ -5,16 +5,16 @@ import type { Client } from './client';
 import { ResumeFactEditor } from './resume-fact-editor';
 
 import { copy, serialize, type Document } from '../../../src/contracts/workspace/values';
-import { confirmationBody, draftBody, factVersion, type FactVersion, type ResumeFactStatus } from './resume-facts-model';
+import { confirmationBody, draftBody, factVersion, type ExtractionRequestStatus, type FactVersion, type ResumeFactStatus } from './resume-facts-model';
 
 /** Facts are loaded only for the resume the owner has opened. */
-export function ResumeFacts({ client, resume, dirtyChanged, statusChanged, focusReview, waitingForAgent, refreshRequests, openExtractions }: {
+export function ResumeFacts({ client, resume, dirtyChanged, statusChanged, focusReview, requestStatus, refreshRequests, openExtractions }: {
   client: Client;
   resume: ResumeRecord;
   dirtyChanged: (dirty: boolean, busy: boolean) => void;
   statusChanged: (status: ResumeFactStatus) => void;
   focusReview: boolean;
-  waitingForAgent: boolean;
+  requestStatus: ExtractionRequestStatus;
   refreshRequests: () => void;
   openExtractions?: () => void;
 }) {
@@ -115,13 +115,14 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged, focus
     <div className="resume-facts-heading"><div><p className="eyebrow">Resume facts</p><h3 ref={heading} tabIndex={-1}>Facts from {resume.label}</h3></div>
       <div className="resume-facts-sync"><button className="secondary" disabled={busy || loading} onClick={() => void refreshFacts()}>Check for agent updates</button>
         <small>Reload facts saved for this resume by a Job Apply agent.</small></div></div>
-    {waitingForAgent && <div className="resume-facts-waiting">
-      <p>{version?.current ? 'A new extraction is waiting for a Job Apply agent.' : 'Waiting for a Job Apply agent to extract facts for this resume.'}</p>
+    {(requestStatus === 'waiting' || requestStatus === 'unavailable') && <div className="resume-facts-waiting">
+      {requestStatus === 'unavailable' ? <p role="alert">Extraction request status unavailable. Use “Check for agent updates” to retry.</p>
+        : <p>{version?.current ? 'A new extraction is waiting for a Job Apply agent.' : 'Waiting for a Job Apply agent to extract facts for this resume.'}</p>}
       {openExtractions && <button className="secondary" type="button" disabled={busy || loading} onClick={openExtractions}>
         View extraction requests</button>}
     </div>}
     {loading && !version && <p role="status">Loading resume facts…</p>}
-    {!version && !waitingForAgent && !loading && !error && <p>No facts have been extracted for this resume yet.</p>}
+    {!version && requestStatus === 'none' && !loading && !error && <p>No facts have been extracted for this resume yet.</p>}
     {version && <>
       <p className="resume-facts-meta"><strong data-state={version.current ? version.state : 'stale'}>{!version.current ? 'Earlier file' : version.state === 'draft' ? 'Draft to review' : 'Confirmed for this resume'}</strong>
         <span>Revision {version.revision.toString()}</span></p>

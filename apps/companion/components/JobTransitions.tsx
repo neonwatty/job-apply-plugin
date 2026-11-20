@@ -9,10 +9,11 @@ const labels: Record<Exclude<TransitionTarget, 'closed' | 'applied'>, string> = 
   saved: 'Mark saved', needs_info: 'Mark needs info', ready: 'Mark ready',
   awaiting_review: 'Mark awaiting review',
 };
-export function JobTransitions({ client, job, disabled, recordInHandoff = false, onBusyChanged, onChanged }: {
+export function JobTransitions({ client, job, disabled, runSetup, recordInHandoff = false, onBusyChanged, onChanged }: {
   client: Client;
   job: Job;
   disabled: boolean;
+  runSetup?: 'start-run' | 'add-job';
   recordInHandoff?: boolean;
   onBusyChanged: (busy: boolean) => void;
   onChanged: (job: Job) => void;
@@ -127,7 +128,10 @@ export function JobTransitions({ client, job, disabled, recordInHandoff = false,
   return <section aria-labelledby={headingId} aria-busy={busy}>
     <h3 id={headingId}>Job status</h3>
     <p>Current status: {job.status.replaceAll('_', ' ')}. These actions update the local record only. Final application submission stays manual.</p>
-    {targets.includes('ready') && <p>Mark ready runs preflight checks for the job, profile, and resume.</p>}
+    {targets.includes('ready') && (runSetup === 'start-run'
+      ? <p>Ask Job Apply in Codex or Claude Code to prepare this saved job. Confirm the resume and facts in chat to start an application run.</p>
+      : runSetup === 'add-job' ? <p>Ask Job Apply in chat to add this job to the active application run.</p>
+      : <p>Mark ready runs preflight checks for the job, profile, and resume.</p>)}
     {job.status === 'in_progress' && <p>After an active claim is released, mark needs info to recover a job that needs more work.</p>}
     {feedback}
     <fieldset disabled={disabled || busy} style={{ minWidth: 0 }}>

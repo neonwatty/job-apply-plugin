@@ -134,6 +134,17 @@ export async function nativeJobsBrowser(buildRoot) {
     const browserResume = Object.values(resumeDocument.resumes)[0];
     assert.equal(browserResume.label, 'Browser resume updated');
     assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
+    const extractionRequests = '**/api/resume-extraction-requests';
+    const extractionStatus = page.getByRole('region', {name:'Facts for Browser resume updated'});
+    await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
+    await page.route(extractionRequests, route => route.fulfill({status:503}), {times:1});
+    const checkAgent = extractionStatus.getByRole('button', {name:'Check for agent updates',exact:true});
+    await checkAgent.click();
+    await extractionStatus.getByRole('alert').filter({hasText:/Extraction request status unavailable/}).waitFor();
+    assert.equal(await extractionStatus.getByText('No facts have been extracted for this resume yet.').count(), 0);
+    await extractionStatus.getByRole('button', {name:'View extraction requests',exact:true}).waitFor();
+    await checkAgent.click();
+    await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);

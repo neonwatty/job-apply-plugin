@@ -101,7 +101,7 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
         {visibleFactNames(draft,'').length>0&&!visibleFactNames(draft,query).length&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
         <div className="facts-list">{visibleFactNames(draft,'').map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
           <FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/>
-          <FactSource sources={factProvenance(base.provenance,name)} saved={has(base.profile,name)}
+          <FactSource sources={factProvenance(base,name)} saved={has(base.profile,name)}
             changed={!same(get(base.profile,name),get(draft,name))}/>
           <button className="text-action" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>
         </div>)}</div>

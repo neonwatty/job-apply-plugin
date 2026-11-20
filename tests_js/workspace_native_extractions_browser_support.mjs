@@ -177,6 +177,8 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal(profile.metadata.factProvenance['/extractedCity'].source, 'resume');
   assert.equal(profile.metadata.factProvenance['/employer/title'].source, 'user');
   assert.equal((await document('resume-extractions')).proposals[result.proposalSummary.id].status, 'completed');
+  await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)],
+    { preferences: { removable: true, retained: true } });
   await page.setViewportSize({ width: 390, height: 844 });
   await clickCompanionNav(page, 'Facts');
   const city = page.locator('.fact-card').filter({has:page.getByLabel('extractedCity',{exact:true})});
@@ -184,6 +186,14 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   const employer = page.locator('.fact-card').filter({has:page.getByRole('group',{name:'employer',exact:true})});
   await employer.getByText('Sources for saved fields',{exact:true}).click();
   await employer.getByText(/title · User entry or approval/).waitFor();
+  const preferences = page.locator('.fact-card').filter({has:page.getByRole('group',{name:'preferences',exact:true})});
+  await preferences.getByRole('button', {name:'Remove removable',exact:true}).click();
+  await page.getByRole('button', {name:'Save facts',exact:true}).click();
+  await page.getByText('Facts saved.',{exact:true}).waitFor();
+  await preferences.getByText('Sources for saved fields',{exact:true}).click();
+  await preferences.getByText(/retained · User entry or approval/).waitFor();
+  assert.equal(await preferences.getByText(/removable · User entry or approval/).count(), 0);
+  assert.equal((await document('profile')).metadata.factProvenance['/preferences/removable'].source, 'user');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true,
     exactValueFreeHandoff: true, staleFallbackCleared: true, pendingWriteNavigationGuard: true,

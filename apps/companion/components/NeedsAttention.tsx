@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { Client } from './client';
 import { object, workspaceState } from './contracts';
-import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, handoffActionLabels, recordedFormActions, type AttentionItem, type AttentionReason } from './projection-model';
+import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, handoffActionLabels, isCurrentHandoff, recordedFormActions, type AttentionItem, type AttentionReason } from './projection-model';
 import { formatActivityTime, useProjection } from './projection-view';
 
 const attentionActionLabels: Record<AttentionReason, string> = {
@@ -15,6 +15,23 @@ const attentionActionLabels: Record<AttentionReason, string> = {
   expired_agent_attempt: 'See recovery steps',
   claimless_interrupted_attempt: 'See recovery steps',
 };
+
+const uploadBlockerCodes = new Set([
+  'owner-upload-required', 'required-upload-missing', 'external-upload-capability-unavailable',
+]);
+
+function displayAttention(item: AttentionItem) {
+  const {session, missingInformationCount} = item;
+  const currentHandoff = item.status === 'needs_info' && isCurrentHandoff(session, item.revision);
+  const browserHandoff = currentHandoff && session.handoff === 'required';
+  const checklist = currentHandoff ? recordedFormActions(session) : [];
+  let {reasonCode} = item;
+  if (!browserHandoff && reasonCode === 'browser_action_required') reasonCode = 'needs_information';
+  if (reasonCode === 'needs_information' && browserHandoff && session.handoffReason === 'owner-upload-required'
+    && missingInformationCount === 0n && checklist.length === 1 && checklist[0] === handoffActionLabels.resume_upload
+    && session.blockers.every(({code}) => uploadBlockerCodes.has(code))) reasonCode = 'browser_action_required';
+  return {...item, reasonCode, checklist};
+}
 
 function jobLabels(raw: string) {
   const {jobs} = workspaceState(object.parseJson(raw));
@@ -36,9 +53,9 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
   }
   const [reason,setReason]=useState('');
   const [selectedId,setSelectedId]=useState<string|null>(null);
-  const visible=filterAttention(data?.items ?? [],reason);
+  const visible=filterAttention(data?.items.map(displayAttention) ?? [],reason);
   const selected=visible.find(item=>item.jobId===selectedId) ?? visible[0];
-  const checklist = selected ? recordedFormActions(selected.session) : [];
+  const checklist = selected?.checklist ?? [];
   const upload = selected?.reasonCode === 'browser_action_required'
     && checklist.length === 1 && checklist[0] === handoffActionLabels.resume_upload;
   return <section className="attention-workspace" aria-label="Needs Attention">

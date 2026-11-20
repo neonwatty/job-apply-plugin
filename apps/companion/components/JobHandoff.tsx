@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import type { Job } from './contracts';
-import { handoffActionLabels, recordedFormActions, type ActivityProjection } from './projection-model';
+import { handoffActionLabels, isCurrentHandoff, recordedFormActions, type ActivityProjection } from './projection-model';
 import { formatActivityTime, humanize, type ProjectionState } from './projection-view';
 
 export function JobHandoff({job, activity, children}: {
@@ -12,7 +12,8 @@ export function JobHandoff({job, activity, children}: {
   const titleId = useId();
   const {data, loading, error, refresh} = activity;
   const matchesJob = data?.job.revision === job.revision && data.job.status === job.status;
-  const session = matchesJob && !loading && !error && data.claim.state === 'none' ? data.session : null;
+  const session = matchesJob && !loading && !error && data.claim.state === 'none'
+    && data.session && isCurrentHandoff(data.session, job.revision) ? data.session : null;
   const review = job.status === 'awaiting_review';
   const checked = session?.status === 'review' && session.reviewChecksRecorded
     && session.pending.length === 0 && session.blockers.length === 0 && session.handoffChecklist.length === 0;

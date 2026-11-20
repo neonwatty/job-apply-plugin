@@ -5,7 +5,7 @@ import { ResumeFacts } from './ResumeFacts';
 import { DetailDrawer } from './DetailDrawer';
 import { useProjection } from './projection-view';
 import { extractionList } from './extraction-model';
-import type { ResumeFactStatus } from './resume-facts-model';
+import type { ExtractionRequestStatus, ResumeFactStatus } from './resume-facts-model';
 import { get, string } from '../../../src/contracts/workspace/values';
 
 const factLabels: Record<ResumeFactStatus, string> = {
@@ -112,15 +112,19 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
         queued.refresh();
         void refresh();
     }
-    function waitingForAgent(id: string) {
-        return !queued.loading && !queued.error && (queued.data?.has(id) ?? false);
+    function requestStatus(id: string): ExtractionRequestStatus {
+        if (queued.loading) return 'checking';
+        if (queued.error) return 'unavailable';
+        return queued.data?.has(id) ? 'waiting' : 'none';
     }
     function factSummary(id: string) {
         const state = factStatus.get(id) ?? 'none';
-        return state === 'none' && waitingForAgent(id) ? 'Waiting for agent' : factLabels[state];
-    }
-    function hasNewExtraction(id: string) {
-        return Boolean(factStatus.get(id) && factStatus.get(id) !== 'none' && waitingForAgent(id));
+        if (state !== 'none') return factLabels[state];
+        const extraction = requestStatus(id);
+        if (extraction === 'waiting') return 'Waiting for agent';
+        if (extraction === 'checking') return 'Checking extraction status…';
+        if (extraction === 'unavailable') return 'Extraction request status unavailable';
+        return factLabels.none;
     }
     function open(record: ResumeRecord | null, reviewFacts = false) {
         if (busy || factsBusy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
@@ -254,7 +258,8 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
                     <span className="resume-card-heading"><span className="resume-file-mark" aria-hidden="true">DOC</span><strong>{record.label}{record.default ? ' · Default' : ''}</strong>{record.default && <span className="status-pill resume-default" aria-hidden="true">Default</span>}</span>
                     <span className="resume-card-meta"><span>{record.mediaType ?? 'External file'}</span><span>{record.storageKind === 'managed' ? 'Managed locally' : 'External file'}</span>
                         <span>{factSummary(record.id)}</span>
-                        {hasNewExtraction(record.id) && <span>New extraction waiting for agent</span>}
+                        {factStatus.has(record.id) && factStatus.get(record.id) !== 'none'
+                            && requestStatus(record.id) === 'waiting' && <span>New extraction waiting for agent</span>}
                     </span>
                     <span className="resume-tags">{record.tags.length ? record.tags.map(tag => <small key={tag}>{tag}</small>) : <small>No tags</small>}</span>
                     <span className="resume-card-action">{factStatus.get(record.id) === 'draft' ? 'Review facts for this resume' : 'Open resume'} <span aria-hidden="true">→</span></span>
@@ -295,7 +300,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
                 </div>
                 {editor.base.storageKind === 'managed' && <ResumeFacts key={`${editor.base.id}:${factGeneration}`} client={client} resume={editor.base}
                     dirtyChanged={factStateChanged} focusReview={focusFactReview}
-                    waitingForAgent={waitingForAgent(editor.base.id)} refreshRequests={queued.refresh}
+                    requestStatus={requestStatus(editor.base.id)} refreshRequests={queued.refresh}
                     openExtractions={openExtractions && (() => { if (openExtractions()) setEditor(null); })}
                     statusChanged={status => setFactStatus(current => new Map(current).set(editor.base!.id, status))} />}
             </> : <>

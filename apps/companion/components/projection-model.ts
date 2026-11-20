@@ -107,6 +107,10 @@ export function recordedFormActions(session: SessionSummary): string[] {
   return handoffChecklistLabels(uploadRequired && !checklist.includes('resume_upload')
     ? ['resume_upload', ...checklist] : checklist);
 }
+export function isCurrentHandoff(session: SessionSummary, jobRevision: bigint): boolean {
+  // A claim writes evidence for its attempt, then advances the job once on handoff.
+  return session.attemptRevision === jobRevision - 1n;
+}
 export interface AttentionItem {
   jobId:string; status:string; revision:bigint; reasonCode:AttentionReason; attentionAt:string; missingInformationCount:bigint; session:SessionSummary;
 }
@@ -122,7 +126,7 @@ export function attentionProjection(raw:string): {items:AttentionItem[]} {
   // The server sorts by reason, descending priority, timestamp, then canonical id.
   return {items};
 }
-export function filterAttention(items:AttentionItem[],reason:string):AttentionItem[] { return reason ? items.filter(item=>item.reasonCode===reason) : items; }
+export function filterAttention<T extends AttentionItem>(items:T[],reason:string):T[] { return reason ? items.filter(item=>item.reasonCode===reason) : items; }
 export interface ActivityProjection {
   job:{status:string;revision:bigint};
   session:(SessionSummary & {revision:bigint;status:string;step:string;updatedAt:string;approvalCount:number;pending:{sensitive:boolean;eligible:boolean;approved:boolean;state:string;fieldClass:string}[]}) | null;

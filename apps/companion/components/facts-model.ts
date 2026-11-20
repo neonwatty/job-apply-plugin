@@ -60,17 +60,24 @@ const sourceLabels = new Map([
   ['migration', 'Migrated data'],
 ]);
 
-export function factProvenance(provenance: Document, key: string) {
+export function factProvenance({provenance, profile}: ProfileSnapshot, key: string) {
+  if (!has(profile, key)) return [];
   const path = pointer(key);
   return provenance.entries().flatMap(([item, value]) => {
     const name = string(item);
     if (name === null || (name !== path && !name.startsWith(path + '/')) || !(value instanceof PythonObject)) return [];
     const source = sourceLabels.get(string(get(value, 'source')) ?? '');
     if (!source) return [];
+    const fields = name === path ? [] : name.slice(path.length + 1).split('/')
+      .map(segment => segment.replaceAll('~1', '/').replaceAll('~0', '~'));
+    let saved = get(profile, key);
+    for (const field of fields) {
+      if (!(saved instanceof PythonObject) || !has(saved, field)) return [];
+      saved = get(saved, field);
+    }
     return [{
       path: name,
-      field: name === path ? null : name.slice(path.length + 1).split('/')
-        .map(segment => segment.replaceAll('~1', '/').replaceAll('~0', '~')).join(' › '),
+      field: fields.length ? fields.join(' › ') : null,
       source,
       updatedAt: string(get(value, 'updatedAt')),
     }];
