@@ -1,7 +1,7 @@
-import { constants } from 'node:fs';
-import { lstat, open, readFile, realpath, rename } from 'node:fs/promises';
+import { lstat, readFile, realpath, rename } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
+import { syncDirectory } from './directory-sync.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import { canonicalStoreCandidateTreeLocked, canonicalStoreSourceTreeLocked } from './native-store-clone.js';
 import { nativeCloneMarkerName, nativeCloneTrees, nativeFixtureMarkerName, validateNativeStoreMarker } from './native-store-layout.js';
@@ -43,15 +43,6 @@ async function kind(path) {
         }
     }
     return ownership ? 'native' : 'python';
-}
-async function syncDirectory(path) {
-    const handle = await open(path, constants.O_RDONLY);
-    try {
-        await handle.sync();
-    }
-    finally {
-        await handle.close();
-    }
 }
 async function locked(active, options, callback) {
     const parent = dirname(active);

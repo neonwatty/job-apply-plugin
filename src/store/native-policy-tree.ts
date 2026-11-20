@@ -6,6 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { dirname, join } from 'node:path';
 import type { Hash } from 'node:crypto';
 import { JobsError } from '../contracts/workspace/values.js';
+import { syncDirectory } from './directory-sync.js';
 import type { PosixFlockProvider } from './posix-flock.js';
 
 const policyName = 'auto-submit';
@@ -192,11 +193,6 @@ export function updateNativePolicyDigest(digest: Hash, entries: NativePolicyTree
 async function writePrivate(path: string, bytes: Buffer): Promise<void> {
   const handle = await open(path, 'wx', 0o600);
   try { await handle.chmod(0o600); await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
-}
-
-async function syncDirectory(path: string): Promise<void> {
-  const handle = await open(path, constants.O_RDONLY);
-  try { await handle.sync(); } finally { await handle.close(); }
 }
 
 /** Copies a validated snapshot into a target Store using canonical private modes. */

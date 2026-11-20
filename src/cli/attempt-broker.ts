@@ -4,6 +4,7 @@ import { chmod, lstat, mkdir, open, readFile, rename, unlink } from 'node:fs/pro
 import { createConnection, createServer, type Server, type Socket } from 'node:net';
 import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { syncDirectory } from '../store/directory-sync.js';
 import type { ClaimsService } from '../workspace-core/claims.js';
 import { nativeAttemptPidName, nativeAttemptPidPendingName, validateNativeAttemptPid } from '../store/native-store-layout.js';
 import type { PosixFlockProvider } from '../store/posix-flock.js';
@@ -53,8 +54,7 @@ async function publishPid(root: string, processPath: string): Promise<void> {
     await pid.writeFile(`${process.pid}\n`);
     await pid.sync();
     await rename(pendingPath, processPath);
-    const directory = await open(root, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
-    try { await directory.sync(); } finally { await directory.close(); }
+    await syncDirectory(root, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
   } finally {
     try { await pid.close(); }
     finally {

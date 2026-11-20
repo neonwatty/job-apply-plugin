@@ -8,6 +8,7 @@ import { copy, get, has, int, integer, keys, object, same, set, string, text, Jo
 import type { Document, Value } from '../contracts/workspace/values.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
+import { syncDirectory as syncStoreDirectory } from './directory-sync.js';
 import { resumeModifiedAt } from './resume-modified-at.js';
 export type StagedResume = { temporary: string; managedFile: string; originalFilename: string; mediaType: string; digest: string; observedSize: number; observedModifiedAt: string };
 const filePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(pdf|docx|txt)$/;
@@ -16,8 +17,7 @@ const quarantinePattern = /^\.([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:pdf|docx|txt
 const hash = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
 const absent = (error: unknown): boolean => error instanceof Error && 'code' in error && error.code === 'ENOENT';
 export async function syncDirectory(path: string): Promise<void> {
-  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try { await handle.sync(); } finally { await handle.close(); }
+  await syncStoreDirectory(path, constants.O_RDONLY | constants.O_NOFOLLOW);
 }
 export class NativeResumeFiles {
   readonly directory: string;

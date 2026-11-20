@@ -7,6 +7,7 @@ import { safeId } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
+import { syncDirectory as syncStoreDirectory } from './directory-sync.js';
 import { resumeModifiedAt } from './resume-modified-at.js';
 const filePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(pdf|docx|txt)$/;
 const tempPattern = /^\.native-[a-f0-9-]{36}\.tmp$/;
@@ -14,13 +15,7 @@ const quarantinePattern = /^\.([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:pdf|docx|txt
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const absent = (error) => error instanceof Error && 'code' in error && error.code === 'ENOENT';
 export async function syncDirectory(path) {
-    const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
-    try {
-        await handle.sync();
-    }
-    finally {
-        await handle.close();
-    }
+    await syncStoreDirectory(path, constants.O_RDONLY | constants.O_NOFOLLOW);
 }
 export class NativeResumeFiles {
     checkpoint;
