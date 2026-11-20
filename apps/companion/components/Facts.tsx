@@ -3,11 +3,32 @@ import { ApiError, type Client } from './client';
 import { FactValue } from './FactValue';
 import { FactGroups } from './FactGroups';
 import { TitleDiscovery } from './TitleDiscovery';
-import { copy,get,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
+import { copy,get,has,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
+import { formatActivityTime } from './projection-view';
 import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './facts-model';
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
 const settingsNames=['applicationPreferences','agentModelPreferences'];
 const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>!settingsNames.includes(name)&&name.toLowerCase().includes(query.toLowerCase()));
+function FactSource({sources, saved, changed}: {
+  sources: ReturnType<typeof factProvenance>;
+  saved: boolean;
+  changed: boolean;
+}) {
+  if (!saved) return <p className="field-help">New fact · Unsaved</p>;
+  const [source] = sources;
+  const label = changed ? 'Saved value source' : 'Source';
+  if (!source) return <p className="field-help">{label} · Not recorded</p>;
+  if (sources.length === 1 && source.field === null) return <p className="field-help">
+    {label} · {source.source}{source.updatedAt && <> · {formatActivityTime(source.updatedAt)}</>}
+  </p>;
+  return <details>
+    <summary>Sources for saved fields</summary>
+    <ul>{sources.map(entry => <li key={entry.path}>
+      {entry.field ?? 'Whole fact'} · {entry.source}{entry.updatedAt && <> · {formatActivityTime(entry.updatedAt)}</>}
+    </li>)}</ul>
+  </details>;
+}
+
 export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyChanged:(dirty:boolean)=>void;refreshKey?:number}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<Document|null>(null);
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
@@ -80,7 +101,8 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
         {visibleFactNames(draft,'').length>0&&!visibleFactNames(draft,query).length&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
         <div className="facts-list">{visibleFactNames(draft,'').map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
           <FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/>
-          <details><summary>Fact source</summary><pre>{factProvenance(base.provenance,name)}</pre></details>
+          <FactSource sources={factProvenance(base.provenance,name)} saved={has(base.profile,name)}
+            changed={!same(get(base.profile,name),get(draft,name))}/>
           <button className="text-action" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>
         </div>)}</div>
         {addOpen&&<fieldset id="fact-add-panel" className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard or custom application field.</p>

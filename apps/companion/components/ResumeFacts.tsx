@@ -5,17 +5,26 @@ import type { Client } from './client';
 import { ResumeFactEditor } from './resume-fact-editor';
 
 import { copy, serialize, type Document } from '../../../src/contracts/workspace/values';
-import { confirmationBody, draftBody, factVersion, type FactVersion } from './resume-facts-model';
+import { confirmationBody, draftBody, factVersion, type FactVersion, type ResumeFactStatus } from './resume-facts-model';
 
 /** Facts are loaded only for the resume the owner has opened. */
-export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { client: Client; resume: ResumeRecord;
-  dirtyChanged: (dirty: boolean, busy: boolean) => void; statusChanged: (status: string) => void }) {
+export function ResumeFacts({ client, resume, dirtyChanged, statusChanged, focusReview, waitingForAgent, refreshRequests, openExtractions }: {
+  client: Client;
+  resume: ResumeRecord;
+  dirtyChanged: (dirty: boolean, busy: boolean) => void;
+  statusChanged: (status: ResumeFactStatus) => void;
+  focusReview: boolean;
+  waitingForAgent: boolean;
+  refreshRequests: () => void;
+  openExtractions?: () => void;
+}) {
   const [version, setVersion] = useState<FactVersion | null>(null);
   const [draft, setDraft] = useState<Document | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const [invalid, setInvalid] = useState(false), [conflict, setConflict] = useState(false);
   const [loading, setLoading] = useState(false);
   const form = useRef<HTMLFormElement | null>(null), generation = useRef(0);
+  const heading = useRef<HTMLHeadingElement>(null);
   const action = useRef<AbortController | null>(null);
   const dirty = invalid || version !== null && draft !== null && serialize(draft) !== serialize(version.facts);
   const local = useRef({ version, dirty });
@@ -23,10 +32,14 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
   useEffect(() => { dirtyChanged(dirty, busy || loading); }, [dirty, busy, loading, dirtyChanged]);
   useEffect(() => () => { action.current?.abort(); dirtyChanged(false, false); }, [dirtyChanged]);
   const path = `/api/resume-facts/${encodeURIComponent(resume.id)}`;
-  function publishStatus(next: FactVersion | null) {
-    statusChanged(next === null ? 'No extracted facts' : next.current === false ? 'Stale facts'
-      : next.state === 'confirmed' ? 'Facts confirmed' : 'Draft facts to review');
-  }
+  useEffect(() => {
+    if (!focusReview) return;
+    const frame = requestAnimationFrame(() => {
+      heading.current?.focus({preventScroll:true});
+      heading.current?.scrollIntoView({block:'start'});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusReview]);
   async function refresh(signal: AbortSignal, discard = false): Promise<void> {
     const ticket = ++generation.current;
     setLoading(true);
@@ -49,7 +62,7 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
         setVersion(next); setDraft(next ? copy(next.facts) : null);
         setInvalid(false); setConflict(false);
       }
-      publishStatus(next);
+      statusChanged(next === null ? 'none' : next.current ? next.state : 'stale');
     } finally { if (!signal.aborted && ticket === generation.current) setLoading(false); }
   }
   useEffect(() => {
@@ -82,7 +95,7 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
     try {
       await client.extractionRequest(`${path}/confirm`, 'POST', confirmationBody(version), controller.signal);
       await refresh(controller.signal, true);
-      setNotice('These facts are confirmed for this resume. Confirm this resume and fact revision with the agent when starting an application run.');
+      setNotice('These facts are confirmed for this resume.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to confirm facts.'); }
     finally { setBusy(false); }
   }
@@ -92,24 +105,37 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
     const controller = new AbortController();
     action.current = controller;
     setBusy(true); setError(''); setNotice('');
-    try { await refresh(controller.signal, true); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to refresh facts.'); }
+    try {
+      await refresh(controller.signal, true);
+      if (!controller.signal.aborted) refreshRequests();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to refresh facts.'); }
     finally { setBusy(false); }
   }
   return <section className="workspace-panel resume-facts-panel" aria-label={`Facts for ${resume.label}`}>
-    <div className="resume-facts-heading"><div><p className="eyebrow">Resume facts</p><h3>Facts from {resume.label}</h3></div>
+    <div className="resume-facts-heading"><div><p className="eyebrow">Resume facts</p><h3 ref={heading} tabIndex={-1}>Facts from {resume.label}</h3></div>
       <div className="resume-facts-sync"><button className="secondary" disabled={busy || loading} onClick={() => void refreshFacts()}>Check for agent updates</button>
         <small>Reload facts saved for this resume by a Job Apply agent.</small></div></div>
-    {!version && <p>No extracted facts yet. The agent can process this resume’s extraction request.</p>}
+    {waitingForAgent && <div className="resume-facts-waiting">
+      <p>{version?.current ? 'A new extraction is waiting for a Job Apply agent.' : 'Waiting for a Job Apply agent to extract facts for this resume.'}</p>
+      {openExtractions && <button className="secondary" type="button" disabled={busy || loading} onClick={openExtractions}>
+        View extraction requests</button>}
+    </div>}
+    {loading && !version && <p role="status">Loading resume facts…</p>}
+    {!version && !waitingForAgent && !loading && !error && <p>No facts have been extracted for this resume yet.</p>}
     {version && <>
-      <p className="resume-facts-meta"><strong>{version.current ? version.state : 'Stale'}</strong><span>Revision {version.revision.toString()}</span></p>
+      <p className="resume-facts-meta"><strong data-state={version.current ? version.state : 'stale'}>{!version.current ? 'Earlier file' : version.state === 'draft' ? 'Draft to review' : 'Confirmed for this resume'}</strong>
+        <span>Revision {version.revision.toString()}</span></p>
+      {version.current && version.state === 'draft'
+        ? <p>Review the draft and confirm the facts Job Apply can use when you select this resume for an application run.</p>
+        : !version.current && <p>These facts belong to an earlier resume file. Review a new extraction from the current file before using its facts.</p>}
+      {version.current && version.state === 'confirmed' && <p>When you start an application run, confirm the selected resume and facts with Job Apply in chat.</p>}
       <form ref={form} noValidate onChange={() => setInvalid(invalidNumbers())}
         onSubmit={event => { event.preventDefault(); if (!invalidNumbers()) void save(); }}>
       {draft && <ResumeFactEditor facts={draft} disabled={busy || loading || !version.current} change={setDraft} />}
       <div className="resume-editor-actions">
         <button type="submit" className="secondary" disabled={busy || loading || conflict || invalid || !version.current || !dirty}>Save edits as draft</button>
         <button type="button" className="primary" disabled={busy || loading || conflict || !version.current || version.state !== 'draft'
-          || dirty} onClick={() => void confirmFacts()}>Confirm facts</button>
+          || dirty} onClick={() => void confirmFacts()}>Confirm facts for this resume</button>
       </div></form>
       {version.versions.length > 1 && <details className="resume-facts-history"><summary>Earlier fact revisions</summary>
         {version.versions.slice(0, -1).map(item => <details key={item.revision.toString()}>

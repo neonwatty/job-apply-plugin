@@ -3,7 +3,23 @@ import { ApiError, type Client } from './client';
 import { object, type ResumeRecord } from './contracts';
 import { ResumeFacts } from './ResumeFacts';
 import { DetailDrawer } from './DetailDrawer';
+import { useProjection } from './projection-view';
+import { extractionList } from './extraction-model';
+import type { ResumeFactStatus } from './resume-facts-model';
+import { get, string } from '../../../src/contracts/workspace/values';
 
+const factLabels: Record<ResumeFactStatus, string> = {
+    none: 'No extracted facts',
+    stale: 'Facts from an earlier file',
+    draft: 'Draft ready for your review',
+    confirmed: 'Facts confirmed for this resume',
+};
+function queuedResumeIds(raw: string) {
+    return new Set(extractionList(raw, 'requests').flatMap(item => {
+        const id = string(get(item, 'resumeId'));
+        return id && string(get(item, 'scope')) === 'resume' && string(get(item, 'status')) === 'requested' ? [id] : [];
+    }));
+}
 const accept = '.pdf,.docx,.txt';
 const tags = (value: string) => value.split(',').map(item => item.trim()).filter(Boolean);
 type Editor = {
@@ -21,10 +37,12 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
     editor.label !== (editor.base?.label ?? '') || editor.tagText !== (editor.base?.tags.join(', ') ?? '') || editor.file
 ));
 
-export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void; refreshKey?:number }) {
+export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>boolean; refreshKey?:number }) {
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
     const [editing, setEditing] = useState(false);
-    const [factStatus, setFactStatus] = useState<Record<string, string>>({});
+    const [factStatus, setFactStatus] = useState<Map<string, ResumeFactStatus>>(() => new Map());
+    const queued = useProjection(client, '/api/resume-extraction-requests', queuedResumeIds, refreshKey);
+    const [focusFactReview, setFocusFactReview] = useState(false);
     const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
     const [contentBusy, setContentBusy] = useState(false);
     const [factGeneration, setFactGeneration] = useState(0);
@@ -55,8 +73,14 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
             setRecords(next);
             const facts = JSON.parse(rawFacts);
             if (!object(facts) || !Array.isArray(facts.facts)) throw Error('Invalid resume fact status.');
-            setFactStatus(Object.fromEntries(facts.facts.filter(object).map(item => [String(item.resumeId),
-                item.current === false ? 'Stale facts' : item.state === 'confirmed' ? 'Facts confirmed' : 'Draft facts to review'])));
+            const statuses = new Map<string, ResumeFactStatus>();
+            for (const item of facts.facts) {
+                if (object(item) && typeof item.resumeId === 'string' && (item.state === 'draft' || item.state === 'confirmed')) {
+                    if (item.current === false) statuses.set(item.resumeId, 'stale');
+                    if (item.current === true) statuses.set(item.resumeId, item.state);
+                }
+            }
+            setFactStatus(statuses);
             setEditor(current => {
                 if (!current?.base) return current;
                 const latest = next.find(item => item.id === current.base?.id);
@@ -84,9 +108,24 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
         void refresh();
     }, [refreshKey]);
     useEffect(() => { dirtyChanged(dirty || busy || factsDirty || factsBusy); return () => dirtyChanged(false); }, [dirty, busy, factsDirty, factsBusy, dirtyChanged]);
-    function open(record: ResumeRecord | null) {
+    function refreshLibrary() {
+        queued.refresh();
+        void refresh();
+    }
+    function waitingForAgent(id: string) {
+        return !queued.loading && !queued.error && (queued.data?.has(id) ?? false);
+    }
+    function factSummary(id: string) {
+        const state = factStatus.get(id) ?? 'none';
+        return state === 'none' && waitingForAgent(id) ? 'Waiting for agent' : factLabels[state];
+    }
+    function hasNewExtraction(id: string) {
+        return Boolean(factStatus.get(id) && factStatus.get(id) !== 'none' && waitingForAgent(id));
+    }
+    function open(record: ResumeRecord | null, reviewFacts = false) {
         if (busy || factsBusy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
         setFactGeneration(current => current + 1);
+        setFocusFactReview(reviewFacts);
         setEditor(openEditor(record));
         setEditing(!record);
         setExtractByDefault(true);
@@ -140,6 +179,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
             setEditing(false);
             if (fileInput.current) fileInput.current.value = '';
             setNotice(message + queueNotice);
+            if (queueFacts) queued.refresh();
             await refresh();
         } catch (cause) {
             if (alive.current && !controller.signal.aborted) {
@@ -201,7 +241,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
     }
     return <section className="resumes-workspace" aria-labelledby="resumes-workspace-title">
         <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="resumes-workspace-title">Resumes</h1><p>Manage the resume files available to your application agents.</p></div><div className="workspace-hero-actions">
-            <button className="secondary" disabled={busy} onClick={() => void refresh()}>Refresh</button>
+            <button className="secondary" disabled={busy} onClick={refreshLibrary}>Refresh</button>
             {openExtractions&&<button className="secondary" disabled={busy} onClick={openExtractions}>Resume extraction</button>}
             <button className="primary" disabled={busy} onClick={() => open(null)}>Import resume</button>
         </div></header>
@@ -210,12 +250,14 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
             <p className="workspace-status" role="status">{loading ? 'Loading resumes…' : notice}</p>
             {!editor && error && <p role="alert" className="error">{error}</p>}
             <ul className="resume-list">
-                {records.map(record => <li key={record.id}><button className="resume-card" disabled={busy} onClick={() => open(record)}>
+                {records.map(record => <li key={record.id}><button className="resume-card" disabled={busy} onClick={() => open(record, factStatus.get(record.id) === 'draft')}>
                     <span className="resume-card-heading"><span className="resume-file-mark" aria-hidden="true">DOC</span><strong>{record.label}{record.default ? ' · Default' : ''}</strong>{record.default && <span className="status-pill resume-default" aria-hidden="true">Default</span>}</span>
                     <span className="resume-card-meta"><span>{record.mediaType ?? 'External file'}</span><span>{record.storageKind === 'managed' ? 'Managed locally' : 'External file'}</span>
-                        <span>{factStatus[record.id] ?? 'No extracted facts'}</span></span>
+                        <span>{factSummary(record.id)}</span>
+                        {hasNewExtraction(record.id) && <span>New extraction waiting for agent</span>}
+                    </span>
                     <span className="resume-tags">{record.tags.length ? record.tags.map(tag => <small key={tag}>{tag}</small>) : <small>No tags</small>}</span>
-                    <span className="resume-card-action">Open resume <span aria-hidden="true">→</span></span>
+                    <span className="resume-card-action">{factStatus.get(record.id) === 'draft' ? 'Review facts for this resume' : 'Open resume'} <span aria-hidden="true">→</span></span>
                     <span className="visually-hidden">revision {record.revision}</span>
                 </button></li>)}
             </ul>
@@ -223,7 +265,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
         </div>
         {editor && <DetailDrawer titleId="resume-editor-title" close={close} className="resume-detail-drawer">
             <header className="detail-drawer-header"><div><p className="eyebrow">Resume</p><h2 id="resume-editor-title" tabIndex={-1} data-drawer-heading>{editor.base ? editor.base.label : 'Import resume'}</h2></div>
-                <div className="button-row"><button className="secondary" type="button" disabled={busy || loading || factsBusy} onClick={() => void refresh()}>Refresh resume</button>
+                <div className="button-row"><button className="secondary" type="button" disabled={busy || loading || factsBusy} onClick={refreshLibrary}>Refresh resume</button>
                     <button className="job-drawer-close" type="button" disabled={busy || factsBusy} onClick={close} aria-label="Close resume details">×</button></div></header>
             {error && <p role="alert" className="error">{error}</p>}
             {editor.missing && <p className="notice" role="alert">This resume is no longer available. Your draft is preserved; saving is disabled.</p>}
@@ -236,7 +278,7 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
                 <div className="detail-drawer-summary"><dl>
                     <div><dt>File</dt><dd>{editor.base.mediaType ?? 'External file'}</dd></div>
                     <div><dt>Storage</dt><dd>{editor.base.storageKind === 'managed' ? 'Managed locally' : 'External file'}</dd></div>
-                    <div><dt>Facts</dt><dd>{factStatus[editor.base.id] ?? 'No extracted facts'}</dd></div>
+                    <div><dt>Facts</dt><dd>{factSummary(editor.base.id)}</dd></div>
                     <div><dt>Tags</dt><dd>{editor.base.tags.join(', ') || 'None'}</dd></div>
                     <div><dt>Default</dt><dd>{editor.base.default ? 'Yes' : 'No'}</dd></div>
                 </dl></div>
@@ -247,12 +289,15 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
                         onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}
                     <button className="primary" disabled={busy || factsBusy || editor.missing || Boolean(editor.latest)} onClick={() => {
                         if (factsDirty && !confirm('Discard unsaved fact edits?')) return;
+                        setFocusFactReview(false);
                         setEditing(true);
                     }}>Edit resume</button>
                 </div>
                 {editor.base.storageKind === 'managed' && <ResumeFacts key={`${editor.base.id}:${factGeneration}`} client={client} resume={editor.base}
-                    dirtyChanged={factStateChanged}
-                    statusChanged={status => setFactStatus(current => ({ ...current, [editor.base!.id]: status }))} />}
+                    dirtyChanged={factStateChanged} focusReview={focusFactReview}
+                    waitingForAgent={waitingForAgent(editor.base.id)} refreshRequests={queued.refresh}
+                    openExtractions={openExtractions && (() => { if (openExtractions()) setEditor(null); })}
+                    statusChanged={status => setFactStatus(current => new Map(current).set(editor.base!.id, status))} />}
             </> : <>
                 <p className="resume-editor-intro">{editor.base ? 'Update the label and tags, or replace the file.' : 'Add a PDF, DOCX, or text resume.'}</p>
                 <div className="resume-editor-fields"><label>Label<input value={editor.label} onChange={event => setEditor({ ...editor, label: event.target.value })} disabled={busy} /></label>

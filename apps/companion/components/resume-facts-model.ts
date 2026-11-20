@@ -2,6 +2,8 @@ import { PythonObject } from '../../../src/contracts/python-object';
 import { get, int, integer, object, parse, serialize, set, string, text } from '../../../src/contracts/workspace/values';
 import type { Document, Value } from '../../../src/contracts/workspace/values';
 
+export type ResumeFactStatus = 'none' | 'stale' | 'draft' | 'confirmed';
+
 export type FactVersion = { revision: bigint; contentRevision: string; state: 'draft' | 'confirmed';
   current: boolean; facts: Document; versions: Array<{ revision: bigint; state: string; facts: Document }> };
 

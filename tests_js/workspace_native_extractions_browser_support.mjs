@@ -129,9 +129,14 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
   assert.equal(await page.getByRole('heading', { name: 'Proposed facts', exact: true }).evaluate(element => element === document.activeElement), true);
   await page.unroute('**/api/resume-proposals');
+  const proposal = page.getByRole('region', {name:'Proposed facts',exact:true});
+  await proposal.getByText('1 previously blank fact', {exact:true}).waitFor();
+  await proposal.getByText('2 decisions remaining', {exact:true}).waitFor();
   try { await page.getByLabel('Decision for /firstName', { exact: true }).selectOption('keep_current', { timeout: 5000 }); }
   catch (error) { throw Error(error.message + '\n' + await page.locator('body').innerText()); }
   await page.getByLabel('Decision for /employer/title', { exact: true }).selectOption('use_extracted');
+  await proposal.getByText('2 choices selected', {exact:true}).waitFor();
+  await proposal.getByText('2 decisions remaining', {exact:true}).waitFor();
   await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
   await page.getByRole('alert').filter({ hasText: /Confirm replacement/ }).waitFor();
   await page.getByLabel('I confirm replacing /employer for /employer/title.').check();
@@ -173,6 +178,12 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal(profile.metadata.factProvenance['/employer/title'].source, 'user');
   assert.equal((await document('resume-extractions')).proposals[result.proposalSummary.id].status, 'completed');
   await page.setViewportSize({ width: 390, height: 844 });
+  await clickCompanionNav(page, 'Facts');
+  const city = page.locator('.fact-card').filter({has:page.getByLabel('extractedCity',{exact:true})});
+  await city.getByText(/Source · Resume extraction/).waitFor();
+  const employer = page.locator('.fact-card').filter({has:page.getByRole('group',{name:'employer',exact:true})});
+  await employer.getByText('Sources for saved fields',{exact:true}).click();
+  await employer.getByText(/title · User entry or approval/).waitFor();
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true,
     exactValueFreeHandoff: true, staleFallbackCleared: true, pendingWriteNavigationGuard: true,

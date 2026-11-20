@@ -40,7 +40,8 @@ export async function companionRegressionsBrowser(buildRoot) {
     await writeFile(resumeFile, 'Synthetic resume regression fixture');
     const resume = JSON.parse(await cli('resume-import', JSON.stringify({ id: 'facts-regression', label: 'Fact regression resume' }), '--path', resumeFile));
     const facts = '{"summary":"Before","skills":[["TypeScript"]],"linkedInUrl":"linkedin.com/in/synthetic","identifier":9007199254740993,"ratio":1.0,"nested":{"exact":9007199254740995}}';
-    await cli('resume-facts-draft', facts, '--resume-id', resume.id, '--expected-resume-revision', '1');
+    const request = JSON.parse(await cli('resume-extraction-request-create', undefined,
+      '--resume-id', resume.id, '--expected-resume-revision', '1', '--scope', 'resume'));
     await cli('profile-patch', '{"ratio":1.0,"identifier":9007199254740993}',
       '--expected-revision', '1', '--source', 'user');
     let resumeRevision = 1, factRevision = 1;
@@ -83,7 +84,32 @@ export async function companionRegressionsBrowser(buildRoot) {
     assert.equal(await page.locator('dialog:modal').count(), 0);
 
     await clickCompanionNav(page, 'Resumes');
-    await page.getByRole('button', { name: /Fact regression resume/ }).click();
+    const resumeCard = page.getByRole('button', { name: /Fact regression resume/ });
+    await resumeCard.getByText('Waiting for agent', { exact: true }).waitFor();
+    await resumeCard.click();
+    await page.getByRole('button', { name: 'View extraction requests', exact: true }).click();
+    await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
+    assert.equal(await page.locator('dialog:modal').count(), 0);
+    await page.getByRole('button', { name: 'Copy agent handoff', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Back to resumes', exact: true }).click();
+    await resumeCard.click();
+    await cli('resume-extraction-request-complete-scoped', facts, '--id', request.requestId,
+      '--expected-request-revision', String(request.revision));
+    await page.getByRole('button', { name: 'Check for agent updates', exact: true }).click();
+    await page.getByText('Draft to review', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'View extraction requests', exact: true }).waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
+    await resumeCard.getByText('Draft ready for your review', { exact: true }).waitFor();
+    await resumeCard.getByText(/Review facts for this resume/).waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await resumeCard.click();
+    await page.waitForFunction(() => {
+      const heading = document.activeElement;
+      return heading?.textContent === 'Facts from Fact regression resume'
+        && heading.getBoundingClientRect().bottom <= innerHeight
+        && heading.getBoundingClientRect().top >= document.querySelector('.detail-drawer-header').getBoundingClientRect().bottom - 1;
+    });
+    await page.setViewportSize({ width: 1180, height: 900 });
     const summary = page.getByLabel('Summary', { exact: true }), identifier = page.getByLabel('Identifier', { exact: true });
     const save = page.getByRole('button', { name: 'Save edits as draft', exact: true });
     await summary.waitFor();
@@ -122,7 +148,7 @@ export async function companionRegressionsBrowser(buildRoot) {
     // Invalid numeric drafts stay unsaved, and declining a reload keeps their text.
     await identifier.fill('not a number');
     assert.equal(await save.isDisabled(), true);
-    assert.equal(await page.getByRole('button', { name: 'Confirm facts', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Confirm facts for this resume', exact: true }).isDisabled(), true);
     page.once('dialog', dialog => dialog.dismiss());
     await page.getByRole('button', { name: 'Check for agent updates', exact: true }).click();
     assert.equal(await identifier.inputValue(), 'not a number');
@@ -161,18 +187,21 @@ export async function companionRegressionsBrowser(buildRoot) {
     assert.equal(await ratio.inputValue(), '-0.5');
     await save.click();
     await page.getByText('Fact edits saved as a new draft. Review and confirm it before application use.', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Confirm facts', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm facts for this resume', exact: true }).click();
     await page.getByText(/These facts are confirmed for this resume/).waitFor();
     const confirmed = object(parse(await cli('resume-facts-get', undefined, '--resume-id', resume.id)), 'detail');
     assert.equal(string(get(confirmed, 'state')), 'confirmed');
     assert.equal(int(get(object(get(confirmed, 'facts'), 'facts'), 'identifier')), 9007199254740999n);
     assert.equal(serialize(get(object(get(confirmed, 'facts'), 'facts'), 'ratio')), '-0.5');
     await page.getByRole('button', { name: 'Close resume details', exact: true }).click();
+    await page.getByRole('button', { name: /Agent changed metadata.*Facts confirmed for this resume/ }).waitFor();
     await clickCompanionNav(page, 'Facts');
     const globalRatio = page.getByLabel('ratio', { exact: true });
     await globalRatio.fill('');
     await globalRatio.pressSequentially('0.001', { delay: 50 });
     assert.equal(await globalRatio.inputValue(), '0.001');
+    const savedSource = page.locator('.fact-card').filter({ has: globalRatio });
+    await savedSource.getByText(/Saved value source · User entry or approval/).waitFor();
     await page.getByRole('button', { name: 'Save facts', exact: true }).click();
     await page.getByText('Facts saved.', { exact: true }).waitFor();
     const global = object(parse(await cli('profile-get')), 'profile');
@@ -185,7 +214,7 @@ export async function companionRegressionsBrowser(buildRoot) {
     await page.getByText('Facts saved.', { exact: true }).waitFor();
     assert.equal(serialize(get(object(parse(await cli('profile-get')), 'profile'), 'ratio')), '-0.5');
     assert.deepEqual(errors, []);
-    return { cachedModalNavigation: true, metadataRefreshRace: true, factConflict: true,
+    return { cachedModalNavigation: true, scopedResumeReview: true, savedFactSource: true, metadataRefreshRace: true, factConflict: true,
       losslessFacts: true, invalidNumberGuard: true, explicitDiscard: true };
   } finally {
     await browser?.close();
