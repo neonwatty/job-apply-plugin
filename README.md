@@ -178,7 +178,7 @@ The launcher binds only to `127.0.0.1`, chooses a free port, prints the complete
 
 Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
 
-For a Ready job, use the copy-only handoff on **Overview** or **Jobs** for the host you already use. These are static, separately labelled commands; the workspace does not detect a host, run a command, embed a terminal, interpolate credentials, or acquire an application claim:
+For a Ready job, choose **Continue in Codex or Claude Code** in **Overview** to go directly to the copy controls in **Jobs**. Copy the command for your host, paste it in chat, and confirm which job to prepare. These controls copy a static command.
 
 ```text
 Codex:       $job-apply:job-apply

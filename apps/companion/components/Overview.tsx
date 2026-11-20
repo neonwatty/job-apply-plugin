@@ -4,9 +4,10 @@ import type { Client } from './client';
 import type { OverviewData } from './contracts';
 import { readApplicationPreferences } from './application-preferences-model';
 
-export function Overview({ client, openJobs, legacyHref, openWorkspace, refreshKey = 0 }: {
+export function Overview({ client, openJobs, openAgentHandoff, legacyHref, openWorkspace, refreshKey = 0 }: {
     client: Client;
     openJobs: () => void;
+    openAgentHandoff?: () => void;
     legacyHref: string;
     openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention' | 'answers' | 'automation' | 'settings' | 'trash') => void;
     refreshKey?: number;
@@ -57,12 +58,15 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace, refreshK
     const factsAction = factsDestination === 'resumes' ? 'Review resume facts' : 'Edit Facts';
     const link = (workspace: string) => `${legacyHref}&workspace=${encodeURIComponent(workspace)}`;
     const guidance = ownerBetaNextStep(data?.nextAction ?? '');
-    const heading = Array.isArray(guidance) && typeof guidance[0] === 'string'
-        ? guidance[0] : 'Review the workspace';
-    const guidanceCopy = Array.isArray(guidance) && typeof guidance[1] === 'string'
-        ? guidance[1] : 'Choose a section to get started.';
+    const handoff = target === 'jobs' && data?.nextAction === 'handoff_ready_job' ? openAgentHandoff : undefined;
+    const heading = handoff ? 'A job is ready for the agent'
+        : Array.isArray(guidance) && typeof guidance[0] === 'string' ? guidance[0] : 'Review the workspace';
+    const guidanceCopy = handoff ? 'Continue in your preferred host, then confirm the job you want to prepare.'
+        : Array.isArray(guidance) && typeof guidance[1] === 'string' ? guidance[1] : 'Choose a section to get started.';
     const nativeDestinations = ['facts','resumes','attention','answers','automation','settings','trash'];
-    const action = target === 'jobs' ? <button className="button primary" onClick={openJobs}>Open Jobs</button>
+    const action = handoff ? <button className="button primary" type="button" onClick={handoff}
+        disabled={loading || Boolean(error)}>Continue in Codex or Claude Code</button>
+        : target === 'jobs' ? <button className="button primary" onClick={openJobs}>Open Jobs</button>
         : openWorkspace && nativeDestinations.includes(target)
             ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'settings'|'trash')}>Open {destinations[target]}</button>
             : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>;

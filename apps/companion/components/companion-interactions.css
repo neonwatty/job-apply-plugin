@@ -173,3 +173,6 @@ html { scroll-padding-top:5.5rem }
 .job-handoff summary,.job-activity-details>summary { cursor:pointer }
 .job-activity-details>section { margin-top:1rem }
 .focus-item span { overflow-wrap:anywhere }
+
+.job-identity .job-confirmation { color:#75500b;font-size:.8rem }
+.job-card .status-ready,.job-card .status-awaiting_review { text-transform:none }

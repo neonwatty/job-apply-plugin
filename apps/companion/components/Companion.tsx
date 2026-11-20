@@ -63,6 +63,7 @@ export default function Companion() {
     const [tab,setTab]=useState<WorkspaceTab>('overview');
     const [visitedTabs,setVisitedTabs]=useState<WorkspaceTab[]>(['overview']);
     const [refreshKeys,setRefreshKeys]=useState<Partial<Record<WorkspaceTab,number>>>({});
+    const [showJobsHandoff,setShowJobsHandoff]=useState(false);
     const [requestedJob,setRequestedJob]=useState<{id:string;revision:bigint}|null>(null);
     const [dirty,setDirty]=useState(false);
     const [collapsed,setCollapsed]=useState(false);
@@ -146,7 +147,7 @@ export default function Companion() {
             document.removeEventListener('visibilitychange',check);
         };
     },[refreshIfNeeded]);
-    function navigate(next: WorkspaceTab): boolean {
+    function navigate(next: WorkspaceTab, focusMain = true): boolean {
         if(next===tab)return true;
         if(dirty&&!confirm('Discard unsaved changes?'))
             return false;
@@ -163,7 +164,8 @@ export default function Companion() {
         });
         activeTab.current=next;
         setDirty(false);
-        focusAfterNavigation.current=true;
+        focusAfterNavigation.current=focusMain;
+        if(next!=='jobs')setShowJobsHandoff(false);
         setTab(next);
         return true;
     }
@@ -189,6 +191,9 @@ export default function Companion() {
             case 'automation': return <Automation client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'accounts': return <Automation mode="accounts" client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
             case 'overview': return <Overview client={client} openJobs={() => navigate('jobs')}
+                openAgentHandoff={nativeWorkspace ? () => {
+                    if (navigate('jobs', false)) setShowJobsHandoff(true);
+                } : undefined}
                 openWorkspace={nativeWorkspace ? navigate : undefined} legacyHref={legacyHref} refreshKey={refreshKeys[view]??0}/>;
             case 'attention': return <NeedsAttention client={client} refreshKey={refreshKeys[view]??0}
                 openJob={job => { if(navigate('jobs'))setRequestedJob(job); }}/>;
@@ -201,7 +206,7 @@ export default function Companion() {
             case 'consents': return <Answers client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
                 consentOnly={view==='consents'}/>;
             case 'settings': return <ApplicationSettings client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
-            case 'jobs': return <Jobs client={client} dirtyChanged={markDirty} active={view===tab} claimsEnabled={nativeWorkspace}
+            case 'jobs': return <Jobs client={client} dirtyChanged={markDirty} active={view===tab} claimsEnabled={nativeWorkspace} showHandoff={view===tab && showJobsHandoff}
                 refreshKey={refreshKeys[view]??0} requestedJob={view===tab?requestedJob:null} jobOpened={jobOpened} openAnswers={() => navigate('answers')}
                 workspaceChanged={refreshShellCounts}/>;
         }

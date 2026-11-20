@@ -7,14 +7,21 @@ import { JobEditor } from './JobEditor';
 import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
 import { JobHandoff } from './JobHandoff';
-import { activityProjection } from './projection-model';
+import { activityProjection, attentionGuidance, attentionProjection, attentionReasons } from './projection-model';
 import { useProjection } from './projection-view';
 import { JobTransitions } from './JobTransitions';
 
-export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJob, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
+function jobStatusLabel(status: string) {
+    if (status === 'ready') return 'Ready for agent';
+    if (status === 'awaiting_review') return 'Awaiting your review';
+    return status.replaceAll('_', ' ');
+}
+
+export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, showHandoff = false, requestedJob, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
     client: Client;
     active?: boolean;
     claimsEnabled?: boolean;
+    showHandoff?: boolean;
     requestedJob?: { id: string; revision: bigint } | null;
     jobOpened?: () => void;
     openAnswers?: () => void;
@@ -39,7 +46,17 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const generation = useRef(0);
     const listGeneration = useRef(0);
     const previousRefreshKey = useRef(refreshKey);
+    const handoffHeading = useRef<HTMLHeadingElement>(null);
+    const handoffFocused = useRef(false);
+    const handoffLoading = loading || previousRefreshKey.current !== refreshKey;
     const requestedRefresh = useRef<typeof requestedJob>(null);
+    const allJobs = data?.jobs ?? [];
+    const ready = allJobs.some(job => job.status === 'ready');
+    const reconfirmation = useProjection(client, active && claimsEnabled && ready ? '/api/attention' : null,
+        attentionProjection);
+    const pending = new Map(reconfirmation.data?.items
+        .filter(item => item.reasonCode === 'pending_live_reconfirmation')
+        .map(item => [item.jobId, item.revision]));
     const selectedJob = claimsEnabled ? editor?.selected : null;
     const activity = useProjection(client, active && selectedJob ? `/api/jobs/${encodeURIComponent(selectedJob.id)}/activity` : null,
         activityProjection, `${refreshKey}:${selectedJob?.revision ?? ''}`);
@@ -54,6 +71,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
             const next = await client.state(controller.signal);
             if (!alive.current || version !== listGeneration.current) return;
             setData(next);
+            reconfirmation.refresh();
             setEditor(current => current ? observe(current, next.jobs) : null);
             setLoadError('');
             return true;
@@ -89,6 +107,24 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         previousRefreshKey.current = refreshKey;
         void refresh();
     }, [refreshKey]);
+    useEffect(() => {
+        if (showHandoff && editor) close();
+    }, [showHandoff]);
+    useEffect(() => {
+        if (!showHandoff) {
+            handoffFocused.current = false;
+            return;
+        }
+        if (handoffLoading || handoffFocused.current) return;
+        const frame = requestAnimationFrame(() => {
+            const heading = handoffHeading.current;
+            if (!heading) return;
+            handoffFocused.current = true;
+            heading.focus({preventScroll:true});
+            heading.scrollIntoView({block:'start'});
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [showHandoff, handoffLoading]);
     useEffect(() => {
         dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy);
         return () => dirtyChanged(false);
@@ -174,13 +210,13 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
             if (alive.current && version === generation.current) setBusy(false);
         }
     }
-    const allJobs = data?.jobs ?? [];
     const visible = new Set(filterJobs(allJobs, query, status));
     const jobs = allJobs.filter(job => visible.has(job));
     const run = data?.applicationRun ?? null;
     const runQueue = new Set(run?.queueVersions.at(-1)?.jobIds ?? []);
     const runResume = data?.resumes.find(resume => resume.id === run?.selection.resumeId);
     const awaitingReview = selectedJob?.status === 'awaiting_review';
+    const selectedNeedsConfirmation = selectedJob?.status === 'ready' && pending.get(selectedJob.id) === selectedJob.revision;
     const reviewRecordUnavailable = activity.loading || Boolean(selectedJob && activity.data
         && (activity.data.job.revision > selectedJob.revision || activity.data.claim.state !== 'none'));
     const transitions = editor && selectedJob && <JobTransitions key={selectedJob.id} client={client} job={selectedJob}
@@ -223,7 +259,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     <label>Status<select value={status} onChange={e => setStatus(e.target.value)}>
                         <option value="">All statuses</option>
                         {['saved', 'needs_info', 'ready', 'in_progress', 'awaiting_review', 'applied', 'closed'].map(value =>
-                            <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
+                            <option key={value} value={value}>{jobStatusLabel(value)}</option>)}
                     </select></label>
                 </div>}
             </div>
@@ -239,12 +275,19 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     const company = String(job.company || 'Company not set');
                     const location = String(job.location || job.workplaceType || 'Location not set');
                     const priority = typeof job.priority === 'number' && Number.isFinite(job.priority) ? Math.max(0, Math.min(5, Math.round(job.priority))) : 0;
-                    return <button className="job-card" aria-label={`${role}, ${company}${runQueue.has(job.id) ? ', in active application run' : ''}`} disabled={busy || transitionBusy} key={job.id} onClick={() => open(job)}>
+                    const needsConfirmation = job.status === 'ready' && pending.get(job.id) === job.revision;
+                    const label = jobStatusLabel(job.status);
+                    const name = [role, company, runQueue.has(job.id) ? 'in active application run' : '', label,
+                        needsConfirmation ? attentionReasons.pending_live_reconfirmation : ''].filter(Boolean).join(', ');
+                    return <button className="job-card" aria-label={name} disabled={busy || transitionBusy} key={job.id} onClick={() => open(job)}>
                         <span className="company-mark" aria-hidden="true">{company.trim().charAt(0).toUpperCase() || '?'}</span>
-                        <span className="job-identity"><strong>{role}</strong><span>{company}</span></span>
+                        <span className="job-identity">
+                            <strong>{role}</strong><span>{company}</span>
+                            {needsConfirmation && <small className="job-confirmation">{attentionReasons.pending_live_reconfirmation}</small>}
+                        </span>
                         <span className="job-location">{location}</span>
                         <span className="job-priority" aria-label={`Priority ${priority} of 5`}>{priority ? `${'★'.repeat(priority)}${'☆'.repeat(5-priority)}` : 'Priority —'}</span>
-                        <span className={`status-pill status-${job.status}`}>{job.status.replaceAll('_', ' ')}</span>
+                        <span className={`status-pill status-${job.status}`}>{label}</span>
                         {runQueue.has(job.id) && <span className="run-pill">In active run</span>}
                         <span className="visually-hidden">revision {job.revision}</span>
                     </button>;
@@ -255,12 +298,21 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     : <strong>No jobs saved yet.</strong>}
             </div>}
         </div>
-        {claimsEnabled && allJobs.some(job => job.status === 'ready') && <Claims jobs={allJobs} />}
+        {claimsEnabled && (ready || showHandoff) && <Claims ready={ready}
+            loading={handoffLoading} unavailable={Boolean(loadError)}
+            headingRef={handoffHeading} />}
         {active && editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy} error={error}
             notice={editorNotice}
-            handoff={selectedJob && !editor.latest && !editor.missing && <JobHandoff job={selectedJob} activity={activity}>
-                {awaitingReview ? transitions : null}
-            </JobHandoff>}
+            handoff={selectedJob && !editor.latest && !editor.missing && (
+                selectedNeedsConfirmation
+                    ? <section className="workspace-panel job-handoff" aria-label={attentionReasons.pending_live_reconfirmation}>
+                        <h3>{attentionReasons.pending_live_reconfirmation}</h3>
+                        <p>{attentionGuidance.pending_live_reconfirmation}</p>
+                    </section>
+                    : <JobHandoff job={selectedJob} activity={activity}>
+                        {awaitingReview ? transitions : null}
+                    </JobHandoff>
+            )}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} reset={() => { setEditor(current => current?.selected
                 ? { ...openEditor(current.latest ?? current.selected), missing: current.missing } : null); setError(''); }} save={() => void save()}
