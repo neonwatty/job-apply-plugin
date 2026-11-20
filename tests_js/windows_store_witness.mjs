@@ -31,7 +31,7 @@ const service = createNativeStoreBootstrap('~\\new parent\\fresh café', '~/lega
 assert.equal(service.root, bootRoot);
 assert.equal(plain(service.paths()).profile, join(bootRoot, 'profile.json'));
 const legacyReference = path => fromJSON({ legacy: {
-  id: 'legacy', label: 'Legacy', path, default: false, revision: 1, createdAt: now(),
+  id: 'legacy', label: 'Legacy', path, default: false, revision: 1, createdAt: now(), updatedAt: now(),
 } });
 validateResumeReferences(legacyReference(join(temporary, 'source.txt')));
 assert.throws(() => validateResumeReferences(legacyReference('\\resumes\\source.txt')), /not normalized/);
