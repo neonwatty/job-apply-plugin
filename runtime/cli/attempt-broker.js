@@ -4,6 +4,7 @@ import { chmod, lstat, mkdir, open, readFile, rename, unlink } from 'node:fs/pro
 import { createConnection, createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { syncDirectory } from '../store/directory-sync.js';
 import { nativeAttemptPidName, nativeAttemptPidPendingName, validateNativeAttemptPid } from '../store/native-store-layout.js';
 import { AttemptAuthority } from './attempt-authority.js';
 import { AttemptFrameDecoder, attemptError, attemptHeartbeatMilliseconds, attemptIdleMilliseconds, attemptSocketPath, encodeAttemptFrame } from './attempt-protocol.js';
@@ -55,13 +56,7 @@ async function publishPid(root, processPath) {
         await pid.writeFile(`${process.pid}\n`);
         await pid.sync();
         await rename(pendingPath, processPath);
-        const directory = await open(root, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
-        try {
-            await directory.sync();
-        }
-        finally {
-            await directory.close();
-        }
+        await syncDirectory(root, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
     }
     finally {
         try {

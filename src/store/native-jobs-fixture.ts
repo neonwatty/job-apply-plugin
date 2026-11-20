@@ -1,8 +1,8 @@
-import { constants } from 'node:fs';
 import { chmod, mkdir, open } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { emptyAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import { fromJSON, JobsError } from '../contracts/workspace/values.js';
+import { syncDirectory } from './directory-sync.js';
 import { initialAutomationDocuments } from './native-automation.js';
 import { nativeFixtureMarker, nativeFixtureMarkerName } from './native-store-layout.js';
 import { atomicWritePointJson } from './point-persistence.js';
@@ -44,6 +44,5 @@ export async function initializeJobsFixture(root: string): Promise<void> {
     metadata: { createdAt: now, updatedAt: now } }), pointOptions);
   const handle = await open(join(root, nativeFixtureMarkerName), 'wx', 0o600);
   try { await handle.writeFile(nativeFixtureMarker); await handle.sync(); } finally { await handle.close(); }
-  const directory = await open(root, constants.O_RDONLY);
-  try { await directory.sync(); } finally { await directory.close(); }
+  await syncDirectory(root);
 }

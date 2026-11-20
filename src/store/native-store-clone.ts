@@ -8,6 +8,7 @@ import { JobsError } from '../contracts/workspace/values.js';
 import { initialAutomationDocuments } from './native-automation.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import type { PosixFlockProvider } from './posix-flock.js';
+import { syncDirectory } from './directory-sync.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { nativeApplicationAuthorityName, nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
@@ -61,8 +62,7 @@ async function copyDirectory(source: string, target: string, digest: ReturnType<
     await writePrivate(destination, bytes);
     await utimes(destination, metadata.atime, metadata.mtime);
   }
-  const handle = await open(target, constants.O_RDONLY);
-  try { await handle.sync(); } finally { await handle.close(); }
+  await syncDirectory(target);
 }
 
 async function missingDocuments(target: string, names: Set<string>, now: string): Promise<void> {
@@ -189,8 +189,7 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
           sourceTree, candidateTree }) + '\n');
         await writePrivate(join(target, nativeCloneMarkerName), marker);
       }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
-      const directory = await open(target, constants.O_RDONLY);
-      try { await directory.sync(); } finally { await directory.close(); }
+      await syncDirectory(target);
     }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
   } catch (error) {
     if (created) await rm(target, { recursive: true, force: true });

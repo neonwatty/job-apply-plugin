@@ -24,6 +24,7 @@ import { NativeAnswerResolutionJournal, validateResolutionJournal } from './nati
 import { claimOperationKinds, NativeClaimJournal, validateClaimJournal } from './native-claim-journal.js';
 import { closeRequestsForResumes, NativeExtractionJournal, validateExtractionJournal, validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
+import { syncDirectory } from './directory-sync.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 };
@@ -330,13 +331,7 @@ export class NativeStoreBootstrap {
                 await unlink(join(directory, name)).catch(error => { if (error.code !== 'ENOENT')
                     throw error; });
             }
-        const handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
-        try {
-            await handle.sync();
-        }
-        finally {
-            await handle.close();
-        }
+        await syncDirectory(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
     }
     async initialize() { return this.locked(() => this.initializeLocked()); }
     async initializeLocked() {

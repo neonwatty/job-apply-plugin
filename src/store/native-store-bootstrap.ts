@@ -26,6 +26,7 @@ import { NativeAnswerResolutionJournal, validateResolutionJournal } from './nati
 import { claimOperationKinds, NativeClaimJournal, validateClaimJournal } from './native-claim-journal.js';
 import { closeRequestsForResumes, NativeExtractionJournal, validateExtractionJournal, validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
+import { syncDirectory } from './directory-sync.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 
@@ -294,8 +295,7 @@ export class NativeStoreBootstrap {
     for (const name of names) if (!name.startsWith('.') && /\.(?:pdf|docx|txt)$/i.test(name) && !referenced.has(name)) {
       await unlink(join(directory, name)).catch(error => { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; });
     }
-    const handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
-    try { await handle.sync(); } finally { await handle.close(); }
+    await syncDirectory(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
   }
   async initialize(): Promise<Value> { return this.locked(() => this.initializeLocked()); }
   private async initializeLocked(): Promise<Value> {

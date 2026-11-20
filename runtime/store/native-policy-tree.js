@@ -3,6 +3,7 @@ import { chmod, lstat, mkdir, open, readdir, realpath } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { dirname, join } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
+import { syncDirectory } from './directory-sync.js';
 const policyName = 'auto-submit';
 const maximumEntries = 4096;
 const maximumFileBytes = 16 * 1024 * 1024;
@@ -204,15 +205,6 @@ async function writePrivate(path, bytes) {
     try {
         await handle.chmod(0o600);
         await handle.writeFile(bytes);
-        await handle.sync();
-    }
-    finally {
-        await handle.close();
-    }
-}
-async function syncDirectory(path) {
-    const handle = await open(path, constants.O_RDONLY);
-    try {
         await handle.sync();
     }
     finally {
