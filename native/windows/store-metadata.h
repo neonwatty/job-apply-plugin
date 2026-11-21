@@ -75,8 +75,8 @@ static napi_value store_metadata(napi_env env, napi_callback_info info) {
     }
 
     DWORD failure = ERROR_SUCCESS;
-    FILE_ID_INFO identity;
-    BY_HANDLE_FILE_INFORMATION attributes;
+    FILE_ID_INFO identity = {0};
+    BY_HANDLE_FILE_INFORMATION attributes = {0};
     HANDLE token = NULL;
     TOKEN_USER *user = NULL;
     PSECURITY_DESCRIPTOR security = NULL;
