@@ -39,7 +39,7 @@ async function shutdown(code) {
 function owned(command, argv, env = process.env) {
   if (stopping) throw new Error("Companion startup cancelled");
   const child = spawn(command, argv, {
-    cwd: app, env, detached: !externalProcessOwner,
+    cwd: app, env, detached: !externalProcessOwner, windowsHide: true,
     stdio: ["ignore", "pipe", "pipe", externalProcessOwner ? 3 : "ignore"],
   });
   children.add(child);

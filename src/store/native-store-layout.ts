@@ -10,6 +10,10 @@ export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
 // Windows only: the broker lock and pipe key live in the private Store (see cli/attempt-pipe.ts).
 export const nativeAttemptLockName = '.job-apply-attempt.lock';
 export const nativeAttemptKeyName = '.job-apply-attempt.key';
+// Windows only: the Companion writer lease. POSIX keeps it beside the Store root.
+export const nativeWriterLeaseName = '.job-apply-writer.lock';
+// Windows only: present while a fresh native Store is being created, never in a valid Store.
+export const nativeStorePendingName = '.native-store-pending';
 export const nativeFixtureMarkerName = '.native-jobs-fixture';
 export const nativeCloneMarkerName = '.native-store-clone';
 export const nativePolicyTreeName = 'auto-submit';
@@ -25,7 +29,7 @@ export const nativeStoreRequiredEntries = [
 ] as const;
 export const nativeStoreAllowedEntries = new Set([
   ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
-  ...(process.platform === 'win32' ? [nativeAttemptLockName, nativeAttemptKeyName] : []),
+  ...(process.platform === 'win32' ? [nativeAttemptLockName, nativeAttemptKeyName, nativeWriterLeaseName] : []),
   nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json',
 ]);
 

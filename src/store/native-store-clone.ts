@@ -13,6 +13,7 @@ import { atomicWritePointJson } from './point-persistence.js';
 import { nativeApplicationAuthorityName, nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
 import type { NativePolicyTreeEntry } from './native-policy-tree.js';
+import { openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
 
 const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'),
   nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json']);
@@ -21,14 +22,37 @@ const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', '
 const directories = new Set(['resume-files', 'sessions']);
 const options = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 
+const windows = process.platform === 'win32';
+
 async function privateDirectory(path: string, label: string, parent = false): Promise<void> {
+  if (windows) {
+    // Windows: the owner-only ACL replaces the mode bits. Requires an active Windows Store scope.
+    try { requireWindowsPrivate(path, true); } catch { throw new JobsError(`${label} has unsafe permissions or ownership`); }
+    if (await realpath(path).catch(() => null) !== path) throw new JobsError(`${label} has unsafe permissions or ownership`);
+    return;
+  }
   const canonical = await realpath(path).catch(() => null);
   const metadata = await lstat(path).catch(() => null);
   if (canonical !== path || !metadata?.isDirectory() || metadata.isSymbolicLink()
     || metadata.uid !== process.getuid?.() || metadata.mode & (parent ? 0o022 : 0o077)) throw new JobsError(`${label} has unsafe permissions or ownership`);
 }
 
+async function windowsPrivateBytes(path: string, limit: number): Promise<Buffer> {
+  const handle = await openWindowsStoreFile(path, constants.O_RDONLY);
+  try {
+    const identity = windowsFileIdentity(requireWindowsPrivate(handle.fd, false));
+    const before = await handle.stat({ bigint: true });
+    if (!before.isFile() || before.size > BigInt(limit)) throw new JobsError('canonical clone source file is unsupported');
+    const bytes = await handle.readFile();
+    const after = await handle.stat({ bigint: true });
+    if (identity !== windowsFileIdentity(requireWindowsPrivate(path, false)) || before.size !== after.size
+      || before.mtimeNs !== after.mtimeNs) throw new JobsError('canonical clone source changed');
+    return bytes;
+  } finally { await handle.close(); }
+}
+
 async function privateBytes(path: string, limit = 32 * 1024 * 1024): Promise<Buffer> {
+  if (windows) return windowsPrivateBytes(path, limit);
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const before = await handle.stat({ bigint: true });
@@ -43,7 +67,8 @@ async function privateBytes(path: string, limit = 32 * 1024 * 1024): Promise<Buf
 }
 
 async function writePrivate(path: string, bytes: Buffer): Promise<void> {
-  const handle = await open(path, 'wx', 0o600);
+  const handle = windows ? await openWindowsStoreFile(path, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL)
+    : await open(path, 'wx', 0o600);
   try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
 }
 
@@ -195,4 +220,32 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
     if (created) await rm(target, { recursive: true, force: true });
     throw error;
   }
+}
+
+/**
+ * Gives a freshly bootstrapped Store native ownership in place. Used where no Python-era
+ * Store exists to clone from, so the result matches a completed activation: the marker
+ * records the bootstrapped tree as its source and the completed native tree as its
+ * candidate. The caller must hold the Store lock.
+ */
+export async function adoptFreshNativeStoreLocked(root: string, provider: PosixFlockProvider,
+  now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), signal = AbortSignal.timeout(30_000),
+  transient: readonly string[] = []): Promise<void> {
+  await privateDirectory(root, 'native Store root');
+  const listed = async () => new Set((await readdir(root)).filter(name => !transient.includes(name)));
+  const source = await listed();
+  if (coreFiles.some(name => !source.has(name)) || [...source].some(name => !sourceFiles.has(name))) {
+    throw new JobsError('fresh native Store contains unsupported or incomplete state');
+  }
+  const sourceTree = await storeTreeLocked(root, source, provider, false, signal);
+  await missingDocuments(root, new Set(source), now);
+  const candidate = await listed();
+  if (nativeStoreRequiredEntries.some(name => !candidate.has(name))
+    || [...candidate].some(name => !source.has(name) && !nativeStoreRequiredEntries.includes(name as never))) {
+    throw new JobsError('fresh native Store is incomplete');
+  }
+  const candidateTree = await storeTreeLocked(root, candidate, provider, true, signal);
+  await writePrivate(join(root, nativeCloneMarkerName), Buffer.from(JSON.stringify({ mode: 'canonical-store-clone', version: 2,
+    sourceTree, candidateTree }) + '\n'));
+  await syncDirectory(root);
 }

@@ -12,7 +12,7 @@ through the plugin with Companion closed.
 
 ### Requirements
 
-Install **Node.js 22 or newer** on **macOS Apple Silicon** or **Linux x64** and
+Install **Node.js 22 or newer** on **macOS Apple Silicon**, **Linux x64** or **Windows x64** and
 make `node` available to your host. For visible form filling, enable the Codex
 Browser plugin or [Claude in Chrome](https://chromewebstore.google.com/detail/claude-in-chrome).
 If upgrading from Python, follow the [Store upgrade guide](skills/answer-memory/references/upgrade.md)
@@ -331,7 +331,11 @@ chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-jo
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
-Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. Installed production routes require no Python interpreter and have no Python fallback. A source-checkout installation can retain historical Python reference files; those files are not production entrypoints. See [runtime closure status](docs/migration/python-runtime-closure.md).
+On Windows, the Store directory and every file in it are created with an access list that grants only your account; Windows Explorer's **Properties → Security** tab shows it.
+
+On Windows, the first data command or Companion launch creates a new native Store, or reopens one it created before. It does not migrate a Store written by an earlier Python version of the plugin. If the selected directory contains such data, or anything else it does not recognize, the command stops, leaves that directory unchanged, and asks you to choose a separate, empty Store root with `--root` or `JOB_APPLY_STORE_DIR`.
+
+Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64, Linux x64 and Windows x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. Installed production routes require no Python interpreter and have no Python fallback. A source-checkout installation can retain historical Python reference files; those files are not production entrypoints. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
 All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 

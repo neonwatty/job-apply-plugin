@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
-import { loadPosixFlockProvider } from '../store/posix-flock.js';
+import { withNativeStore } from '../store/native-store-provider.js';
 import { FinalActionPolicyService } from '../final-action-policy/service.js';
 import { expandRoot } from '../final-action-policy/repository.js';
 import { check, decodePolicyBytes, object, parsePolicyJson, PolicyError, serializeDocument } from '../final-action-policy/model.js';
@@ -88,26 +88,28 @@ export async function runPolicyCli(args) {
     const configured = get('root') || process.env.JOB_APPLY_STORE_DIR;
     const root = configured ? expandRoot(configured) : join(homedir(), '.job-apply');
     const pluginRoot = await realpath(fileURLToPath(new URL('../../', import.meta.url)));
-    const provider = loadPosixFlockProvider(await resolvePackagedNativeLock(pluginRoot));
-    const service = new FinalActionPolicyService(root, { provider });
-    if (command === 'status')
-        return service.status();
-    if (command === 'activate')
-        return service.activate(await readInput(required('input')));
-    if (command === 'authorize')
-        return service.authorize(await readInput(required('input')));
-    if (command === 'claim-final-action') {
-        const ordinal = required('attempt');
-        check(/^[+-]?\d+$/.test(ordinal), 'attempt ordinal is invalid');
-        return service.claim(required('application-ref'), required('lease-id'), Number(ordinal), await readInput(required('input')), required('action-capability'));
-    }
-    if (command === 'record-outcome') {
-        const eventPath = get('confirmation-event');
-        return service.outcome(required('campaign-id'), required('application-ref'), required('lease-id'), required('claim-id'), required('outcome'), eventPath ? await readInput(eventPath) : undefined, get('confirmation-capability'));
-    }
-    if (command === 'kill')
-        return service.kill();
-    return service.revoke();
+    // Windows Store writes need the explicitly selected addon scope.
+    return withNativeStore(root, await resolvePackagedNativeLock(pluginRoot), async (provider) => {
+        const service = new FinalActionPolicyService(root, { provider });
+        if (command === 'status')
+            return service.status();
+        if (command === 'activate')
+            return service.activate(await readInput(required('input')));
+        if (command === 'authorize')
+            return service.authorize(await readInput(required('input')));
+        if (command === 'claim-final-action') {
+            const ordinal = required('attempt');
+            check(/^[+-]?\d+$/.test(ordinal), 'attempt ordinal is invalid');
+            return service.claim(required('application-ref'), required('lease-id'), Number(ordinal), await readInput(required('input')), required('action-capability'));
+        }
+        if (command === 'record-outcome') {
+            const eventPath = get('confirmation-event');
+            return service.outcome(required('campaign-id'), required('application-ref'), required('lease-id'), required('claim-id'), required('outcome'), eventPath ? await readInput(eventPath) : undefined, get('confirmation-capability'));
+        }
+        if (command === 'kill')
+            return service.kill();
+        return service.revoke();
+    });
 }
 if (process.argv[1] && await realpath(process.argv[1]).catch(() => '') === fileURLToPath(import.meta.url)) {
     try {

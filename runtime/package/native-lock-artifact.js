@@ -15,18 +15,25 @@ export async function resolvePackagedNativeLock(pluginRoot) {
         || await realpath(pluginRoot).catch(() => null) !== pluginRoot) {
         throw new TypeError("Plugin root must be an absolute canonical directory");
     }
-    if (!['darwin', 'linux'].includes(process.platform))
+    const windows = process.platform === 'win32';
+    if (!['darwin', 'linux', 'win32'].includes(process.platform) || windows && process.arch !== 'x64') {
         throw new Error("Packaged native lock is unavailable on this platform");
+    }
     const napi = Number(process.versions.napi);
     if (!Number.isInteger(napi) || napi < 8)
         throw new Error("Packaged native lock requires Node-API 8");
     const directory = join(pluginRoot, "native", "packaged-lock", `${process.platform}-${process.arch}-napi8`);
     if (await realpath(directory).catch(() => null) !== directory)
         throw new Error("Packaged native lock directory is unavailable");
-    const sourcePath = join(pluginRoot, "native", "posix", "flock.c");
-    if (await realpath(sourcePath).catch(() => null) !== sourcePath)
-        throw new Error("Packaged native lock source is unavailable");
-    const source = await regular(sourcePath, "source");
+    // The Windows receipt binds the addon source and the header it includes, as the build does.
+    const sourcePaths = windows
+        ? [join(pluginRoot, "native", "windows", "flock.c"), join(pluginRoot, "native", "windows", "store-metadata.h")]
+        : [join(pluginRoot, "native", "posix", "flock.c")];
+    for (const sourcePath of sourcePaths) {
+        if (await realpath(sourcePath).catch(() => null) !== sourcePath)
+            throw new Error("Packaged native lock source is unavailable");
+    }
+    const source = Buffer.concat(await Promise.all(sourcePaths.map(path => regular(path, "source"))));
     const artifactPath = join(directory, "flock.node");
     const [artifact, receiptBytes] = await Promise.all([
         regular(artifactPath, "artifact"), regular(join(directory, "receipt.json"), "receipt"),

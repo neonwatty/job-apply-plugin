@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NativeJobsRepository } from '../store/native-jobs.js';
-import { loadPosixFlockProvider } from '../store/posix-flock.js';
+import { withNativeStore } from '../store/native-store-provider.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { object, parse } from '../contracts/workspace/values.js';
@@ -36,7 +36,7 @@ async function installedTaskArgs(args) {
 export async function runTask(args) {
     try {
         const parsed = parseTaskArgs(await installedTaskArgs(args));
-        const repository = new NativeJobsRepository(parsed.options.get('--root'), loadPosixFlockProvider(parsed.options.get('--native-lock')));
+        const root = parsed.options.get('--root');
         const payload = async () => {
             try {
                 // Python Path.read_text is strict UTF-8 and treats '-' as an ordinary filename.
@@ -47,7 +47,8 @@ export async function runTask(args) {
                 throw new TaskRequestError();
             }
         };
-        return { output: canonicalJson(await runTaskCommand(parsed, repository, payload)) + '\n', exitCode: 0 };
+        const result = await withNativeStore(root, parsed.options.get('--native-lock'), provider => runTaskCommand(parsed, new NativeJobsRepository(root, provider), payload));
+        return { output: canonicalJson(result) + '\n', exitCode: 0 };
     }
     catch (error) {
         if (error instanceof TaskHelp)

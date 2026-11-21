@@ -13,12 +13,16 @@ export async function packageNativeLock(packageRoot) {
   if (!isAbsolute(packageRoot)) throw new TypeError('Package root must be absolute');
   const root = await realpath(packageRoot);
   if (root === await realpath(repository)) throw new Error('Native lock packaging requires a disposable package copy');
-  const sourcePath = join(root, 'native/posix/flock.c');
-  const sourceMetadata = await lstat(sourcePath).catch(() => null);
-  if (!sourceMetadata?.isFile() || sourceMetadata.isSymbolicLink() || await realpath(sourcePath).catch(() => null) !== sourcePath) {
-    throw new Error('Package native lock source is unavailable');
+  const sourcePaths = process.platform === 'win32'
+    ? [join(root, 'native', 'windows', 'flock.c'), join(root, 'native', 'windows', 'store-metadata.h')]
+    : [join(root, 'native/posix/flock.c')];
+  for (const sourcePath of sourcePaths) {
+    const sourceMetadata = await lstat(sourcePath).catch(() => null);
+    if (!sourceMetadata?.isFile() || sourceMetadata.isSymbolicLink() || await realpath(sourcePath).catch(() => null) !== sourcePath) {
+      throw new Error('Package native lock source is unavailable');
+    }
   }
-  const source = await readFile(sourcePath);
+  const source = Buffer.concat(await Promise.all(sourcePaths.map(path => readFile(path))));
   const parent = join(root, 'native/packaged-lock');
   await mkdir(parent, { recursive: true });
   if (await realpath(parent) !== parent) throw new Error('Package native lock destination is invalid');

@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { activateStoreForCli, validateSupervisorRoot } from './supervise.mjs';
 import { storeWriterOwnership } from './writer-route.mjs';
 import { parseAttemptArgs } from '../../runtime/cli/attempt-protocol.js';
+import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
+import { activateWindowsStore, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
 
 const app = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(app, '../..');
@@ -44,9 +47,14 @@ async function run() {
   const legacyProfile = legacyIndex < 0 ? undefined : args[legacyIndex + 1];
   if (legacyIndex >= 0 && (!legacyProfile || legacyProfile.startsWith('--'))) throw new Error('missing legacy profile');
   if (!help && !invalidAttempt && !(readOnlyAbsent && !existsSync(root))) {
-    const ownership = await storeWriterOwnership(root);
-    if (ownership === 'fixture') await validateSupervisorRoot(root);
-    else await activateStoreForCli({ root, pluginRoot, nativeLock: undefined, legacyProfile });
+    if (process.platform === 'win32') {
+      // Windows has no Python-era writer to switch from: create or reopen a native Store only.
+      await activateWindowsStore(root, await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });
+    } else {
+      const ownership = await storeWriterOwnership(root);
+      if (ownership === 'fixture') await validateSupervisorRoot(root);
+      else await activateStoreForCli({ root, pluginRoot, nativeLock: undefined, legacyProfile });
+    }
   }
   const child = spawn(process.execPath, [join(pluginRoot, 'runtime/cli', target), ...args], { stdio: 'inherit', env: process.env });
   const result = await new Promise((done, reject) => { child.once('error', reject); child.once('exit', (code, signal) => done({ code, signal })); });
@@ -54,6 +62,7 @@ async function run() {
   process.exitCode = result.code ?? 1;
 }
 try { await run(); }
-catch {
-  process.stderr.write('Job Apply native Store activation failed\n'); process.exitCode = 2;
+catch (error) {
+  process.stderr.write(error instanceof UnrecognizedStoreError ? `${error.message}\n` : 'Job Apply native Store activation failed\n');
+  process.exitCode = 2;
 }
