@@ -1,3 +1,55 @@
+/* Publish the entry with its owner and private DACL already in effect. */
+static napi_value create_store_entry(napi_env env, napi_callback_info info) {
+    size_t count = 3, length;
+    napi_value arguments[3], result;
+    bool directory;
+    if (napi_get_cb_info(env, info, &count, arguments, NULL, NULL) != napi_ok || count != 2
+        || napi_get_value_bool(env, arguments[1], &directory) != napi_ok) {
+        napi_throw_type_error(env, NULL, "Store creation requires a path and directory flag");
+        return NULL;
+    }
+    wchar_t *path = wide_string(env, arguments[0], 32767, &length);
+    if (!path) return NULL;
+
+    DWORD failure = ERROR_SUCCESS;
+    HANDLE token = NULL;
+    TOKEN_USER *user = NULL;
+    PACL acl = NULL;
+    SECURITY_DESCRIPTOR security;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) failure = GetLastError();
+    else if ((user = token_information(token, TokenUser, &failure)) != NULL) {
+        failure = make_owner_dacl(user->User.Sid, directory, &acl);
+        if (failure == ERROR_SUCCESS) {
+            if (!InitializeSecurityDescriptor(&security, SECURITY_DESCRIPTOR_REVISION)
+                || !SetSecurityDescriptorOwner(&security, user->User.Sid, FALSE)
+                || !SetSecurityDescriptorDacl(&security, TRUE, acl, FALSE)
+                || !SetSecurityDescriptorControl(&security, SE_DACL_PROTECTED, SE_DACL_PROTECTED)) {
+                failure = GetLastError();
+            } else {
+                SECURITY_ATTRIBUTES attributes;
+                attributes.nLength = sizeof(attributes);
+                attributes.lpSecurityDescriptor = &security;
+                attributes.bInheritHandle = FALSE;
+                if (directory) {
+                    if (!CreateDirectoryW(path, &attributes)) failure = GetLastError();
+                } else {
+                    HANDLE file = CreateFileW(path, FILE_GENERIC_READ | FILE_GENERIC_WRITE, file_sharing,
+                        &attributes, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+                    if (file == INVALID_HANDLE_VALUE) failure = GetLastError();
+                    else CloseHandle(file);
+                }
+            }
+        }
+    }
+    if (acl) LocalFree(acl);
+    free(user);
+    if (token) CloseHandle(token);
+    free(path);
+    if (failure != ERROR_SUCCESS) return throw_win32_at(env, failure, "Create private Store entry");
+    CHECK_NAPI(env, napi_get_undefined(env, &result));
+    return result;
+}
+
 /* Store metadata comes from one handle, so ACLs and file identity describe the same entry. */
 static napi_value store_metadata(napi_env env, napi_callback_info info) {
     size_t count = 2, length;

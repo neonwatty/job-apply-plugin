@@ -23,6 +23,25 @@ const options = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 const plain = value => JSON.parse(canonicalJson(value));
 const now = () => '2026-11-20T00:00:00Z';
 
+function grantRead(path, access) {
+  const granted = spawnSync('icacls.exe', [path, '/grant', `*S-1-1-0:${access}`], {
+    encoding: 'utf8', windowsHide: true, timeout: 5_000,
+  });
+  assert.ifError(granted.error);
+  assert.equal(granted.status, 0, granted.stderr || granted.stdout);
+}
+
+const ordinaryParent = join(temporary, 'ordinary');
+await mkdir(ordinaryParent);
+grantRead(ordinaryParent, '(OI)(CI)(R)');
+const privateChild = join(ordinaryParent, 'private');
+addon.createStoreEntry(privateChild, true);
+assert.equal(addon.storeMetadata(privateChild).private, true);
+const privateFile = join(ordinaryParent, 'private.txt');
+addon.createStoreEntry(privateFile, false);
+assert.equal(addon.storeMetadata(privateFile).private, true);
+assert.throws(() => addon.createStoreEntry(privateFile, false), { code: 'EEXIST' });
+
 const bootRoot = join(temporary, 'new parent', 'fresh café');
 const legacy = join(temporary, 'legacy profile.json');
 await writeFile(legacy, '{"firstName":"Ada","exact":9007199254740993}\n');
@@ -142,15 +161,13 @@ await withWindowsStore(root, artifact, async provider => {
   await assert.rejects(repository.resumeImport(fromJSON({ id: 'sample', label: 'Different' }),
     'different.txt', Buffer.from('Different resume\n'), true), /canonical spelling|filenames collide/);
   assert.equal(await readFile(join(root, 'resume-files', 'Sample.txt'), 'utf8'), 'Synthetic resume\n');
+  await assert.rejects(openWindowsStoreFile(join(root, 'resume-files', 'sample.txt'), constants.O_RDONLY),
+    { code: 'ENOENT' });
   assert.equal((await repository.resumeSummaries()).length, 1);
 
   const different = join(temporary, 'public profile.json');
   await writeFile(different, '{}');
-  const granted = spawnSync('icacls.exe', [different, '/grant', '*S-1-1-0:(R)'], {
-    encoding: 'utf8', windowsHide: true, timeout: 5_000,
-  });
-  assert.ifError(granted.error);
-  assert.equal(granted.status, 0, granted.stderr || granted.stdout);
+  grantRead(different, '(R)');
   const profile = join(root, 'profile.json');
   const original = await readFile(profile);
   await unlink(profile);

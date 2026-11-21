@@ -33,6 +33,8 @@ static const error_map errors[] = {
     { ERROR_ACCESS_DENIED, EACCES, "EACCES" },
     { ERROR_FILE_NOT_FOUND, ENOENT, "ENOENT" },
     { ERROR_PATH_NOT_FOUND, ENOENT, "ENOENT" },
+    { ERROR_FILE_EXISTS, EEXIST, "EEXIST" },
+    { ERROR_ALREADY_EXISTS, EEXIST, "EEXIST" },
     { ERROR_INVALID_HANDLE, EBADF, "EBADF" },
     { ERROR_NOT_ENOUGH_MEMORY, ENOMEM, "ENOMEM" },
     { ERROR_INVALID_PARAMETER, EINVAL, "EINVAL" },
@@ -196,7 +198,7 @@ static BOOL owner_only_dacl(PACL acl, PSID user) {
     return has_access;
 }
 
-static DWORD set_owner_only_dacl(HANDLE file, PSID user, BOOL change_owner, BOOL directory) {
+static DWORD make_owner_dacl(PSID user, BOOL directory, PACL *acl) {
     EXPLICIT_ACCESS_W access = {0};
     access.grfAccessPermissions = FILE_ALL_ACCESS;
     access.grfAccessMode = SET_ACCESS;
@@ -204,8 +206,12 @@ static DWORD set_owner_only_dacl(HANDLE file, PSID user, BOOL change_owner, BOOL
     access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
     access.Trustee.TrusteeType = TRUSTEE_IS_USER;
     access.Trustee.ptstrName = (LPWSTR)user;
+    return SetEntriesInAclW(1, &access, NULL, acl);
+}
+
+static DWORD set_owner_only_dacl(HANDLE file, PSID user, BOOL change_owner, BOOL directory) {
     PACL acl = NULL;
-    DWORD failure = SetEntriesInAclW(1, &access, NULL, &acl);
+    DWORD failure = make_owner_dacl(user, directory, &acl);
     if (failure == ERROR_SUCCESS) {
         /* Windows can propagate inheritable ACEs to existing unprotected children. */
         SECURITY_INFORMATION flags = DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION;
@@ -469,6 +475,7 @@ static napi_value initialize(napi_env env, napi_value exports) {
         { "restrictToOwner", NULL, restrict_to_owner, NULL, NULL, NULL, napi_default, NULL },
         { "isOwnerOnly", NULL, is_owner_only, NULL, NULL, NULL, napi_default, NULL },
         { "storeMetadata", NULL, store_metadata, NULL, NULL, NULL, napi_default, NULL },
+        { "createStoreEntry", NULL, create_store_entry, NULL, NULL, NULL, napi_default, NULL },
         { "listNames", NULL, list_names, NULL, NULL, NULL, napi_default, NULL },
         { "inspect", NULL, inspect_entry, NULL, NULL, NULL, napi_default, NULL },
         { "openFile", NULL, open_entry, NULL, NULL, NULL, napi_default, NULL },

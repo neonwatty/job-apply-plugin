@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { constants } from 'node:fs';
-import { mkdir, open, realpath, unlink } from 'node:fs/promises';
+import { mkdir, open, realpath } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { win32 } from 'node:path';
 import { resolvePosixPath } from '../contracts/posix-path.js';
@@ -27,7 +27,7 @@ export async function withWindowsStore(root, addonPath, operation) {
         || !('tryLock' in addon) || typeof addon.tryLock !== 'function'
         || !('unlock' in addon) || typeof addon.unlock !== 'function'
         || !('storeMetadata' in addon) || typeof addon.storeMetadata !== 'function'
-        || !('restrictToOwner' in addon) || typeof addon.restrictToOwner !== 'function') {
+        || !('createStoreEntry' in addon) || typeof addon.createStoreEntry !== 'function') {
         throw new Error('Invalid Windows Store addon');
     }
     return scope.run({ root, addon: addon }, () => operation(addon));
@@ -92,54 +92,45 @@ export async function ensureWindowsPrivateDirectory(path, existOk = true) {
     if (canonicalParent !== parent)
         throw new Error('Windows Store directory parent must be canonical');
     try {
-        await mkdir(windowsPath(path));
+        addon.createStoreEntry(windowsPath(path), true);
     }
     catch (error) {
         if (!existOk || error.code !== 'EEXIST')
             throw error;
-        requireWindowsPrivate(path, true);
-        return;
     }
-    addon.restrictToOwner(path);
     requireWindowsPrivate(path, true);
 }
 export async function openWindowsStoreFile(path, flags, privateFile = true) {
-    const creating = Boolean(flags & constants.O_CREAT);
+    const writing = Boolean(flags & (constants.O_WRONLY | constants.O_RDWR));
     const parent = win32.dirname(path);
     if (privateFile && await realpath(parent) !== parent)
         throw new Error('Windows Store file parent must be canonical');
-    if (creating || flags & (constants.O_WRONLY | constants.O_RDWR)) {
+    if (writing || flags & constants.O_CREAT) {
         insideStore(path);
         requireWindowsPrivate(parent, true);
     }
-    const initial = creating ? undefined : (privateFile ? requireWindowsPrivate(path, false) : windowsMetadata(path));
-    if (initial?.directory)
-        throw new Error('Windows Store entry must be a file');
-    if (initial && privateFile && await realpath(path) !== path) {
-        throw new Error('Windows Store file path must use its canonical spelling');
-    }
-    let handle;
-    try {
-        const access = flags & constants.O_WRONLY ? (flags & ~constants.O_WRONLY) | constants.O_RDWR : flags;
-        handle = await open(windowsPath(path), (access & ~constants.O_TRUNC) | (creating ? constants.O_EXCL : 0));
-    }
-    catch (error) {
-        if (!creating || (flags & constants.O_EXCL) || error.code !== 'EEXIST')
-            throw error;
-        return openWindowsStoreFile(path, flags & ~constants.O_CREAT, privateFile);
-    }
-    let opened;
-    try {
-        opened = windowsMetadata(handle.fd);
-        if (opened.directory || (privateFile && opened.links !== 1))
-            throw new Error('Windows Store entry must be a file without links');
-        if (windowsFileIdentity(opened) !== windowsFileIdentity(initial ?? windowsMetadata(path))) {
-            throw new Error('Windows Store file identity changed');
+    if (flags & constants.O_CREAT) {
+        try {
+            store().addon.createStoreEntry(windowsPath(path), false);
         }
-        if (creating)
-            store().addon.restrictToOwner(path);
-        const checked = privateFile ? requireWindowsPrivate(handle.fd, false) : opened;
-        if (windowsFileIdentity(windowsMetadata(path)) !== windowsFileIdentity(checked)) {
+        catch (error) {
+            if ((flags & constants.O_EXCL) || error.code !== 'EEXIST')
+                throw error;
+        }
+    }
+    const initial = privateFile ? requireWindowsPrivate(path, false) : windowsMetadata(path);
+    if (initial.directory)
+        throw new Error('Windows Store entry must be a file');
+    if (privateFile && await realpath(path) !== path) {
+        const error = new Error('Windows Store file path must use its canonical spelling');
+        throw writing ? error : Object.assign(error, { code: 'ENOENT' });
+    }
+    const access = flags & constants.O_WRONLY ? (flags & ~constants.O_WRONLY) | constants.O_RDWR : flags;
+    const handle = await open(windowsPath(path), access & ~(constants.O_TRUNC | constants.O_CREAT | constants.O_EXCL));
+    try {
+        const checked = privateFile ? requireWindowsPrivate(handle.fd, false) : windowsMetadata(handle.fd);
+        if (windowsFileIdentity(initial) !== windowsFileIdentity(checked)
+            || windowsFileIdentity(windowsMetadata(path)) !== windowsFileIdentity(checked)) {
             throw new Error('Windows Store file identity changed');
         }
         if (flags & constants.O_TRUNC)
@@ -148,13 +139,6 @@ export async function openWindowsStoreFile(path, flags, privateFile = true) {
     }
     catch (error) {
         await handle.close();
-        if (creating && opened) {
-            try {
-                if (windowsFileIdentity(windowsMetadata(path)) === windowsFileIdentity(opened))
-                    await unlink(path);
-            }
-            catch { /* Preserve the original failure. */ }
-        }
         throw error;
     }
 }
