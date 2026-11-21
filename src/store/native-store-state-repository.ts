@@ -20,7 +20,7 @@ import { validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { requirePrivateStoreDirectory } from './private-store-entry.js';
-import { checkWindowsStoreWrite } from './windows-store.js';
+import { checkWindowsStoreWrite, WindowsStorePathAliasError } from './windows-store.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 export interface NativeStoreStateStorage {
@@ -55,7 +55,7 @@ export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
         diagnosticProfile: '3.12', intMaxStrDigits: 4300,
       }), 'session');
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof WindowsStorePathAliasError) return null;
       throw error;
     }
   };
@@ -81,7 +81,10 @@ export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
         if (process.platform === 'win32') await checkWindowsStoreWrite(path);
         await unlink(path); await syncDirectory(directory); return true;
       }
-      catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error; }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof WindowsStorePathAliasError) return false;
+        throw error;
+      }
     },
     canonicalJob: async id => {
       const value = get(object(get(jobs, 'jobs'), 'jobs.jobs'), safeId(id));

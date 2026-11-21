@@ -16,6 +16,7 @@ import { createNativeStoreBootstrap, NativeStoreBootstrap } from '../runtime/sto
 import { appendPointHistoryEvent, atomicWritePointJson } from '../runtime/store/point-persistence.js';
 import { checkWindowsStoreWrite, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata, withWindowsStore } from '../runtime/store/windows-store.js';
 import { JobUpsertService } from '../runtime/workspace-core/job-upsert.js';
+import { SessionService } from '../runtime/workspace-core/store-sessions.js';
 
 const [artifact, temporary] = process.argv.slice(2);
 const addon = createRequire(import.meta.url)(artifact);
@@ -155,6 +156,12 @@ await withWindowsStore(root, artifact, async provider => {
   const reopened = await repository.transaction(async ({ document }) => plain(document));
   assert.equal(Object.values(reopened.jobs)[0].role, 'Windows role');
   assert.deepEqual(await readFile(originalAnswers), untouched);
+  const sessions = new SessionService(repository, now);
+  await sessions.save('Session', fromJSON({ status: 'active' }));
+  await assert.rejects(sessions.load('session'), /session does not exist/);
+  assert.equal(plain(await sessions.delete('session')).deleted, false);
+  await assert.rejects(sessions.save('session', fromJSON({ status: 'review' })), /canonical spelling/);
+  assert.equal(plain(await sessions.load('Session')).status, 'active');
   const source = join(temporary, 'résumé.txt');
   await writeFile(source, 'Synthetic resume\n');
   await repository.resumeImport(fromJSON({ id: 'Sample', label: 'Resume' }), 'résumé.txt', await readFile(source), true);
@@ -162,7 +169,7 @@ await withWindowsStore(root, artifact, async provider => {
     'different.txt', Buffer.from('Different resume\n'), true), /canonical spelling|filenames collide/);
   assert.equal(await readFile(join(root, 'resume-files', 'Sample.txt'), 'utf8'), 'Synthetic resume\n');
   await assert.rejects(openWindowsStoreFile(join(root, 'resume-files', 'sample.txt'), constants.O_RDONLY),
-    { code: 'ENOENT' });
+    /canonical spelling/);
   assert.equal((await repository.resumeSummaries()).length, 1);
 
   const different = join(temporary, 'public profile.json');

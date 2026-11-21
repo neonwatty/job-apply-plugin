@@ -63,6 +63,9 @@ export function requireWindowsPrivate(path, directory) {
 export function missingWindowsEntry(error) {
     return error?.code === 'ENOENT';
 }
+export class WindowsStorePathAliasError extends Error {
+    constructor() { super('Windows Store file path must use its canonical spelling'); }
+}
 export async function ensureWindowsPrivateDirectory(path, existOk = true) {
     insideStore(path);
     const { root, addon } = store();
@@ -121,10 +124,8 @@ export async function openWindowsStoreFile(path, flags, privateFile = true) {
     const initial = privateFile ? requireWindowsPrivate(path, false) : windowsMetadata(path);
     if (initial.directory)
         throw new Error('Windows Store entry must be a file');
-    if (privateFile && await realpath(path) !== path) {
-        const error = new Error('Windows Store file path must use its canonical spelling');
-        throw writing ? error : Object.assign(error, { code: 'ENOENT' });
-    }
+    if (privateFile && await realpath(path) !== path)
+        throw new WindowsStorePathAliasError();
     const access = flags & constants.O_WRONLY ? (flags & ~constants.O_WRONLY) | constants.O_RDWR : flags;
     const handle = await open(windowsPath(path), access & ~(constants.O_TRUNC | constants.O_CREAT | constants.O_EXCL));
     try {
@@ -151,7 +152,7 @@ export async function checkWindowsStoreWrite(path) {
     try {
         requireWindowsPrivate(path, false);
         if (await realpath(path) !== path)
-            throw new Error('Windows Store file path must use its canonical spelling');
+            throw new WindowsStorePathAliasError();
     }
     catch (error) {
         if (!missingWindowsEntry(error))

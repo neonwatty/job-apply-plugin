@@ -15,7 +15,7 @@ import { validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { requirePrivateStoreDirectory } from './private-store-entry.js';
-import { checkWindowsStoreWrite } from './windows-store.js';
+import { checkWindowsStoreWrite, WindowsStorePathAliasError } from './windows-store.js';
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 export async function runHistoryTransaction(storage, operation) {
     const history = new NativeClaimHistory(storage.root), answers = validateAnswers(await storage.document('answers'));
@@ -40,7 +40,7 @@ export async function runSessionTransaction(storage, operation) {
             }), 'session');
         }
         catch (error) {
-            if (error.code === 'ENOENT')
+            if (error.code === 'ENOENT' || error instanceof WindowsStorePathAliasError)
                 return null;
             throw error;
         }
@@ -73,7 +73,7 @@ export async function runSessionTransaction(storage, operation) {
                 return true;
             }
             catch (error) {
-                if (error.code === 'ENOENT')
+                if (error.code === 'ENOENT' || error instanceof WindowsStorePathAliasError)
                     return false;
                 throw error;
             }
