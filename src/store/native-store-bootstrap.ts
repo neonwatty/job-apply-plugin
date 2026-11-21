@@ -1,9 +1,10 @@
 import { constants } from 'node:fs';
-import type { Stats } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { homedir, userInfo } from 'node:os';
 import { join } from 'node:path';
+import { constructNativePath } from '../contracts/posix-path.js';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
 import { projectStoredAnswerSession } from '../contracts/workspace/answer-session-validation.js';
@@ -29,6 +30,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { syncDirectory } from './directory-sync.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
+import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 const schemaVersion = 1;
@@ -38,7 +40,10 @@ export interface NativeStorePathEnvelope {
   coordinator: string; coordinatorJournal: string; automationSettings: string; employerAccounts: string;
   accountOperationJournal: string; trustedFill: string; autoSubmitPolicy: string; legacyProfile: string;
 }
-function child(root: string, name: string): string { return root === '/' || root === '//' ? root + name : `${root}/${name}`; }
+function child(root: string, name: string): string {
+  if (process.platform === 'win32') return constructNativePath(root, name);
+  return root === '/' || root === '//' ? root + name : `${root}/${name}`;
+}
 export function nativeStorePaths(root: string, legacyProfile: string): NativeStorePathEnvelope {
   root = pythonPath(root); legacyProfile = pythonPath(legacyProfile);
   return {
@@ -52,7 +57,7 @@ export function nativeStorePaths(root: string, legacyProfile: string): NativeSto
   };
 }
 
-type Identity = { dev: number; ino: number };
+type Identity = string;
 type BootstrapOptions = { clock?: () => string; boundary?: (stage: string) => Promise<void>;
   locked?: <T>(operation: () => Promise<T>) => Promise<T> };
 type Validator = (document: Document) => unknown;
@@ -75,44 +80,70 @@ const documentValidators: Record<string, Validator> = {
   'coordinator.json': validateCoordinator,
 };
 
-function identity(metadata: Stats): Identity {
-  return { dev: Number(metadata.dev), ino: Number(metadata.ino) };
+function identity(metadata: BigIntStats): Identity {
+  return `${metadata.dev}:${metadata.ino}`;
 }
 function sameIdentity(left: Identity, right: Identity): boolean {
-  return left.dev === right.dev && left.ino === right.ino;
+  return left === right;
 }
-function privateOwner(metadata: Stats): boolean {
-  return process.getuid === undefined || metadata.uid === process.getuid();
+function privateOwner(metadata: BigIntStats): boolean {
+  return process.getuid === undefined || metadata.uid === BigInt(process.getuid());
 }
 async function privateDirectory(path: string, optional: boolean): Promise<Identity | null> {
+  if (process.platform === 'win32') {
+    try { return windowsFileIdentity(requireWindowsPrivate(path, true)); }
+    catch (error) {
+      if (optional && missingWindowsEntry(error)) return null;
+      throw error;
+    }
+  }
   let metadata;
-  try { metadata = await lstat(path); }
+  try { metadata = await lstat(path, { bigint: true }); }
   catch (error) {
     if (optional && (error as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw error;
   }
   if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new JobsError(`${path} must be a directory without links`);
-  if (!privateOwner(metadata) || (metadata.mode & 0o777) !== 0o700) throw new JobsError(`${path} must be a private owned directory`);
+  if (!privateOwner(metadata) || (metadata.mode & 0o777n) !== 0o700n) throw new JobsError(`${path} must be a private owned directory`);
   return identity(metadata);
 }
 async function readPrivateFile(path: string, label: string, optional = true): Promise<Buffer | null> {
+  if (process.platform === 'win32') {
+    const handle = await openWindowsStoreFile(path, constants.O_RDONLY).catch(error => {
+      if (optional && missingWindowsEntry(error)) return null;
+      throw error;
+    });
+    if (!handle) return null;
+    try {
+      const bytes = await handle.readFile();
+      if (windowsFileIdentity(requireWindowsPrivate(path, false)) !== windowsFileIdentity(requireWindowsPrivate(handle.fd, false))) {
+        throw new JobsError(`${label} identity changed`);
+      }
+      return bytes;
+    } finally { await handle.close(); }
+  }
   let metadata;
-  try { metadata = await lstat(path); }
+  try { metadata = await lstat(path, { bigint: true }); }
   catch (error) {
     if (optional && (error as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw error;
   }
-  if (metadata.isSymbolicLink() || !metadata.isFile() || metadata.nlink !== 1) throw new JobsError(`${label} must be a regular file without links`);
-  if (!privateOwner(metadata) || (metadata.mode & 0o777) !== 0o600) throw new JobsError(`${label} must be private and owned`);
+  if (metadata.isSymbolicLink() || !metadata.isFile() || metadata.nlink !== 1n) throw new JobsError(`${label} must be a regular file without links`);
+  if (!privateOwner(metadata) || (metadata.mode & 0o777n) !== 0o600n) throw new JobsError(`${label} must be private and owned`);
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
-    const opened = await handle.stat();
+    const opened = await handle.stat({ bigint: true });
     if (!sameIdentity(identity(metadata), identity(opened)) || !opened.isFile()) throw new JobsError(`${label} identity changed`);
     const bytes = await handle.readFile();
-    const closed = await lstat(path);
+    const closed = await lstat(path, { bigint: true });
     if (!sameIdentity(identity(metadata), identity(closed))) throw new JobsError(`${label} identity changed`);
     return bytes;
   } finally { await handle.close(); }
+}
+
+async function ensureBootstrapDirectory(path: string): Promise<void> {
+  if (process.platform === 'win32') await ensureWindowsPrivateDirectory(path);
+  else await mkdir(path, { recursive: true, mode: 0o700 });
 }
 function document(bytes: Buffer, label: string): Document {
   try { return object(parsePythonPointJsonBytes(bytes, { diagnosticProfile: '3.12', intMaxStrDigits: 4300 }), label); }
@@ -305,7 +336,7 @@ export class NativeStoreBootstrap {
       const current = await privateDirectory(this.root, false);
       if (!sameIdentity(checked.root, current!)) throw new JobsError('Store root identity changed');
     } else {
-      await mkdir(this.root, { recursive: true, mode: 0o700 });
+      await ensureBootstrapDirectory(this.root);
       await privateDirectory(this.root, false);
     }
     const confirmed = await this.preflight();
@@ -313,10 +344,10 @@ export class NativeStoreBootstrap {
       throw new JobsError('Store root identity changed');
     }
     checked = confirmed;
-    await mkdir(this.layout.sessions, { recursive: true, mode: 0o700 });
+    await ensureBootstrapDirectory(this.layout.sessions);
     await privateDirectory(this.layout.sessions, false);
     const resumeFiles = join(this.root, 'resume-files');
-    await mkdir(resumeFiles, { recursive: true, mode: 0o700 });
+    await ensureBootstrapDirectory(resumeFiles);
     await privateDirectory(resumeFiles, false);
     const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
     if (extractionJournal !== null) await this.extractionJournal().recover();
@@ -342,7 +373,10 @@ export class NativeStoreBootstrap {
       await this.write(name, { schemaVersion, [key]: {}, ...extra, metadata: { createdAt: now, updatedAt: now } });
     }
     if (await readPrivateFile(this.layout.history, 'history') === null) {
-      const history = await open(this.layout.history, 'wx', 0o600); try { await history.sync(); } finally { await history.close(); }
+      const history = process.platform === 'win32'
+        ? await openWindowsStoreFile(this.layout.history, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL)
+        : await open(this.layout.history, 'wx', 0o600);
+      try { await history.sync(); } finally { await history.close(); }
     }
     await this.recoverCoordinator();
     return fromJSON({ initialized: true, migratedLegacyProfile: migrated, ...this.layout });
@@ -350,6 +384,7 @@ export class NativeStoreBootstrap {
 }
 
 function expandUser(path: string, home: string): string {
+  if (process.platform === 'win32') path = path.replaceAll('\\', '/');
   const current = `~${userInfo().username}`;
   if (path === '~' || path === current) return home;
   if (path.startsWith('~/')) return child(home, path.slice(2));
@@ -357,6 +392,7 @@ function expandUser(path: string, home: string): string {
   return path;
 }
 function pythonPath(path: string): string {
+  if (process.platform === 'win32') return constructNativePath('', path);
   const prefix = path.startsWith('//') && !path.startsWith('///') ? '//' : path.startsWith('/') ? '/' : '';
   const parts = path.split('/').filter(part => part !== '' && part !== '.');
   const result = prefix + parts.join('/');

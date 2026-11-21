@@ -1,5 +1,4 @@
 import { constants } from 'node:fs';
-import { open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
@@ -8,18 +7,16 @@ import { get, string, JobsError } from '../contracts/workspace/values.js';
 import type { Document } from '../contracts/workspace/values.js';
 import { strip } from '../contracts/workspace/job-url.js';
 import { encodePointJsonlJson } from './point-persistence.js';
+import { openPrivateStoreFile } from './private-store-entry.js';
 
 /** Caller holds the Store lock. Descriptor checks also apply during recovery. */
 export class NativeClaimHistory {
   constructor(private readonly root: string) {}
   private async handle(writable: boolean) {
-    const handle = await open(join(this.root, 'applications.jsonl'),
-      (writable ? constants.O_RDWR : constants.O_RDONLY) | constants.O_NOFOLLOW);
+    const handle = await openPrivateStoreFile(join(this.root, 'applications.jsonl'),
+      writable ? constants.O_RDWR : constants.O_RDONLY, 'native history must be private and owned, without links');
     try {
       const stat = await handle.stat();
-      if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
-        throw new JobsError('native history must be private and owned, without links');
-      }
       if (stat.size > 32 * 1024 * 1024) throw new JobsError('native history exceeds supported size');
       return handle;
     } catch (error) { await handle.close(); throw error; }

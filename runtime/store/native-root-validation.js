@@ -1,14 +1,13 @@
-import { lstat, readdir, realpath } from 'node:fs/promises';
+import { readdir, realpath } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
+import { requirePrivateStoreDirectory } from './private-store-entry.js';
 import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
 /** Root checks shared by every native Jobs transaction before touching records. */
 export async function validateNativeJobsRoot(root, read, locked = false, allowMissingJobs = false) {
     if (!isAbsolute(root) || root !== resolve(root) || await realpath(root) !== root)
         throw new JobsError('native fixture root must be a real absolute directory');
-    const stat = await lstat(root);
-    if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.())
-        throw new JobsError('native fixture root must be private and owned');
+    await requirePrivateStoreDirectory(root, 'native fixture root must be private and owned');
     const entries = await readdir(root);
     const markers = [nativeFixtureMarkerName, nativeCloneMarkerName].filter(name => entries.includes(name));
     if (locked && entries.some(name => !nativeStoreAllowedEntries.has(name))

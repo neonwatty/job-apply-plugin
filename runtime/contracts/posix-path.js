@@ -1,4 +1,5 @@
-import { lstat, readlink, stat } from "node:fs/promises";
+import { lstat, readlink, realpath, stat } from "node:fs/promises";
+import { win32 } from "node:path";
 import { filesystemDecode, filesystemEncode } from "./posix-path-bytes.js";
 export class PathLoopError extends Error {
     constructor() {
@@ -17,6 +18,15 @@ export function constructPosixPath(base, child) {
     const anchor = raw.startsWith("//") && !raw.startsWith("///") ? "//" : raw.startsWith("/") ? "/" : "";
     const parts = raw.split("/").filter((part) => part !== "" && part !== ".");
     return anchor + parts.join("/") || ".";
+}
+/** Native Store paths take their lexical rules from the host filesystem. */
+export function constructNativePath(base, child) {
+    if (process.platform !== "win32")
+        return constructPosixPath(base, child);
+    return win32.parse(child).root || !base ? win32.normalize(child) : win32.join(base, child);
+}
+export function nativeParent(path) {
+    return process.platform === "win32" ? win32.dirname(path) : posixParent(path);
 }
 export function posixParent(path) {
     const normalized = constructPosixPath("", path);
@@ -52,11 +62,29 @@ const nativeIO = {
 function isOSFailure(error) {
     return error instanceof Error && "errno" in error && typeof error.errno === "number";
 }
+async function resolveWindowsPath(path) {
+    let current = win32.resolve(path);
+    const suffix = [];
+    for (;;) {
+        try {
+            return win32.join(await realpath(current), ...suffix.reverse());
+        }
+        catch (error) {
+            if (!isOSFailure(error) || !["ENOENT", "ENOTDIR"].includes(error.code ?? ""))
+                throw error;
+            const parent = win32.dirname(current);
+            if (parent === current)
+                throw error;
+            suffix.push(win32.basename(current));
+            current = parent;
+        }
+    }
+}
 /** Non-strict parent resolution; missing/non-directory components remain lexical. */
 export async function resolvePosixPath(path, profile, io = nativeIO) {
     validatePathProfile(profile);
     if (io === nativeIO && process.platform === "win32") {
-        throw new Error("Native Windows path resolution is not supported by this inert POSIX adapter");
+        return resolveWindowsPath(path);
     }
     const seen = new Map();
     async function walk(initial, remainder) {
