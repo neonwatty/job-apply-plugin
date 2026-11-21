@@ -181,6 +181,15 @@ test('integrated native automation registry uses private fixture storage and ser
     await assert.rejects(settings.get(), /unsupported state or recovery journals/);
     assert.deepEqual(await snapshot(root), before);
     await rm(journal);
+    for (const name of ['.job-apply-attempt.lock', '.job-apply-attempt.key']) {
+      const path = join(root, name);
+      await writeFile(path, '', { mode: 0o600 });
+      try {
+        const before = await snapshot(root);
+        await assert.rejects(settings.get(), /unsupported state or recovery journals/);
+        assert.deepEqual(await snapshot(root), before);
+      } finally { await rm(path); }
+    }
     assert.equal(plain(await settings.get()).revision, 4);
   });
 });
