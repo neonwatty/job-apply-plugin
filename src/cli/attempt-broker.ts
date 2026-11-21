@@ -11,8 +11,12 @@ import type { PosixFlockProvider } from '../store/posix-flock.js';
 import type { Document } from '../contracts/workspace/values.js';
 import { AttemptAuthority } from './attempt-authority.js';
 import { AttemptFrameDecoder, attemptError, attemptHeartbeatMilliseconds, attemptIdleMilliseconds, attemptSocketPath, encodeAttemptFrame } from './attempt-protocol.js';
+import { acceptPipeClient, attemptLockPath, attemptPipePath, connectPipeBroker, publishAttemptKey, readAttemptKey } from './attempt-pipe.js';
+import { openPrivateStoreFile } from '../store/private-store-entry.js';
+import { windowsFileIdentity, windowsMetadata } from '../store/windows-store.js';
 import type { ApplicationAuthorityService } from '../workspace-core/application-authority.js';
 
+const windows = process.platform === 'win32';
 async function runtimePath(root: string): Promise<string> {
   if (!['darwin', 'linux'].includes(process.platform) || !process.getuid) throw new Error('attempt transport unavailable');
   const uid = process.getuid(), path = attemptSocketPath(root, uid), directory = dirname(path);
@@ -39,17 +43,29 @@ async function listen(server: Server, path: string): Promise<void> {
     server.listen({ path, backlog: 8 }, () => { server.off('error', reject); resolve(); });
   });
 }
+async function pendingIdentity(path: string): Promise<string | null> {
+  try {
+    if (windows) return windowsFileIdentity(windowsMetadata(path));
+    const remaining = await lstat(path);
+    return remaining.isFile() ? `${remaining.dev}:${remaining.ino}` : null;
+  } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
+}
 /** Stage on the Store filesystem so publication never exposes an empty final PID. */
 async function publishPid(root: string, processPath: string): Promise<void> {
   await validateNativeAttemptPid(root);
   const pendingPath = join(root, nativeAttemptPidPendingName);
-  const pid = await open(pendingPath, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
-  let owned: { dev: number; ino: number } | undefined;
+  const pid = windows
+    ? await openPrivateStoreFile(pendingPath, constants.O_WRONLY | constants.O_CREAT, 'attempt PID unavailable')
+    : await open(pendingPath, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
+  let owned: string | undefined;
   try {
-    const metadata = await pid.stat();
-    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid!()
-      || (metadata.mode & 0o777) !== 0o600) throw new Error('attempt PID unavailable');
-    owned = { dev: metadata.dev, ino: metadata.ino };
+    if (windows) owned = windowsFileIdentity(windowsMetadata(pid.fd));
+    else {
+      const metadata = await pid.stat();
+      if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid!()
+        || (metadata.mode & 0o777) !== 0o600) throw new Error('attempt PID unavailable');
+      owned = `${metadata.dev}:${metadata.ino}`;
+    }
     await pid.truncate(0);
     await pid.writeFile(`${process.pid}\n`);
     await pid.sync();
@@ -59,10 +75,7 @@ async function publishPid(root: string, processPath: string): Promise<void> {
     try { await pid.close(); }
     finally {
       if (owned) {
-        const remaining = await lstat(pendingPath).catch(error => {
-          if (error.code === 'ENOENT') return null; throw error;
-        });
-        if (remaining?.isFile() && remaining.dev === owned.dev && remaining.ino === owned.ino) await unlink(pendingPath);
+        if (await pendingIdentity(pendingPath) === owned) await unlink(pendingPath);
       }
     }
   }
@@ -70,12 +83,15 @@ async function publishPid(root: string, processPath: string): Promise<void> {
 interface BrokerOptions { idleMilliseconds?: number; heartbeatMilliseconds?: number }
 export async function runAttemptBroker(root: string, service: ClaimsService, provider: PosixFlockProvider,
   options: BrokerOptions = {}, application?: ApplicationAuthorityService): Promise<void> {
-  const path = await runtimePath(root), processPath = join(root, nativeAttemptPidName);
+  const processPath = join(root, nativeAttemptPidName);
+  let path = windows ? '' : await runtimePath(root), key: Buffer = Buffer.alloc(0);
   // Hold an inode-stable private lock for the whole broker lifetime. It prevents two
   // launchers from unlinking each other's endpoint during stale-socket recovery.
-  const ownership = await open(path + '.lock', constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+  const ownership = windows
+    ? await openPrivateStoreFile(attemptLockPath(root), constants.O_RDWR | constants.O_CREAT, 'attempt ownership unavailable')
+    : await open(path + '.lock', constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
   const info = await ownership.stat();
-  if (!info.isFile() || info.nlink !== 1 || info.uid !== process.getuid!() || (info.mode & 0o777) !== 0o600) {
+  if (!windows && (!info.isFile() || info.nlink !== 1 || info.uid !== process.getuid!() || (info.mode & 0o777) !== 0o600)) {
     await ownership.close(); throw new Error('attempt ownership unavailable');
   }
   let locked = false, listening = false, acquired = false, stopped = false, pidWritten = false;
@@ -92,47 +108,64 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
     clients.add(socket); socket.on('close', () => clients.delete(socket));
     socket.on('error', () => {});
     socket.setTimeout(1000, () => socket.destroy());
-    const decoder = new AttemptFrameDecoder();
-    let queued = false, rejected = false, received = false, incoming: Document | null = null;
-    const reject = () => {
-      rejected = true;
-      socket.end(encodeAttemptFrame(attemptError('request_rejected')), () => { if (!acquired) stop(); });
-    };
-    socket.on('data', bytes => {
-      received = true;
-      let request: Document | null;
-      try { request = decoder.push(bytes); }
-      catch { reject(); return; }
-      if (!request || queued) return;
-      incoming = request;
-    });
-    socket.once('end', () => {
-      if (rejected) return;
-      if (incoming === null) { if (received) reject(); else socket.destroy(); return; }
-      // The one-second deadline bounds framing, not a Store transaction waiting on its lock.
-      socket.setTimeout(0);
-      queued = true;
-      const request = incoming;
-      queue = queue.then(async () => {
-        if (stopped || rejected) return;
-        let complete = false, response: Document;
-        try {
-          if (!acquired) {
-            response = await authority.acquire(request); acquired = true; clearTimeout(idle);
-          } else {
-            const result = await authority.dispatch(request); response = result.response; complete = result.complete;
-          }
-        } catch { response = attemptError('request_rejected'); complete = !acquired; }
-        socket.end(encodeAttemptFrame(response), () => { if (complete) stop(); });
-        if (complete && socket.destroyed) stop();
-      }).catch(stop);
-    });
+    // An unauthenticated pipe client never reaches the decoder or the Store.
+    if (windows) acceptPipeClient(socket, key).then(serve, () => socket.destroy());
+    else serve(Buffer.alloc(0));
+    function serve(initial: Buffer): void {
+      const decoder = new AttemptFrameDecoder();
+      let queued = false, rejected = false, received = false, incoming: Document | null = null;
+      const reject = () => {
+        rejected = true;
+        socket.end(encodeAttemptFrame(attemptError('request_rejected')), () => { if (!acquired) stop(); });
+      };
+      socket.on('data', receive);
+      socket.resume();
+      if (initial.length) receive(initial);
+      function receive(bytes: Buffer): void {
+        received = true;
+        let request: Document | null;
+        try { request = decoder.push(bytes); }
+        catch { reject(); return; }
+        if (!request || queued) return;
+        incoming = request;
+        // A named pipe cannot half-close: ending it closes both directions. There the
+        // newline-terminated frame marks a complete request; later bytes are still rejected.
+        if (windows) respond();
+      }
+      socket.once('end', () => {
+        if (rejected || queued) return;
+        if (incoming === null) { if (received) reject(); else socket.destroy(); return; }
+        respond();
+      });
+      function respond(): void {
+        // The one-second deadline bounds framing, not a Store transaction waiting on its lock.
+        socket.setTimeout(0);
+        queued = true;
+        const request = incoming!;
+        queue = queue.then(async () => {
+          if (stopped || rejected) return;
+          let complete = false, response: Document;
+          try {
+            if (!acquired) {
+              response = await authority.acquire(request); acquired = true; clearTimeout(idle);
+            } else {
+              const result = await authority.dispatch(request); response = result.response; complete = result.complete;
+            }
+          } catch { response = attemptError('request_rejected'); complete = !acquired; }
+          socket.end(encodeAttemptFrame(response), () => { if (complete) stop(); });
+          if (complete && socket.destroyed) stop();
+        }).catch(stop);
+      }
+    }
   });
   server.on('error', stop);
   try {
     locked = provider.tryLock(ownership.fd);
-    if (!locked || await reachable(path)) throw new Error('attempt already running');
-    const stale = await lstat(path).catch(error => {
+    if (!locked) throw new Error('attempt already running');
+    // The lock holder is the only writer of the key, and a pipe vanishes with its server.
+    if (windows) { key = await publishAttemptKey(root); path = attemptPipePath(root, key); }
+    else if (await reachable(path)) throw new Error('attempt already running');
+    const stale = windows ? null : await lstat(path).catch(error => {
       if (error.code === 'ENOENT') return null; throw error;
     });
     if (stale) {
@@ -140,7 +173,7 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
       await unlink(path);
     }
     await listen(server, path); listening = true;
-    await chmod(path, 0o600);
+    if (!windows) await chmod(path, 0o600);
     await publishPid(root, processPath); pidWritten = true;
     begin();
     process.on('SIGTERM', stop); process.on('SIGINT', stop);
@@ -166,30 +199,42 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
   }
 }
 export function spawnAttemptBroker(root: string, executable: string): void {
-  const child = spawn(process.execPath, [executable, '--broker', '--root', root], { detached: true, stdio: 'ignore' });
+  const child = spawn(process.execPath, [executable, '--broker', '--root', root], { detached: true, stdio: 'ignore', windowsHide: true });
   child.on('error', () => {}); child.unref();
 }
-async function exchange(path: string, request: Document): Promise<Document> {
+async function exchange(path: string, request: Document, key?: Buffer): Promise<Document> {
   const frame = encodeAttemptFrame(request);
   return new Promise((resolve, reject) => {
     const socket = createConnection({ path, allowHalfOpen: true });
     const decoder = new AttemptFrameDecoder();
     let result: Document | null = null;
     const fail = () => { socket.destroy(); reject(new Error('attempt unavailable')); };
-    socket.once('connect', () => socket.end(frame));
-    socket.on('data', bytes => { try { result = decoder.push(bytes); } catch { fail(); } });
+    const decode = (bytes: Buffer) => { try { result = decoder.push(bytes); } catch { fail(); } };
+    // Windows: authenticate the broker before sending any request bytes, and write without
+    // ending because a pipe cannot half-close.
+    socket.once('connect', () => {
+      if (!key) { socket.on('data', decode); socket.end(frame); return; }
+      connectPipeBroker(socket, key).then(proven => {
+        socket.on('data', decode); socket.write(Buffer.concat([proven, frame])); socket.resume();
+      }, fail);
+    });
     socket.once('end', () => { socket.destroy(); if (result) resolve(result); else fail(); });
     // Store lock acquisition permits 30 seconds; allow the response to finish after that wait.
     socket.once('error', fail); socket.setTimeout(60_000, fail);
   });
 }
 export async function requestAttempt(root: string, request: Document, options: { start?: boolean; executable?: string } = {}): Promise<Document> {
-  const path = await runtimePath(root), deadline = Date.now() + 10_000;
+  const path = windows ? '' : await runtimePath(root), deadline = Date.now() + 10_000;
   // Reject oversized frames before starting any broker.
   encodeAttemptFrame(request);
   let launched = false;
   for (;;) {
-    try { return await exchange(path, request); }
+    try {
+      if (!windows) return await exchange(path, request);
+      // Re-read each try: a broker that started meanwhile publishes a new key and pipe.
+      const key = await readAttemptKey(root);
+      return await exchange(attemptPipePath(root, key), request, key);
+    }
     catch {
       if (!options.start || Date.now() >= deadline) throw new Error('attempt unavailable');
       if (!launched) {

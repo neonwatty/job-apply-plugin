@@ -3,9 +3,13 @@ import { open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
+import { openWindowsStoreFile } from './windows-store.js';
 
 export const nativeAttemptPidName = '.job-apply-attempt.pid';
 export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
+// Windows only: the broker lock and pipe key live in the private Store (see cli/attempt-pipe.ts).
+export const nativeAttemptLockName = '.job-apply-attempt.lock';
+export const nativeAttemptKeyName = '.job-apply-attempt.key';
 export const nativeFixtureMarkerName = '.native-jobs-fixture';
 export const nativeCloneMarkerName = '.native-store-clone';
 export const nativePolicyTreeName = 'auto-submit';
@@ -21,6 +25,7 @@ export const nativeStoreRequiredEntries = [
 ] as const;
 export const nativeStoreAllowedEntries = new Set([
   ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
+  nativeAttemptLockName, nativeAttemptKeyName,
   nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json',
 ]);
 
@@ -52,15 +57,20 @@ export function validateNativeStoreMarker(name: string, bytes: Buffer): 'fixture
 /** Optional runtime metadata is bounded and private; process liveness is not Store authority. */
 async function validatePidFile(root: string, name: string, incomplete: boolean): Promise<void> {
   let handle;
-  try { handle = await open(join(root, name), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK); }
+  const windows = process.platform === 'win32';
+  try {
+    // Windows verifies the owner-only ACL, single link and canonical name on open.
+    handle = windows ? await openWindowsStoreFile(join(root, name), constants.O_RDONLY)
+      : await open(join(root, name), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
     throw new JobsError('native attempt PID is unavailable');
   }
   try {
     const metadata = await handle.stat();
-    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.()
-      || (metadata.mode & 0o777) !== 0o600 || metadata.size > 21) {
+    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.size > 21
+      || !windows && (metadata.uid !== process.getuid?.() || (metadata.mode & 0o777) !== 0o600)) {
       throw new JobsError('native attempt PID must be private, owned and bounded');
     }
     const bytes = await handle.readFile();
