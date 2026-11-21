@@ -234,7 +234,8 @@ export async function adoptFreshNativeStoreLocked(root: string, provider: PosixF
   await privateDirectory(root, 'native Store root');
   const listed = async () => new Set((await readdir(root)).filter(name => !transient.includes(name)));
   const source = await listed();
-  if (coreFiles.some(name => !source.has(name)) || [...source].some(name => !sourceFiles.has(name))) {
+  const allowed = new Set<string>([...sourceFiles, ...nativeStoreRequiredEntries]);
+  if (coreFiles.some(name => !source.has(name)) || [...source].some(name => !allowed.has(name))) {
     throw new JobsError('fresh native Store contains unsupported or incomplete state');
   }
   const sourceTree = await storeTreeLocked(root, source, provider, false, signal);
@@ -245,7 +246,6 @@ export async function adoptFreshNativeStoreLocked(root: string, provider: PosixF
     throw new JobsError('fresh native Store is incomplete');
   }
   const candidateTree = await storeTreeLocked(root, candidate, provider, true, signal);
-  await writePrivate(join(root, nativeCloneMarkerName), Buffer.from(JSON.stringify({ mode: 'canonical-store-clone', version: 2,
-    sourceTree, candidateTree }) + '\n'));
-  await syncDirectory(root);
+  await atomicWritePointJson(join(root, nativeCloneMarkerName),
+    fromJSON({ mode: 'canonical-store-clone', version: 2, sourceTree, candidateTree }), options);
 }

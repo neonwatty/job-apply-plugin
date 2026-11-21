@@ -9,7 +9,7 @@ import { activateStoreForCli, validateSupervisorRoot } from './supervise.mjs';
 import { storeWriterOwnership } from './writer-route.mjs';
 import { parseAttemptArgs } from '../../runtime/cli/attempt-protocol.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
-import { activateWindowsStore, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
+import { activateWindowsStore, canonicalWindowsRoot, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
 
 const app = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(app, '../..');
@@ -48,8 +48,8 @@ async function run() {
   if (legacyIndex >= 0 && (!legacyProfile || legacyProfile.startsWith('--'))) throw new Error('missing legacy profile');
   if (!help && !invalidAttempt && !(readOnlyAbsent && !existsSync(root))) {
     if (process.platform === 'win32') {
-      // Windows has no Python-era writer to switch from: create or reopen a native Store only.
-      await activateWindowsStore(root, await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });
+      await activateWindowsStore(await canonicalWindowsRoot(root),
+        await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });
     } else {
       const ownership = await storeWriterOwnership(root);
       if (ownership === 'fixture') await validateSupervisorRoot(root);

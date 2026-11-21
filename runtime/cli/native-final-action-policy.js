@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 import { withNativeStore } from '../store/native-store-provider.js';
+import { canonicalWindowsRoot } from '../store/windows-activation.js';
 import { FinalActionPolicyService } from '../final-action-policy/service.js';
 import { expandRoot } from '../final-action-policy/repository.js';
 import { check, decodePolicyBytes, object, parsePolicyJson, PolicyError, serializeDocument } from '../final-action-policy/model.js';
@@ -86,7 +87,8 @@ export async function runPolicyCli(args) {
         if (!optional.has(name))
             required(name);
     const configured = get('root') || process.env.JOB_APPLY_STORE_DIR;
-    const root = configured ? expandRoot(configured) : join(homedir(), '.job-apply');
+    const selectedRoot = configured ? expandRoot(configured) : join(homedir(), '.job-apply');
+    const root = process.platform === 'win32' ? await canonicalWindowsRoot(selectedRoot) : selectedRoot;
     const pluginRoot = await realpath(fileURLToPath(new URL('../../', import.meta.url)));
     // Windows Store writes need the explicitly selected addon scope.
     return withNativeStore(root, await resolvePackagedNativeLock(pluginRoot), async (provider) => {

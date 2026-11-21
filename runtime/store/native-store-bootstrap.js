@@ -166,6 +166,7 @@ function document(bytes, label) {
 }
 /** Production callers must supply `locked` around the complete preflight/recovery transaction. */
 export class NativeStoreBootstrap {
+    options;
     root;
     legacyProfile;
     layout;
@@ -173,6 +174,7 @@ export class NativeStoreBootstrap {
     boundary;
     locked;
     constructor(root, legacyProfile = join(homedir(), '.claude-job-profile.json'), options = {}) {
+        this.options = options;
         this.root = pythonPath(root);
         this.legacyProfile = pythonPath(legacyProfile);
         this.layout = nativeStorePaths(this.root, this.legacyProfile);
@@ -231,7 +233,7 @@ export class NativeStoreBootstrap {
             void autoSubmit;
         }
         let legacy = null;
-        if (await readPrivateFile(this.layout.profile, 'profile') === null) {
+        if (this.options.importLegacyProfile !== false && await readPrivateFile(this.layout.profile, 'profile') === null) {
             const bytes = await readPrivateFile(this.legacyProfile, 'legacy profile');
             if (bytes !== null)
                 legacy = document(bytes, 'legacy profile');
@@ -397,10 +399,12 @@ export class NativeStoreBootstrap {
         const resumeFiles = join(this.root, 'resume-files');
         await ensureBootstrapDirectory(resumeFiles);
         await privateDirectory(resumeFiles, false);
-        const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
-        if (extractionJournal !== null)
-            await this.extractionJournal().recover();
-        await this.recoverResumeFiles();
+        if (this.options.recoverExisting !== false) {
+            const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
+            if (extractionJournal !== null)
+                await this.extractionJournal().recover();
+            await this.recoverResumeFiles();
+        }
         let migrated = false;
         if (await readPrivateFile(this.layout.profile, 'profile') === null) {
             const createdAt = this.now(), updatedAt = this.now();
@@ -436,7 +440,8 @@ export class NativeStoreBootstrap {
                 await history.close();
             }
         }
-        await this.recoverCoordinator();
+        if (this.options.recoverExisting !== false)
+            await this.recoverCoordinator();
         return fromJSON({ initialized: true, migratedLegacyProfile: migrated, ...this.layout });
     }
 }

@@ -26,11 +26,13 @@ async function run(command, args, cwd, signal) {
     const child = spawn(selected.command, selected.args, { cwd, detached: !windows, stdio: 'ignore', windowsHide: true });
     const stop = () => {
       if (child.pid) {
-        try { if (windows) child.kill(); else process.kill(-child.pid, 'SIGTERM'); }
+        try { process.kill(-child.pid, 'SIGTERM'); }
         catch (error) { if (error.code !== 'ESRCH') reject(error); }
       }
     };
-    signal.addEventListener('abort', stop, { once: true });
+    // npm runs Windows scripts through cmd.exe. Let a started command finish under
+    // the build lock, since stopping npm can leave the script's descendants running.
+    if (!windows) signal.addEventListener('abort', stop, { once: true });
     child.once('error', error => { signal.removeEventListener('abort', stop); reject(error); });
     child.once('exit', code => {
       signal.removeEventListener('abort', stop);
@@ -88,7 +90,9 @@ export async function ensureStandalone(pluginRoot, { signal = new AbortControlle
     if (await assembled(app)) return false;
     report('Companion build missing; preparing this local installation.');
     await runner('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], pluginRoot, signal);
+    signal.throwIfAborted();
     await runner('npm', ['run', 'companion:build'], pluginRoot, signal);
+    signal.throwIfAborted();
     if (!await assembled(app)) throw new Error('Companion build did not produce standalone assets');
     return true;
   });

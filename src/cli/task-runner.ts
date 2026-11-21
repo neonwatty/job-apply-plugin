@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NativeJobsRepository } from '../store/native-jobs.js';
 import { withNativeStore } from '../store/native-store-provider.js';
+import { canonicalWindowsRoot } from '../store/windows-activation.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { object, parse } from '../contracts/workspace/values.js';
@@ -37,7 +38,8 @@ async function installedTaskArgs(args: string[]): Promise<string[]> {
 export async function runTask(args: string[]): Promise<{ output: string; exitCode: number }> {
   try {
     const parsed = parseTaskArgs(await installedTaskArgs(args));
-    const root = parsed.options.get('--root')!;
+    const selectedRoot = parsed.options.get('--root')!;
+    const root = process.platform === 'win32' ? await canonicalWindowsRoot(selectedRoot) : selectedRoot;
     const payload = async () => {
       try {
         // Python Path.read_text is strict UTF-8 and treats '-' as an ordinary filename.

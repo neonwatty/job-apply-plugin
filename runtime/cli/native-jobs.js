@@ -31,7 +31,7 @@ import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
-import { activateWindowsStoreScoped } from '../store/windows-activation.js';
+import { activateWindowsStoreScoped, canonicalWindowsRoot } from '../store/windows-activation.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 function resolveStoreRoot(configured = process.env.JOB_APPLY_STORE_DIR) {
     const expanded = configured === '~' || configured?.startsWith('~/')
@@ -234,13 +234,16 @@ export async function runJobsCli(args, input) {
             throw new JobsError(`required option: ${key}`);
         return value;
     };
-    const root = resolveStoreRoot(options.get("--root"));
+    const configuredRoot = resolveStoreRoot(options.get("--root"));
+    const windows = process.platform === 'win32';
+    const root = windows ? await canonicalWindowsRoot(configuredRoot) : configuredRoot;
     if (Object.hasOwn(nativeStoreBootstrapCommands, command)) {
         if ([...options.keys()].some(key => !['--root', '--native-lock', '--legacy-profile'].includes(key))) {
             throw new JobsError('unsupported native Store bootstrap command or option');
         }
         // Windows creates every Store entry with a private ACL, so each bootstrap command runs in its scope.
-        const run = (provider) => runNativeStoreBootstrapCommand(command, createNativeStoreBootstrap(options.get("--root") ?? root, options.get('--legacy-profile'), process.env, undefined, provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation) } : {}));
+        const run = (provider) => runNativeStoreBootstrapCommand(command, createNativeStoreBootstrap(windows ? root : options.get("--root") ?? root, options.get('--legacy-profile'), process.env, undefined, provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation),
+            recoverExisting: !windows, importLegacyProfile: !windows || options.has('--legacy-profile') } : {}));
         if (command !== 'init' && process.platform !== 'win32')
             return serialize(await run());
         return serialize(await withNativeStore(root, await nativeLock(options), async (provider) => {

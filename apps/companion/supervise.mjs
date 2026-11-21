@@ -11,7 +11,7 @@ import { withExclusiveFileLock } from '../../runtime/store/exclusive-file-lock.j
 import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
-import { activateWindowsStoreScoped, canonicalWindowsRoot } from '../../runtime/store/windows-activation.js';
+import { activateWindowsStoreScoped, canonicalWindowsRoot, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
 import { withWindowsStore } from '../../runtime/store/windows-store.js';
 import { ensureStandalone } from './ensure-standalone.mjs';
 
@@ -169,8 +169,7 @@ function superviseWriter(controller) {
   return { controller, line, completion };
 }
 /**
- * Windows has no Python-era writer to hand over from: activation creates or reopens a native
- * Store in place, and refuses any other data without changing it. Nothing is cloned or renamed.
+ * Windows activation creates or reopens a native Store in place and refuses legacy roots.
  */
 async function runWindowsSupervisor(options, { signal } = {}) {
   const root = await canonicalWindowsRoot(resolveSupervisorRoot(options));
@@ -266,7 +265,12 @@ export async function superviseMain(args = process.argv.slice(2), app = dirname(
     }
     running = await runSupervisor(options, { signal: abort.signal }); process.stdout.write(`${running.line}\n`);
   }
-  catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); stop(1); } }
+  catch (error) {
+    if (!stopped) {
+      process.stderr.write(error instanceof UnrecognizedStoreError ? `${error.message}\n` : 'Companion native supervisor failed\n');
+      stop(1);
+    }
+  }
   try { if (running) await running.completion; }
   catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); process.exitCode = 1; } }
   finally { process.off('SIGINT', interrupt); process.off('SIGTERM', interrupt); }
