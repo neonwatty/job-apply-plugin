@@ -6,13 +6,23 @@ import { edit, observe, openEditor, reapply, type Editor } from './job-editor-st
 import { JobEditor } from './JobEditor';
 import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
+import { JobHandoff } from './JobHandoff';
+import { activityProjection, attentionGuidance, attentionProjection, attentionReasons } from './projection-model';
+import { useProjection } from './projection-view';
 import { JobTransitions } from './JobTransitions';
 
-export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
+function jobStatusLabel(status: string) {
+    if (status === 'ready') return 'Ready for agent';
+    if (status === 'awaiting_review') return 'Awaiting your review';
+    return status.replaceAll('_', ' ');
+}
+
+export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = false, showHandoff = false, requestedJob, jobOpened, openAnswers, workspaceChanged, refreshKey = 0 }: {
     client: Client;
     active?: boolean;
     claimsEnabled?: boolean;
-    requestedJobId?: string | null;
+    showHandoff?: boolean;
+    requestedJob?: { id: string; revision: bigint } | null;
     jobOpened?: () => void;
     openAnswers?: () => void;
     workspaceChanged?: () => void | Promise<void>;
@@ -23,18 +33,34 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const [editor, setEditor] = useState<Editor | null>(null);
     const [busy, setBusy] = useState(false);
     const [transitionBusy, setTransitionBusy] = useState(false);
+    const [closingOutcome, setClosingOutcome] = useState('');
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [error, setError] = useState('');
     const [query, setQuery] = useState('');
     const [status, setStatus] = useState('');
     const [notice, setNotice] = useState('');
+    const [editorNotice, setEditorNotice] = useState('');
     const alive = useRef(false);
     const refreshRequest = useRef<AbortController | null>(null);
     const mutation = useRef<AbortController | null>(null);
     const generation = useRef(0);
     const listGeneration = useRef(0);
     const previousRefreshKey = useRef(refreshKey);
+    const handoffHeading = useRef<HTMLHeadingElement>(null);
+    const handoffFocused = useRef(false);
+    const handoffLoading = loading || previousRefreshKey.current !== refreshKey;
+    const requestedRefresh = useRef<typeof requestedJob>(null);
+    const allJobs = data?.jobs ?? [];
+    const ready = allJobs.some(job => job.status === 'ready');
+    const reconfirmation = useProjection(client, active && claimsEnabled && ready ? '/api/attention' : null,
+        attentionProjection);
+    const pending = new Map(reconfirmation.data?.items
+        .filter(item => item.reasonCode === 'pending_live_reconfirmation')
+        .map(item => [item.jobId, item.revision]));
+    const selectedJob = claimsEnabled ? editor?.selected : null;
+    const activity = useProjection(client, active && selectedJob ? `/api/jobs/${encodeURIComponent(selectedJob.id)}/activity` : null,
+        activityProjection, `${refreshKey}:${selectedJob?.revision ?? ''}`);
 
     async function refresh() {
         refreshRequest.current?.abort();
@@ -46,6 +72,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
             const next = await client.state(controller.signal);
             if (!alive.current || version !== listGeneration.current) return;
             setData(next);
+            reconfirmation.refresh();
             setEditor(current => current ? observe(current, next.jobs) : null);
             setLoadError('');
             return true;
@@ -82,16 +109,38 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         void refresh();
     }, [refreshKey]);
     useEffect(() => {
+        if (showHandoff && editor) close();
+    }, [showHandoff]);
+    useEffect(() => {
+        if (!showHandoff) {
+            handoffFocused.current = false;
+            return;
+        }
+        if (handoffLoading || handoffFocused.current) return;
+        const frame = requestAnimationFrame(() => {
+            const heading = handoffHeading.current;
+            if (!heading) return;
+            handoffFocused.current = true;
+            heading.focus({preventScroll:true});
+            heading.scrollIntoView({block:'start'});
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [showHandoff, handoffLoading]);
+    useEffect(() => {
         dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy);
         return () => dirtyChanged(false);
     }, [editor, busy, transitionBusy, dirtyChanged]);
     useEffect(() => {
-        if (!requestedJobId || !data || loading || loadError) return;
-        const selected = data.jobs.find(job => job.id === requestedJobId);
-        if (selected) open(selected);
-        else setError('This job is unavailable. Refresh Jobs to check again.');
+        if (!requestedJob || !data || loading || loadError) return;
+        const selected = data.jobs.find(job => job.id === requestedJob.id);
+        if (selected && selected.revision >= requestedJob.revision) open(selected);
+        else if (requestedRefresh.current !== requestedJob) {
+            requestedRefresh.current = requestedJob;
+            void refresh();
+            return;
+        } else setError('This job is unavailable. Refresh Jobs to check again.');
         jobOpened?.();
-    }, [requestedJobId, data, loading, loadError, jobOpened]);
+    }, [requestedJob, data, loading, loadError, jobOpened]);
 
     function open(job: Job | null) {
         if (mutation.current || transitionBusy) return;
@@ -99,12 +148,15 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         generation.current++;
         setError('');
         setNotice('');
+        setEditorNotice('');
+        setClosingOutcome('');
         setEditor(openEditor(job));
     }
     function close() {
         if (mutation.current || transitionBusy) return;
         if (editor?.dirty.size && !confirm('Discard unsaved job changes?')) return;
         generation.current++;
+        setClosingOutcome('');
         setEditor(null);
         setError('');
     }
@@ -161,12 +213,33 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
             if (alive.current && version === generation.current) setBusy(false);
         }
     }
-    const allJobs = data?.jobs ?? [];
     const visible = new Set(filterJobs(allJobs, query, status));
     const jobs = allJobs.filter(job => visible.has(job));
     const run = data?.applicationRun ?? null;
     const runQueue = new Set(run?.queueVersions.at(-1)?.jobIds ?? []);
     const runResume = data?.resumes.find(resume => resume.id === run?.selection.resumeId);
+    const awaitingReview = selectedJob?.status === 'awaiting_review';
+    const selectedNeedsConfirmation = selectedJob?.status === 'ready' && pending.get(selectedJob.id) === selectedJob.revision;
+    const reviewRecordUnavailable = activity.loading || Boolean(selectedJob && activity.data
+        && (activity.data.job.revision > selectedJob.revision || activity.data.claim.state !== 'none'));
+    const transitions = editor && selectedJob && <JobTransitions key={selectedJob.id} client={client} job={selectedJob}
+        outcome={closingOutcome} onOutcomeChanged={setClosingOutcome}
+        runSetup={run ? runQueue.has(selectedJob.id) ? undefined : 'add-job' : 'start-run'}
+        recordInHandoff={awaitingReview && !editor.latest && !editor.missing}
+        disabled={busy || loading || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing || (awaitingReview && reviewRecordUnavailable)}
+        onBusyChanged={setTransitionBusy} onChanged={job => {
+            // The write is acknowledged: replace the clean editor before a background read.
+            refreshRequest.current?.abort();
+            listGeneration.current++;
+            setData(current => current ? {...current,jobs:current.jobs.map(item=>item.id===job.id?job:item)} : current);
+            setEditor(openEditor(job));
+            setError('');
+            if (awaitingReview) setEditorNotice(job.status === 'applied' ? 'Submission recorded in Companion.' : 'Job closed in Companion.');
+            else setEditorNotice('');
+            void workspaceChanged?.();
+            void refresh();
+        }} />;
+    const activityPanel = selectedJob && <JobActivity key={selectedJob.id} activity={activity} jobId={selectedJob.id} openAnswers={openAnswers} />;
     return <section className="jobs-workspace" aria-labelledby="jobs-workspace-title">
         <header className="workspace-hero">
             <div className="workspace-hero-copy">
@@ -191,7 +264,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     <label>Status<select value={status} onChange={e => setStatus(e.target.value)}>
                         <option value="">All statuses</option>
                         {['saved', 'needs_info', 'ready', 'in_progress', 'awaiting_review', 'applied', 'closed'].map(value =>
-                            <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
+                            <option key={value} value={value}>{jobStatusLabel(value)}</option>)}
                     </select></label>
                 </div>}
             </div>
@@ -207,12 +280,19 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     const company = String(job.company || 'Company not set');
                     const location = String(job.location || job.workplaceType || 'Location not set');
                     const priority = typeof job.priority === 'number' && Number.isFinite(job.priority) ? Math.max(0, Math.min(5, Math.round(job.priority))) : 0;
-                    return <button className="job-card" aria-label={`${role}, ${company}${runQueue.has(job.id) ? ', in active application run' : ''}`} disabled={busy || transitionBusy} key={job.id} onClick={() => open(job)}>
+                    const needsConfirmation = job.status === 'ready' && pending.get(job.id) === job.revision;
+                    const label = jobStatusLabel(job.status);
+                    const name = [role, company, runQueue.has(job.id) ? 'in active application run' : '', label,
+                        needsConfirmation ? attentionReasons.pending_live_reconfirmation : ''].filter(Boolean).join(', ');
+                    return <button className="job-card" aria-label={name} disabled={busy || transitionBusy} key={job.id} onClick={() => open(job)}>
                         <span className="company-mark" aria-hidden="true">{company.trim().charAt(0).toUpperCase() || '?'}</span>
-                        <span className="job-identity"><strong>{role}</strong><span>{company}</span></span>
+                        <span className="job-identity">
+                            <strong>{role}</strong><span>{company}</span>
+                            {needsConfirmation && <small className="job-confirmation">{attentionReasons.pending_live_reconfirmation}</small>}
+                        </span>
                         <span className="job-location">{location}</span>
                         <span className="job-priority" aria-label={`Priority ${priority} of 5`}>{priority ? `${'★'.repeat(priority)}${'☆'.repeat(5-priority)}` : 'Priority —'}</span>
-                        <span className={`status-pill status-${job.status}`}>{job.status.replaceAll('_', ' ')}</span>
+                        <span className={`status-pill status-${job.status}`}>{label}</span>
                         {runQueue.has(job.id) && <span className="run-pill">In active run</span>}
                         <span className="visually-hidden">revision {job.revision}</span>
                     </button>;
@@ -223,8 +303,21 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     : <strong>No jobs saved yet.</strong>}
             </div>}
         </div>
-        {claimsEnabled && allJobs.some(job => job.status === 'ready') && <Claims jobs={allJobs} />}
+        {claimsEnabled && (ready || showHandoff) && <Claims ready={ready}
+            loading={handoffLoading} unavailable={Boolean(loadError)}
+            headingRef={handoffHeading} />}
         {active && editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy} error={error}
+            notice={editorNotice}
+            handoff={selectedJob && !editor.latest && !editor.missing && (
+                selectedNeedsConfirmation
+                    ? <section className="workspace-panel job-handoff" aria-label={attentionReasons.pending_live_reconfirmation}>
+                        <h3>{attentionReasons.pending_live_reconfirmation}</h3>
+                        <p>{attentionGuidance.pending_live_reconfirmation}</p>
+                    </section>
+                    : <JobHandoff job={selectedJob} activity={activity}>
+                        {awaitingReview ? transitions : null}
+                    </JobHandoff>
+            )}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} reset={() => { setEditor(current => current?.selected
                 ? { ...openEditor(current.latest ?? current.selected), missing: current.missing } : null); setError(''); }} save={() => void save()}
@@ -243,18 +336,10 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
                     setError('');
                 }
             }} >
-            {claimsEnabled && editor.selected && <JobTransitions client={client} job={editor.selected}
-                disabled={busy || loading || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing}
-                onBusyChanged={setTransitionBusy} onChanged={job => {
-                    // The write is acknowledged: replace the clean editor before a background read.
-                    refreshRequest.current?.abort(); listGeneration.current++;
-                    setData(current => current ? {...current,jobs:current.jobs.map(item=>item.id===job.id?job:item)} : current);
-                    setEditor(openEditor(job)); setError('');
-                    void workspaceChanged?.();
-                    void refresh();
-                }} />}
-            {claimsEnabled && editor.selected && <JobActivity client={client} jobId={editor.selected.id}
-                refreshKey={editor.selected.revision} openAnswers={openAnswers} />}
+            {(!awaitingReview || editor.latest || editor.missing) && transitions}
+            {awaitingReview ? <details className="job-activity-details">
+                <summary>Full job activity</summary>{activityPanel}
+            </details> : activityPanel}
         </JobEditor>}
     </section>;
 }

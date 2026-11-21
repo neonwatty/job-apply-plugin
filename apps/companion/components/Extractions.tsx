@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { get, serialize, string } from '../../../src/contracts/workspace/values';
+import { get, int, serialize, string } from '../../../src/contracts/workspace/values';
 import { ExtractionReview } from './extraction-review';
 import { extractionList, pendingPaths, proposalSnapshot, reapplyChoices, requestMutation, reviewMutation } from './extraction-model';
 import type { Choices, Document, ExtractionClient } from './extraction-model';
@@ -202,8 +202,13 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
   }
   const staleReasons = base ? get(base, 'staleReasons') : null;
   const stale = Array.isArray(staleReasons) && staleReasons.length > 0;
+  const pendingCount = base ? pendingPaths(base).length : 0;
+  const choiceCount = Object.keys(choices).length;
+  const proposalStatus = base ? string(get(base, 'status')) : null;
+  const addedCount = base ? int(get(base, 'autoFilledCount')) : null;
+  const sourceResume = base ? resumes.find(resume => string(get(resume, 'id')) === string(get(base, 'resumeId'))) : undefined;
   return <section className="extractions-workspace" aria-labelledby="extractions-workspace-title">
-    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes</p><h1 id="extractions-workspace-title">Extraction review</h1><p>Review proposed facts before they replace saved information.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh</button></div></header>
+    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes</p><h1 id="extractions-workspace-title">Extraction review</h1><p>See what extraction added to your profile and review proposed changes.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh</button></div></header>
     <section className="workspace-panel extraction-request-panel" aria-labelledby="extraction-request-heading">
       <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div></div>
       <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice}</p>
@@ -240,10 +245,17 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
       </button></li>;
     })}</ul>
     </section>}</div>}
-    {(base || proposals.length > 0) && <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposed facts</h2></div>{base && <span className="extraction-step">{Object.keys(choices).length} of {pendingPaths(base).length} choices selected</span>}</div>
+    {(base || proposals.length > 0) && <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposed facts</h2></div>
+        {proposalStatus === 'pending' && !stale && <span className="extraction-step">{pendingCount} {pendingCount === 1 ? 'decision' : 'decisions'} remaining</span>}</div>
     {base ? <div className="proposal-review-body">
-      <div className="proposal-summary-native"><div><small>Status</small><strong>{string(get(base, 'status'))}</strong></div><div><small>Auto-filled</small><strong>{serialize(get(base, 'autoFilledCount'))} missing facts</strong></div></div>
-      <p>Compare each value and choose what to keep. Replacements need separate confirmation.</p>
+      <div className="proposal-summary-native">
+        <div><small>Source resume</small><strong>{sourceResume ? string(get(sourceResume, 'label')) || 'Untitled resume' : 'Unavailable resume'}</strong></div>
+        <div><small>Added to your profile during extraction</small><strong>{addedCount === null
+          ? 'Count unavailable'
+          : `${addedCount} previously blank ${addedCount === 1n ? 'fact' : 'facts'}`}</strong></div>
+      </div>
+      {proposalStatus === 'pending' && !stale && <p>Compare the saved and extracted values, then choose what to keep. Replacing a larger saved value requires separate confirmation.</p>}
+      {choiceCount > 0 && <p role="status">{choiceCount} {choiceCount === 1 ? 'choice' : 'choices'} selected</p>}
       <button className="secondary" disabled={busy} onClick={() => void selectProposal(string(get(base, 'id'))!, true)}>Refresh selected proposal</button>
       {stale && <p className="error" role="alert">{staleReasons.map(value => reasonMessage(string(value) ?? '')).join(' ')} Request a new extraction before reviewing it.</p>}
       {latest && <aside className="notice" role="alert">
@@ -271,7 +283,7 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
         }} confirmReplacement={(pointer, checked) => setConfirmed(previous => checked ? [...previous.filter(item => item !== pointer), pointer] : previous.filter(item => item !== pointer))} />
         <div className="proposal-review-actions"><button className="primary" disabled={busy || Boolean(latest) || stale || !dirty || string(get(base, 'status')) !== 'pending'}>Save review decisions</button></div>
       </form>}
-    </div> : <div className="workspace-empty proposal-review-empty"><strong>Select an extraction result to review.</strong><span>Current facts stay unchanged until you explicitly save review decisions.</span></div>}
+    </div> : <div className="workspace-empty proposal-review-empty"><strong>Select an extraction result to review.</strong><span>Review the proposed changes before saving them to your profile.</span></div>}
     </section>}
   </section>;
 }

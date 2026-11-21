@@ -50,6 +50,11 @@
       "path": "src/workspace-core/workspace-projections.ts",
       "sha256": "6a2219c394bb4f03170bea2110e55d30a6bea39a3b6dcccde02bc24de539b0bd",
       "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/JobHandoff.tsx",
+      "sha256": "4a162577a5a37d23eaf28d7eab5924a1850c4fdd59d6a5962f41cad5ce39322f",
+      "classification": "unreviewed"
     }
   ]
 }

@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { repeatReviewRequest } from '../repeat-review-request';
-import type { Client } from './client';
-import { activityProjection, handoffChecklistLabels, recoveryGuidance } from './projection-model';
-import { humanize, useProjection } from './projection-view';
-export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Client;jobId:string;refreshKey?:number|bigint;openAnswers?:()=>void}) {
+import { recordedFormActions, recoveryGuidance, type ActivityProjection } from './projection-model';
+import { humanize, type ProjectionState } from './projection-view';
+export function JobActivity({activity,jobId,openAnswers}:{activity:ProjectionState<ActivityProjection>;jobId:string;openAnswers?:()=>void}) {
   const [copyNotice,setCopyNotice]=useState('');
   const [fallback,setFallback]=useState('');
-  const {data,loading,error,refresh}=useProjection(client,`/api/jobs/${encodeURIComponent(jobId)}/activity`,activityProjection,refreshKey);
+  const {data,loading,error,refresh}=activity;
+  const actions = data?.session ? recordedFormActions(data.session) : [];
   async function copyRepeatRequest() {
     const request=repeatReviewRequest(jobId);
     try { await navigator.clipboard.writeText(request); setFallback(''); setCopyNotice('Repeat-review request copied.'); }
@@ -33,9 +33,8 @@ export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Clie
         <p>{humanize(data.session.status)} · Session revision {String(data.session.revision)}{data.session.attemptRevision!==undefined && ` · Attempt revision ${data.session.attemptRevision}`}</p>
         <p>Step: {data.session.step}<br/>Updated: {data.session.updatedAt}<br/>Readiness: {humanize(data.session.readiness)}</p>
         <p>Browser handoff: {humanize(data.session.handoff)}{data.session.handoffReason && ` · ${humanize(data.session.handoffReason)}`}</p>
-        {data.session.handoff==='required' && <p>Continue in the visible browser. Personally review and perform final submission.</p>}
         <h4>To do on form</h4>
-        {data.session.handoffChecklist.length>0 ? <ol>{handoffChecklistLabels(data.session.handoffChecklist).map(label=><li key={label}>{label}</li>)}</ol>
+        {actions.length>0 ? <ol>{actions.map(label=><li key={label}>{label}</li>)}</ol>
           : <p>{data.job.status==='needs_info' && !data.session.handoffChecklistRecorded ? 'Detailed actions were not recorded for this attempt. Check the agent’s handoff and the visible draft.' : 'No remaining form actions recorded.'}</p>}
         <h4>Optional fields left blank</h4>
         {!data.session.optionalUnansweredRecorded ? <p>Not recorded for this attempt.</p>

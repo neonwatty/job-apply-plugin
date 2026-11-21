@@ -1,7 +1,7 @@
 import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
-export async function projectionsBrowser(page, {jobId, markReady}) {
+export async function projectionsBrowser(page, {markReady}) {
 
   await clickCompanionNav(page, 'Overview');
   await page.getByRole('heading', {name:'Your next move, at a glance.',exact:true}).waitFor();
@@ -19,12 +19,13 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   await page.getByText(/Showing the last loaded overview/).waitFor({state:'hidden'});
   await page.getByRole('button', {name:'Open Needs Attention',exact:true}).click();
   const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
-  await attention.getByRole('button', {name:`Review job ${jobId}`,exact:true}).waitFor();
+  const queueJob = attention.getByRole('button', {name:/CLI writer Native fixture role Needs information/});
+  await queueJob.waitFor();
   await attention.getByLabel('Filter by reason').selectOption('expired_agent_attempt');
   await attention.getByText('No jobs match this reason filter.',{exact:true}).waitFor();
   await attention.getByLabel('Filter by reason').selectOption('');
-  await attention.getByRole('button', {name:`Review job ${jobId}`,exact:true}).click();
-  await attention.getByRole('button', {name:`Open job ${jobId}`,exact:true}).click();
+  await queueJob.click();
+  await attention.getByRole('button', {name:'See what’s missing',exact:true}).click();
   const modal = page.locator('dialog.job-drawer');
   await modal.waitFor();
   const activity = modal.getByRole('region',{name:'Job activity',exact:true});
@@ -45,12 +46,12 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   page.once('dialog',dialog=>dialog.accept());
   await modal.getByRole('button',{name:'Close job details',exact:true}).click();
   await clickCompanionNav(page, 'Needs Attention');
-  await attention.getByRole('button',{name:`Review job ${jobId}`,exact:true}).waitFor();
+  await queueJob.waitFor();
   await markReady();
   await attention.getByRole('button',{name:'Refresh attention',exact:true}).click();
-  await attention.getByRole('button',{name:`Review job ${jobId}`,exact:true}).waitFor({state:'hidden'});
+  await queueJob.waitFor({state:'hidden'});
   // The preceding Answers walkthrough deliberately retains another unresolved job.
-  await attention.getByRole('button',{name:'Review job pending-browser-job',exact:true}).waitFor();
+  await attention.getByRole('button',{name:/Pending fixture company Pending fixture role Needs information/}).waitFor();
   await clickCompanionNav(page, 'Overview');
   await page.getByRole('button',{name:'Open Needs Attention',exact:true}).waitFor();
   return {overview:true,attention:true,activity:true,staleRetry:true,resolvedAttention:true};

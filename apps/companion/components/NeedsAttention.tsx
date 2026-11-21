@@ -1,22 +1,65 @@
 'use client';
 import { useState } from 'react';
 import type { Client } from './client';
-import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, handoffChecklistLabels, type AttentionReason } from './projection-model';
-import { humanize, useProjection } from './projection-view';
-export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;openJob:(id:string)=>void;refreshKey?:number}) {
+import { object, workspaceState } from './contracts';
+import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, handoffActionLabels, isCurrentHandoff, recordedFormActions, type AttentionItem, type AttentionReason } from './projection-model';
+import { formatActivityTime, useProjection } from './projection-view';
+
+const attentionActionLabels: Record<AttentionReason, string> = {
+  awaiting_human_review: 'See review steps',
+  browser_action_required: 'See browser steps',
+  needs_information: 'See what’s missing',
+  owner_confirmation_required: 'See what to confirm',
+  pending_live_reconfirmation: 'See what to confirm',
+  site_consent_conflict: 'See consent details',
+  expired_agent_attempt: 'See recovery steps',
+  claimless_interrupted_attempt: 'See recovery steps',
+};
+
+function displayAttention(item: AttentionItem) {
+  const {session, missingInformationCount} = item;
+  const currentHandoff = item.status === 'needs_info' && isCurrentHandoff(session, item.revision);
+  const browserHandoff = currentHandoff && session.handoff === 'required';
+  const checklist = currentHandoff ? recordedFormActions(session) : [];
+  let {reasonCode} = item;
+  if (!browserHandoff && reasonCode === 'browser_action_required') reasonCode = 'needs_information';
+  if (reasonCode === 'needs_information' && browserHandoff && session.handoffReason === 'owner-upload-required'
+    && missingInformationCount === 0n) reasonCode = 'browser_action_required';
+  return {...item, reasonCode, checklist};
+}
+
+function jobLabels(raw: string) {
+  const {jobs} = workspaceState(object.parseJson(raw));
+  return new Map(jobs.map(job => [job.id, {
+    revision: job.revision,
+    company: typeof job.company === 'string' ? job.company.trim() : '',
+    role: typeof job.role === 'string' ? job.role.trim() : '',
+  }]));
+}
+
+export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;openJob:(job:{id:string;revision:bigint})=>void;refreshKey?:number}) {
   const {data,loading,error,refresh}=useProjection(client,'/api/attention',attentionProjection,refreshKey);
+  const labels = useProjection(client,'/api/state',jobLabels,refreshKey);
+  function identity(item: AttentionItem) {
+    const job = labels.data?.get(item.jobId);
+    if (!job || job.revision !== item.revision) return [`Job ${item.jobId}`];
+    const name = [job.company, job.role].filter(Boolean);
+    return name.length ? name : [`Job ${item.jobId}`];
+  }
   const [reason,setReason]=useState('');
   const [selectedId,setSelectedId]=useState<string|null>(null);
-  const visible=filterAttention(data?.items ?? [],reason);
+  const visible=filterAttention(data?.items.map(displayAttention) ?? [],reason);
   const selected=visible.find(item=>item.jobId===selectedId) ?? visible[0];
+  const checklist = selected?.checklist ?? [];
+  const upload = selected?.reasonCode === 'browser_action_required'
+    && checklist.length === 1 && checklist[0] === handoffActionLabels.resume_upload;
   return <section className="attention-workspace" aria-label="Needs Attention">
     <header className="workspace-hero">
       <div className="workspace-hero-copy">
-
         <h1>Needs attention</h1>
         <p>Select a job to review its next step. Final submission stays manual.</p>
       </div>
-      <div className="workspace-hero-actions"><button type="button" onClick={refresh} disabled={loading}>Refresh attention</button></div>
+      <div className="workspace-hero-actions"><button type="button" onClick={() => { refresh(); labels.refresh(); }} disabled={loading || labels.loading}>Refresh attention</button></div>
     </header>
     <div className="workspace-panel attention-panel">
       <div className="workspace-panel-heading">
@@ -34,28 +77,31 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
         {data.items.length===0 ? <div className="workspace-empty attention-empty"><span className="empty-check" aria-hidden="true">✓</span><strong>Nothing needs your attention.</strong><span>Check Jobs to continue preparing applications.</span></div>
           : visible.length===0 ? <div className="workspace-empty"><strong>No jobs match this reason filter.</strong><button className="text-action" type="button" onClick={()=>setReason('')}>Clear filter</button></div> :
           <div className="focus-review-layout">
-            <ul className="attention-list focus-items" aria-label="Choose a job to review">{visible.map(item=><li key={item.jobId}>
-              <button className="focus-item" type="button" aria-pressed={selected?.jobId===item.jobId}
-                onClick={()=>setSelectedId(item.jobId)} aria-label={`Review job ${item.jobId}`} aria-controls="focus-decision">
-                <span>{attentionReasons[item.reasonCode as AttentionReason]}</span>
-                <small>Job {item.jobId}</small>
-                <small>{humanize(item.status)}</small>
-              </button>
-            </li>)}</ul>
+            <ul className="attention-list focus-items" aria-label="Choose a job to review">{visible.map(item=>{
+              const [title, role] = identity(item);
+              return <li key={item.jobId}>
+                <button className="focus-item" type="button" aria-pressed={selected?.jobId===item.jobId}
+                  onClick={()=>setSelectedId(item.jobId)} aria-controls="focus-decision">
+                  <span>{title}</span>
+                  {role && <small>{role}</small>}
+                  <small>{attentionReasons[item.reasonCode]}</small>
+                </button>
+              </li>;
+            })}</ul>
             {selected && <div id="focus-decision" className="focus-decision" aria-live="polite">
-              <p className="focus-context">Job {selected.jobId}</p>
+              <p className="focus-context">{identity(selected).join(' · ')}</p>
               <h2>{attentionReasons[selected.reasonCode]}</h2>
-              <p className="focus-guidance">{attentionGuidance[selected.reasonCode]}</p>
+              <p className="focus-guidance">{upload
+                ? 'The agent paused at the upload control. Attach your saved resume in your application tab.'
+                : attentionGuidance[selected.reasonCode]}</p>
               <dl className="focus-context-list">
-                <div><dt>Current status</dt><dd>{humanize(selected.status)}</dd></div>
-                <div><dt>Since</dt><dd>{selected.attentionAt}</dd></div>
-                {['needs_information','pending_live_reconfirmation'].includes(selected.reasonCode) && <div><dt>Missing information</dt><dd>{String(selected.missingInformationCount)}</dd></div>}
-                {selected.session.blockers.length>0 && <div><dt>Blockers</dt><dd>{selected.session.blockers.map(blocker=>humanize(blocker.code)).join(', ')}</dd></div>}
-                {selected.session.handoffChecklist.length>0 && <div><dt>To do on form</dt><dd>{handoffChecklistLabels(selected.session.handoffChecklist).join(' · ')}</dd></div>}
-                {selected.session.handoff!=='Not recorded' && <div><dt>Browser handoff</dt><dd>{humanize(selected.session.handoff)}{selected.session.handoffReason&&` · ${humanize(selected.session.handoffReason)}`}</dd></div>}
+                <div><dt>Since</dt><dd>{formatActivityTime(selected.attentionAt)}</dd></div>
+                {selected.missingInformationCount > 0n && <div><dt>Missing information</dt><dd>{String(selected.missingInformationCount)}</dd></div>}
+                {checklist.length > 0 && <div><dt>To do on form</dt><dd>{checklist.join(' · ')}</dd></div>}
               </dl>
-              <button className="primary" type="button" onClick={()=>openJob(selected.jobId)} aria-label={`Open job ${selected.jobId}`}>Open Job details</button>
-              <p className="focus-footnote">Only you can submit on the employer site.</p>
+              <button className="primary" type="button" onClick={()=>openJob({id:selected.jobId, revision:selected.revision})}
+                disabled={loading || Boolean(error)}>{upload ? 'See upload steps' : attentionActionLabels[selected.reasonCode]}</button>
+              {selected.reasonCode === 'awaiting_human_review' && <p className="focus-footnote">Only you can submit on the employer site.</p>}
               <span className="visually-hidden">Revision {String(selected.revision)}</span>
             </div>}
           </div>}

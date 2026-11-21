@@ -154,3 +154,25 @@ html { scroll-padding-top:5.5rem }
 @media(prefers-reduced-motion:reduce) {
   .job-drawer[open],.job-drawer::backdrop,.detail-drawer[open],.detail-drawer::backdrop { animation:none }
 }
+
+.job-drawer .job-handoff {
+  margin:0 0 1.2rem;
+  padding:clamp(1rem,4vw,1.5rem);
+  background:var(--paper);
+  overflow-wrap:anywhere;
+}
+.job-handoff h3 { margin:.24rem 0 .65rem;font:400 1.75rem/1.2 Georgia,serif }
+.job-handoff p { margin:0 0 .75rem;line-height:1.6 }
+.job-handoff details { border-top:1px solid var(--line);padding-block:.65rem }
+.job-handoff ul { padding-inline-start:1.25rem;line-height:1.6 }
+.job-handoff li ul { margin:.25rem 0 }
+.job-handoff-actions { margin:0 0 .75rem }
+.job-handoff-actions .focus-footnote { margin:.4rem 0 0 }
+.job-handoff fieldset { min-width:0;margin:.5rem 0 0;border-color:var(--line) }
+.job-handoff .button-row { display:flex;flex-wrap:wrap;gap:.5rem }
+.job-handoff summary,.job-activity-details>summary { cursor:pointer }
+.job-activity-details>section { margin-top:1rem }
+.focus-item span { overflow-wrap:anywhere }
+
+.job-identity .job-confirmation { color:#75500b;font-size:.8rem }
+.job-card .status-ready,.job-card .status-awaiting_review { text-transform:none }

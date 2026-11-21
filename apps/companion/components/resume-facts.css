@@ -1,10 +1,12 @@
 .resume-facts-panel { margin-top:1rem }
 .resume-facts-heading { display:flex;justify-content:space-between;align-items:start;gap:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--line) }
-.resume-facts-heading h3 { margin:.25rem 0 0;font:500 clamp(1.45rem,2.7vw,2.1rem) Georgia,serif }
+.resume-facts-heading h3 { margin:.25rem 0 0;font:500 clamp(1.45rem,2.7vw,2.1rem) Georgia,serif;scroll-margin-top:6rem }
 .resume-facts-sync { display:grid;justify-items:end;gap:.35rem;max-width:260px;text-align:right }
 .resume-facts-sync small { color:var(--muted);font-size:.72rem;line-height:1.35 }
 .resume-facts-meta { display:flex;align-items:center;gap:.6rem;margin:1rem 0;color:var(--muted);font-size:.8rem;font-weight:700 }
-.resume-facts-meta strong { padding:.35rem .6rem;border-radius:999px;background:#fff0d6;color:#75500b;text-transform:capitalize }
+.resume-facts-meta strong { padding:.35rem .6rem;border-radius:999px;background:#fff0d6;color:#75500b }
+.resume-facts-meta strong[data-state=confirmed] { background:var(--mint);color:var(--green) }
+.resume-facts-waiting { margin-block:1rem }
 .resume-fact-sections { display:grid;gap:1rem }
 .resume-fact-section { min-width:0;padding:1.1rem;border:1px solid var(--line);border-radius:14px;background:#fafaf6 }
 .resume-fact-section h4 { margin:0 0 1rem;font:600 1.15rem Georgia,serif }

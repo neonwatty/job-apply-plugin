@@ -53,11 +53,33 @@ export function reapplyDraft(before: Document, draft: Document, latest: Document
   return result;
 }
 
-export function factProvenance(provenance: Document, key: string): string {
-  const result = new PythonObject<Value>(), path = pointer(key);
-  for (const [item, value] of provenance.entries()) {
-    const name = string(item)!;
-    if (name === path || name.startsWith(path + '/') || path.startsWith(name + '/')) result.set(item,value);
-  }
-  return serialize(result);
+const sourceLabels = new Map([
+  ['user', 'User entry or approval'],
+  ['resume', 'Resume extraction'],
+  ['agent', 'Job Apply agent'],
+  ['migration', 'Migrated data'],
+]);
+
+export function factProvenance({provenance, profile}: ProfileSnapshot, key: string) {
+  if (!has(profile, key)) return [];
+  const path = pointer(key);
+  return provenance.entries().flatMap(([item, value]) => {
+    const name = string(item);
+    if (name === null || (name !== path && !name.startsWith(path + '/')) || !(value instanceof PythonObject)) return [];
+    const source = sourceLabels.get(string(get(value, 'source')) ?? '');
+    if (!source) return [];
+    const fields = name === path ? [] : name.slice(path.length + 1).split('/')
+      .map(segment => segment.replaceAll('~1', '/').replaceAll('~0', '~'));
+    let saved = get(profile, key);
+    for (const field of fields) {
+      if (!(saved instanceof PythonObject) || !has(saved, field)) return [];
+      saved = get(saved, field);
+    }
+    return [{
+      path: name,
+      field: fields.length ? fields.join(' › ') : null,
+      source,
+      updatedAt: string(get(value, 'updatedAt')),
+    }];
+  });
 }

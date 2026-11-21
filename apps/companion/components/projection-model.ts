@@ -26,8 +26,8 @@ export const recoveryGuidance = {
 };
 export const attentionGuidance: Record<AttentionReason, string> = {
   expired_agent_attempt: recoveryGuidance.expired, claimless_interrupted_attempt: recoveryGuidance.interrupted,
-  awaiting_human_review: 'Personally review and submit on the third-party site, then confirm Applied in Job details. You can also close the job with an outcome.',
-  browser_action_required: 'Continue in the visible browser. Saved information is already known; do not create or re-enter an answer in Companion.',
+  awaiting_human_review: 'Open the review steps and check the draft in your application tab. After you submit on the employer site, record submission in Companion.',
+  browser_action_required: 'Continue in your application tab. The agent needs your help with a form control.',
   needs_information: 'Open Job details and resolve missing facts, resume, or answers. Run preflight, then mark the job Ready.',
   owner_confirmation_required: 'Confirm the requested action for the visible application form, then mark the job Ready to resume the attempt.',
   pending_live_reconfirmation: 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.',
@@ -61,12 +61,22 @@ function nullableRecord(value: Value | undefined): Document | null {
   return value === null || value === undefined ? null : object(value,'projection');
 }
 export interface SessionSummary {
-  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; handoffChecklistRecorded:boolean;
+  readiness: string; reviewChecksRecorded: boolean; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; handoffChecklistRecorded:boolean;
   optionalUnansweredControlIds:string[]; optionalUnansweredRecorded:boolean; attemptRevision?: bigint;
 }
 function summary(d: Document | null): SessionSummary {
   const readiness = d && nullableRecord(get(d,'readiness'));
   const handoff = d && nullableRecord(get(d,'browserHandoff'));
+  const attempt = d ? int(get(d,'attemptRevision')) : null;
+  const assertions = readiness && nullableRecord(get(readiness,'assertions'));
+  const reviewChecksRecorded = readiness !== null && attempt !== null && attempt > 0n
+    && int(get(readiness,'attemptRevision')) === attempt
+    && str(readiness,'status','') === 'ready'
+    && str(readiness,'evidenceKind','') === 'agent_attested_current_attempt'
+    && assertions !== null && ['required-controls-complete','validation-clear','final-action-untouched']
+      .every(key => str(assertions,key,'') === 'passed')
+    && handoff !== null && str(handoff,'state','') === 'ready_for_owner'
+    && str(handoff,'reasonCode','') === 'final-review-required';
   const optionalUnansweredControlIds = readiness ? array(readiness,'optionalUnansweredControlIds',true).map(value=>{
     const id=string(value);
     if(id===null || !/^[a-z][a-z0-9._-]{0,127}$/u.test(id)) throw Error('Invalid optional control id');
@@ -80,6 +90,7 @@ function summary(d: Document | null): SessionSummary {
   }) : [];
   return {
     readiness: readiness ? str(readiness,'status','Not recorded') : 'Not recorded',
+    reviewChecksRecorded,
     blockers: d ? array(d,'blockers',true).map(value=>{const item=object(value,'blocker');return {type:str(item,'type'),code:str(item,'code')};}) : [],
     handoff: handoff ? str(handoff,'state','Not recorded') : 'Not recorded',
     handoffReason: handoff ? str(handoff,'reasonCode','') : '',
@@ -89,6 +100,23 @@ function summary(d: Document | null): SessionSummary {
     optionalUnansweredRecorded:readiness !== null && has(readiness,'optionalUnansweredControlIds'),
     ...(d && has(d,'attemptRevision') && get(d,'attemptRevision') !== null ? {attemptRevision:revision(d,'attemptRevision')} : {}),
   };
+}
+const uploadBlockerCodes = new Set([
+  'owner-upload-required', 'required-upload-missing', 'external-upload-capability-unavailable',
+]);
+export function recordedFormActions(session: SessionSummary): string[] {
+  const checklist = session.handoffChecklist;
+  const uploadRequired = session.handoff === 'required' && session.handoffReason === 'owner-upload-required';
+  const actions = handoffChecklistLabels(uploadRequired && !checklist.includes('resume_upload')
+    ? ['resume_upload', ...checklist] : checklist);
+  if (uploadRequired && actions.length === 1 && session.blockers.some(({code}) => !uploadBlockerCodes.has(code))) {
+    actions.push('Review the remaining form checks');
+  }
+  return actions;
+}
+export function isCurrentHandoff(session: SessionSummary, jobRevision: bigint): boolean {
+  // A claim writes evidence for its attempt, then advances the job once on handoff.
+  return session.attemptRevision === jobRevision - 1n;
 }
 export interface AttentionItem {
   jobId:string; status:string; revision:bigint; reasonCode:AttentionReason; attentionAt:string; missingInformationCount:bigint; session:SessionSummary;
@@ -105,7 +133,7 @@ export function attentionProjection(raw:string): {items:AttentionItem[]} {
   // The server sorts by reason, descending priority, timestamp, then canonical id.
   return {items};
 }
-export function filterAttention(items:AttentionItem[],reason:string):AttentionItem[] { return reason ? items.filter(item=>item.reasonCode===reason) : items; }
+export function filterAttention<T extends AttentionItem>(items:T[],reason:string):T[] { return reason ? items.filter(item=>item.reasonCode===reason) : items; }
 export interface ActivityProjection {
   job:{status:string;revision:bigint};
   session:(SessionSummary & {revision:bigint;status:string;step:string;updatedAt:string;approvalCount:number;pending:{sensitive:boolean;eligible:boolean;approved:boolean;state:string;fieldClass:string}[]}) | null;

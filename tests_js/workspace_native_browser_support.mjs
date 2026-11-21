@@ -126,14 +126,34 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByLabel('Label', { exact: true }).fill('Browser resume updated');
     await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume details saved', { exact: true }).waitFor();
+    const extractionStatus = page.getByRole('region', {name:'Facts for Browser resume updated'});
+    await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
+    await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
+    await page.getByLabel('Replacement file').setInputFiles({ name: 'intermediate.txt', mimeType: 'text/plain', buffer: Buffer.from('intermediate resume') });
+    const requestExtraction = page.getByLabel('Request fact extraction after saving', {exact:true});
+    await requestExtraction.uncheck();
+    await page.getByRole('button', { name: 'Save resume', exact: true }).click();
+    await page.getByText('Resume file replaced.', {exact:true}).waitFor();
+    await extractionStatus.getByText('No facts have been extracted for this resume yet.', {exact:true}).waitFor();
     await page.getByRole('button', { name: 'Edit resume', exact: true }).click();
     await page.getByLabel('Replacement file').setInputFiles({ name: 'updated.txt', mimeType: 'text/plain', buffer: Buffer.from('updated browser resume') });
+    await requestExtraction.check();
     await page.getByRole('button', { name: 'Save resume', exact: true }).click();
     await page.getByText('Resume file replaced. Fact extraction requested.', { exact: true }).waitFor();
     const resumeDocument = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8'));
     const browserResume = Object.values(resumeDocument.resumes)[0];
     assert.equal(browserResume.label, 'Browser resume updated');
     assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
+    const extractionRequests = '**/api/resume-extraction-requests';
+    await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
+    await page.route(extractionRequests, route => route.fulfill({status:503}), {times:1});
+    const checkAgent = extractionStatus.getByRole('button', {name:'Check for agent updates',exact:true});
+    await checkAgent.click();
+    await extractionStatus.getByRole('alert').filter({hasText:/Extraction request status unavailable/}).waitFor();
+    assert.equal(await extractionStatus.getByText('No facts have been extracted for this resume yet.').count(), 0);
+    await extractionStatus.getByRole('button', {name:'View extraction requests',exact:true}).waitFor();
+    await checkAgent.click();
+    await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);
@@ -185,7 +205,7 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
     await page.setViewportSize({width:390,height:844});
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
-    const projections = await projectionsBrowser(page,{jobId:job.id,markReady:async()=>{
+    const projections = await projectionsBrowser(page,{markReady:async()=>{
       const current = JSON.parse(await readFile(join(root,'jobs.json'),'utf8')).jobs[job.id];
       await execute(process.execPath,[cli,'--root',root,'--native-lock',fixture.receipt.artifact,
         'task-select','--id',job.id,'--expected-revision',String(current.revision),'--owner-confirmed'],{env:{PATH:''}});

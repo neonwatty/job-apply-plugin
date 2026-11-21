@@ -27,7 +27,7 @@ await page.locator('.focus-item').first().waitFor();
 await page.locator('.focus-item').nth(1).focus();
 await page.keyboard.press('Enter');
 assert.equal(await page.locator('.focus-item[aria-pressed=true]').count(),1);
-await page.getByRole('button',{name:/Open job /}).click();
+await page.getByRole('button',{name:'See review steps',exact:true}).click();
 await page.locator('dialog.job-drawer').waitFor();
 await page.getByRole('button',{name:'Close job details',exact:true}).click();
 await nav.getByRole('button',{name:'Needs Attention',exact:true}).click();

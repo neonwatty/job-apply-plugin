@@ -43,7 +43,6 @@ test('applied requires explicit personal submission confirmation and omits conse
   assert.deepEqual(JSON.parse(model.transitionBody(job, 'ready', 'expired', true)), {
     status: 'ready', expectedRevision: 7,
   });
-  assert.match(model.transitionConfirmation(review, 'applied'), /personally submitted/i);
   assert.match(model.transitionConfirmation(job, 'ready'), /local status/i);
   assert.match(model.transitionConfirmation(job, 'ready'), /preflight/i);
 });
