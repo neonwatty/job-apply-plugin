@@ -35,7 +35,8 @@ export async function buildNativeLock({ outputDirectory, headers, nodeLib, compi
     if (!(await lstat(path)).isFile()) throw new Error('Node-API development headers are unavailable');
     headerHashes[name] = hash(await readFile(path));
   }
-  const sourceBytes = await readFile(source);
+  const inputs = windows ? [source, join(dirname(source), 'store-metadata.h')] : [source];
+  const sourceBytes = await Promise.all(inputs.map(path => readFile(path)));
   // Fail on an existing directory; this build never overwrites a caller's artifact.
   await mkdir(outputDirectory, { mode: 0o700 });
   const artifact = join(outputDirectory, 'flock.node');
@@ -55,10 +56,11 @@ export async function buildNativeLock({ outputDirectory, headers, nodeLib, compi
     if (run.error || run.status !== 0) {
       throw new Error(`Native lock compilation failed: ${run.error?.message ?? (windows ? run.stdout + run.stderr : run.stderr)}`);
     }
-    if (!sourceBytes.equals(await readFile(source))) throw new Error('Native source changed during compilation');
+    const confirmed = await Promise.all(inputs.map(path => readFile(path)));
+    if (sourceBytes.some((bytes, index) => !bytes.equals(confirmed[index]))) throw new Error('Native source changed during compilation');
     if (!(await lstat(artifact)).isFile()) throw new Error('Compiler did not emit a regular native addon');
     return { schemaVersion: 1, platform: process.platform, arch: process.arch,
-      nodeVersion: process.versions.node, nodeApiVersion: 8, sourceSha256: hash(sourceBytes),
+      nodeVersion: process.versions.node, nodeApiVersion: 8, sourceSha256: hash(Buffer.concat(sourceBytes)),
       headerHashes, artifactSha256: hash(await readFile(artifact)), artifact };
   } catch (error) {
     await rm(outputDirectory, { recursive: true, force: true });

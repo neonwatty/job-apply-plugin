@@ -1,4 +1,5 @@
-import { lstat, readlink, stat } from "node:fs/promises";
+import { lstat, readlink, realpath, stat } from "node:fs/promises";
+import { win32 } from "node:path";
 import { filesystemDecode, filesystemEncode } from "./posix-path-bytes.js";
 
 export type PythonPathProfile = "3.12" | "3.13" | "3.14";
@@ -31,6 +32,16 @@ export function constructPosixPath(base: string, child: string): string {
   return anchor + parts.join("/") || ".";
 }
 
+/** Native Store paths take their lexical rules from the host filesystem. */
+export function constructNativePath(base: string, child: string): string {
+  if (process.platform !== "win32") return constructPosixPath(base, child);
+  return win32.parse(child).root || !base ? win32.normalize(child) : win32.join(base, child);
+}
+
+export function nativeParent(path: string): string {
+  return process.platform === "win32" ? win32.dirname(path) : posixParent(path);
+}
+
 export function posixParent(path: string): string {
   const normalized = constructPosixPath("", path);
   if (normalized === "/" || normalized === "//" || normalized === ".") return normalized;
@@ -61,8 +72,23 @@ const nativeIO: PosixPathIO = {
   cwd: () => process.cwd(),
 };
 
-function isOSFailure(error: unknown): boolean {
+function isOSFailure(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "errno" in error && typeof error.errno === "number";
+}
+
+async function resolveWindowsPath(path: string): Promise<string> {
+  let current = win32.resolve(path);
+  const suffix: string[] = [];
+  for (;;) {
+    try { return win32.join(await realpath(current), ...suffix.reverse()); }
+    catch (error) {
+      if (!isOSFailure(error) || !["ENOENT", "ENOTDIR"].includes(error.code ?? "")) throw error;
+      const parent = win32.dirname(current);
+      if (parent === current) throw error;
+      suffix.push(win32.basename(current));
+      current = parent;
+    }
+  }
 }
 
 /** Non-strict parent resolution; missing/non-directory components remain lexical. */
@@ -73,7 +99,7 @@ export async function resolvePosixPath(
 ): Promise<string> {
   validatePathProfile(profile);
   if (io === nativeIO && process.platform === "win32") {
-    throw new Error("Native Windows path resolution is not supported by this inert POSIX adapter");
+    return resolveWindowsPath(path);
   }
   const seen = new Map<string, string | null>();
 

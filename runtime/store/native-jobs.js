@@ -4,7 +4,7 @@ import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from '.
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { constants } from "node:fs";
-import { lstat, open, readdir } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { parsePythonPointJsonBytes } from "../contracts/raw-json/point-parser.js";
 import { validateJobsDocument, safeId } from "../contracts/workspace/jobs.js";
@@ -31,6 +31,7 @@ import { validateNativeJobsRoot } from './native-root-validation.js';
 import { nativePendingAnswerState } from './native-pending-answer-state.js';
 import { applicationAuthorityTransaction as runApplicationAuthorityTransaction, loadApplicationAuthority } from './native-application-authority.js';
 import { nativeResumeSummaries } from './native-resume-summaries.js';
+import { openPrivateStoreFile, requirePrivateStoreDirectory } from './private-store-entry.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
@@ -47,13 +48,8 @@ export class NativeJobsRepository {
         this.checkpoint = checkpoint;
     }
     async read(name) {
-        const handle = await open(join(this.root, name), constants.O_RDONLY | constants.O_NOFOLLOW);
+        const handle = await openPrivateStoreFile(join(this.root, name), constants.O_RDONLY, "native fixture file must be private and owned, without links");
         try {
-            const stat = await handle.stat();
-            if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
-                throw new JobsError("native fixture file must be private and owned, without links");
-            }
-            // Read the same private documents that Store writers and migration accept.
             return await handle.readFile();
         }
         finally {
@@ -277,9 +273,8 @@ export class NativeJobsRepository {
         return new NativeAnswerJournal((name, document) => this.write(join(this.root, `${name}.json`), document, options));
     }
     async answerSessions() {
-        const directory = join(this.root, "sessions"), stat = await lstat(directory);
-        if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.())
-            throw new JobsError("native sessions directory must be private and owned");
+        const directory = join(this.root, "sessions");
+        await requirePrivateStoreDirectory(directory, "native sessions directory must be private and owned");
         const sessions = [];
         for (const name of (await readdir(directory)).sort()) {
             if (!name.endsWith('.json'))

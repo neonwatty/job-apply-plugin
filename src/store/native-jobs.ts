@@ -8,7 +8,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import type { ClaimTransaction } from '../workspace-core/claims.js';
 import { constants } from "node:fs";
-import { lstat, open, readdir } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { parsePythonPointJsonBytes } from "../contracts/raw-json/point-parser.js";
 import { validateJobsDocument, safeId } from "../contracts/workspace/jobs.js";
@@ -49,6 +49,7 @@ import { nativePendingAnswerState } from './native-pending-answer-state.js';
 import type { ApplicationAuthorityRepository, ApplicationAuthorityTransaction } from '../workspace-core/application-authority.js';
 import { applicationAuthorityTransaction as runApplicationAuthorityTransaction, loadApplicationAuthority } from './native-application-authority.js';
 import { nativeResumeSummaries } from './native-resume-summaries.js';
+import { openPrivateStoreFile, requirePrivateStoreDirectory } from './private-store-entry.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -67,15 +68,9 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
 
   private async read(name: string): Promise<Buffer> {
-    const handle = await open(join(this.root, name), constants.O_RDONLY | constants.O_NOFOLLOW);
-    try {
-      const stat = await handle.stat();
-      if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
-        throw new JobsError("native fixture file must be private and owned, without links");
-      }
-      // Read the same private documents that Store writers and migration accept.
-      return await handle.readFile();
-    } finally { await handle.close(); }
+    const handle = await openPrivateStoreFile(join(this.root, name), constants.O_RDONLY,
+      "native fixture file must be private and owned, without links");
+    try { return await handle.readFile(); } finally { await handle.close(); }
   }
 
   private async validateRoot(locked = false, allowMissingJobs = false): Promise<void> {
@@ -309,8 +304,8 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
   }
 
   private async answerSessions(): Promise<Document[]> {
-    const directory = join(this.root, "sessions"), stat = await lstat(directory);
-    if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) throw new JobsError("native sessions directory must be private and owned");
+    const directory = join(this.root, "sessions");
+    await requirePrivateStoreDirectory(directory, "native sessions directory must be private and owned");
     const sessions: Document[] = [];
     for (const name of (await readdir(directory)).sort()) {
       if (!name.endsWith('.json')) continue;

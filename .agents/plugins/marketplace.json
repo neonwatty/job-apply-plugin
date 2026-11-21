@@ -7,8 +7,9 @@
     {
       "name": "job-apply",
       "source": {
-        "source": "local",
-        "path": "./"
+        "source": "url",
+        "url": "https://github.com/neonwatty/job-apply-plugin.git",
+        "ref": "stable"
       },
       "policy": {
         "installation": "AVAILABLE",

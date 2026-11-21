@@ -1,7 +1,7 @@
 import { linkLegacyContext } from "../contracts/persistence-exception.js";
 import { constants } from "node:fs";
 import { encodeJsonlJson } from "../contracts/jsonl-json.js";
-import { constructPosixPath } from "../contracts/posix-path.js";
+import { constructNativePath } from "../contracts/posix-path.js";
 import { createNativeJsonlHistoryIO } from "./jsonl-history-io.js";
 import { StoreValidationError } from "./validation.js";
 export class HistoryAppendError extends StoreValidationError {
@@ -20,7 +20,7 @@ export async function appendHistoryEventFor(path, event, isIdempotent, serialize
         return;
     const encoded = serialize();
     const io = getIO();
-    path = constructPosixPath("", path);
+    path = constructNativePath("", path);
     const handle = await io.open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND, 0o600);
     // Baseline parity: the initial stat is outside cleanup. Failure does not
     // explicitly close the descriptor; FileHandle GC is not a cleanup receipt.
@@ -64,7 +64,7 @@ export async function repairPendingHistoryTail(path, options) {
     if (operation === null)
         return;
     const io = options.io ?? createNativeJsonlHistoryIO(options.pathProfile);
-    path = constructPosixPath("", path);
+    path = constructNativePath("", path);
     if (!await io.exists(path))
         return;
     const handle = await io.open(path, constants.O_RDWR);

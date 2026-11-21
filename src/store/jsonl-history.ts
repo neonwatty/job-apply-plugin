@@ -4,7 +4,7 @@ import { constants } from "node:fs";
 import { encodeJsonlJson } from "../contracts/jsonl-json.js";
 import type { PersistedJsonOptions } from "../contracts/persisted-json.js";
 import type { PythonJson } from "../contracts/raw-json/value.js";
-import { constructPosixPath } from "../contracts/posix-path.js";
+import { constructNativePath } from "../contracts/posix-path.js";
 import type { PythonPathProfile } from "../contracts/posix-path.js";
 import { createNativeJsonlHistoryIO } from "./jsonl-history-io.js";
 import type { JsonlHistoryIO } from "./jsonl-history-io.js";
@@ -50,7 +50,7 @@ export async function appendHistoryEventFor<V>(
   if (await isIdempotent(event)) return;
   const encoded = serialize();
   const io = getIO();
-  path = constructPosixPath("", path);
+  path = constructNativePath("", path);
   const handle = await io.open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND, 0o600);
   // Baseline parity: the initial stat is outside cleanup. Failure does not
   // explicitly close the descriptor; FileHandle GC is not a cleanup receipt.
@@ -86,7 +86,7 @@ export async function repairPendingHistoryTail(path: string, options: RepairHist
   const operation = await options.pendingOperation();
   if (operation === null) return;
   const io = options.io ?? createNativeJsonlHistoryIO(options.pathProfile);
-  path = constructPosixPath("", path);
+  path = constructNativePath("", path);
   if (!await io.exists(path)) return;
   const handle = await io.open(path, constants.O_RDWR);
   let failure: unknown;

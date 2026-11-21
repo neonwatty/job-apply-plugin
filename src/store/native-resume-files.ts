@@ -1,4 +1,5 @@
 import { constants } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import { lstat, open, readdir, rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -10,12 +11,23 @@ import { emptyObject } from '../contracts/workspace/jobs.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
 import { syncDirectory as syncStoreDirectory } from './directory-sync.js';
 import { resumeModifiedAt } from './resume-modified-at.js';
+import { requirePrivateStoreDirectory } from './private-store-entry.js';
+import { checkWindowsStoreWrite, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsMetadata } from './windows-store.js';
 export type StagedResume = { temporary: string; managedFile: string; originalFilename: string; mediaType: string; digest: string; observedSize: number; observedModifiedAt: string };
 const filePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(pdf|docx|txt)$/;
 const tempPattern = /^\.native-[a-f0-9-]{36}\.tmp$/;
 const quarantinePattern = /^\.([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:pdf|docx|txt))\.([a-f0-9]{32})\.quarantine$/;
 const hash = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
 const absent = (error: unknown): boolean => error instanceof Error && 'code' in error && error.code === 'ENOENT';
+async function sameResumePath(path: string, descriptor: number, after: BigIntStats,
+  windows: boolean, privateFile: boolean): Promise<boolean> {
+  if (windows) {
+    const metadata = privateFile ? requireWindowsPrivate : windowsMetadata;
+    return windowsFileIdentity(metadata(path)) === windowsFileIdentity(metadata(descriptor));
+  }
+  const stat = await lstat(path, { bigint: true });
+  return stat.dev === after.dev && stat.ino === after.ino && !stat.isSymbolicLink();
+}
 export async function syncDirectory(path: string): Promise<void> {
   await syncStoreDirectory(path, constants.O_RDONLY | constants.O_NOFOLLOW);
 }
@@ -25,22 +37,28 @@ export class NativeResumeFiles {
     this.directory = join(root, 'resume-files');
   }
   async validate(): Promise<void> {
-    const metadata = await lstat(this.directory);
-    if (!metadata.isDirectory() || metadata.isSymbolicLink() || metadata.uid !== process.getuid?.() || metadata.mode & 0o077) throw new JobsError('resume directory must be private and owned');
+    await requirePrivateStoreDirectory(this.directory, 'resume directory must be private and owned');
     for (const name of await readdir(this.directory)) {
       if (!filePattern.test(name) && !tempPattern.test(name) && !quarantinePattern.test(name)) {
         throw new JobsError('unsupported resume recovery state');
       }
-      const stat = await lstat(join(this.directory, name));
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== process.getuid?.() || stat.mode & 0o077) throw new JobsError('resume file must be private and owned, without links');
+      const path = join(this.directory, name);
+      if (process.platform === 'win32') requireWindowsPrivate(path, false);
+      else {
+        const stat = await lstat(path);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== process.getuid?.() || stat.mode & 0o077) throw new JobsError('resume file must be private and owned, without links');
+      }
     }
   }
   async readPath(path: string, privateFile = false): Promise<Buffer> {
     let handle;
     try {
-      handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+      const windows = process.platform === 'win32';
+      handle = windows ? await openWindowsStoreFile(path, constants.O_RDONLY, privateFile)
+        : await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
       const before = await handle.stat({ bigint: true });
-      if (!before.isFile() || before.size > BigInt(resumeLimit) || privateFile && (before.nlink !== 1n || before.uid !== BigInt(process.getuid!()) || (before.mode & 0o077n) !== 0n)) throw Error('file');
+      if (!before.isFile() || before.size > BigInt(resumeLimit)
+        || !windows && privateFile && (before.nlink !== 1n || before.uid !== BigInt(process.getuid!()) || (before.mode & 0o077n) !== 0n)) throw Error('file');
       const parts: Buffer[] = [];
       let size = 0;
       while (true) {
@@ -50,9 +68,9 @@ export class NativeResumeFiles {
         parts.push(buffer.subarray(0, bytesRead)); size += bytesRead;
         if (size > resumeLimit) throw new JobsError('resume file exceeds the 10 MiB limit');
       }
-      const after = await handle.stat({ bigint: true }), pathStat = await lstat(path, { bigint: true });
+      const after = await handle.stat({ bigint: true });
       if (size !== Number(before.size) || ['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs'].some(key => before[key as keyof typeof before] !== after[key as keyof typeof after])
-        || pathStat.dev !== after.dev || pathStat.ino !== after.ino || pathStat.isSymbolicLink()) throw new JobsError('resume source changed during import');
+        || !await sameResumePath(path, handle.fd, after, windows, privateFile)) throw new JobsError('resume source changed during import');
       return Buffer.concat(parts);
     } catch (error) {
       if (error instanceof JobsError) throw error;
@@ -61,8 +79,11 @@ export class NativeResumeFiles {
   }
   async stage(id: string, filename: string, content: Buffer): Promise<StagedResume> {
     const { extension, mediaType } = validateResumeContent(filename, content);
+    if (process.platform === 'win32') await checkWindowsStoreWrite(join(this.directory, id + extension));
     const temporary = `.native-${randomUUID()}.tmp`, path = join(this.directory, temporary);
-    const handle = await open(path, 'wx', 0o600);
+    const handle = process.platform === 'win32'
+      ? await openWindowsStoreFile(path, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL)
+      : await open(path, 'wx', 0o600);
     try {
       await handle.writeFile(content); await handle.sync();
       const stat = await handle.stat();
@@ -141,6 +162,7 @@ export class NativeResumeFiles {
     readCurrent: () => Promise<Document>): Promise<void> {
     if (string(get(record, 'storageKind')) !== 'managed') { await save(document); return; }
     const source = string(get(record, 'managedFile'))!, sourcePath = this.path(record);
+    if (process.platform === 'win32') await checkWindowsStoreWrite(sourcePath);
     try { await lstat(sourcePath); }
     catch (error) { if (absent(error)) { await save(document); return; } throw error; }
     const quarantine = `.${source}.${randomUUID().replaceAll('-', '')}.quarantine`;
@@ -184,6 +206,10 @@ export class NativeResumeFiles {
         if (!temporary || !tempPattern.test(temporary) || !destination || !filePattern.test(destination) || !digest || !/^[a-f0-9]{64}$/.test(digest)
           || get(journal, 'previous') !== null && (!previous || !filePattern.test(previous))) throw new JobsError('invalid resume recovery journal');
         const document = object(get(journal, 'document'), 'resume recovery document');
+        if (process.platform === 'win32') {
+          await checkWindowsStoreWrite(join(this.directory, destination));
+          if (previous) await checkWindowsStoreWrite(join(this.directory, previous));
+        }
         const records = object(get(document, 'resumes'), 'resumes.resumes');
         const matches = records.entries().filter(([, value]) => string(get(object(value, 'resume'), 'managedFile')) === destination
           && string(get(object(value, 'resume'), 'digest')) === digest);
@@ -239,6 +265,10 @@ export class NativeResumeFiles {
     const before = same(current, previous), after = same(current, intended);
     if (!before && !after) throw new JobsError('resume recovery document differs');
     const sourcePath = join(this.directory, source), quarantinePath = join(this.directory, quarantine);
+    if (process.platform === 'win32') {
+      await checkWindowsStoreWrite(sourcePath);
+      await checkWindowsStoreWrite(quarantinePath);
+    }
     const sourceExists = await lstat(sourcePath).then(() => true, error => absent(error) ? false : Promise.reject(error));
     const quarantineExists = await lstat(quarantinePath).then(() => true, error => absent(error) ? false : Promise.reject(error));
     if (before) {

@@ -2,10 +2,11 @@ import { randomInt } from "node:crypto";
 import { constants } from "node:fs";
 import { chmod, mkdir, open, rename, stat, unlink } from "node:fs/promises";
 import { filesystemEncode, FilesystemEncodeError } from "../contracts/posix-path-bytes.js";
-import { constructPosixPath, posixParent, validatePathProfile } from "../contracts/posix-path.js";
+import { constructNativePath, posixParent, validatePathProfile } from "../contracts/posix-path.js";
 import { linkLegacyContext } from "../contracts/persistence-exception.js";
 import { encodePersistedUtf8 } from "../contracts/persisted-json.js";
 import { pythonFilesystemError, withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
+import { checkWindowsStoreWrite, ensureWindowsPrivateDirectory, openWindowsStoreFile, requireWindowsPrivate } from "./windows-store.js";
 export function isFilesystemError(error) {
     return error instanceof Error && "errno" in error && typeof error.errno === "number";
 }
@@ -64,8 +65,7 @@ export function createNativeAtomicWriteIO(profile) {
 }
 export function createNativeAtomicWriteIOFor(profile, encode, linkContext) {
     validatePathProfile(profile);
-    if (process.platform === "win32")
-        throw new Error("Native Windows atomic writes are not supported by this POSIX adapter");
+    const windows = process.platform === "win32";
     async function isDirectory(path) {
         try {
             return (await withPythonFilesystemErrors(stat(nativePath(path)))).isDirectory();
@@ -96,26 +96,41 @@ export function createNativeAtomicWriteIOFor(profile, encode, linkContext) {
         }
     }
     return {
-        mkdir: makeDirectory,
-        chmod: (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
-        replace: (source, destination) => withPythonFilesystemErrors(rename(nativePath(source), nativePath(destination))),
+        mkdir: windows ? (path, options) => ensureWindowsPrivateDirectory(path, options.existOk) : makeDirectory,
+        chmod: windows ? async (path) => { requireWindowsPrivate(path); } : (path, mode) => withPythonFilesystemErrors(chmod(nativePath(path), mode)),
+        async replace(source, destination) {
+            if (windows) {
+                await checkWindowsStoreWrite(source);
+                await checkWindowsStoreWrite(destination);
+                await withPythonFilesystemErrors(rename(source, destination));
+            }
+            else
+                await withPythonFilesystemErrors(rename(nativePath(source), nativePath(destination)));
+        },
         async openDirectory(path) {
+            if (windows)
+                return { async sync() { }, async close() { } };
             const handle = await withPythonFilesystemErrors(open(nativePath(path), constants.O_RDONLY));
             return {
                 sync: () => withPythonFilesystemErrors(handle.sync()),
                 close: () => withPythonFilesystemErrors(handle.close()),
             };
         },
-        unlink: (path) => withPythonFilesystemErrors(unlink(nativePath(path))),
+        async unlink(path) {
+            if (windows)
+                await checkWindowsStoreWrite(path);
+            await withPythonFilesystemErrors(unlink(windows ? path : nativePath(path)));
+        },
         async createTemporary(options) {
             const maximumAttempts = process.platform === "darwin" ? 20 : 238328;
             for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
                 const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789_";
                 const token = Array.from({ length: 8 }, () => alphabet[randomInt(alphabet.length)]).join("");
-                const path = constructPosixPath(options.directory, options.prefix + token + options.suffix);
+                const path = constructNativePath(options.directory, options.prefix + token + options.suffix);
                 let handle;
                 try {
-                    handle = await withPythonFilesystemErrors(open(nativePath(path), constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600));
+                    const flags = constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0);
+                    handle = await withPythonFilesystemErrors(windows ? openWindowsStoreFile(path, flags) : open(nativePath(path), flags, 0o600));
                 }
                 catch (error) {
                     if (isFilesystemError(error) && error.code === "EEXIST")
@@ -135,7 +150,7 @@ export function createNativeAtomicWriteIOFor(profile, encode, linkContext) {
                         failure = linkContext(closeError, failure);
                     }
                     try {
-                        await withPythonFilesystemErrors(unlink(nativePath(path)));
+                        await withPythonFilesystemErrors(unlink(windows ? path : nativePath(path)));
                     }
                     catch (cleanupError) {
                         throw linkContext(cleanupError, failure);

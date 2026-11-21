@@ -1,4 +1,4 @@
-import { lstat, readdir, unlink } from 'node:fs/promises';
+import { readdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
@@ -19,6 +19,8 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
+import { requirePrivateStoreDirectory } from './private-store-entry.js';
+import { checkWindowsStoreWrite, WindowsStorePathAliasError } from './windows-store.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 export interface NativeStoreStateStorage {
@@ -44,10 +46,8 @@ export async function runHistoryTransaction<T>(storage: NativeStoreStateStorage,
 
 export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
   operation: (transaction: SessionTransaction) => Promise<T>): Promise<T> {
-  const directory = join(storage.root, 'sessions'), metadata = await lstat(directory);
-  if (!metadata.isDirectory() || metadata.isSymbolicLink() || metadata.uid !== process.getuid?.() || metadata.mode & 0o077) {
-    throw new JobsError('native sessions directory must be private and owned');
-  }
+  const directory = join(storage.root, 'sessions');
+  await requirePrivateStoreDirectory(directory, 'native sessions directory must be private and owned');
   const load = async (id: string): Promise<Value | null> => {
     safeId(id);
     try {
@@ -55,7 +55,7 @@ export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
         diagnosticProfile: '3.12', intMaxStrDigits: 4300,
       }), 'session');
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof WindowsStorePathAliasError) return null;
       throw error;
     }
   };
@@ -76,8 +76,15 @@ export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
       await storage.write(join(directory, `${safeId(id)}.json`), document);
     },
     delete: async id => {
-      try { await unlink(join(directory, `${safeId(id)}.json`)); await syncDirectory(directory); return true; }
-      catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error; }
+      const path = join(directory, `${safeId(id)}.json`);
+      try {
+        if (process.platform === 'win32') await checkWindowsStoreWrite(path);
+        await unlink(path); await syncDirectory(directory); return true;
+      }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof WindowsStorePathAliasError) return false;
+        throw error;
+      }
     },
     canonicalJob: async id => {
       const value = get(object(get(jobs, 'jobs'), 'jobs.jobs'), safeId(id));
