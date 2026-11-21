@@ -25,7 +25,7 @@ export const nativeStoreRequiredEntries = [
 ] as const;
 export const nativeStoreAllowedEntries = new Set([
   ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
-  nativeAttemptLockName, nativeAttemptKeyName,
+  ...(process.platform === 'win32' ? [nativeAttemptLockName, nativeAttemptKeyName] : []),
   nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json',
 ]);
 

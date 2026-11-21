@@ -11,7 +11,7 @@ import type { PosixFlockProvider } from '../store/posix-flock.js';
 import type { Document } from '../contracts/workspace/values.js';
 import { AttemptAuthority } from './attempt-authority.js';
 import { AttemptFrameDecoder, attemptError, attemptHeartbeatMilliseconds, attemptIdleMilliseconds, attemptSocketPath, encodeAttemptFrame } from './attempt-protocol.js';
-import { acceptPipeClient, attemptLockPath, attemptPipePath, connectPipeBroker, publishAttemptKey, readAttemptKey } from './attempt-pipe.js';
+import { acceptPipeClient, attemptLockPath, attemptPipePath, connectPipeBroker, encodePipeRequest, publishAttemptKey, readAttemptKey, readPipeRequest } from './attempt-pipe.js';
 import { openPrivateStoreFile } from '../store/private-store-entry.js';
 import { windowsFileIdentity, windowsMetadata } from '../store/windows-store.js';
 import type { ApplicationAuthorityService } from '../workspace-core/application-authority.js';
@@ -108,54 +108,51 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
     clients.add(socket); socket.on('close', () => clients.delete(socket));
     socket.on('error', () => {});
     socket.setTimeout(1000, () => socket.destroy());
-    // An unauthenticated pipe client never reaches the decoder or the Store.
-    if (windows) acceptPipeClient(socket, key).then(serve, () => socket.destroy());
-    else serve(Buffer.alloc(0));
-    function serve(initial: Buffer): void {
+    let rejected = false;
+    const reject = () => {
+      if (rejected || socket.destroyed) return;
+      rejected = true;
+      socket.end(encodeAttemptFrame(attemptError('request_rejected')), () => { if (!acquired) stop(); });
+    };
+    if (windows) {
+      // Authentication comes first. The declared frame is the only request on this connection.
+      acceptPipeClient(socket, key).then(initial => {
+        readPipeRequest(socket, initial).then(request => {
+          socket.resume(); // Drain bytes beyond the declared request while returning its result.
+          respond(request);
+        }, reject);
+      }, () => socket.destroy());
+    } else {
       const decoder = new AttemptFrameDecoder();
-      let queued = false, rejected = false, received = false, incoming: Document | null = null;
-      const reject = () => {
-        rejected = true;
-        socket.end(encodeAttemptFrame(attemptError('request_rejected')), () => { if (!acquired) stop(); });
-      };
-      socket.on('data', receive);
-      socket.resume();
-      if (initial.length) receive(initial);
-      function receive(bytes: Buffer): void {
+      let received = false, incoming: Document | null = null;
+      socket.on('data', bytes => {
+        if (rejected) return;
         received = true;
-        let request: Document | null;
-        try { request = decoder.push(bytes); }
-        catch { reject(); return; }
-        if (!request || queued) return;
-        incoming = request;
-        // A named pipe cannot half-close: ending it closes both directions. There the
-        // newline-terminated frame marks a complete request; later bytes are still rejected.
-        if (windows) respond();
-      }
-      socket.once('end', () => {
-        if (rejected || queued) return;
-        if (incoming === null) { if (received) reject(); else socket.destroy(); return; }
-        respond();
+        try { incoming = decoder.push(bytes); }
+        catch { reject(); }
       });
-      function respond(): void {
-        // The one-second deadline bounds framing, not a Store transaction waiting on its lock.
-        socket.setTimeout(0);
-        queued = true;
-        const request = incoming!;
-        queue = queue.then(async () => {
-          if (stopped || rejected) return;
-          let complete = false, response: Document;
-          try {
-            if (!acquired) {
-              response = await authority.acquire(request); acquired = true; clearTimeout(idle);
-            } else {
-              const result = await authority.dispatch(request); response = result.response; complete = result.complete;
-            }
-          } catch { response = attemptError('request_rejected'); complete = !acquired; }
-          socket.end(encodeAttemptFrame(response), () => { if (complete) stop(); });
-          if (complete && socket.destroyed) stop();
-        }).catch(stop);
-      }
+      socket.once('end', () => {
+        if (rejected) return;
+        if (incoming === null) { if (received) reject(); else socket.destroy(); return; }
+        respond(incoming);
+      });
+    }
+    function respond(request: Document): void {
+      // The one-second deadline bounds framing, not a Store transaction waiting on its lock.
+      socket.setTimeout(0);
+      queue = queue.then(async () => {
+        if (stopped || rejected) return;
+        let complete = false, response: Document;
+        try {
+          if (!acquired) {
+            response = await authority.acquire(request); acquired = true; clearTimeout(idle);
+          } else {
+            const result = await authority.dispatch(request); response = result.response; complete = result.complete;
+          }
+        } catch { response = attemptError('request_rejected'); complete = !acquired; }
+        socket.end(encodeAttemptFrame(response), () => { if (complete) stop(); });
+        if (complete && socket.destroyed) stop();
+      }).catch(stop);
     }
   });
   server.on('error', stop);
@@ -215,7 +212,7 @@ async function exchange(path: string, request: Document, key?: Buffer): Promise<
     socket.once('connect', () => {
       if (!key) { socket.on('data', decode); socket.end(frame); return; }
       connectPipeBroker(socket, key).then(proven => {
-        socket.on('data', decode); socket.write(Buffer.concat([proven, frame])); socket.resume();
+        socket.on('data', decode); socket.write(Buffer.concat([proven, encodePipeRequest(frame)])); socket.resume();
       }, fail);
     });
     socket.once('end', () => { socket.destroy(); if (result) resolve(result); else fail(); });

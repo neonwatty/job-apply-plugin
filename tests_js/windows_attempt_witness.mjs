@@ -4,8 +4,10 @@ import { randomBytes } from 'node:crypto';
 import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { createConnection, createServer } from 'node:net';
 import { join } from 'node:path';
-import { acceptPipeClient, attemptPipePath, connectPipeBroker, readAttemptKey } from '../runtime/cli/attempt-pipe.js';
+import { setTimeout as delay } from 'node:timers/promises';
+import { acceptPipeClient, attemptPipePath, connectPipeBroker, encodePipeRequest, readAttemptKey } from '../runtime/cli/attempt-pipe.js';
 import { requestAttempt, runAttemptBroker } from '../runtime/cli/attempt-broker.js';
+import { attemptFrameLimit } from '../runtime/cli/attempt-protocol.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 import { initializeJobsFixture, NativeJobsRepository } from '../runtime/store/native-jobs.js';
 import { requireWindowsPrivate, withWindowsStore } from '../runtime/store/windows-store.js';
@@ -40,6 +42,25 @@ function raw(path, bytes) {
     socket.on('error', error => (error.code === 'EPIPE' || error.code === 'ECONNRESET' ? resolve(output) : reject(error)));
     socket.setTimeout(3000, () => { socket.destroy(); reject(new Error('raw pipe client was not closed')); });
   });
+}
+
+function exchangeFramed(path, key, first, rest) {
+  return new Promise((resolve, reject) => {
+    const socket = createConnection(path);
+    let output = '';
+    socket.once('error', reject);
+    socket.once('connect', () => connectPipeBroker(socket, key).then(async proven => {
+      socket.on('data', chunk => { output += chunk.toString('utf8'); });
+      socket.write(Buffer.concat([proven, first]));
+      socket.resume();
+      if (rest) {
+        await delay(30);
+        if (!socket.destroyed) socket.write(rest);
+      }
+    }).catch(error => { socket.destroy(); reject(error); }));
+    socket.once('close', () => resolve(output));
+    socket.setTimeout(3000, () => { socket.destroy(); reject(new Error('framed pipe client was not closed')); });
+  }).then(JSON.parse);
 }
 
 await withWindowsStore(root, artifact, async provider => {
@@ -88,25 +109,30 @@ await withWindowsStore(root, artifact, async provider => {
   assert.equal(acquired.ok, true); assert.equal(acquired.event, 'acquired');
   assert.doesNotMatch(JSON.stringify(acquired), /token|PRIVATE-/);
   assert.equal((await ask({ command: 'heartbeat' })).event, 'heartbeat');
-
-  // Framing on the pipe: one newline-terminated frame, no trailing bytes.
-  for (const bytes of [Buffer.from('{}\n{}'), Buffer.from('[]\n'), Buffer.from([0xff, 10])]) {
-    const socket = createConnection(path);
-    const reply = await new Promise((resolve, reject) => {
-      let output = Buffer.alloc(0);
-      socket.once('connect', () => connectPipeBroker(socket, key).then(proven => {
-        socket.on('data', chunk => { output = Buffer.concat([output, chunk]); });
-        socket.write(Buffer.concat([proven, bytes])); socket.resume();
-      }, reject));
-      socket.once('close', () => resolve(output.toString('utf8')));
-      socket.once('error', reject);
-    });
-    assert.deepEqual(JSON.parse(reply), rejected);
-    assert.equal((await ask({ command: 'heartbeat' })).event, 'heartbeat');
-  }
+  assert.equal((await ask({ command: 'progress', session: { status: 'active' } })).event, 'progress_saved');
 
   const input = { status: 'active', pendingFields: [{ question: 'PRIVATE QUESTION', state: 'missing' }] };
+  const progressFrame = Buffer.from(JSON.stringify({ command: 'progress', session: input }) + '\n');
+  const suffix = Buffer.from('{}');
+  const malformed = encodePipeRequest(Buffer.concat([progressFrame, suffix]));
+  const session = join(root, 'sessions', 'job.json');
+  const beforeProgress = await readFile(session);
+  // The valid prefix alone would save progress. Delayed trailing bytes within the
+  // declared request must cause rejection before that save.
+  assert.deepEqual(await exchangeFramed(path, key, malformed.subarray(0, -suffix.length), suffix), rejected);
+  assert.deepEqual(await readFile(session), beforeProgress);
+  const oversized = Buffer.alloc(4);
+  oversized.writeUInt32BE(attemptFrameLimit + 1);
+  for (const bytes of [oversized, encodePipeRequest(Buffer.from('[]\n')), encodePipeRequest(Buffer.from([0xff, 10]))]) {
+    assert.deepEqual(await exchangeFramed(path, key, bytes), rejected);
+  }
+  // Bytes beyond the declared request cannot become a second request or change its reply.
+  const oneRequest = Buffer.concat([encodePipeRequest(Buffer.from('{"command":"heartbeat"}\n')), progressFrame]);
+  assert.equal((await exchangeFramed(path, key, oneRequest)).event, 'heartbeat');
+  assert.deepEqual(await readFile(session), beforeProgress);
+
   assert.equal((await ask({ command: 'progress', session: input })).event, 'progress_saved');
+  assert.notDeepEqual(await readFile(session), beforeProgress);
   const review = { status: 'review', pendingFields: [], readinessInput: readyPacket(3) };
   assert.equal((await ask({ command: 'handoff', status: 'awaiting_review', session: review })).event, 'handed_off');
   await running;
@@ -124,13 +150,16 @@ await withWindowsStore(root, artifact, async provider => {
   assert.equal((await ask({ command: 'start', id: 'other', owner: 'owner', expectedRevision: 2 })).event, 'acquired');
   const exited = new Promise(resolve => crashed.once('exit', resolve));
   crashed.kill('SIGKILL'); await exited;
-  const stale = await readAttemptKey(root), before = await read(root, 'coordinator.json');
+  const coordinator = join(root, 'coordinator.json');
+  const stale = await readAttemptKey(root), before = await readFile(coordinator);
   await assert.rejects(requestAttempt(root, fromJSON({ command: 'heartbeat' })), /attempt unavailable/);
-  const recovered = runAttemptBroker(root, claims, provider, { idleMilliseconds: 300 });
-  await eventually(async () => !(await readAttemptKey(root)).equals(stale));
+  const recovered = runAttemptBroker(root, claims, provider, { idleMilliseconds: 5000 });
+  // The new PID is published after the new pipe is listening and the key is complete.
+  await eventually(async () => await readFile(join(root, '.job-apply-attempt.pid'), 'utf8') === `${process.pid}\n`);
+  assert.notDeepEqual(await readAttemptKey(root), stale);
   assert.deepEqual(await ask({ command: 'start', id: 'other', owner: 'owner', expectedRevision: 2 }), rejected);
   await recovered;
-  assert.deepEqual(await read(root, 'coordinator.json'), before);
+  assert.deepEqual(await readFile(coordinator), before);
 
   // The Store stays valid and private with the broker's runtime entries in it.
   await repository.transaction(async () => {});
@@ -152,7 +181,7 @@ client.destroy();
 await new Promise(resolve => squatter.close(resolve));
 assert.equal(Buffer.concat(received).length, 32);
 
-// The broker side rejects a proof made with another key.
+// A client that rejects the broker challenge disconnects before sending proof.
 const pair = attemptPipePath(root, randomBytes(32)), brokerKey = randomBytes(32);
 let accepted;
 const broker = createServer(socket => { accepted = acceptPipeClient(socket, brokerKey); accepted.catch(() => socket.destroy()); });
@@ -161,6 +190,6 @@ const wrong = createConnection(pair);
 await new Promise(resolve => wrong.once('connect', resolve));
 await assert.rejects(connectPipeBroker(wrong, randomBytes(32)), /attempt broker rejected/);
 wrong.destroy();
-await assert.rejects(accepted, /handshake incomplete|client rejected/);
+await assert.rejects(accepted, /attempt pipe input incomplete/);
 await new Promise(resolve => broker.close(resolve));
 await writeFile(join(temporary, 'done'), 'ok');

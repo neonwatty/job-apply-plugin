@@ -26,7 +26,7 @@ retains the post-acquisition revision for handoff. Rejected live requests leave
 the authority active. A successful handoff cancels the heartbeat timer and ends
 the broker.
 
-The transport accepts one UTF-8 newline frame per connection, bounded at 1 MiB
+The POSIX transport accepts one UTF-8 newline frame per connection, bounded at 1 MiB
 including the newline. Empty, non-object, invalid UTF-8, over-limit, and trailing
 frames are rejected without reflecting their contents. A client must close its
 write side after the one request frame; the broker validates that EOF before it
@@ -37,6 +37,12 @@ mode is 0600 and listen backlog is 8. Authentication uses this private directory
 and socket mode boundary, including on Node builds without peer-credential APIs.
 The platform gate accepts macOS/Linux and refuses other platforms. The execution
 receipt for this tranche is macOS; Linux still requires its host release receipt.
+
+The source-built Windows broker authenticates the client and server with a
+per-broker key stored in the private Store. The client sends a four-byte
+big-endian length before its newline frame, and the broker validates all the
+declared bytes before dispatch. A connection carries one request. Bytes beyond
+the declared length are discarded while that request's response is delivered.
 
 A persistent, private `.sock.lock` file holds an inode-stable flock for the broker
 lifetime. This file contains no authority and is deliberately not unlinked, so a
