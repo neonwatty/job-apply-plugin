@@ -140,9 +140,11 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
     assert.equal(reports.status, 2);
     assert.match(reports.stderr, /Legacy search report import is available on macOS and Linux/);
   }
-  const invalidStore = cli(temporary, 'store', '--select', 'paths');
-  assert.equal(invalidStore.status, 2);
-  assert.match(invalidStore.stderr, /unsupported native Jobs command or option/);
+  for (const args of [['--select', 'paths'], ['--input', 'legacy-jobs-preview', 'unknown-command']]) {
+    const invalidStore = cli(temporary, 'store', ...args);
+    assert.equal(invalidStore.status, 2);
+    assert.match(invalidStore.stderr, /unsupported native Jobs command or option/);
+  }
   assert.ok(!(await readdir(temporary)).includes('.job-apply'));
 
   // An interruption after marker publication leaves the completed Store and its data authoritative.

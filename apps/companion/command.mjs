@@ -33,16 +33,16 @@ function selectedRoot(args) {
 async function run() {
   const [surface, ...args] = process.argv.slice(2), target = targets[surface];
   if (!target) throw new Error('unknown Job Apply command surface');
-  let command;
-  for (let index = 0; index < args.length; index += 1) {
-    if (args[index] === '--root' || args[index] === '--legacy-profile') { index += 1; continue; }
-    if (!args[index].startsWith('--')) { command = args[index]; break; }
-  }
-  let root, invalidRequest = false;
   const windows = process.platform === 'win32';
+  let command, root, invalidRequest = false;
   if (windows && surface === 'store') {
     try { ({ command } = parseStoreArgs(args)); }
     catch { invalidRequest = true; }
+  } else {
+    for (let index = 0; index < args.length; index += 1) {
+      if (args[index] === '--root' || args[index] === '--legacy-profile') { index += 1; continue; }
+      if (!args[index].startsWith('--')) { command = args[index]; break; }
+    }
   }
   const readOnlyAbsent = (surface === 'store' && command === 'paths') || (surface === 'policy' && command === 'status');
   const help = args.includes('--help') || args.includes('-h');
