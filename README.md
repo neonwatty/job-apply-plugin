@@ -334,7 +334,7 @@ On macOS and Linux, first use copies an existing `~/.claude-job-profile.json` in
 
 On Windows, the Store directory and every file in it are created with an access list that grants only your account; Windows Explorer's **Properties → Security** tab shows it.
 
-On Windows, the first data command or Companion launch creates a new native Store or reopens a validated native Store. Activation preserves legacy and unrecognized Store directories. If you see a refusal, use `--root` or `JOB_APPLY_STORE_DIR` to select a separate path that does not exist yet. Activation can also use a pre-existing empty directory whose ACL grants access only to your account.
+On Windows, the first data command or Companion launch creates a new native Store or reopens a validated native Store. Activation preserves legacy and unrecognized Store directories. If you see a refusal, use `--root` or `JOB_APPLY_STORE_DIR` to select a new path under an existing directory. You can also use an existing empty directory that you own and whose ACL grants access only to your account.
 
 On macOS arm64 and Linux x64, stable marketplace installs carry verified native lock artifacts. Their first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, and activates the native Store. Windows preview includes its own verified native lock artifact. Installed production routes run through TypeScript without a Python interpreter. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
@@ -405,7 +405,7 @@ Each file contains:
 
 ### Guided legacy job migration
 
-The helper can selectively import the documented numbered job entries from
+On macOS and Linux, the helper can selectively import the documented numbered job entries from
 regular `search-*.md` files directly under `~/.claude-job-searches/`. It does
 not read `application_queue.md`, arbitrary paths, nested directories, or
 symlinks. Undocumented Markdown variants are not imported, and the helper never

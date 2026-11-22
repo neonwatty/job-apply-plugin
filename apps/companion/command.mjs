@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { activateStoreForCli, validateSupervisorRoot } from './supervise.mjs';
 import { storeWriterOwnership } from './writer-route.mjs';
 import { parseAttemptArgs } from '../../runtime/cli/attempt-protocol.js';
+import { parseInstalledTaskArgs } from '../../runtime/cli/task-runner.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 import { activateWindowsStore, canonicalWindowsRoot, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
 
@@ -38,17 +39,25 @@ async function run() {
   }
   const readOnlyAbsent = (surface === 'store' && command === 'paths') || (surface === 'policy' && command === 'status');
   const help = args.includes('--help') || args.includes('-h');
-  let root, invalidAttempt = false;
-  if (surface === 'attempt' && !help) {
-    try { root = parseAttemptArgs(args, process.env, homedir()).root; }
-    catch { invalidAttempt = true; } // Let the child retain its public JSON error envelope.
+  const windows = process.platform === 'win32';
+  if (windows && !help && surface === 'store' && ['legacy-jobs-preview', 'legacy-jobs-commit'].includes(command)) {
+    process.stderr.write('Legacy search report import is available on macOS and Linux.\n');
+    process.exitCode = 2;
+    return;
+  }
+  let root, invalidRequest = false;
+  if (!help && (surface === 'attempt' || (windows && surface === 'task'))) {
+    try {
+      root = surface === 'attempt' ? parseAttemptArgs(args, process.env, homedir()).root
+        : parseInstalledTaskArgs(args).options.get('--root');
+    } catch { invalidRequest = true; } // The child preserves its public JSON error envelope.
   } else root = selectedRoot(args);
   const legacyIndex = surface === 'store' ? args.lastIndexOf('--legacy-profile') : -1;
   const legacyProfile = legacyIndex < 0 ? undefined : args[legacyIndex + 1];
   if (legacyIndex >= 0 && (!legacyProfile || legacyProfile.startsWith('--'))) throw new Error('missing legacy profile');
-  const windowsInit = process.platform === 'win32' && surface === 'store' && command === 'init';
-  if (!help && !invalidAttempt && !windowsInit && !(readOnlyAbsent && !existsSync(root))) {
-    if (process.platform === 'win32') {
+  const windowsInit = windows && surface === 'store' && command === 'init';
+  if (!help && !invalidRequest && !windowsInit && !(readOnlyAbsent && !existsSync(root))) {
+    if (windows) {
       await activateWindowsStore(await canonicalWindowsRoot(root),
         await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });
     } else {

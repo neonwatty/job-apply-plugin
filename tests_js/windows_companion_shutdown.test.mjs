@@ -5,7 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 
-test('Windows Companion starts on a fresh native Store and shuts down without orphans', {
+test('Windows Companion drains an in-flight save and reopens without orphaned processes', {
   skip: process.platform !== 'win32', timeout: 180_000,
 }, async t => {
   const fixture = await nativeFixture();

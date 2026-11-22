@@ -110,6 +110,36 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
     assert.equal((await reopening).state, 'reopened');
   });
 
+  // A stopped writer can leave an unpublished atomic write beside the installed document.
+  const abandoned = join(root, '.jobs.json.87654321.tmp');
+  const committed = await readFile(join(root, 'jobs.json'));
+  addon.createStoreEntry(abandoned, false);
+  await writeFile(abandoned, '{"unpublished":true}');
+  const unknown = join(root, 'unrecognized.json');
+  addon.createStoreEntry(unknown, false);
+  const beforeRefusal = await snapshot(root);
+  assert.equal(cli(temporary, 'store', 'job-list', '--root', root).status, 2);
+  assert.deepEqual(await snapshot(root), beforeRefusal, 'unknown roots are never cleaned');
+  await unlink(unknown);
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', root)).map(job => job.id), ['job']);
+  assert.deepEqual(await readFile(join(root, 'jobs.json')), committed);
+  assert.ok(!(await readdir(root)).includes('.jobs.json.87654321.tmp'));
+
+  const unsafeStage = join(root, '.jobs.json.12345678.tmp');
+  addon.createStoreEntry(unsafeStage, false);
+  grantInheritedRead(unsafeStage);
+  const beforeUnsafeStage = await snapshot(root);
+  assert.equal(cli(temporary, 'store', 'job-list', '--root', root).status, 2);
+  assert.deepEqual(await snapshot(root), beforeUnsafeStage, 'recovery requires private staging');
+  await unlink(unsafeStage);
+
+  assert.equal(cli(temporary, 'task', '--ro', root, 'snapshot').status, 0);
+  assert.ok(!(await readdir(temporary)).includes('.job-apply'), 'the router activates the parsed task root');
+  const reports = cli(temporary, 'store', 'legacy-jobs-preview');
+  assert.equal(reports.status, 2);
+  assert.match(reports.stderr, /Legacy search report import is available on macOS and Linux/);
+  assert.ok(!(await readdir(temporary)).includes('.job-apply'));
+
   // An interruption after marker publication leaves the completed Store and its data authoritative.
   const beforePending = await snapshot(root);
   addon.createStoreEntry(join(root, '.native-store-pending'), false);
@@ -127,7 +157,7 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
   const explicitProfile = join(temporary, 'private-profile.json');
   addon.createStoreEntry(explicitProfile, false);
   await writeFile(explicitProfile, legacyBytes);
-  const importArgs = ['store', 'init', '--root', optedIn, '--legacy-profile', explicitProfile];
+  const importArgs = ['store', 'init', '--root', optedIn, '--legacy-profile', 'private-profile.json'];
   assert.equal(json(cli(temporary, ...importArgs)).migratedLegacyProfile, true);
   assert.equal(json(cli(temporary, ...importArgs)).migratedLegacyProfile, false);
   const imported = await readFile(join(optedIn, 'profile.json'));

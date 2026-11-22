@@ -3,7 +3,7 @@ import { readdir, realpath, unlink } from 'node:fs/promises';
 import { join, win32 } from 'node:path';
 import { createNativeStoreBootstrap } from './native-store-bootstrap.js';
 import { adoptFreshNativeStoreLocked } from './native-store-clone.js';
-import { nativeCloneMarkerName, nativeFixtureMarkerName, nativeStorePendingName, nativeStoreRequiredEntries } from './native-store-layout.js';
+import { nativeCloneMarkerName, nativeFixtureMarkerName, nativeStorePendingName, nativeStoreAllowedEntries, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { validateNativeJobsRoot } from './native-root-validation.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import { syncDirectory } from './directory-sync.js';
@@ -12,7 +12,7 @@ export class UnrecognizedStoreError extends Error {
     constructor(empty = false) {
         super((empty ? 'The selected empty Store directory must be owned by and accessible only to your account. '
             : 'The selected Store root contains data that is not a native Job Apply Store. It was left unchanged. ')
-            + 'Choose a separate Store path that does not exist yet with --root or JOB_APPLY_STORE_DIR.');
+            + 'Choose a separate Store path that does not exist yet under an existing directory with --root or JOB_APPLY_STORE_DIR.');
         this.name = 'UnrecognizedStoreError';
     }
 }
@@ -20,9 +20,29 @@ const markers = [nativeFixtureMarkerName, nativeCloneMarkerName];
 const lockName = '.store.lock';
 const partialEntries = new Set([...nativeStoreRequiredEntries, 'resume-facts.json', nativeStorePendingName]);
 const initializationDocuments = new Set([...partialEntries].filter(name => name.endsWith('.json')).concat(nativeCloneMarkerName));
-function initializationTemporary(name) {
-    const match = /^\.(.+)\.[a-z0-9_]{8}\.tmp$/.exec(name);
-    return match !== null && initializationDocuments.has(match[1]);
+const storeDocuments = new Set([...nativeStoreAllowedEntries].filter(name => name.endsWith('.json')));
+function stagedDocuments(names, documents) {
+    return names.filter(name => {
+        const match = /^\.(.+)\.[a-z0-9_]{8}\.tmp$/.exec(name);
+        return match !== null && documents.has(match[1]);
+    });
+}
+async function checkStaging(root, staging) {
+    for (const name of staging) {
+        const path = join(root, name);
+        requireWindowsPrivate(path, false);
+        await checkWindowsStoreWrite(path);
+    }
+}
+async function discardStaging(root, staging, signal) {
+    for (const name of staging) {
+        signal.throwIfAborted();
+        const path = join(root, name);
+        await checkWindowsStoreWrite(path);
+        await unlink(path);
+    }
+    if (staging.length)
+        await syncDirectory(root);
 }
 async function entries(root) {
     try {
@@ -63,20 +83,20 @@ async function inspectRoot(root, names) {
         if (pending)
             await requireEmptyPrivateFile(join(root, nativeStorePendingName));
         if (names.some(name => markers.includes(name))) {
-            await validateNativeJobsRoot(root, name => readStoreFile(join(root, name)), true, false, pending);
-            return pending ? 'completed-with-pending' : 'completed';
+            const staging = stagedDocuments(names, storeDocuments);
+            const activationEntries = pending ? [nativeStorePendingName, ...staging] : staging;
+            await validateNativeJobsRoot(root, name => readStoreFile(join(root, name)), true, false, activationEntries);
+            await checkStaging(root, staging);
+            return { kind: pending ? 'completed-with-pending' : 'completed', staging };
         }
         await requireEmptyPrivateFile(join(root, lockName));
         if (names.length === 1)
-            return 'fresh';
-        if (!pending || names.some(name => !partialEntries.has(name) && !initializationTemporary(name))) {
+            return { kind: 'fresh', staging: [] };
+        const staging = stagedDocuments(names, initializationDocuments);
+        if (!pending || names.some(name => !partialEntries.has(name) && !staging.includes(name))) {
             throw new UnrecognizedStoreError();
         }
-        for (const name of names.filter(initializationTemporary)) {
-            const path = join(root, name);
-            requireWindowsPrivate(path, false);
-            await checkWindowsStoreWrite(path);
-        }
+        await checkStaging(root, staging);
         for (const name of ['sessions', 'resume-files'])
             if (names.includes(name)) {
                 const path = join(root, name);
@@ -84,7 +104,7 @@ async function inspectRoot(root, names) {
                 if ((await readdir(path)).length)
                     throw new UnrecognizedStoreError();
             }
-        return 'partial';
+        return { kind: 'partial', staging };
     }
     catch {
         throw new UnrecognizedStoreError();
@@ -101,12 +121,7 @@ async function initializeLocked(root, provider, options, signal, state, staging)
     const bootstrap = createNativeStoreBootstrap(root, options.legacyProfile, process.env, undefined, { ...(options.now ? { clock: options.now } : {}), importLegacyProfile: options.legacyProfile !== undefined, recoverExisting: false });
     const receipt = await bootstrap.initialize();
     signal.throwIfAborted();
-    // Only unpublished atomic writes from a validated pending initialization are disposable.
-    for (const name of staging) {
-        const path = join(root, name);
-        await checkWindowsStoreWrite(path);
-        await unlink(path);
-    }
+    await discardStaging(root, staging, signal);
     await adoptFreshNativeStoreLocked(root, provider, options.now?.(), signal, [nativeStorePendingName]);
     return receipt;
 }
@@ -144,16 +159,20 @@ export async function activateWindowsStoreScoped(root, provider, options = {}) {
         throw new UnrecognizedStoreError(names.length === 0);
     }
     return withExclusiveFileLock(join(root, lockName), async () => {
-        const lockedNames = await readdir(root);
-        const state = await inspectRoot(root, lockedNames);
-        if (state === 'completed')
+        const { kind, staging } = await inspectRoot(root, await readdir(root));
+        if (kind === 'completed' || kind === 'completed-with-pending') {
+            // Holding the same lock as Store writers distinguishes orphaned staging from a live save.
+            // The installed document and any durable recovery journal remain authoritative.
+            await discardStaging(root, staging, signal);
+            if (kind === 'completed-with-pending')
+                await finishInitialization(root);
             return { state: 'reopened' };
-        const receipt = state === 'completed-with-pending' ? undefined
-            : await initializeLocked(root, provider, options, signal, state, lockedNames.filter(initializationTemporary));
-        if (await inspectRoot(root, await readdir(root)) !== 'completed-with-pending')
+        }
+        const receipt = await initializeLocked(root, provider, options, signal, kind, staging);
+        if ((await inspectRoot(root, await readdir(root))).kind !== 'completed-with-pending')
             throw new UnrecognizedStoreError();
         await finishInitialization(root);
-        return receipt === undefined ? { state: 'reopened' } : { state: 'initialized', receipt };
+        return { state: 'initialized', receipt };
     }, { provider, pathProfile: '3.12', signal, existingOnly });
 }
 export function activateWindowsStore(root, addonPath, options = {}) {

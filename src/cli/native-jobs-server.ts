@@ -1,4 +1,4 @@
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -17,15 +17,23 @@ const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== "--root" || args[2] !== "--native-lock") {
   throw new Error("usage: native-jobs-server --root /prepared/store --native-lock /artifact.node");
 }
+const windows = process.platform === 'win32';
+const ownerDisconnected = new AbortController();
+if (windows) {
+  // Listen before the first Store operation so shutdown also works during startup.
+  if (process.connected === false) ownerDisconnected.abort();
+  process.once('disconnect', () => ownerDisconnected.abort());
+}
 // Windows Store writes require the explicitly selected addon scope for the life of the server.
 await withNativeStore(args[1]!, args[3]!, async provider => {
   const repository = new NativeJobsRepository(args[1]!, provider);
   const service = new JobsService(repository);
   await service.list();
+  if (ownerDisconnected.signal.aborted) return;
   const storeMode = existsSync(join(args[1]!, '.native-store-clone')) ? 'native-store-clone' : 'native-jobs-fixture';
   const token = randomBytes(32).toString("base64url");
   let origin = "";
-  const server = createServer(async (request, response) => {
+  async function serve(request: IncomingMessage, response: ServerResponse): Promise<void> {
     const send = (result: { status: number; body: string | Buffer; contentType?: string; disposition?: string }) => {
       response.writeHead(result.status, { "Content-Type": result.contentType ?? "application/json", "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff", "Connection": "close",
@@ -64,6 +72,13 @@ await withNativeStore(args[1]!, args[3]!, async provider => {
       }
       send(await jobsHttp(service, repository, request.method!, path, body, { storeMode }));
     } catch { fail(503, "store_unavailable", "native Store service is unavailable"); }
+  }
+  const inFlight = new Set<Promise<void>>();
+  const server = createServer((request, response) => {
+    const operation = serve(request, response);
+    inFlight.add(operation);
+    const settled = () => { inFlight.delete(operation); };
+    void operation.then(settled, settled);
   });
   server.requestTimeout = 30_000;
   server.headersTimeout = 30_000;
@@ -73,9 +88,14 @@ await withNativeStore(args[1]!, args[3]!, async provider => {
     origin = `http://127.0.0.1:${address.port}`;
     process.stdout.write(JSON.stringify({ origin, url: `${origin}/#token=${token}` }) + "\n");
   });
-  for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => {
-    server.closeAllConnections();
+  function stop(): void {
+    if (!windows) server.closeAllConnections();
     server.close();
-  });
+  }
+  for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, stop);
+  ownerDisconnected.signal.addEventListener('abort', stop, { once: true });
   await once(server, "close");
+  // A client can disconnect while its request is still writing.
+  if (windows) await Promise.allSettled(inFlight);
+  if (process.connected) process.disconnect!();
 });

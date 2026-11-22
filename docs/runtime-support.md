@@ -26,8 +26,8 @@ clean locked dependency installs, native Store/CLI/browser checks and isolated
 Codex/Claude installation on macOS and Linux. On Windows, CI exercises the native
 lock, Store ACLs and file identity, the authenticated attempt broker, fresh Store
 creation, reopening a native Store, refusing legacy or unrecognized Store data
-without changing it, and Companion startup and shutdown without orphaned
-processes. Windows activation never clones or migrates a Python-era Store; that
+without changing it, interrupted atomic-write recovery, and Companion shutdown
+while a save is in progress. Windows activation never clones or migrates a Python-era Store; that
 migration is separate work. This does not establish a host guarantee that Node is
 preinstalled, or live ATS/account acceptance. See
 [testing](testing.md) and the [transition guide](typescript-transition.md).

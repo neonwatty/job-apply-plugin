@@ -18,7 +18,7 @@ const server = createServer((request, response) => {
   response.end('{}');
 });
 server.listen(Number(process.env.PORT), process.env.HOSTNAME, () => {
-  writeFileSync(process.env.JOB_APPLY_TEST_COMPANION, JSON.stringify({ pid: process.pid, parent: process.ppid }));
+  writeFileSync(process.env.JOB_APPLY_TEST_COMPANION, JSON.stringify({ pid: process.pid, parent: process.ppid, upstream: process.env.COMPANION_PYTHON_ORIGIN }));
 });
 `;
 
@@ -49,6 +49,29 @@ await writeFile(join(server, 'server.js'), stub);
 const record = join(temporary, 'companion.json');
 process.env.JOB_APPLY_TEST_COMPANION = record;
 
+const staged = join(temporary, 'save-staged');
+const draining = join(temporary, 'save-draining');
+const release = join(temporary, 'release-save');
+// Pause the isolated writer at the publication boundary of its real atomic write.
+const atomicWriter = join(plugin, 'runtime/store/atomic-write-json.js');
+const atomicSource = await readFile(atomicWriter, 'utf8');
+const publish = 'await io.replace(temporaryPath, path);';
+assert.ok(atomicSource.includes(publish));
+await writeFile(atomicWriter, atomicSource.replace(publish, `
+  if (process.send && name === 'jobs.json') {
+    const { existsSync, writeFileSync } = await import('node:fs');
+    const { setTimeout } = await import('node:timers/promises');
+    process.once('disconnect', () => writeFileSync(${JSON.stringify(draining)}, ''));
+    writeFileSync(${JSON.stringify(staged)}, '');
+    for (let i = 0; i < 240 && !existsSync(${JSON.stringify(release)}); i++) await setTimeout(25);
+  }
+  ${publish}`));
+
+async function waitForFile(path, attempts) {
+  for (let poll = 0; poll < attempts && !existsSync(path); poll += 1) await delay(25);
+  assert.ok(existsSync(path), path);
+}
+
 const { runSupervisor } = await import(pathToFileURL(join(plugin, 'apps/companion/supervise.mjs')).href);
 const options = { root, pluginRoot: plugin, port: 0, nativeLock: artifact,
   legacyProfile: join(temporary, 'no-profile.json'), dev: false };
@@ -63,7 +86,34 @@ for (const round of ['fresh', 'reopen']) {
   assert.equal(owned.length, 2, `${round}: the launcher owns the jobs server and the Companion server`);
   assert.ok((await readdir(root)).includes('.job-apply-writer.lock'));
 
-  await running.controller.stop();
+  const headers = { Authorization: `Bearer ${url.hash.slice('#token='.length)}` };
+  const endpoint = `${companion.upstream}/api/jobs`;
+  if (round === 'fresh') {
+    const saving = fetch(endpoint, {
+      method: 'POST', headers: { ...headers, Origin: companion.upstream, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job: { id: 'during-quit', url: 'https://example.invalid/job', role: 'Engineer',
+        company: 'Synthetic', ats: 'greenhouse' } }),
+    });
+    saving.catch(() => {});
+    let stopping;
+    try {
+      await waitForFile(staged, 240);
+      assert.ok((await readdir(root)).some(name => /^\.jobs\.json\.[a-z0-9_]{8}\.tmp$/.test(name)));
+      stopping = running.controller.stop();
+      stopping.catch(() => {});
+      await waitForFile(draining, 100);
+    } finally {
+      await writeFile(release, '');
+      await (stopping ?? running.controller.stop());
+    }
+    const saved = await saving;
+    assert.equal(saved.status, 200, await saved.text());
+  } else {
+    const saved = await fetch(endpoint, { headers });
+    assert.equal(saved.status, 200);
+    assert.deepEqual((await saved.json()).jobs.map(job => job.id), ['during-quit']);
+    await running.controller.stop();
+  }
   await running.completion;
   await gone([launcher, ...owned]);
 }

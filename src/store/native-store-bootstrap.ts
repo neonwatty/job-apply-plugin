@@ -3,7 +3,7 @@ import type { BigIntStats } from 'node:fs';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { homedir, userInfo } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 import { constructNativePath } from '../contracts/posix-path.js';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
@@ -30,7 +30,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { syncDirectory } from './directory-sync.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
-import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
+import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsPath } from './windows-store.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 const schemaVersion = 1;
@@ -404,6 +404,7 @@ function pythonPath(path: string): string {
 export function createNativeStoreBootstrap(root?: string, legacyProfile?: string,
   environment: NodeJS.ProcessEnv = process.env, home = homedir(), options: BootstrapOptions = {}): NativeStoreBootstrap {
   const selectedRoot = root || environment.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
+  const selectedProfile = expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home);
   return new NativeStoreBootstrap(expandUser(selectedRoot, home),
-    expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home), options);
+    process.platform === 'win32' ? win32.resolve(windowsPath(selectedProfile)) : selectedProfile, options);
 }

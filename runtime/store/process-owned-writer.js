@@ -164,7 +164,7 @@ class OwnedWriterProcess {
                 }
                 function onError() { finish(new Error('owned writer failed before readiness')); }
                 function onExit() { finish(new Error('owned writer failed before readiness')); }
-                function onAbort() { signalGroup(child, 'SIGTERM'); finish(new Error('owned writer startup cancelled')); }
+                function onAbort() { finish(new Error('owned writer startup cancelled')); }
                 function onData(bytes) {
                     text += bytes.toString('utf8');
                     if (text.length > 16_384) {
@@ -193,7 +193,10 @@ class OwnedWriterProcess {
             return new OwnedWriterProcess(child, line, shutdownGraceMilliseconds);
         }
         catch (error) {
-            signalGroup(child, 'SIGTERM');
+            if (process.platform === 'win32')
+                child.stdio[4]?.destroy();
+            else
+                signalGroup(child, 'SIGTERM');
             await Promise.race([childExit(child), delay(shutdownGraceMilliseconds)]);
             if (groupAlive(child))
                 signalGroup(child, 'SIGKILL');
