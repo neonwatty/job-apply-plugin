@@ -140,6 +140,9 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
     assert.equal(reports.status, 2);
     assert.match(reports.stderr, /Legacy search report import is available on macOS and Linux/);
   }
+  const invalidStore = cli(temporary, 'store', '--select', 'paths');
+  assert.equal(invalidStore.status, 2);
+  assert.match(invalidStore.stderr, /unsupported native Jobs command or option/);
   assert.ok(!(await readdir(temporary)).includes('.job-apply'));
 
   // An interruption after marker publication leaves the completed Store and its data authoritative.
@@ -203,8 +206,12 @@ test('Windows CLI leaves legacy and unrecognized Store data untouched', { skip: 
   await writeFile(join(legacy, '.store.lock'), '');
   const before = await snapshot(legacy);
 
-  for (const args of [['store', 'init'], ['store', 'job-list'], ['task', 'snapshot']]) {
-    const result = cli(temporary, ...args, '--root', legacy);
+  for (const args of [
+    ['store', 'init', '--root', legacy],
+    ['store', 'job-list', '--root', legacy],
+    ['task', '--root', legacy, 'snapshot'],
+  ]) {
+    const result = cli(temporary, ...args);
     assert.equal(result.status, 2, result.stdout);
     assert.match(result.stderr, /not a native Job Apply Store\. It was left unchanged\./);
     assert.match(result.stderr, /--root or JOB_APPLY_STORE_DIR/);
@@ -212,6 +219,11 @@ test('Windows CLI leaves legacy and unrecognized Store data untouched', { skip: 
     assert.deepEqual(await snapshot(legacy), before);
     assert.deepEqual(await readdir(join(legacy, 'sessions')), []);
   }
+  const invalidTask = cli(temporary, 'task', 'snapshot', '--root', legacy);
+  assert.equal(invalidTask.status, 2);
+  assert.equal(JSON.parse(invalidTask.stdout).error.code, 'invalid_request');
+  assert.deepEqual(await snapshot(legacy), before);
+
   // The guidance works: a separate root next to it becomes a fresh native Store.
   const separate = join(temporary, 'separate');
   assert.equal(json(cli(temporary, 'store', 'init', '--root', separate)).root, separate);

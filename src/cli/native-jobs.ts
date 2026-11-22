@@ -211,13 +211,8 @@ export function parseStoreArgs(args: string[]) {
       }
     }
   }
-  return { options, command, help, selected };
-}
-
-export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
-  const { options, command, help, selected } = parseStoreArgs(args);
-  if (help && (!command || Object.hasOwn(nativeJobsCommandFields, command))) return storeHelp(command).trimEnd();
-  const allowed = nativeJobsCommandFields[command ?? ""];
+  if (help && (!command || Object.hasOwn(nativeJobsCommandFields, command))) return { options, command, help, selected };
+  const allowed = command && Object.hasOwn(nativeJobsCommandFields, command) ? nativeJobsCommandFields[command] : undefined;
   const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '')
     || Object.hasOwn(nativeAuthorityCommands, command ?? '');
   if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
@@ -225,6 +220,12 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
   }
   const missing = (storeRequiredOptions[command!] ?? []).filter(option => !options.has(option));
   if (missing.length) throw new JobsError(`${storeUsage(command)}\njob-apply-store ${command}: error: the following arguments are required: ${missing.join(', ')}`);
+  return { options, command, help, selected };
+}
+
+export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
+  const { options, command, help, selected } = parseStoreArgs(args);
+  if (help) return storeHelp(command).trimEnd();
   const required = (key: string): string => {
     const value = options.get(key);
     if (!value) throw new JobsError(`required option: ${key}`);
