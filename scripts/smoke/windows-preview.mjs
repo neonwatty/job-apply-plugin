@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 const execute = promisify(execFile);
 const entry = fileURLToPath(import.meta.url);
 const repository = 'neonwatty/job-apply-plugin';
+const sourceUrl = `https://github.com/${repository}.git`;
 const catalog = 'neonwatty-plugins-preview';
 const plugin = `job-apply@${catalog}`;
 const job = { id: 'windows-preview-smoke', url: 'https://example.invalid/preview', role: 'Test engineer' };
@@ -18,7 +19,7 @@ function run(executable, args, options = {}) {
 }
 
 async function previewHead() {
-  const { stdout } = await run('git', ['ls-remote', `https://github.com/${repository}.git`, 'refs/heads/main']);
+  const { stdout } = await run('git', ['ls-remote', sourceUrl, 'refs/heads/main']);
   const sha = stdout.trim().split(/\s+/)[0];
   assert.match(sha, /^[a-f0-9]{40}$/, 'preview must resolve to a Git commit');
   return sha;
@@ -39,7 +40,7 @@ async function verifySource(installed, source) {
   }
 }
 
-async function installPreview(host, profile) {
+async function installPreview(host, profile, sha) {
   await mkdir(profile);
   const configKey = host === 'codex' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR';
   // Use the global npm shims. The command arguments are fixed preview-marketplace identifiers.
@@ -49,10 +50,17 @@ async function installPreview(host, profile) {
     await invoke('plugin', 'marketplace', 'add', repository, '--ref', 'preview-catalog', '--json');
     await invoke('plugin', 'add', plugin, '--json');
     const listing = JSON.parse((await invoke('plugin', 'list', '--json')).stdout);
-    assert.equal(listing.installed.find(item => item.pluginId === plugin)?.enabled, true);
+    const installed = listing.installed.find(item => item.pluginId === plugin);
+    assert.equal(installed?.enabled, true);
+    assert.equal(installed.source?.url, sourceUrl, 'Codex preview must use the public repository');
+    assert.equal(installed.source?.ref, 'main', 'Codex preview must track main');
   } else {
     await invoke('plugin', 'marketplace', 'add', `${repository}#preview-catalog`);
     await invoke('plugin', 'install', plugin);
+    const listing = JSON.parse(await readFile(join(profile, 'plugins', 'installed_plugins.json'), 'utf8'));
+    const entries = listing.plugins[plugin];
+    assert.equal(entries?.length, 1, 'expected one isolated Claude installation record');
+    assert.equal(entries[0].gitCommitSha, sha, 'Claude preview install must match the checkout SHA');
   }
   const versions = join(profile, 'plugins', 'cache', catalog, 'job-apply');
   const entries = await readdir(versions, { withFileTypes: true });
@@ -115,7 +123,7 @@ async function smokePreview(host, source) {
   assert.equal(await previewHead(), sha, 'main moved since checkout, rerun against the current preview');
   const root = await realpath(await mkdtemp(join(await realpath(tmpdir()), 'ja-')));
   try {
-    const installed = await installPreview(host, join(root, host));
+    const installed = await installPreview(host, join(root, host), sha);
     await verifySource(installed, source);
     assert.equal(await previewHead(), sha, 'main moved during install, rerun against the current preview');
     const store = join(root, 'store');
@@ -125,7 +133,7 @@ async function smokePreview(host, source) {
     // The child releases its loaded Windows addon before we remove the host cache.
     const { stdout: output } = await run(process.execPath, [entry, '--companion', installed, store], { timeout: 900_000 });
     process.stdout.write(output);
-    console.log(`${host}: preview ${sha} installed, built Companion, saved a job, and reopened it on Windows x64`);
+    console.log(`${host}: preview checked against main ${sha}; built Companion, saved a job, and reopened it on Windows x64`);
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
   }
