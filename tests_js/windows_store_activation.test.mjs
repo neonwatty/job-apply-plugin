@@ -135,9 +135,11 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
 
   assert.equal(cli(temporary, 'task', '--ro', root, 'snapshot').status, 0);
   assert.ok(!(await readdir(temporary)).includes('.job-apply'), 'the router activates the parsed task root');
-  const reports = cli(temporary, 'store', 'legacy-jobs-preview');
-  assert.equal(reports.status, 2);
-  assert.match(reports.stderr, /Legacy search report import is available on macOS and Linux/);
+  for (const args of [['legacy-jobs-preview'], ['--select', 'report-id', 'legacy-jobs-preview']]) {
+    const reports = cli(temporary, 'store', ...args);
+    assert.equal(reports.status, 2);
+    assert.match(reports.stderr, /Legacy search report import is available on macOS and Linux/);
+  }
   assert.ok(!(await readdir(temporary)).includes('.job-apply'));
 
   // An interruption after marker publication leaves the completed Store and its data authoritative.

@@ -190,7 +190,7 @@ function storeHelp(command?: string): string {
     + options.map(option => `  ${option}\n`).join('');
 }
 
-export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
+export function parseStoreArgs(args: string[]) {
   const options = new Map<string, string>();
   let command: string | undefined;
   let help = false;
@@ -211,6 +211,11 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       }
     }
   }
+  return { options, command, help, selected };
+}
+
+export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
+  const { options, command, help, selected } = parseStoreArgs(args);
   if (help && (!command || Object.hasOwn(nativeJobsCommandFields, command))) return storeHelp(command).trimEnd();
   const allowed = nativeJobsCommandFields[command ?? ""];
   const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '')

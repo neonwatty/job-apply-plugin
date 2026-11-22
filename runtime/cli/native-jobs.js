@@ -188,7 +188,7 @@ function storeHelp(command) {
     return `${storeUsage(command)}\n\noptions:\n  -h, --help  show this help message and exit\n`
         + options.map(option => `  ${option}\n`).join('');
 }
-export async function runJobsCli(args, input) {
+export function parseStoreArgs(args) {
     const options = new Map();
     let command;
     let help = false;
@@ -217,6 +217,10 @@ export async function runJobsCli(args, input) {
             }
         }
     }
+    return { options, command, help, selected };
+}
+export async function runJobsCli(args, input) {
+    const { options, command, help, selected } = parseStoreArgs(args);
     if (help && (!command || Object.hasOwn(nativeJobsCommandFields, command)))
         return storeHelp(command).trimEnd();
     const allowed = nativeJobsCommandFields[command ?? ""];
