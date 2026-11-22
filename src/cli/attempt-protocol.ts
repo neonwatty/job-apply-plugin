@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { dirname, join, isAbsolute } from 'node:path';
+import { dirname, join, isAbsolute, win32 } from 'node:path';
 import { filesystemEncode } from '../contracts/posix-path-bytes.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fromJSON, integer, object, parse, set, type Document, type Value } from '../contracts/workspace/values.js';
 import { parseTaskRevision } from './task-protocol.js';
+import { windowsPath } from '../store/windows-store.js';
 
 export type AttemptInvocation =
   | { kind: 'start'; root: string; id: string; owner: string; expectedRevision: bigint }
@@ -34,6 +35,8 @@ export const attemptSuccess = (event: string): AttemptResponse => attemptDocumen
 export function resolveAttemptRoot(root: string | undefined, env: NodeJS.ProcessEnv, home: string): string {
   let configured = root || env.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
   if (configured === '~' || configured.startsWith('~/')) configured = home + configured.slice(1);
+  // The Windows entry points validate the original selection before following any directory alias.
+  if (process.platform === 'win32') return win32.resolve(windowsPath(configured));
   const absolute = isAbsolute(configured) ? configured : process.cwd() + '/' + configured;
   let current = '/';
   for (const component of absolute.split('/')) {

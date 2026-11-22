@@ -11,6 +11,8 @@ import { withExclusiveFileLock } from '../../runtime/store/exclusive-file-lock.j
 import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
+import { activateWindowsStoreScoped, canonicalWindowsRoot, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
+import { withWindowsStore } from '../../runtime/store/windows-store.js';
 import { ensureStandalone } from './ensure-standalone.mjs';
 
 const values = new Set(['--root', '--plugin-root', '--port', '--native-lock', '--legacy-profile']);
@@ -155,7 +157,35 @@ function launchSpec(options, root, nativeLock) {
     env: { ...process.env, COMPANION_PROCESS_OWNER: 'process-group-v1' }, ready: readiness, startupTimeoutMilliseconds: 60_000,
   });
 }
+function superviseWriter(controller) {
+  const line = controller.startupLine;
+  if (!line) throw new Error('Companion startup failed');
+  const writerCompletion = controller.completion;
+  if (!writerCompletion) throw new Error('Companion startup failed');
+  const completion = writerCompletion.then(async () => {
+    if (controller.stopping) return;
+    await controller.stop(); throw new Error('Companion service stopped unexpectedly');
+  });
+  return { controller, line, completion };
+}
+/**
+ * Windows activation creates or reopens a native Store in place and refuses legacy roots.
+ */
+async function runWindowsSupervisor(options, { signal } = {}) {
+  const root = await canonicalWindowsRoot(resolveSupervisorRoot(options));
+  const nativeLock = options.nativeLock ?? await resolvePackagedNativeLock(await realpath(options.pluginRoot));
+  signal?.throwIfAborted();
+  return withWindowsStore(root, nativeLock, async provider => {
+    await activateWindowsStoreScoped(root, provider, { signal, legacyProfile: options.legacyProfile });
+    const controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
+    try {
+      await controller.start('native', signal);
+      return superviseWriter(controller);
+    } catch (error) { await controller.stop().catch(() => {}); throw error; }
+  });
+}
 export async function runSupervisor(options, { signal } = {}) {
+  if (process.platform === 'win32') return runWindowsSupervisor(options, { signal });
   const root = resolveSupervisorRoot(options), nativeLock = options.nativeLock ?? await resolvePackagedNativeLock(options.pluginRoot);
   signal?.throwIfAborted();
   await validateSupervisorRoot(root);
@@ -183,15 +213,7 @@ export async function runSupervisor(options, { signal } = {}) {
       }
     }
     await controller.start('native', signal);
-    const line = controller.startupLine;
-    if (!line) throw new Error('Companion startup failed');
-    const writerCompletion = controller.completion;
-    if (!writerCompletion) throw new Error('Companion startup failed');
-    const completion = writerCompletion.then(async () => {
-      if (controller.stopping) return;
-      await controller.stop(); throw new Error('Companion service stopped unexpectedly');
-    });
-    return { controller, line, completion };
+    return superviseWriter(controller);
   } catch (error) { await controller?.stop().catch(() => {}); throw error; }
   finally { await exclusion?.release(); }
 }
@@ -232,7 +254,7 @@ export async function superviseMain(args = process.argv.slice(2), app = dirname(
   const interrupt = () => stop(0); process.once('SIGINT', interrupt); process.once('SIGTERM', interrupt);
   try {
     const options = parseSupervisorOptions(args, app);
-    if (options.nativeLock) loadPosixFlockProvider(options.nativeLock);
+    if (options.nativeLock && process.platform !== 'win32') loadPosixFlockProvider(options.nativeLock);
     if (!options.dev) {
       try { await ensureStandalone(options.pluginRoot, { signal: abort.signal,
         report: message => process.stderr.write(`${message}\n`) }); }
@@ -243,7 +265,12 @@ export async function superviseMain(args = process.argv.slice(2), app = dirname(
     }
     running = await runSupervisor(options, { signal: abort.signal }); process.stdout.write(`${running.line}\n`);
   }
-  catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); stop(1); } }
+  catch (error) {
+    if (!stopped) {
+      process.stderr.write(error instanceof UnrecognizedStoreError ? `${error.message}\n` : 'Companion native supervisor failed\n');
+      stop(1);
+    }
+  }
   try { if (running) await running.completion; }
   catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); process.exitCode = 1; } }
   finally { process.off('SIGINT', interrupt); process.off('SIGTERM', interrupt); }

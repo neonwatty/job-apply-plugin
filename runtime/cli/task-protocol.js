@@ -64,7 +64,7 @@ function isValue(value) {
     return !value.startsWith('-') || value === '-' || value.includes(' ')
         || /^-(?:[0-9]+|[0-9]*\.[0-9]+)$/.test(decimalText(value));
 }
-export function parseTaskArgs(args) {
+export function parseTaskArgs(args, installedRoot) {
     let command;
     const options = new Map();
     for (let index = 0; index < args.length; index++) {
@@ -103,8 +103,11 @@ export function parseTaskArgs(args) {
             value = parseTaskRevision(value).toString();
         options.set(key, value);
     }
-    if (!command || !options.get('--root') || !options.get('--native-lock'))
+    const root = options.get('--root') ?? installedRoot?.();
+    const addon = options.get('--native-lock');
+    if (!command || !root || (addon === undefined ? !installedRoot : !addon))
         throw new TaskRequestError();
+    options.set('--root', root);
     for (const key of taskCommandFields[command]) {
         if (key !== '--owner-confirmed' && !options.has(key))
             throw new TaskRequestError();

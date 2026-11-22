@@ -4,7 +4,8 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NativeJobsRepository } from '../store/native-jobs.js';
-import { loadPosixFlockProvider } from '../store/posix-flock.js';
+import { withNativeStore } from '../store/native-store-provider.js';
+import { canonicalWindowsRoot } from '../store/windows-activation.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { object, parse } from '../contracts/workspace/values.js';
@@ -18,25 +19,21 @@ function help(command) {
         + 'Use the Python task command options; --input reads a JSON object from a file.\n'
         + 'Only explicitly initialized fixtures or prepared canonical clones are supported.\n';
 }
-async function installedTaskArgs(args) {
-    const completed = [...args];
-    if (!completed.some(argument => argument === '--root' || argument.startsWith('--root='))) {
+export function parseInstalledTaskArgs(args) {
+    return parseTaskArgs(args, () => {
         const configured = process.env.JOB_APPLY_STORE_DIR;
         const expanded = configured === '~' || configured?.startsWith('~/')
             ? realpathSync(homedir()) + configured.slice(1) : configured;
-        completed.unshift('--root', expanded ? resolve(expanded) : join(realpathSync(homedir()), '.job-apply'));
-    }
-    if (!completed.some(argument => argument === '--native-lock' || argument.startsWith('--native-lock='))
-        && !completed.includes('--help') && !completed.includes('-h')) {
-        const executable = fileURLToPath(import.meta.url);
-        completed.unshift('--native-lock', await resolvePackagedNativeLock(realpathSync(resolve(dirname(executable), '../..'))));
-    }
-    return completed;
+        return expanded ? resolve(expanded) : join(realpathSync(homedir()), '.job-apply');
+    });
 }
 export async function runTask(args) {
     try {
-        const parsed = parseTaskArgs(await installedTaskArgs(args));
-        const repository = new NativeJobsRepository(parsed.options.get('--root'), loadPosixFlockProvider(parsed.options.get('--native-lock')));
+        const parsed = parseInstalledTaskArgs(args);
+        const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+        const addon = parsed.options.get('--native-lock') ?? await resolvePackagedNativeLock(realpathSync(pluginRoot));
+        const selectedRoot = parsed.options.get('--root');
+        const root = process.platform === 'win32' ? await canonicalWindowsRoot(selectedRoot) : selectedRoot;
         const payload = async () => {
             try {
                 // Python Path.read_text is strict UTF-8 and treats '-' as an ordinary filename.
@@ -47,7 +44,8 @@ export async function runTask(args) {
                 throw new TaskRequestError();
             }
         };
-        return { output: canonicalJson(await runTaskCommand(parsed, repository, payload)) + '\n', exitCode: 0 };
+        const result = await withNativeStore(root, addon, provider => runTaskCommand(parsed, new NativeJobsRepository(root, provider), payload));
+        return { output: canonicalJson(result) + '\n', exitCode: 0 };
     }
     catch (error) {
         if (error instanceof TaskHelp)

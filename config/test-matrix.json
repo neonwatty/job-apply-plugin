@@ -1489,7 +1489,9 @@
       "include": [
         "tests_js/windows_native_lock.test.mjs",
         "tests_js/windows_store.test.mjs",
-        "tests_js/windows_attempt_broker.test.mjs"
+        "tests_js/windows_attempt_broker.test.mjs",
+        "tests_js/windows_store_activation.test.mjs",
+        "tests_js/windows_companion_shutdown.test.mjs"
       ],
       "tiers": [
         "full",

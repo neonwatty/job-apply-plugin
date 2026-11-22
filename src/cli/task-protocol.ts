@@ -59,7 +59,7 @@ function isValue(value: string): boolean {
   return !value.startsWith('-') || value === '-' || value.includes(' ')
     || /^-(?:[0-9]+|[0-9]*\.[0-9]+)$/.test(decimalText(value));
 }
-export function parseTaskArgs(args: string[]): {
+export function parseTaskArgs(args: string[], installedRoot?: () => string): {
   command: string; options: Map<string, string>; ownerConfirmed: boolean;
 } {
   let command: string | undefined;
@@ -94,7 +94,10 @@ export function parseTaskArgs(args: string[]): {
     if (key.startsWith('--expected-')) value = parseTaskRevision(value).toString();
     options.set(key, value);
   }
-  if (!command || !options.get('--root') || !options.get('--native-lock')) throw new TaskRequestError();
+  const root = options.get('--root') ?? installedRoot?.();
+  const addon = options.get('--native-lock');
+  if (!command || !root || (addon === undefined ? !installedRoot : !addon)) throw new TaskRequestError();
+  options.set('--root', root);
   for (const key of taskCommandFields[command]!) {
     if (key !== '--owner-confirmed' && !options.has(key)) throw new TaskRequestError();
   }

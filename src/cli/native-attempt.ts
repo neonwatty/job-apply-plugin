@@ -3,6 +3,12 @@ import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+async function attemptStoreRoot(path: string): Promise<string> {
+  if (process.platform !== 'win32') return path;
+  const { canonicalWindowsRoot } = await import('../store/windows-activation.js');
+  return canonicalWindowsRoot(path);
+}
+
 /** Keep addon/module bootstrap failures inside the same value-free envelope. */
 export async function runAttemptCli(args: string[]): Promise<{ output: string; exitCode: number }> {
   let invalid = false;
@@ -15,17 +21,18 @@ export async function runAttemptCli(args: string[]): Promise<{ output: string; e
       if (args.length !== 3 || args[0] !== '--broker' || args[1] !== '--root') {
         invalid = true; throw new Error('invalid invocation');
       }
-      const root = protocol.resolveAttemptRoot(args[2], process.env, homedir());
+      const root = await attemptStoreRoot(protocol.resolveAttemptRoot(args[2], process.env, homedir()));
       const pluginRoot = realpathSync(resolve(dirname(executable), '../..'));
       const { resolvePackagedNativeLock } = await import('../package/native-lock-artifact.js');
-      const { loadPosixFlockProvider } = await import('../store/posix-flock.js');
+      const { withNativeStore } = await import('../store/native-store-provider.js');
       const { NativeJobsRepository } = await import('../store/native-jobs.js');
       const { ClaimsService } = await import('../workspace-core/claims.js');
       const { ApplicationAuthorityService } = await import('../workspace-core/application-authority.js');
       const { runAttemptBroker } = await import('./attempt-broker.js');
-      const provider = loadPosixFlockProvider(await resolvePackagedNativeLock(pluginRoot));
-      const repository = new NativeJobsRepository(root, provider);
-      await runAttemptBroker(root, new ClaimsService(repository), provider, {}, new ApplicationAuthorityService(repository));
+      await withNativeStore(root, await resolvePackagedNativeLock(pluginRoot), async provider => {
+        const repository = new NativeJobsRepository(root, provider);
+        await runAttemptBroker(root, new ClaimsService(repository), provider, {}, new ApplicationAuthorityService(repository));
+      });
       return { output: '', exitCode: 0 };
     }
     let invocation;
@@ -42,9 +49,18 @@ export async function runAttemptCli(args: string[]): Promise<{ output: string; e
     }
     const request = await protocol.attemptRequest(invocation);
     const { requestAttempt } = await import('./attempt-broker.js');
-    const response = await requestAttempt(invocation.root, request, {
+    const root = await attemptStoreRoot(invocation.root);
+    const ask = () => requestAttempt(root, request, {
       start: invocation.kind === 'start' || invocation.kind === 'restart-review', executable,
     });
+    // Windows clients read the pipe key from the private Store, which needs the addon scope.
+    let response;
+    if (process.platform === 'win32') {
+      const { withNativeStore } = await import('../store/native-store-provider.js');
+      const { resolvePackagedNativeLock } = await import('../package/native-lock-artifact.js');
+      const pluginRoot = realpathSync(resolve(dirname(executable), '../..'));
+      response = await withNativeStore(root, await resolvePackagedNativeLock(pluginRoot), ask);
+    } else response = await ask();
     return { output: canonicalJson(response) + '\n', exitCode: get(response, 'ok') === true ? 0 : 2 };
   } catch {
     return { output: `{"error":{"code":"${invalid ? 'invalid_invocation' : 'attempt_unavailable'}"},"ok":false}\n`, exitCode: 2 };

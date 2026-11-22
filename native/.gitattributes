@@ -1,0 +1,3 @@
+# Packaged native lock receipts hash these sources byte for byte, so a Windows
+# checkout must not convert their line endings.
+* -text

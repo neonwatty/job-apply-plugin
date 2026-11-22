@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { once } from "node:events";
+import { setTimeout as delay } from "node:timers/promises";
 import { parseWriterOptions, resolveWriterRoute } from "./writer-route.mjs";
 
 const require = createRequire(import.meta.url);
@@ -16,6 +17,7 @@ if (explicitWriter && !externalProcessOwner) throw new Error('Companion writer r
 if (externalProcessOwner && !fstatSync(3).isFile()) throw new Error('Companion process owner lease is unavailable');
 let stopping = false;
 let ownerChannel;
+let windowsWriter;
 function stopChild(child, signal) {
   if (!Number.isSafeInteger(child.pid) || child.pid <= 0) return;
   try {
@@ -27,20 +29,27 @@ async function shutdown(code) {
   if (stopping) return;
   stopping = true;
   ownerChannel?.destroy();
-  for (const child of children) stopChild(child, "SIGTERM");
+  for (const child of children) {
+    if (child === windowsWriter) {
+      // Windows kill() terminates immediately. Ask the writer to drain its requests first.
+      if (child.connected) child.disconnect();
+    } else stopChild(child, "SIGTERM");
+  }
   await Promise.race([
     Promise.all([...children].map(child => child.exitCode !== null || child.signalCode !== null
       ? Promise.resolve() : once(child, "exit").catch(() => {}))),
-    new Promise(done => setTimeout(done, 3000)),
+    delay(3000, undefined, { ref: false }),
   ]);
   for (const child of children) stopChild(child, "SIGKILL");
   process.exitCode = code;
 }
-function owned(command, argv, env = process.env) {
+function owned(command, argv, env = process.env, ipc = false) {
   if (stopping) throw new Error("Companion startup cancelled");
+  const stdio = ["ignore", "pipe", "pipe", externalProcessOwner ? 3 : "ignore"];
+  if (ipc) stdio.push("ipc");
   const child = spawn(command, argv, {
-    cwd: app, env, detached: !externalProcessOwner,
-    stdio: ["ignore", "pipe", "pipe", externalProcessOwner ? 3 : "ignore"],
+    cwd: app, env, detached: !externalProcessOwner, windowsHide: true,
+    stdio,
   });
   children.add(child);
   child.on("error", () => { console.error("Companion child failed to start"); void shutdown(1); });
@@ -92,7 +101,9 @@ try {
   const options = parseWriterOptions(process.argv.slice(2), app);
   const route = await resolveWriterRoute(options);
   const port = await choosePort(options.port), origin = `http://127.0.0.1:${port}`;
-  const writer = owned(route.command, route.argv);
+  const windows = process.platform === 'win32';
+  const writer = owned(route.command, route.argv, process.env, windows);
+  if (windows) windowsWriter = writer;
   const { upstream, token } = await upstreamBoot(writer);
   writer.stdout.on("data", () => {});
   const standalone = join(app, ".next/standalone/apps/companion/server.js");

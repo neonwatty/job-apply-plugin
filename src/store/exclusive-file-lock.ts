@@ -24,6 +24,7 @@ export interface ExclusiveLockOptions {
   signal?: AbortSignal;
   retryMilliseconds?: number;
   preserveParentPermissions?: boolean;
+  existingOnly?: boolean;
   io?: ExclusiveLockIO;
 }
 
@@ -78,8 +79,9 @@ export async function withExclusiveFileLock<T>(
   signal.throwIfAborted();
   const io = options.io ?? nativeIO(options.pathProfile, options.preserveParentPermissions);
   path = constructNativePath("", path);
-  await io.ensurePrivateDirectory(nativeParent(path));
-  const handle = await io.open(path, constants.O_RDWR | constants.O_CREAT, 0o600);
+  if (!options.existingOnly) await io.ensurePrivateDirectory(nativeParent(path));
+  const flags = constants.O_RDWR | (options.existingOnly ? 0 : constants.O_CREAT);
+  const handle = await io.open(path, flags, 0o600);
   // Baseline parity: chmod precedes the protected block. A chmod failure does
   // not explicitly close this descriptor; native FileHandle GC is not a receipt.
   if (process.platform !== "win32" || options.io) await io.chmod(path, 0o600);

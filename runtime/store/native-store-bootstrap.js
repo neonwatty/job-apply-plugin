@@ -2,7 +2,7 @@ import { constants } from 'node:fs';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { homedir, userInfo } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 import { constructNativePath } from '../contracts/posix-path.js';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
@@ -28,7 +28,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { syncDirectory } from './directory-sync.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
-import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
+import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsPath } from './windows-store.js';
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 const schemaVersion = 1;
 function child(root, name) {
@@ -166,6 +166,7 @@ function document(bytes, label) {
 }
 /** Production callers must supply `locked` around the complete preflight/recovery transaction. */
 export class NativeStoreBootstrap {
+    options;
     root;
     legacyProfile;
     layout;
@@ -173,6 +174,7 @@ export class NativeStoreBootstrap {
     boundary;
     locked;
     constructor(root, legacyProfile = join(homedir(), '.claude-job-profile.json'), options = {}) {
+        this.options = options;
         this.root = pythonPath(root);
         this.legacyProfile = pythonPath(legacyProfile);
         this.layout = nativeStorePaths(this.root, this.legacyProfile);
@@ -231,7 +233,7 @@ export class NativeStoreBootstrap {
             void autoSubmit;
         }
         let legacy = null;
-        if (await readPrivateFile(this.layout.profile, 'profile') === null) {
+        if (this.options.importLegacyProfile !== false && await readPrivateFile(this.layout.profile, 'profile') === null) {
             const bytes = await readPrivateFile(this.legacyProfile, 'legacy profile');
             if (bytes !== null)
                 legacy = document(bytes, 'legacy profile');
@@ -397,10 +399,12 @@ export class NativeStoreBootstrap {
         const resumeFiles = join(this.root, 'resume-files');
         await ensureBootstrapDirectory(resumeFiles);
         await privateDirectory(resumeFiles, false);
-        const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
-        if (extractionJournal !== null)
-            await this.extractionJournal().recover();
-        await this.recoverResumeFiles();
+        if (this.options.recoverExisting !== false) {
+            const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
+            if (extractionJournal !== null)
+                await this.extractionJournal().recover();
+            await this.recoverResumeFiles();
+        }
         let migrated = false;
         if (await readPrivateFile(this.layout.profile, 'profile') === null) {
             const createdAt = this.now(), updatedAt = this.now();
@@ -436,7 +440,8 @@ export class NativeStoreBootstrap {
                 await history.close();
             }
         }
-        await this.recoverCoordinator();
+        if (this.options.recoverExisting !== false)
+            await this.recoverCoordinator();
         return fromJSON({ initialized: true, migratedLegacyProfile: migrated, ...this.layout });
     }
 }
@@ -462,5 +467,6 @@ function pythonPath(path) {
 }
 export function createNativeStoreBootstrap(root, legacyProfile, environment = process.env, home = homedir(), options = {}) {
     const selectedRoot = root || environment.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
-    return new NativeStoreBootstrap(expandUser(selectedRoot, home), expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home), options);
+    const selectedProfile = expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home);
+    return new NativeStoreBootstrap(expandUser(selectedRoot, home), process.platform === 'win32' ? win32.resolve(windowsPath(selectedProfile)) : selectedProfile, options);
 }

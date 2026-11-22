@@ -25,12 +25,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { JobsService } from "../workspace-core/jobs.js";
 import { NativeJobsRepository, initializeJobsFixture } from "../store/native-jobs.js";
 import { fixtureError } from "../store/native-jobs-error.js";
-import { loadPosixFlockProvider } from "../store/posix-flock.js";
+import { withNativeStore } from "../store/native-store-provider.js";
 import { parse, serialize, JobsError } from "../contracts/workspace/values.js";
 import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
+import { activateWindowsStoreScoped, canonicalWindowsRoot, UnrecognizedStoreError } from '../store/windows-activation.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 function resolveStoreRoot(configured = process.env.JOB_APPLY_STORE_DIR) {
     const expanded = configured === '~' || configured?.startsWith('~/')
@@ -187,7 +188,7 @@ function storeHelp(command) {
     return `${storeUsage(command)}\n\noptions:\n  -h, --help  show this help message and exit\n`
         + options.map(option => `  ${option}\n`).join('');
 }
-export async function runJobsCli(args, input) {
+export function parseStoreArgs(args) {
     const options = new Map();
     let command;
     let help = false;
@@ -217,8 +218,8 @@ export async function runJobsCli(args, input) {
         }
     }
     if (help && (!command || Object.hasOwn(nativeJobsCommandFields, command)))
-        return storeHelp(command).trimEnd();
-    const allowed = nativeJobsCommandFields[command ?? ""];
+        return { options, command, help, selected };
+    const allowed = command && Object.hasOwn(nativeJobsCommandFields, command) ? nativeJobsCommandFields[command] : undefined;
     const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '')
         || Object.hasOwn(nativeAuthorityCommands, command ?? '');
     if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
@@ -227,122 +228,148 @@ export async function runJobsCli(args, input) {
     const missing = (storeRequiredOptions[command] ?? []).filter(option => !options.has(option));
     if (missing.length)
         throw new JobsError(`${storeUsage(command)}\njob-apply-store ${command}: error: the following arguments are required: ${missing.join(', ')}`);
+    return { options, command, help, selected };
+}
+export async function runJobsCli(args, input) {
+    const { options, command, help, selected } = parseStoreArgs(args);
+    if (help)
+        return storeHelp(command).trimEnd();
     const required = (key) => {
         const value = options.get(key);
         if (!value)
             throw new JobsError(`required option: ${key}`);
         return value;
     };
-    const root = resolveStoreRoot(options.get("--root"));
+    const configuredRoot = resolveStoreRoot(options.get("--root"));
+    const windows = process.platform === 'win32';
+    const root = windows ? await canonicalWindowsRoot(configuredRoot) : configuredRoot;
     if (Object.hasOwn(nativeStoreBootstrapCommands, command)) {
         if ([...options.keys()].some(key => !['--root', '--native-lock', '--legacy-profile'].includes(key))) {
             throw new JobsError('unsupported native Store bootstrap command or option');
         }
-        const provider = command === 'init' ? loadPosixFlockProvider(await nativeLock(options)) : undefined;
-        const service = createNativeStoreBootstrap(options.get("--root") ?? root, options.get('--legacy-profile'), process.env, undefined, provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation) } : {});
-        return serialize(await runNativeStoreBootstrapCommand(command, service));
+        // Windows creates every Store entry with a private ACL, so each bootstrap command runs in its scope.
+        const run = (provider) => runNativeStoreBootstrapCommand(command, createNativeStoreBootstrap(windows ? root : options.get("--root") ?? root, options.get('--legacy-profile'), process.env, undefined, provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation),
+            importLegacyProfile: !windows || options.has('--legacy-profile') } : {}));
+        if (command !== 'init' && process.platform !== 'win32')
+            return serialize(await run());
+        return serialize(await withNativeStore(root, await nativeLock(options), async (provider) => {
+            // Windows only creates a Store through activation, so it always carries its native marker.
+            if (command === 'init' && process.platform === 'win32') {
+                const activation = await activateWindowsStoreScoped(root, provider, { legacyProfile: options.get('--legacy-profile') });
+                if (activation.state === 'initialized')
+                    return activation.receipt;
+            }
+            return run(command === 'init' ? provider : undefined);
+        }));
     }
-    if (command === "fixture-init") {
+    if (command === "fixture-init" && process.platform !== 'win32') {
         await initializeJobsFixture(root);
         return '{"initialized":true}';
     }
     const addon = await nativeLock(options);
-    const repository = new NativeJobsRepository(root, loadPosixFlockProvider(addon));
-    const service = new JobsService(repository);
-    const resumes = new ResumeService(repository);
-    const payload = async () => {
-        const file = required("--input");
-        // Extraction candidates permit 256 KiB after normalization. Allow JSON
-        // escaping and formatting overhead while keeping stdin bounded.
-        // Bulk upsert accepts the same input domain through stdin and files, as Python does.
-        const limit = (Object.hasOwn(jobUpsertCommands, command) || Object.hasOwn(taskIntakeCommands, command)) ? Infinity
-            : ["resume-proposal-create", "resume-extraction-request-complete", "resume-extraction-request-complete-scoped", "resume-facts-draft"].includes(command) ? 2 * 1024 * 1024 : 65536;
-        return parse(file === "-" ? await input(limit) : decodeInput(await readFile(file)));
-    };
-    const leafArgs = [...options.entries()].filter(([key]) => !['--root', '--native-lock', '--legacy-profile'].includes(key))
-        .flatMap(([key, value]) => booleanOptions.has(key) ? [key] : [key, value]);
-    const readInput = async (path) => parse(path === '-' ? await input(Infinity) : decodeInput(await readFile(path)));
-    if (nativeAutomationCommandNames.has(command)) {
-        return serialize((await runNativeAutomationCommand(command, leafArgs, { repository, readInput })));
+    return withNativeStore(root, addon, provider => storeCommand(provider));
+    async function storeCommand(provider) {
+        if (command === "fixture-init") {
+            await initializeJobsFixture(root);
+            return '{"initialized":true}';
+        }
+        const repository = new NativeJobsRepository(root, provider);
+        const service = new JobsService(repository);
+        const resumes = new ResumeService(repository);
+        const payload = async () => {
+            const file = required("--input");
+            // Extraction candidates permit 256 KiB after normalization. Allow JSON
+            // escaping and formatting overhead while keeping stdin bounded.
+            // Bulk upsert accepts the same input domain through stdin and files, as Python does.
+            const limit = (Object.hasOwn(jobUpsertCommands, command) || Object.hasOwn(taskIntakeCommands, command)) ? Infinity
+                : ["resume-proposal-create", "resume-extraction-request-complete", "resume-extraction-request-complete-scoped", "resume-facts-draft"].includes(command) ? 2 * 1024 * 1024 : 65536;
+            return parse(file === "-" ? await input(limit) : decodeInput(await readFile(file)));
+        };
+        const leafArgs = [...options.entries()].filter(([key]) => !['--root', '--native-lock', '--legacy-profile'].includes(key))
+            .flatMap(([key, value]) => booleanOptions.has(key) ? [key] : [key, value]);
+        const readInput = async (path) => parse(path === '-' ? await input(Infinity) : decodeInput(await readFile(path)));
+        if (nativeAutomationCommandNames.has(command)) {
+            return serialize((await runNativeAutomationCommand(command, leafArgs, { repository, readInput })));
+        }
+        if (nativeStoreStateCommandNames.has(command)) {
+            return serialize((await runNativeStoreStateCommand(command, leafArgs, {
+                repository, readInput, readResumePath: path => new NativeResumeFiles(root).readPath(path),
+            })));
+        }
+        if (Object.hasOwn(nativeAuthorityCommands, command)) {
+            return serialize((await runNativeAuthorityCommand(command, leafArgs, { repository, readInput })));
+        }
+        if (Object.hasOwn(accountOperationCommands, command))
+            return serialize(await runAccountOperationCommand(command, repository));
+        if (Object.hasOwn(answerLifecycleCommands, command))
+            return serialize(await runAnswerLifecycleCommand(command, repository, options));
+        if (Object.hasOwn(resumeLifecycleCommands, command))
+            return serialize(await runResumeLifecycleCommand(command, repository, options));
+        if (Object.hasOwn(trashCommands, command))
+            return serialize(await runTrashCommand(command, repository, options));
+        if (Object.hasOwn(groupedApprovalCommands, command))
+            return serialize(await runGroupedApprovalCommand(command, repository, options, payload));
+        if (Object.hasOwn(taskIntakeCommands, command))
+            return serialize(await runTaskIntakeCommand(repository, options, payload));
+        if (Object.hasOwn(legacyJobCommands, command))
+            return serialize(await runLegacyJobCommand(command, repository, options, selected, addon));
+        if (Object.hasOwn(jobUpsertCommands, command))
+            return serialize(await runJobUpsertCommand(command, repository, options, payload));
+        if (Object.hasOwn(jobTransitionCommands, command))
+            return serialize(await runJobTransitionCommand(repository, options));
+        if (Object.hasOwn(projectionCommands, command))
+            return serialize(await runProjectionCommand(command, repository, options));
+        if (Object.hasOwn(claimCommands, command))
+            return serialize(await runClaimCommand(command, repository, options, payload));
+        if (Object.hasOwn(pendingAnswerCommands, command))
+            return serialize(await runPendingAnswerCommand(command, repository, options));
+        if (Object.hasOwn(profileCommands, command))
+            return serialize(await runProfileCommand(command, repository, options, payload));
+        if (Object.hasOwn(answerCommands, command))
+            return serialize(await runAnswerCommand(command, repository, options, payload));
+        if (Object.hasOwn(extractionCommands, command))
+            return serialize(await runExtractionCommand(command, repository, options, payload));
+        if (command === "resume-import") {
+            const value = await payload();
+            const selectedPath = options.get("--path");
+            const { metadata, path } = selectedPath === undefined
+                ? resumeInputWithoutPath(value)
+                : { metadata: value, path: selectedPath };
+            const content = await new NativeResumeFiles(root).readPath(path);
+            return serialize(await resumes.import(metadata, basename(path), content, true));
+        }
+        if (command === "resume-get")
+            return serialize(await resumes.get(required("--id"), options.has("--include-trashed")));
+        if (command === "resume-list")
+            return serialize(await resumes.list(options.has("--include-trashed"), options.has("--trashed-only")));
+        if (command === "resume-resolve")
+            return serialize(await resumes.resolve(options.get("--id")));
+        if (command === "resume-check")
+            return serialize(await resumes.check(required("--id")));
+        if (command === "job-create")
+            return serialize(await service.create(await payload(), options.get("--origin")));
+        if (command === "job-get")
+            return serialize(await service.get(required("--id"), options.has("--include-trashed")));
+        if (command === "job-list")
+            return serialize(await service.list({
+                ...(options.has("--status") ? { status: options.get("--status") } : {}),
+                includeTrashed: options.has("--include-trashed"), trashedOnly: options.has("--trashed-only"),
+            }));
+        const revision = required("--expected-revision");
+        if (!/^[0-9]+$/.test(revision) || BigInt(revision) < 1n)
+            throw new JobsError("expected revision must be a positive integer");
+        if (command === "resume-update")
+            return serialize(await resumes.update(required("--id"), await payload(), BigInt(revision)));
+        if (command === "resume-set-default")
+            return serialize(await resumes.setDefault(required("--id"), BigInt(revision)));
+        if (command === "resume-replace" || command === "resume-adopt") {
+            const id = required("--id"), adopting = command === "resume-adopt";
+            const path = options.get("--path") ?? (adopting ? await resumes.legacySourcePath(id, BigInt(revision)) : required("--path"));
+            const content = await new NativeResumeFiles(root).readPath(path);
+            return serialize(await resumes.replace(id, basename(path), content, BigInt(revision), adopting, true));
+        }
+        return serialize(await service.update(required("--id"), await payload(), BigInt(revision), options.get("--origin")));
     }
-    if (nativeStoreStateCommandNames.has(command)) {
-        return serialize((await runNativeStoreStateCommand(command, leafArgs, {
-            repository, readInput, readResumePath: path => new NativeResumeFiles(root).readPath(path),
-        })));
-    }
-    if (Object.hasOwn(nativeAuthorityCommands, command)) {
-        return serialize((await runNativeAuthorityCommand(command, leafArgs, { repository, readInput })));
-    }
-    if (Object.hasOwn(accountOperationCommands, command))
-        return serialize(await runAccountOperationCommand(command, repository));
-    if (Object.hasOwn(answerLifecycleCommands, command))
-        return serialize(await runAnswerLifecycleCommand(command, repository, options));
-    if (Object.hasOwn(resumeLifecycleCommands, command))
-        return serialize(await runResumeLifecycleCommand(command, repository, options));
-    if (Object.hasOwn(trashCommands, command))
-        return serialize(await runTrashCommand(command, repository, options));
-    if (Object.hasOwn(groupedApprovalCommands, command))
-        return serialize(await runGroupedApprovalCommand(command, repository, options, payload));
-    if (Object.hasOwn(taskIntakeCommands, command))
-        return serialize(await runTaskIntakeCommand(repository, options, payload));
-    if (Object.hasOwn(legacyJobCommands, command))
-        return serialize(await runLegacyJobCommand(command, repository, options, selected, addon));
-    if (Object.hasOwn(jobUpsertCommands, command))
-        return serialize(await runJobUpsertCommand(command, repository, options, payload));
-    if (Object.hasOwn(jobTransitionCommands, command))
-        return serialize(await runJobTransitionCommand(repository, options));
-    if (Object.hasOwn(projectionCommands, command))
-        return serialize(await runProjectionCommand(command, repository, options));
-    if (Object.hasOwn(claimCommands, command))
-        return serialize(await runClaimCommand(command, repository, options, payload));
-    if (Object.hasOwn(pendingAnswerCommands, command))
-        return serialize(await runPendingAnswerCommand(command, repository, options));
-    if (Object.hasOwn(profileCommands, command))
-        return serialize(await runProfileCommand(command, repository, options, payload));
-    if (Object.hasOwn(answerCommands, command))
-        return serialize(await runAnswerCommand(command, repository, options, payload));
-    if (Object.hasOwn(extractionCommands, command))
-        return serialize(await runExtractionCommand(command, repository, options, payload));
-    if (command === "resume-import") {
-        const value = await payload();
-        const selectedPath = options.get("--path");
-        const { metadata, path } = selectedPath === undefined
-            ? resumeInputWithoutPath(value)
-            : { metadata: value, path: selectedPath };
-        const content = await new NativeResumeFiles(root).readPath(path);
-        return serialize(await resumes.import(metadata, basename(path), content, true));
-    }
-    if (command === "resume-get")
-        return serialize(await resumes.get(required("--id"), options.has("--include-trashed")));
-    if (command === "resume-list")
-        return serialize(await resumes.list(options.has("--include-trashed"), options.has("--trashed-only")));
-    if (command === "resume-resolve")
-        return serialize(await resumes.resolve(options.get("--id")));
-    if (command === "resume-check")
-        return serialize(await resumes.check(required("--id")));
-    if (command === "job-create")
-        return serialize(await service.create(await payload(), options.get("--origin")));
-    if (command === "job-get")
-        return serialize(await service.get(required("--id"), options.has("--include-trashed")));
-    if (command === "job-list")
-        return serialize(await service.list({
-            ...(options.has("--status") ? { status: options.get("--status") } : {}),
-            includeTrashed: options.has("--include-trashed"), trashedOnly: options.has("--trashed-only"),
-        }));
-    const revision = required("--expected-revision");
-    if (!/^[0-9]+$/.test(revision) || BigInt(revision) < 1n)
-        throw new JobsError("expected revision must be a positive integer");
-    if (command === "resume-update")
-        return serialize(await resumes.update(required("--id"), await payload(), BigInt(revision)));
-    if (command === "resume-set-default")
-        return serialize(await resumes.setDefault(required("--id"), BigInt(revision)));
-    if (command === "resume-replace" || command === "resume-adopt") {
-        const id = required("--id"), adopting = command === "resume-adopt";
-        const path = options.get("--path") ?? (adopting ? await resumes.legacySourcePath(id, BigInt(revision)) : required("--path"));
-        const content = await new NativeResumeFiles(root).readPath(path);
-        return serialize(await resumes.replace(id, basename(path), content, BigInt(revision), adopting, true));
-    }
-    return serialize(await service.update(required("--id"), await payload(), BigInt(revision), options.get("--origin")));
 }
 function decodeInput(bytes) {
     try {
@@ -368,7 +395,7 @@ if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === imp
         process.stdout.write(result + "\n");
     }
     catch (error) {
-        process.stderr.write(fixtureError(error) + "\n");
+        process.stderr.write((error instanceof UnrecognizedStoreError ? error.message : fixtureError(error)) + "\n");
         process.exitCode = 2;
     }
 }

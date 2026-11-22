@@ -3,7 +3,7 @@ import type { BigIntStats } from 'node:fs';
 import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { homedir, userInfo } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 import { constructNativePath } from '../contracts/posix-path.js';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
@@ -30,7 +30,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { syncDirectory } from './directory-sync.js';
 import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
-import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
+import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, windowsPath } from './windows-store.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 const schemaVersion = 1;
@@ -59,7 +59,7 @@ export function nativeStorePaths(root: string, legacyProfile: string): NativeSto
 
 type Identity = string;
 type BootstrapOptions = { clock?: () => string; boundary?: (stage: string) => Promise<void>;
-  locked?: <T>(operation: () => Promise<T>) => Promise<T> };
+  locked?: <T>(operation: () => Promise<T>) => Promise<T>; importLegacyProfile?: boolean; recoverExisting?: boolean };
 type Validator = (document: Document) => unknown;
 function validateResumeOperation(document: Document): Document {
   if (document.size !== 2 || int(get(document, 'schemaVersion')) !== 1n || !has(document, 'operation')) {
@@ -158,7 +158,8 @@ export class NativeStoreBootstrap {
   private readonly clock: () => string;
   private readonly boundary: (stage: string) => Promise<void>;
   private readonly locked: <T>(operation: () => Promise<T>) => Promise<T>;
-  constructor(root: string, legacyProfile: string = join(homedir(), '.claude-job-profile.json'), options: BootstrapOptions = {}) {
+  constructor(root: string, legacyProfile: string = join(homedir(), '.claude-job-profile.json'),
+    private readonly options: BootstrapOptions = {}) {
     this.root = pythonPath(root); this.legacyProfile = pythonPath(legacyProfile);
     this.layout = nativeStorePaths(this.root, this.legacyProfile);
     this.clock = options.clock ?? (() => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
@@ -206,7 +207,7 @@ export class NativeStoreBootstrap {
       void autoSubmit;
     }
     let legacy: Document | null = null;
-    if (await readPrivateFile(this.layout.profile, 'profile') === null) {
+    if (this.options.importLegacyProfile !== false && await readPrivateFile(this.layout.profile, 'profile') === null) {
       const bytes = await readPrivateFile(this.legacyProfile, 'legacy profile');
       if (bytes !== null) legacy = document(bytes, 'legacy profile');
     }
@@ -349,9 +350,11 @@ export class NativeStoreBootstrap {
     const resumeFiles = join(this.root, 'resume-files');
     await ensureBootstrapDirectory(resumeFiles);
     await privateDirectory(resumeFiles, false);
-    const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
-    if (extractionJournal !== null) await this.extractionJournal().recover();
-    await this.recoverResumeFiles();
+    if (this.options.recoverExisting !== false) {
+      const extractionJournal = await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json');
+      if (extractionJournal !== null) await this.extractionJournal().recover();
+      await this.recoverResumeFiles();
+    }
     let migrated = false;
     if (await readPrivateFile(this.layout.profile, 'profile') === null) {
       const createdAt = this.now(), updatedAt = this.now();
@@ -378,7 +381,7 @@ export class NativeStoreBootstrap {
         : await open(this.layout.history, 'wx', 0o600);
       try { await history.sync(); } finally { await history.close(); }
     }
-    await this.recoverCoordinator();
+    if (this.options.recoverExisting !== false) await this.recoverCoordinator();
     return fromJSON({ initialized: true, migratedLegacyProfile: migrated, ...this.layout });
   }
 }
@@ -401,6 +404,7 @@ function pythonPath(path: string): string {
 export function createNativeStoreBootstrap(root?: string, legacyProfile?: string,
   environment: NodeJS.ProcessEnv = process.env, home = homedir(), options: BootstrapOptions = {}): NativeStoreBootstrap {
   const selectedRoot = root || environment.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
+  const selectedProfile = expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home);
   return new NativeStoreBootstrap(expandUser(selectedRoot, home),
-    expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home), options);
+    process.platform === 'win32' ? win32.resolve(windowsPath(selectedProfile)) : selectedProfile, options);
 }

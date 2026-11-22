@@ -50,7 +50,7 @@ the interaction is finished.
 
 ### Import existing timestamped reports
 
-When the user asks to migrate previously saved search reports, use the guided
+On macOS and Linux, when the user asks to migrate previously saved search reports, use the guided
 legacy commands instead of reconstructing JSON by hand. Run
 `legacy-jobs-preview` with no selection to discover supported `search-*.md`
 entries directly under `~/.claude-job-searches/`. Show valid and invalid items,

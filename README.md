@@ -12,17 +12,18 @@ through the plugin with Companion closed.
 
 ### Requirements
 
-Install **Node.js 22 or newer** on **macOS Apple Silicon** or **Linux x64** and
+Install **Node.js 22 or newer** on **macOS Apple Silicon**, **Linux x64** or **Windows x64** and
 make `node` available to your host. For visible form filling, enable the Codex
 Browser plugin or [Claude in Chrome](https://chromewebstore.google.com/detail/claude-in-chrome).
-If upgrading from Python, follow the [Store upgrade guide](skills/answer-memory/references/upgrade.md)
-before your first data command.
+On macOS and Linux, follow the [Store upgrade guide](skills/answer-memory/references/upgrade.md)
+before upgrading from Python.
 
 ### Installation
 
 #### Install stable
 
 The default marketplace installs the validated release of Job Apply and its optional Companion.
+On Windows x64, [use preview](#try-preview) until the stable release notes list Windows support.
 
 **Codex**, in a terminal:
 
@@ -329,9 +330,13 @@ chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.
 chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-journal.json
 ```
 
-On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
+On macOS and Linux, first use copies an existing `~/.claude-job-profile.json` into the new versioned profile and preserves the original. On Windows, you can opt in to that one-time import with `store init --legacy-profile PATH` using a file accessible only to your account. Once the Store has a profile, it is authoritative.
 
-Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. Installed production routes require no Python interpreter and have no Python fallback. A source-checkout installation can retain historical Python reference files; those files are not production entrypoints. See [runtime closure status](docs/migration/python-runtime-closure.md).
+On Windows, the Store directory and every file in it are created with an access list that grants only your account; Windows Explorer's **Properties → Security** tab shows it.
+
+On Windows, the first data command or Companion launch creates a new native Store or reopens a validated native Store. Activation preserves legacy and unrecognized Store directories. If you see a refusal, use `--root` or `JOB_APPLY_STORE_DIR` to select a new path under an existing directory. You can also use an existing empty directory that you own and whose ACL grants access only to your account.
+
+On macOS arm64 and Linux x64, stable marketplace installs carry verified native lock artifacts. Their first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, and activates the native Store. Windows preview includes its own verified native lock artifact. Installed production routes run through TypeScript without a Python interpreter. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
 All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 
@@ -400,7 +405,7 @@ Each file contains:
 
 ### Guided legacy job migration
 
-The helper can selectively import the documented numbered job entries from
+On macOS and Linux, the helper can selectively import the documented numbered job entries from
 regular `search-*.md` files directly under `~/.claude-job-searches/`. It does
 not read `application_queue.md`, arbitrary paths, nested directories, or
 symlinks. Undocumented Markdown variants are not imported, and the helper never

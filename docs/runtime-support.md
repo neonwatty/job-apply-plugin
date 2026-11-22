@@ -1,6 +1,6 @@
 # TypeScript runtime launch gate
 
-Status: **native artifact selected for macOS arm64 and Linux x64**. The installed
+Status: **native artifact selected for macOS arm64, Linux x64 and Windows x64**. The installed
 runtime uses stable Node.js 22.0.0 or newer, with TypeScript compiled to
 JavaScript ES modules targeting ES2022. Each supported package carries a
 verified Node-API 8 lock artifact. Other host cells remain unsupported.
@@ -21,10 +21,15 @@ first launch to build its server; subsequent launches reuse the build until a
 plugin refresh. A prepared build does not need a new dependency download merely
 to start. No Python runtime is required for installed workflows.
 
-The supported package cells are macOS arm64 and Linux x64. CI exercises clean
-locked dependency installs, native Store/CLI/browser checks and isolated
-Codex/Claude installation on both cells. This does not establish a host guarantee
-that Node is preinstalled, Windows support, or live ATS/account acceptance. See
+The supported package cells are macOS arm64, Linux x64 and Windows x64. CI exercises
+clean locked dependency installs, native Store/CLI/browser checks and isolated
+Codex/Claude installation on macOS and Linux. On Windows, CI exercises the native
+lock, Store ACLs and file identity, the authenticated attempt broker, fresh Store
+creation, reopening a native Store, refusing legacy or unrecognized Store data
+without changing it, interrupted atomic-write recovery, and Companion shutdown
+while a save is in progress. Windows activation never clones or migrates a Python-era Store; that
+migration is separate work. This does not establish a host guarantee that Node is
+preinstalled, or live ATS/account acceptance. See
 [testing](testing.md) and the [transition guide](typescript-transition.md).
 
 ## Development probe

@@ -4,6 +4,8 @@ import { spawn } from 'node:child_process';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { activateNativeWriter, recoverNativeWriterSwitch, rollbackNativeWriter } from './native-writer-switch.js';
+import { nativeWriterLeaseName } from './native-store-layout.js';
+import { openWindowsStoreFile } from './windows-store.js';
 function positiveMilliseconds(value, name) {
     if (!Number.isSafeInteger(value) || value < 1 || value > 2_147_483_647) {
         throw new RangeError(`${name} must be a positive timer interval`);
@@ -67,6 +69,11 @@ class WriterOwnershipLease {
         this.descriptor = handle.fd;
     }
     static async acquire(active, provider, timeoutMilliseconds) {
+        if (process.platform === 'win32') {
+            // Windows never renames the Store, so the lease lives inside it as a private Store entry.
+            // The caller runs inside the Windows Store scope of an activated root.
+            return WriterOwnershipLease.#locked(await openWindowsStoreFile(join(active, nativeWriterLeaseName), constants.O_RDWR | constants.O_CREAT), provider, timeoutMilliseconds);
+        }
         const parent = dirname(active);
         const [canonicalParent, parentMetadata, canonicalActive, activeMetadata] = await Promise.all([
             realpath(parent).catch(() => null), lstat(parent).catch(() => null),
@@ -80,9 +87,18 @@ class WriterOwnershipLease {
             throw new Error('writer ownership Store is invalid');
         }
         const handle = await open(join(parent, `.${basename(active)}.writer-owner.lock`), constants.O_RDWR | constants.O_CREAT, 0o600);
-        let locked = false;
         try {
             await handle.chmod(0o600);
+        }
+        catch (error) {
+            await handle.close();
+            throw error;
+        }
+        return WriterOwnershipLease.#locked(handle, provider, timeoutMilliseconds);
+    }
+    static async #locked(handle, provider, timeoutMilliseconds) {
+        let locked = false;
+        try {
             const signal = AbortSignal.timeout(timeoutMilliseconds);
             while (!(locked = provider.tryLock(handle.fd))) {
                 signal.throwIfAborted();
@@ -126,6 +142,7 @@ class OwnedWriterProcess {
             cwd: spec.cwd,
             ...(spec.env === undefined ? {} : { env: spec.env }),
             detached: process.platform !== 'win32',
+            windowsHide: true,
             // fd 3 holds the lease; fd 4 lets the inner launcher observe owner death.
             stdio: ['ignore', 'pipe', 'pipe', ownershipDescriptor, 'pipe'],
         });
@@ -147,7 +164,7 @@ class OwnedWriterProcess {
                 }
                 function onError() { finish(new Error('owned writer failed before readiness')); }
                 function onExit() { finish(new Error('owned writer failed before readiness')); }
-                function onAbort() { signalGroup(child, 'SIGTERM'); finish(new Error('owned writer startup cancelled')); }
+                function onAbort() { finish(new Error('owned writer startup cancelled')); }
                 function onData(bytes) {
                     text += bytes.toString('utf8');
                     if (text.length > 16_384) {
@@ -176,7 +193,10 @@ class OwnedWriterProcess {
             return new OwnedWriterProcess(child, line, shutdownGraceMilliseconds);
         }
         catch (error) {
-            signalGroup(child, 'SIGTERM');
+            if (process.platform === 'win32')
+                child.stdio[4]?.destroy();
+            else
+                signalGroup(child, 'SIGTERM');
             await Promise.race([childExit(child), delay(shutdownGraceMilliseconds)]);
             if (groupAlive(child))
                 signalGroup(child, 'SIGKILL');
@@ -190,7 +210,10 @@ class OwnedWriterProcess {
         if (this.#stopped)
             return;
         this.#ownerChannel?.destroy();
-        signalGroup(this.#child, 'SIGTERM');
+        // Windows has no process groups and kill() terminates at once. Closing the owner channel
+        // asks the launcher to stop its own children first, so it gets the grace period to do so.
+        if (process.platform !== 'win32' || !this.#ownerChannel)
+            signalGroup(this.#child, 'SIGTERM');
         await Promise.race([childExit(this.#child), delay(this.#shutdownGraceMilliseconds)]);
         if (groupAlive(this.#child))
             signalGroup(this.#child, 'SIGKILL');

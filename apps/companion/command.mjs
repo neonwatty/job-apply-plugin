@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { activateStoreForCli, validateSupervisorRoot } from './supervise.mjs';
 import { storeWriterOwnership } from './writer-route.mjs';
 import { parseAttemptArgs } from '../../runtime/cli/attempt-protocol.js';
+import { parseStoreArgs } from '../../runtime/cli/native-jobs.js';
+import { parseInstalledTaskArgs } from '../../runtime/cli/task-runner.js';
+import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
+import { activateWindowsStore, canonicalWindowsRoot, UnrecognizedStoreError } from '../../runtime/store/windows-activation.js';
 
 const app = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(app, '../..');
@@ -28,25 +33,43 @@ function selectedRoot(args) {
 async function run() {
   const [surface, ...args] = process.argv.slice(2), target = targets[surface];
   if (!target) throw new Error('unknown Job Apply command surface');
-  let command;
-  for (let index = 0; index < args.length; index += 1) {
-    if (args[index] === '--root' || args[index] === '--legacy-profile') { index += 1; continue; }
-    if (!args[index].startsWith('--')) { command = args[index]; break; }
+  const windows = process.platform === 'win32';
+  let command, root, invalidRequest = false;
+  if (windows && surface === 'store') {
+    try { ({ command } = parseStoreArgs(args)); }
+    catch { invalidRequest = true; }
+  } else {
+    for (let index = 0; index < args.length; index += 1) {
+      if (args[index] === '--root' || args[index] === '--legacy-profile') { index += 1; continue; }
+      if (!args[index].startsWith('--')) { command = args[index]; break; }
+    }
   }
   const readOnlyAbsent = (surface === 'store' && command === 'paths') || (surface === 'policy' && command === 'status');
   const help = args.includes('--help') || args.includes('-h');
-  let root, invalidAttempt = false;
-  if (surface === 'attempt' && !help) {
-    try { root = parseAttemptArgs(args, process.env, homedir()).root; }
-    catch { invalidAttempt = true; } // Let the child retain its public JSON error envelope.
-  } else root = selectedRoot(args);
+  if (windows && !help && surface === 'store' && ['legacy-jobs-preview', 'legacy-jobs-commit'].includes(command)) {
+    process.stderr.write('Legacy search report import is available on macOS and Linux.\n');
+    process.exitCode = 2;
+    return;
+  }
+  if (!help && (surface === 'attempt' || (windows && surface === 'task'))) {
+    try {
+      root = surface === 'attempt' ? parseAttemptArgs(args, process.env, homedir()).root
+        : parseInstalledTaskArgs(args).options.get('--root');
+    } catch { invalidRequest = true; } // The child preserves its public JSON error envelope.
+  } else if (!invalidRequest) root = selectedRoot(args);
   const legacyIndex = surface === 'store' ? args.lastIndexOf('--legacy-profile') : -1;
   const legacyProfile = legacyIndex < 0 ? undefined : args[legacyIndex + 1];
   if (legacyIndex >= 0 && (!legacyProfile || legacyProfile.startsWith('--'))) throw new Error('missing legacy profile');
-  if (!help && !invalidAttempt && !(readOnlyAbsent && !existsSync(root))) {
-    const ownership = await storeWriterOwnership(root);
-    if (ownership === 'fixture') await validateSupervisorRoot(root);
-    else await activateStoreForCli({ root, pluginRoot, nativeLock: undefined, legacyProfile });
+  const windowsInit = windows && surface === 'store' && command === 'init';
+  if (!help && !invalidRequest && !windowsInit && !(readOnlyAbsent && !existsSync(root))) {
+    if (windows) {
+      await activateWindowsStore(await canonicalWindowsRoot(root),
+        await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });
+    } else {
+      const ownership = await storeWriterOwnership(root);
+      if (ownership === 'fixture') await validateSupervisorRoot(root);
+      else await activateStoreForCli({ root, pluginRoot, nativeLock: undefined, legacyProfile });
+    }
   }
   const child = spawn(process.execPath, [join(pluginRoot, 'runtime/cli', target), ...args], { stdio: 'inherit', env: process.env });
   const result = await new Promise((done, reject) => { child.once('error', reject); child.once('exit', (code, signal) => done({ code, signal })); });
@@ -54,6 +77,7 @@ async function run() {
   process.exitCode = result.code ?? 1;
 }
 try { await run(); }
-catch {
-  process.stderr.write('Job Apply native Store activation failed\n'); process.exitCode = 2;
+catch (error) {
+  process.stderr.write(error instanceof UnrecognizedStoreError ? `${error.message}\n` : 'Job Apply native Store activation failed\n');
+  process.exitCode = 2;
 }
