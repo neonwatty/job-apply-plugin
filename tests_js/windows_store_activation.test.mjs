@@ -1,16 +1,20 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { activateWindowsStoreScoped } from '../runtime/store/windows-activation.js';
+import { openWindowsStoreFile, withWindowsStore } from '../runtime/store/windows-store.js';
 
 // Windows install path: the packaged lock, no Python, and no clone or writer switch.
 const command = fileURLToPath(new URL('../apps/companion/command.mjs', import.meta.url));
 const windows = process.platform === 'win32';
-const loadAddon = () => createRequire(import.meta.url)('../native/packaged-lock/win32-x64-napi8/flock.node');
+const addonPath = fileURLToPath(new URL('../native/packaged-lock/win32-x64-napi8/flock.node', import.meta.url));
+const loadAddon = () => createRequire(import.meta.url)(addonPath);
 
 function cli(home, ...args) {
   const result = spawnSync(process.execPath, [command, ...args], {
@@ -73,6 +77,39 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
   assert.equal(json(cli(temporary, 'store', 'paths', '--root', 'STORE')).root, root);
   assert.deepEqual(json(cli(temporary, 'policy', '--root', 'STORE', 'status')),
     json(cli(temporary, 'policy', '--root', root, 'status')));
+  const alias = join(temporary, 'alias');
+  await symlink(root, alias, 'junction');
+  const aliasedStore = cli(temporary, 'store', 'job-list', '--root', alias);
+  assert.equal(aliasedStore.status, 2);
+  const aliasedAttempt = cli(temporary, 'attempt', '--root', alias, 'heartbeat');
+  assert.equal(aliasedAttempt.status, 2);
+  assert.equal(aliasedAttempt.stderr, aliasedStore.stderr);
+  assert.equal(aliasedAttempt.stdout, '');
+
+  // Ordinary reopen waits for the current Store writer's staged file to disappear.
+  await withWindowsStore(root, addonPath, async provider => {
+    const lock = await openWindowsStoreFile(join(root, '.store.lock'), constants.O_RDWR);
+    const stage = join(root, '.jobs.json.12345678.tmp');
+    assert.equal(provider.tryLock(lock.fd), true);
+    addon.createStoreEntry(stage, false);
+    const attempt = Promise.withResolvers();
+    const reopening = activateWindowsStoreScoped(root, {
+      tryLock(fd) {
+        const acquired = provider.tryLock(fd);
+        attempt.resolve(acquired);
+        return acquired;
+      },
+      unlock: provider.unlock,
+    });
+    try {
+      assert.equal(await Promise.race([attempt.promise, reopening]), false);
+    } finally {
+      await unlink(stage);
+      try { provider.unlock(lock.fd); } finally { await lock.close(); }
+    }
+    assert.equal((await reopening).state, 'reopened');
+  });
+
   // An interruption after marker publication leaves the completed Store and its data authoritative.
   const beforePending = await snapshot(root);
   addon.createStoreEntry(join(root, '.native-store-pending'), false);
@@ -90,7 +127,9 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
   const explicitProfile = join(temporary, 'private-profile.json');
   addon.createStoreEntry(explicitProfile, false);
   await writeFile(explicitProfile, legacyBytes);
-  json(cli(temporary, 'store', 'init', '--root', optedIn, '--legacy-profile', explicitProfile));
+  const importArgs = ['store', 'init', '--root', optedIn, '--legacy-profile', explicitProfile];
+  assert.equal(json(cli(temporary, ...importArgs)).migratedLegacyProfile, true);
+  assert.equal(json(cli(temporary, ...importArgs)).migratedLegacyProfile, false);
   const imported = await readFile(join(optedIn, 'profile.json'));
   assert.equal(JSON.parse(imported).profile.name, 'Legacy profile');
   const partial = join(temporary, 'partial');
@@ -100,8 +139,25 @@ test('Windows CLI creates a fresh native Store and reopens it', { skip: !windows
   }
   await writeFile(join(partial, 'profile.json'), imported);
   await writeFile(join(partial, 'resume-operation.json'), '{"schemaVersion":1,"operation":null}\n');
+  for (const name of ['.profile.json.12345678.tmp', '..native-store-clone.87654321.tmp']) {
+    const stage = join(partial, name);
+    addon.createStoreEntry(stage, false);
+    await writeFile(stage, 'unfinished initialization write');
+  }
   json(cli(temporary, 'store', 'init', '--root', partial));
   assert.deepEqual(await readFile(join(partial, 'profile.json')), imported);
+  assert.equal((await readdir(partial)).some(name => name.endsWith('.tmp')), false);
+
+  const recovery = JSON.parse(imported);
+  recovery.profile = { recovered: true };
+  recovery.metadata.revision += 1;
+  const journal = join(partial, 'resume-extraction-journal.json');
+  await writeFile(journal, JSON.stringify({ schemaVersion: 1, operation: {
+    kind: 'review', operationId: 'recovery-one', profileDocument: recovery, proposalsDocument: null,
+  } }));
+  json(cli(temporary, 'store', 'init', '--root', partial));
+  assert.deepEqual(JSON.parse(await readFile(join(partial, 'profile.json'), 'utf8')).profile, { recovered: true });
+  assert.equal(JSON.parse(await readFile(journal, 'utf8')).operation, null);
 });
 
 test('Windows CLI leaves legacy and unrecognized Store data untouched', { skip: !windows, timeout: 120_000 }, async t => {

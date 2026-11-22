@@ -6,6 +6,7 @@ import { filesystemEncode } from '../contracts/posix-path-bytes.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fromJSON, integer, object, parse, set } from '../contracts/workspace/values.js';
 import { parseTaskRevision } from './task-protocol.js';
+import { windowsPath } from '../store/windows-store.js';
 export const attemptFrameLimit = 1024 * 1024;
 export const attemptHeartbeatMilliseconds = 60_000;
 export const attemptIdleMilliseconds = 10_000;
@@ -27,18 +28,9 @@ export function resolveAttemptRoot(root, env, home) {
     let configured = root || env.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
     if (configured === '~' || configured.startsWith('~/'))
         configured = home + configured.slice(1);
-    if (process.platform === 'win32') {
-        // Windows: the Store root is canonical once it exists. Junctions in it are rejected by the Store.
-        const resolved = win32.resolve(configured);
-        try {
-            return realpathSync.native(resolved);
-        }
-        catch (error) {
-            if (!['ENOENT', 'ENOTDIR'].includes(error.code ?? ''))
-                throw error;
-            return resolved;
-        }
-    }
+    // The Windows entry points validate the original selection before following any directory alias.
+    if (process.platform === 'win32')
+        return win32.resolve(windowsPath(configured));
     const absolute = isAbsolute(configured) ? configured : process.cwd() + '/' + configured;
     let current = '/';
     for (const component of absolute.split('/')) {

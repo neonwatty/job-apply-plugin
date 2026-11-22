@@ -2,6 +2,12 @@ import { realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+async function attemptStoreRoot(path) {
+    if (process.platform !== 'win32')
+        return path;
+    const { canonicalWindowsRoot } = await import('../store/windows-activation.js');
+    return canonicalWindowsRoot(path);
+}
 /** Keep addon/module bootstrap failures inside the same value-free envelope. */
 export async function runAttemptCli(args) {
     let invalid = false;
@@ -15,7 +21,7 @@ export async function runAttemptCli(args) {
                 invalid = true;
                 throw new Error('invalid invocation');
             }
-            const root = protocol.resolveAttemptRoot(args[2], process.env, homedir());
+            const root = await attemptStoreRoot(protocol.resolveAttemptRoot(args[2], process.env, homedir()));
             const pluginRoot = realpathSync(resolve(dirname(executable), '../..'));
             const { resolvePackagedNativeLock } = await import('../package/native-lock-artifact.js');
             const { withNativeStore } = await import('../store/native-store-provider.js');
@@ -46,7 +52,8 @@ export async function runAttemptCli(args) {
         }
         const request = await protocol.attemptRequest(invocation);
         const { requestAttempt } = await import('./attempt-broker.js');
-        const ask = () => requestAttempt(invocation.root, request, {
+        const root = await attemptStoreRoot(invocation.root);
+        const ask = () => requestAttempt(root, request, {
             start: invocation.kind === 'start' || invocation.kind === 'restart-review', executable,
         });
         // Windows clients read the pipe key from the private Store, which needs the addon scope.
@@ -55,7 +62,7 @@ export async function runAttemptCli(args) {
             const { withNativeStore } = await import('../store/native-store-provider.js');
             const { resolvePackagedNativeLock } = await import('../package/native-lock-artifact.js');
             const pluginRoot = realpathSync(resolve(dirname(executable), '../..'));
-            response = await withNativeStore(invocation.root, await resolvePackagedNativeLock(pluginRoot), ask);
+            response = await withNativeStore(root, await resolvePackagedNativeLock(pluginRoot), ask);
         }
         else
             response = await ask();

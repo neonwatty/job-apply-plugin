@@ -32,7 +32,7 @@ import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
-import { activateWindowsStoreScoped, canonicalWindowsRoot } from '../store/windows-activation.js';
+import { activateWindowsStoreScoped, canonicalWindowsRoot, UnrecognizedStoreError } from '../store/windows-activation.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 
 function resolveStoreRoot(configured = process.env.JOB_APPLY_STORE_DIR): string {
@@ -236,12 +236,13 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     const run = (provider?: PosixFlockProvider) => runNativeStoreBootstrapCommand(command!, createNativeStoreBootstrap(
       windows ? root : options.get("--root") ?? root, options.get('--legacy-profile'), process.env, undefined,
       provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation),
-        recoverExisting: !windows, importLegacyProfile: !windows || options.has('--legacy-profile') } : {}));
+        importLegacyProfile: !windows || options.has('--legacy-profile') } : {}));
     if (command !== 'init' && process.platform !== 'win32') return serialize(await run());
     return serialize(await withNativeStore(root, await nativeLock(options), async provider => {
       // Windows only creates a Store through activation, so it always carries its native marker.
       if (command === 'init' && process.platform === 'win32') {
-        await activateWindowsStoreScoped(root, provider, { legacyProfile: options.get('--legacy-profile') });
+        const activation = await activateWindowsStoreScoped(root, provider, { legacyProfile: options.get('--legacy-profile') });
+        if (activation.state === 'initialized') return activation.receipt;
       }
       return run(command === 'init' ? provider : undefined);
     }));
@@ -344,7 +345,7 @@ if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === imp
     });
     process.stdout.write(result + "\n");
   } catch (error) {
-    process.stderr.write(fixtureError(error) + "\n");
+    process.stderr.write((error instanceof UnrecognizedStoreError ? error.message : fixtureError(error)) + "\n");
     process.exitCode = 2;
   }
 }

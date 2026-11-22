@@ -41,7 +41,7 @@ export function withStoreBootstrapLock<T>(root: string, provider: PosixFlockProv
     // Windows writes only inside the selected Store, so bootstrap serializes on the Store lock.
     // Activation has already created the root with its owner-only ACL.
     return withExclusiveFileLock(join(absolute, '.store.lock'), operation,
-      { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
+      { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000), existingOnly: true });
   }
   const identity = createHash('sha256').update(absolute).digest('hex').slice(0, 32);
   return withExclusiveFileLock(join(parent, `.job-apply-bootstrap-${identity}.lock`), operation,

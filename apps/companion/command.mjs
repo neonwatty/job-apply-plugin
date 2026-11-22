@@ -46,7 +46,8 @@ async function run() {
   const legacyIndex = surface === 'store' ? args.lastIndexOf('--legacy-profile') : -1;
   const legacyProfile = legacyIndex < 0 ? undefined : args[legacyIndex + 1];
   if (legacyIndex >= 0 && (!legacyProfile || legacyProfile.startsWith('--'))) throw new Error('missing legacy profile');
-  if (!help && !invalidAttempt && !(readOnlyAbsent && !existsSync(root))) {
+  const windowsInit = process.platform === 'win32' && surface === 'store' && command === 'init';
+  if (!help && !invalidAttempt && !windowsInit && !(readOnlyAbsent && !existsSync(root))) {
     if (process.platform === 'win32') {
       await activateWindowsStore(await canonicalWindowsRoot(root),
         await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });

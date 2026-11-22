@@ -19,6 +19,11 @@ export class UnrecognizedStoreError extends Error {
 const markers = [nativeFixtureMarkerName, nativeCloneMarkerName];
 const lockName = '.store.lock';
 const partialEntries = new Set([...nativeStoreRequiredEntries, 'resume-facts.json', nativeStorePendingName]);
+const initializationDocuments = new Set([...partialEntries].filter(name => name.endsWith('.json')).concat(nativeCloneMarkerName));
+function initializationTemporary(name) {
+    const match = /^\.(.+)\.[a-z0-9_]{8}\.tmp$/.exec(name);
+    return match !== null && initializationDocuments.has(match[1]);
+}
 async function entries(root) {
     try {
         return await readdir(root);
@@ -48,17 +53,8 @@ async function requireEmptyPrivateFile(path) {
         await handle.close();
     }
 }
-/** Classify without writing, including when a marker exists but cannot validate. */
+/** Classify stable entries under the existing Store lock before making any recovery writes. */
 async function inspectRoot(root, names) {
-    if (!names.length) {
-        try {
-            requireWindowsPrivate(root, true);
-        }
-        catch {
-            throw new UnrecognizedStoreError(true);
-        }
-        return 'fresh';
-    }
     const pending = names.includes(nativeStorePendingName);
     try {
         if (!names.includes(lockName))
@@ -73,8 +69,14 @@ async function inspectRoot(root, names) {
         await requireEmptyPrivateFile(join(root, lockName));
         if (names.length === 1)
             return 'fresh';
-        if (!pending || names.some(name => !partialEntries.has(name)))
+        if (!pending || names.some(name => !partialEntries.has(name) && !initializationTemporary(name))) {
             throw new UnrecognizedStoreError();
+        }
+        for (const name of names.filter(initializationTemporary)) {
+            const path = join(root, name);
+            requireWindowsPrivate(path, false);
+            await checkWindowsStoreWrite(path);
+        }
         for (const name of ['sessions', 'resume-files'])
             if (names.includes(name)) {
                 const path = join(root, name);
@@ -88,7 +90,7 @@ async function inspectRoot(root, names) {
         throw new UnrecognizedStoreError();
     }
 }
-async function initializeLocked(root, provider, options, signal, state) {
+async function initializeLocked(root, provider, options, signal, state, staging) {
     if (state === 'fresh') {
         const pending = await openWindowsStoreFile(join(root, nativeStorePendingName), constants.O_RDWR | constants.O_CREAT | constants.O_EXCL);
         await pending.close();
@@ -97,9 +99,16 @@ async function initializeLocked(root, provider, options, signal, state) {
     // First-time activation only adds missing files. Running Store-journal recovery here
     // would let an unexpected journal mutate data in a partially initialized directory.
     const bootstrap = createNativeStoreBootstrap(root, options.legacyProfile, process.env, undefined, { ...(options.now ? { clock: options.now } : {}), importLegacyProfile: options.legacyProfile !== undefined, recoverExisting: false });
-    await bootstrap.initialize();
+    const receipt = await bootstrap.initialize();
     signal.throwIfAborted();
+    // Only unpublished atomic writes from a validated pending initialization are disposable.
+    for (const name of staging) {
+        const path = join(root, name);
+        await checkWindowsStoreWrite(path);
+        await unlink(path);
+    }
     await adoptFreshNativeStoreLocked(root, provider, options.now?.(), signal, [nativeStorePendingName]);
+    return receipt;
 }
 async function finishInitialization(root) {
     const path = join(root, nativeStorePendingName);
@@ -120,19 +129,32 @@ export async function activateWindowsStoreScoped(root, provider, options = {}) {
         await ensureWindowsPrivateDirectory(root);
     if (await realpath(root) !== root)
         throw new Error('Store root must use its canonical spelling');
-    await inspectRoot(root, before ?? await readdir(root));
+    const names = before ?? await readdir(root);
+    const existingOnly = names.includes(lockName);
+    // This pre-lock check only decides whether we may create a lock. Pending markers
+    // and temporary files may change while another process owns the lock.
+    if (names.length && (!existingOnly || names.length > 1
+        && !names.includes(nativeStorePendingName) && !names.some(name => markers.includes(name)))) {
+        throw new UnrecognizedStoreError();
+    }
+    try {
+        requireWindowsPrivate(root, true);
+    }
+    catch {
+        throw new UnrecognizedStoreError(names.length === 0);
+    }
     return withExclusiveFileLock(join(root, lockName), async () => {
-        const state = await inspectRoot(root, await readdir(root));
+        const lockedNames = await readdir(root);
+        const state = await inspectRoot(root, lockedNames);
         if (state === 'completed')
-            return 'reopened';
-        if (state !== 'completed-with-pending') {
-            await initializeLocked(root, provider, options, signal, state);
-        }
+            return { state: 'reopened' };
+        const receipt = state === 'completed-with-pending' ? undefined
+            : await initializeLocked(root, provider, options, signal, state, lockedNames.filter(initializationTemporary));
         if (await inspectRoot(root, await readdir(root)) !== 'completed-with-pending')
             throw new UnrecognizedStoreError();
         await finishInitialization(root);
-        return state === 'completed-with-pending' ? 'reopened' : 'initialized';
-    }, { provider, pathProfile: '3.12', signal });
+        return receipt === undefined ? { state: 'reopened' } : { state: 'initialized', receipt };
+    }, { provider, pathProfile: '3.12', signal, existingOnly });
 }
 export function activateWindowsStore(root, addonPath, options = {}) {
     return withWindowsStore(root, addonPath, provider => activateWindowsStoreScoped(root, provider, options));
