@@ -107,9 +107,11 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged, focus
     setBusy(true); setError(''); setNotice('');
     try {
       await refresh(controller.signal, true);
-      if (!controller.signal.aborted) refreshRequests();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to refresh facts.'); }
-    finally { setBusy(false); }
+    finally {
+      if (!controller.signal.aborted) refreshRequests();
+      setBusy(false);
+    }
   }
   return <section className="workspace-panel resume-facts-panel" aria-label={`Facts for ${resume.label}`}>
     <div className="resume-facts-heading"><div><p className="eyebrow">Resume facts</p><h3 ref={heading} tabIndex={-1}>Facts from {resume.label}</h3></div>

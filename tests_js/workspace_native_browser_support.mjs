@@ -152,8 +152,15 @@ export async function nativeJobsBrowser(buildRoot) {
     await extractionStatus.getByRole('alert').filter({hasText:/Extraction request status unavailable/}).waitFor();
     assert.equal(await extractionStatus.getByText('No facts have been extracted for this resume yet.').count(), 0);
     await extractionStatus.getByRole('button', {name:'View extraction requests',exact:true}).waitFor();
+    const resumeFactsPath = '**/api/resume-facts';
+    await page.route(resumeFactsPath, route => route.fulfill({
+      status:503, json:{error:{message:'Synthetic fact service unavailable'}},
+    }), {times:1});
     await checkAgent.click();
+    await extractionStatus.getByRole('alert').filter({hasText:'Synthetic fact service unavailable'}).waitFor();
     await extractionStatus.getByText(/Waiting for a Job Apply agent/).waitFor();
+    await checkAgent.click();
+    await extractionStatus.getByRole('alert').filter({hasText:'Synthetic fact service unavailable'}).waitFor({state:'hidden'});
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);

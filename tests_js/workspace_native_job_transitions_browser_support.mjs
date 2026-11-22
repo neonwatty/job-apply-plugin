@@ -82,20 +82,39 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
 
   // Exercise recorded browser tasks and the review checkpoint through the synthetic Store.
   const selected = await confirmInputs(latest);
-  const acquired = await api('/api/claims/acquire', {
+  const pausedAttempt = await api('/api/claims/acquire', {
     jobId, expectedRevision: selected.jobRevision, ownerLabel: 'Transition fixture',
+  });
+  const paused = await api('/api/claims/handoff', {
+    jobId, token:pausedAttempt.token, status:'needs_info', expectedRevision:pausedAttempt.job.revision,
+    session:{status:'active', handoffChecklist:['resume_upload'], blockers:[
+      {type:'browser_handoff',code:'unsupported-control'}, {type:'information',code:'owner-input-required'},
+    ]},
+  });
+  await api(`/api/jobs/${jobId}`, {expectedRevision:paused.job.revision, patch:{notes:'Synthetic browser handoff note'}}, 'PATCH');
+  await clickCompanionNav(page, 'Needs Attention');
+  const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
+  await attention.getByLabel('Filter by reason').selectOption('browser_action_required');
+  await attention.getByRole('button', {name:/Transition conflict writer Native fixture role Browser action required/}).click();
+  await attention.getByText(/A browser action was recorded/).waitFor();
+  assert.equal(await attention.getByText('To do on form',{exact:true}).count(), 0);
+  await attention.getByRole('button', {name:'Open job details',exact:true}).click();
+  const readyToUpload = await change('Mark ready', 'ready');
+  await close.click();
+
+  const acquired = await api('/api/claims/acquire', {
+    jobId, expectedRevision: readyToUpload.revision, ownerLabel: 'Transition fixture',
   });
   const uploadInput = readyPacket(acquired.job.revision);
   uploadInput.observation.uploadCapability = 'external-runtime-unavailable';
   uploadInput.observation.controls.find(control => control.kind === 'upload').state = 'missing';
   const blocked = await api('/api/claims/handoff', {
     jobId, token: acquired.token, status: 'needs_info', expectedRevision: acquired.job.revision,
-    session: { status: 'active', readinessInput: uploadInput },
+    session: { status: 'active', readinessInput: uploadInput, handoffChecklist:[] },
   });
   assert.equal(blocked.job.status, 'needs_info');
   assert.equal(blocked.session.browserHandoff.reasonCode, 'owner-upload-required');
   await clickCompanionNav(page, 'Needs Attention');
-  const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
   await attention.getByRole('button', {name:'Refresh attention',exact:true}).click();
   await attention.getByRole('button', { name: /Transition conflict writer Native fixture role Browser action required/ }).click();
   await attention.getByText('Attach resume', {exact:true}).waitFor();
@@ -129,6 +148,16 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   const resumed = await api('/api/claims/acquire', {
     jobId, expectedRevision: readyForReview.revision, ownerLabel: 'Transition fixture',
   });
+  await page.getByRole('button', {name:'Refresh',exact:true}).click();
+  const activeJob = page.getByRole('button', {name:/Native fixture role.*in progress/});
+  await activeJob.getByText(`revision ${resumed.job.revision}`, {exact:true}).waitFor({state:'attached'});
+  await activeJob.click();
+  const activity = modal.getByRole('region', {name:'Job activity',exact:true});
+  await activity.getByText('active',{exact:true}).waitFor();
+  await activity.getByText(/Browser handoff: required · owner upload required/).waitFor();
+  assert.equal(await activity.getByText('Attach resume',{exact:true}).count(),0);
+  const activityPath = `**/api/jobs/${jobId}/activity`;
+  await page.route(activityPath, route => route.fulfill({status:503, json:{}}));
   const reviewInput = readyPacket(resumed.job.revision);
   reviewInput.observation.controls = reviewInput.observation.controls.filter(control => control.controlId !== 'profile.website');
   const reviewed = await api('/api/claims/handoff', {
@@ -137,6 +166,13 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   });
   assert.equal(reviewed.job.status, 'awaiting_review');
   assert.deepEqual(reviewed.session.readiness.optionalUnansweredControlIds, ['profile.website']);
+  await modal.getByRole('button',{name:'Refresh latest values',exact:true}).click();
+  await modal.getByRole('button',{name:'Load latest values',exact:true}).click();
+  await modal.getByText('Full job activity',{exact:true}).click();
+  await activity.getByRole('button',{name:'Refresh activity',exact:true}).click();
+  await activity.getByRole('alert').filter({hasText:/last loaded job data/}).waitFor();
+  assert.equal(await handoff.getByRole('button',{name:'Record as submitted',exact:true}).isEnabled(),true);
+  await page.unroute(activityPath);
   await page.reload();
   await clickCompanionNav(page, 'Needs Attention');
   await attention.getByRole('button', {name:/Transition conflict writer Native fixture role Awaiting your review/}).click();
@@ -152,7 +188,6 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   // Missing or stale form evidence must never look like a fresh check.
   const disclose = modal.getByText('Full job activity', {exact:true});
   const refresh = modal.getByRole('button', {name:'Refresh activity',exact:true});
-  const activityPath = `**/api/jobs/${jobId}/activity`;
   await disclose.click();
   await page.route(activityPath,async route=>{
     const response = await route.fetch();
