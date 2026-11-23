@@ -44,11 +44,12 @@ export function copyWindowsStoreForMigration(source, target, addonPath, { signal
                 await ensureWindowsPrivateDirectory(staging, false);
                 identity = stageIdentity();
                 await withExclusiveFileLock(win32.join(staging, '.store.lock'), async () => {
+                    const now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
                     const original = await copyWindowsLegacyStoreLocked(checked.root, staging, checked.digest, signal);
-                    await createNativeStoreBootstrap(staging, undefined, process.env, undefined, { importLegacyProfile: false, recoverExisting: false }).initialize();
+                    await createNativeStoreBootstrap(staging, undefined, process.env, undefined, { clock: () => now, importLegacyProfile: false, recoverExisting: false }).initialize();
                     await beforePublish?.();
                     await checked.verify();
-                    await finishWindowsLegacyStoreCloneLocked(staging, original, checked.digest, provider, signal);
+                    await finishWindowsLegacyStoreCloneLocked(staging, original, checked.digest, provider, signal, now);
                 }, { provider, pathProfile: '3.12', signal });
                 await syncDirectory(staging);
             });

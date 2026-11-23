@@ -206,7 +206,8 @@ export async function copyWindowsLegacyStoreLocked(source: string, target: strin
 
 /** Publishes the native marker after verifying the original files survived target bootstrap. */
 export async function finishWindowsLegacyStoreCloneLocked(target: string, original: Set<string>, sourceTree: string,
-  provider: PosixFlockProvider, signal: AbortSignal): Promise<void> {
+  provider: PosixFlockProvider, signal: AbortSignal, now: string): Promise<void> {
+  await missingDocuments(target, new Set(await readdir(target)), now);
   if (await storeTreeLocked(target, original, provider, false, signal, null) !== sourceTree) {
     throw new JobsError('migrated Store differs from the legacy source');
   }
