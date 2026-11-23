@@ -1,12 +1,13 @@
 :root {
-  --bg: #fffdf8;
+  --bg: #f3f8fd;
   --surface: #ffffff;
-  --surface-strong: #143e2e;
-  --text: #19372b;
-  --muted: #586b5e;
-  --line: #dbe2d9;
-  --accent: #1d503b;
-  --accent-dark: #143e2e;
+  --surface-tint: #e0f2ff;
+  --text: #172d49;
+  --muted: #576b80;
+  --line: #d5e3ef;
+  --accent: #0000ff;
+  --accent-dark: #0000cc;
+  --selection-accent: #0096ff;
   --header-height: 64px;
   --page-gutter: max(20px, calc((100% - 1120px) / 2));
   color-scheme: light;
@@ -42,8 +43,8 @@ a {
   transform: translateY(-160%);
   border-radius: 7px;
   padding: 10px 12px;
-  color: #fff;
-  background: var(--surface-strong);
+  color: var(--surface);
+  background: var(--accent-dark);
 }
 
 .skip-link:focus {
@@ -75,13 +76,7 @@ a {
 }
 
 .brand-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: var(--accent);
+  flex: none;
 }
 
 .site-header nav,
@@ -134,7 +129,7 @@ main > section {
   align-content: center;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  border-bottom: 1px solid var(--divider, #e6d7c6);
+  border-bottom: 1px solid var(--line);
 }
 
 .hero,
@@ -201,7 +196,7 @@ h3 {
 }
 
 .button.primary {
-  color: #fff;
+  color: var(--surface);
   background: var(--accent);
 }
 
@@ -220,11 +215,10 @@ h3 {
 }
 
 .plinko-beat {
-  --divider: #dbcbc0;
   --plinko-layout: "copy board" "actions board";
   grid-template-areas: var(--plinko-layout);
   row-gap: 20px;
-  background: #fbefe4;
+  background: var(--surface-tint);
 }
 
 .plinko-beat .hero-copy {
@@ -345,8 +339,7 @@ h3 {
 }
 
 .automation-control {
-  --divider: #c9dcd6;
-  background: #ecf3ec;
+  background: #edf0ff;
 }
 
 .automation-control .section-heading p {
@@ -354,13 +347,10 @@ h3 {
 }
 
 .application-preview {
-  --preview-ink: #331c20;
-  --preview-border: #e8daca;
   padding: clamp(18px, 3.2vw, 36px);
-  border: 1px solid var(--preview-border);
+  border: 1px solid var(--line);
   border-radius: 18px;
-  background: var(--bg);
-  color: var(--preview-ink);
+  background: var(--surface);
 }
 
 .automation-trays {
@@ -387,9 +377,9 @@ h3 {
   padding: 10px 0;
   list-style: none;
   border-radius: 10px;
-  background: linear-gradient(to right, #f4e6d7 calc(50% - var(--tray-gap) / 2),
+  background: linear-gradient(to right, var(--bg) calc(50% - var(--tray-gap) / 2),
     transparent calc(50% - var(--tray-gap) / 2) calc(50% + var(--tray-gap) / 2),
-    #f8e8ad calc(50% + var(--tray-gap) / 2));
+    var(--surface-tint) calc(50% + var(--tray-gap) / 2));
 }
 
 .tray-tasks li {
@@ -399,17 +389,17 @@ h3 {
   min-height: 44px;
   margin-inline: var(--task-inset);
   padding: 6px 10px;
-  border: 1px solid var(--preview-border);
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
   font-size: 14px;
   overflow-wrap: anywhere;
-  transition: transform 480ms cubic-bezier(.2, .75, .25, 1), background 300ms ease;
+  transition: transform 480ms cubic-bezier(.2, .75, .25, 1), border-color 300ms ease;
 }
 
 .tray-tasks [data-delegated] {
   transform: translateX(calc(100% + var(--tray-gap) + 2 * var(--task-inset)));
-  background: #ffe7a1;
+  border-color: var(--selection-accent);
 }
 
 .tray-tasks [data-submit-task] {
@@ -425,7 +415,7 @@ h3 {
   width: 100%;
   height: 44px;
   margin: 0;
-  accent-color: var(--muted);
+  accent-color: var(--accent);
   cursor: pointer;
   touch-action: pan-y;
 }
@@ -452,7 +442,7 @@ h3 {
 }
 
 .automation-level-labels [data-current] {
-  color: var(--preview-ink);
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -543,8 +533,8 @@ h3 {
   }
 
   .brand-mark {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
 
   .site-header nav {
