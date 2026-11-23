@@ -19,6 +19,7 @@ const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name =
   nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json']);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
   'answers.json', 'applications.jsonl', 'resume-files', 'sessions'];
+const legacyCoreFiles = ['.store.lock', 'profile.json', 'answers.json', 'applications.jsonl', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
 const options = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
 
@@ -113,7 +114,9 @@ async function missingDocuments(target: string, names: Set<string>, now: string)
 async function storeTreeLocked(source: string, entries: Set<string>, provider: PosixFlockProvider,
   candidate = false, signal = AbortSignal.timeout(30_000),
   policy?: NativePolicyTreeEntry[] | null): Promise<string> {
-  for (const name of directories) await privateDirectory(join(source, name), `canonical ${name}`);
+  for (const name of directories) {
+    if (entries.has(name)) await privateDirectory(join(source, name), `canonical ${name}`);
+  }
   const digest = createHash('sha256');
   for (const name of [...entries].sort()) {
     if (name === '.store.lock' || name === nativePolicyTreeName || (candidate && name === nativeCloneMarkerName)) continue;
@@ -141,10 +144,24 @@ async function storeTreeLocked(source: string, entries: Set<string>, provider: P
 export async function canonicalStoreSourceTreeLocked(source: string, provider: PosixFlockProvider,
   signal = AbortSignal.timeout(30_000), policy?: NativePolicyTreeEntry[] | null): Promise<string> {
   const entries = new Set(await readdir(source));
-  if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
+  requireSourceEntries(entries, coreFiles);
+  return storeTreeLocked(source, entries, provider, false, signal, policy);
+}
+
+function requireSourceEntries(entries: Set<string>, required: readonly string[]): void {
+  if (required.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
     throw new JobsError('canonical clone source contains unsupported or incomplete state');
   }
-  return storeTreeLocked(source, entries, provider, false, signal, policy);
+}
+
+/** Reads a pre-bootstrap Windows migration source while its existing Store lock is held. */
+export async function windowsLegacyStoreSourceTreeLocked(source: string, provider: PosixFlockProvider,
+  signal: AbortSignal): Promise<string> {
+  signal.throwIfAborted();
+  const entries = new Set(await readdir(source));
+  requireSourceEntries(entries, legacyCoreFiles);
+  if (entries.has(nativePolicyTreeName)) throw new JobsError('Windows legacy policy migration is unsupported');
+  return storeTreeLocked(source, entries, provider, false, signal, null);
 }
 
 /** Computes the prepared candidate digest. The caller must hold the candidate Store lock. */
@@ -179,9 +196,7 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
   try {
     await withExclusiveFileLock(join(source, '.store.lock'), async () => {
       const entries = new Set(await readdir(source));
-      if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
-        throw new JobsError('canonical clone source contains unsupported or incomplete state');
-      }
+      requireSourceEntries(entries, coreFiles);
       for (const name of directories) await privateDirectory(join(source, name), `canonical ${name}`);
       await mkdir(target, { mode: 0o700 }); created = true; await chmod(target, 0o700);
       const digest = createHash('sha256'), copied = new Set<string>();

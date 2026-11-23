@@ -16,6 +16,7 @@ const sourceFiles = new Set([...nativeStoreRequiredEntries.filter(name => name !
     nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json']);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
     'answers.json', 'applications.jsonl', 'resume-files', 'sessions'];
+const legacyCoreFiles = ['.store.lock', 'profile.json', 'answers.json', 'applications.jsonl', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
 const options = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 const windows = process.platform === 'win32';
@@ -128,8 +129,10 @@ async function missingDocuments(target, names, now) {
         }
 }
 async function storeTreeLocked(source, entries, provider, candidate = false, signal = AbortSignal.timeout(30_000), policy) {
-    for (const name of directories)
-        await privateDirectory(join(source, name), `canonical ${name}`);
+    for (const name of directories) {
+        if (entries.has(name))
+            await privateDirectory(join(source, name), `canonical ${name}`);
+    }
     const digest = createHash('sha256');
     for (const name of [...entries].sort()) {
         if (name === '.store.lock' || name === nativePolicyTreeName || (candidate && name === nativeCloneMarkerName))
@@ -159,10 +162,22 @@ async function storeTreeLocked(source, entries, provider, candidate = false, sig
 /** Computes the source digest. The caller must hold the source Store lock. */
 export async function canonicalStoreSourceTreeLocked(source, provider, signal = AbortSignal.timeout(30_000), policy) {
     const entries = new Set(await readdir(source));
-    if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
+    requireSourceEntries(entries, coreFiles);
+    return storeTreeLocked(source, entries, provider, false, signal, policy);
+}
+function requireSourceEntries(entries, required) {
+    if (required.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
         throw new JobsError('canonical clone source contains unsupported or incomplete state');
     }
-    return storeTreeLocked(source, entries, provider, false, signal, policy);
+}
+/** Reads a pre-bootstrap Windows migration source while its existing Store lock is held. */
+export async function windowsLegacyStoreSourceTreeLocked(source, provider, signal) {
+    signal.throwIfAborted();
+    const entries = new Set(await readdir(source));
+    requireSourceEntries(entries, legacyCoreFiles);
+    if (entries.has(nativePolicyTreeName))
+        throw new JobsError('Windows legacy policy migration is unsupported');
+    return storeTreeLocked(source, entries, provider, false, signal, null);
 }
 /** Computes the prepared candidate digest. The caller must hold the candidate Store lock. */
 export async function canonicalStoreCandidateTreeLocked(root, provider, signal = AbortSignal.timeout(30_000), policy) {
@@ -192,9 +207,7 @@ export async function prepareCanonicalStoreClone(source, target, provider, now =
     try {
         await withExclusiveFileLock(join(source, '.store.lock'), async () => {
             const entries = new Set(await readdir(source));
-            if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
-                throw new JobsError('canonical clone source contains unsupported or incomplete state');
-            }
+            requireSourceEntries(entries, coreFiles);
             for (const name of directories)
                 await privateDirectory(join(source, name), `canonical ${name}`);
             await mkdir(target, { mode: 0o700 });
