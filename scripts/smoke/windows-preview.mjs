@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -29,7 +30,10 @@ async function verifySource(installed, source) {
   // Git on Windows can translate text line endings. Native receipts bind exact source and binary bytes.
   const text = bytes => bytes.toString('utf8').replaceAll('\r\n', '\n');
   for (const path of ['.codex-plugin/plugin.json', '.claude-plugin/plugin.json', 'package-lock.json',
-    'apps/companion/launch.mjs', 'runtime/cli/native-jobs.js', 'runtime/store/windows-activation.js']) {
+    'apps/companion/command.mjs', 'apps/companion/launch.mjs', 'runtime/cli/native-jobs.js',
+    'runtime/cli/native-store-migration.js', 'runtime/store/native-store-clone.js',
+    'runtime/store/windows-activation.js', 'runtime/store/windows-migration-source.js',
+    'runtime/store/windows-store-migration.js']) {
     const [actual, expected] = await Promise.all([readFile(join(installed, path)), readFile(join(source, path))]);
     assert.ok(text(actual) === text(expected), `installed preview differs from main in ${path}`);
   }
@@ -116,6 +120,55 @@ async function smokeCompanion(installed, store) {
   }
 }
 
+async function smokeMigration(installed, source, root) {
+  const fixture = join(source, 'test', 'fixtures', 'python-store-v1.1.0', 'store');
+  const legacy = join(root, 'legacy Store');
+  const migrated = join(root, 'migrated Store');
+  const recovery = join(root, 'recovery Store');
+  const addon = createRequire(import.meta.url)(join(installed, 'native', 'packaged-lock', 'win32-x64-napi8', 'flock.node'));
+  addon.createStoreEntry(legacy, true);
+  addon.createStoreEntry(join(legacy, 'sessions'), true);
+  addon.createStoreEntry(join(legacy, '.store.lock'), false);
+  const files = ['profile.json', 'answers.json', 'applications.jsonl', 'sessions/legacy-application.json'];
+  for (const name of files) {
+    const path = join(legacy, name);
+    addon.createStoreEntry(path, false);
+    await writeFile(path, await readFile(join(fixture, name)));
+  }
+
+  const command = join(installed, 'apps', 'companion', 'command.mjs');
+  const cli = async (...args) => {
+    const { stdout } = await run(process.execPath, [command, ...args], {
+      cwd: root,
+      env: { ...process.env, HOME: root, USERPROFILE: root, JOB_APPLY_STORE_DIR: '' },
+    });
+    return JSON.parse(stdout);
+  };
+  const check = await cli('migration', 'check', '--source', legacy);
+  assert.deepEqual(check, { schemaVersion: 1, status: 'source-checked' });
+  const copy = await cli('migration', 'copy', '--source', legacy, '--target', migrated);
+  assert.deepEqual(copy, { schemaVersion: 1, status: 'copy-ready' });
+  assert.deepEqual(await cli('store', 'job-list', '--root', migrated), []);
+
+  const edit = { ...job, id: 'windows-preview-migration-edit' };
+  const input = join(root, 'migration-edit.json');
+  await writeFile(input, JSON.stringify(edit));
+  const saved = await cli('store', 'job-create', '--root', migrated, '--input', input);
+  assert.equal(saved.id, edit.id);
+
+  const rollback = await cli('migration', 'rollback', '--source', legacy, '--migrated', migrated, '--target', recovery);
+  assert.deepEqual(rollback, { schemaVersion: 1, status: 'recovery-ready' });
+  assert.deepEqual(await cli('store', 'job-list', '--root', recovery), []);
+  const jobs = await cli('store', 'job-list', '--root', migrated);
+  assert.deepEqual(jobs.map(({ id, role }) => ({ id, role })), [{ id: edit.id, role: edit.role }]);
+  for (const name of files) {
+    const expected = await readFile(join(fixture, name));
+    for (const store of [legacy, migrated, recovery]) {
+      assert.deepEqual(await readFile(join(store, name)), expected, `migration fixture bytes changed in ${name}`);
+    }
+  }
+}
+
 async function smokePreview(host, source) {
   assert.ok(host === 'codex' || host === 'claude', 'expected the codex or claude host');
   const { stdout } = await run('git', ['-C', source, 'rev-parse', 'HEAD']);
@@ -131,15 +184,22 @@ async function smokePreview(host, source) {
       [join(installed, 'apps/companion/command.mjs'), 'store', 'init', '--root', store]);
     assert.equal(JSON.parse(initialized).root, store);
     // The child releases its loaded Windows addon before we remove the host cache.
-    const { stdout: output } = await run(process.execPath, [entry, '--companion', installed, store], { timeout: 900_000 });
+    const { stdout: output } = await run(process.execPath, [entry, '--installed', installed, source, store],
+      { timeout: 900_000 });
     process.stdout.write(output);
-    console.log(`${host}: preview checked against main ${sha}; built Companion, saved a job, and reopened it on Windows x64`);
+    console.log(`${host}: Windows x64 preview checked against main ${sha}; saved and reopened a Companion job,`
+      + ' migrated a legacy Store, and recovered the legacy snapshot while preserving the newer edit');
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
   }
 }
 
 assert.ok(process.platform === 'win32' && process.arch === 'x64', 'Windows x64 is required');
-const [host, source, store] = process.argv.slice(2);
-if (host === '--companion') await smokeCompanion(source, store);
-else await smokePreview(host, resolve(source));
+const [mode, ...args] = process.argv.slice(2);
+if (mode === '--installed') {
+  const [installed, checkout, store] = args;
+  await smokeCompanion(installed, store);
+  await smokeMigration(installed, checkout, dirname(store));
+} else {
+  await smokePreview(mode, resolve(args[0]));
+}
