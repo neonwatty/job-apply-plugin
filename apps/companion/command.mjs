@@ -17,6 +17,7 @@ const app = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(app, '../..');
 const targets = {
   store: 'native-jobs.js', task: 'native-task.js', attempt: 'native-attempt.js', policy: 'native-final-action-policy.js',
+  migration: 'native-store-migration.js',
 };
 function selectedRoot(args) {
   const positions = args.flatMap((value, index) => value === '--root' || value.startsWith('--root=') ? [index] : []);
@@ -56,12 +57,12 @@ async function run() {
       root = surface === 'attempt' ? parseAttemptArgs(args, process.env, homedir()).root
         : parseInstalledTaskArgs(args).options.get('--root');
     } catch { invalidRequest = true; } // The child preserves its public JSON error envelope.
-  } else if (!invalidRequest) root = selectedRoot(args);
+  } else if (!invalidRequest && surface !== 'migration') root = selectedRoot(args);
   const legacyIndex = surface === 'store' ? args.lastIndexOf('--legacy-profile') : -1;
   const legacyProfile = legacyIndex < 0 ? undefined : args[legacyIndex + 1];
   if (legacyIndex >= 0 && (!legacyProfile || legacyProfile.startsWith('--'))) throw new Error('missing legacy profile');
   const windowsInit = windows && surface === 'store' && command === 'init';
-  if (!help && !invalidRequest && !windowsInit && !(readOnlyAbsent && !existsSync(root))) {
+  if (surface !== 'migration' && !help && !invalidRequest && !windowsInit && !(readOnlyAbsent && !existsSync(root))) {
     if (windows) {
       await activateWindowsStore(await canonicalWindowsRoot(root),
         await resolvePackagedNativeLock(await realpath(pluginRoot)), { legacyProfile });

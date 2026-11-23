@@ -183,6 +183,11 @@ export class NativeStoreBootstrap {
         this.locked = options.locked ?? (operation => operation());
     }
     paths() { return fromJSON(this.layout); }
+    /** Validates an existing Store without initializing it or replaying its journals. */
+    async validateExisting() {
+        if ((await this.preflight()).root === null)
+            throw new JobsError('Store root is missing');
+    }
     async validateSessions() {
         const directoryIdentity = await privateDirectory(this.layout.sessions, true);
         if (directoryIdentity === null)
