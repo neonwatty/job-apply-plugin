@@ -34,7 +34,8 @@ while a save is in progress.
 Ordinary startup leaves legacy Store directories untouched. Stop Store writers
 before migration. Use `migration check` to verify the private source under its
 existing Store lock, then use `migration copy` to write a verified native copy at
-a separate unused path with an existing parent. Run these from the plugin directory.
+a separate unused path with an existing parent. The check refuses leftover legacy
+résumé upload files. Run these from the plugin directory.
 
 ```text
 node apps/companion/command.mjs migration check --source SOURCE_PATH

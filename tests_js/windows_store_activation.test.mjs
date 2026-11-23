@@ -11,7 +11,7 @@ import { activateWindowsStoreScoped } from '../runtime/store/windows-activation.
 import { copyWindowsStoreForMigration, rollbackWindowsStoreMigration } from '../runtime/store/windows-store-migration.js';
 import { openWindowsStoreFile, withWindowsStore } from '../runtime/store/windows-store.js';
 
-// Windows install path: the packaged lock, no Python, and no clone or writer switch.
+// Windows activation and explicit migration use the packaged lock without Python.
 const command = fileURLToPath(new URL('../apps/companion/command.mjs', import.meta.url));
 const windows = process.platform === 'win32';
 const addonPath = fileURLToPath(new URL('../native/packaged-lock/win32-x64-napi8/flock.node', import.meta.url));
@@ -322,6 +322,18 @@ test('Windows migration check validates an explicit legacy Store without activat
   await expectRefusal(source);
   await rm(policy, { recursive: true });
 
+  const resumeFiles = join(source, 'resume-files');
+  const orphan = join(resumeFiles, '.browser-upload.12345678.txt');
+  addon.createStoreEntry(resumeFiles, true);
+  addon.createStoreEntry(orphan, false);
+  await writeFile(orphan, 'Unpublished legacy upload');
+  await expectRefusal(source);
+  const target = join(temporary, 'unused-native');
+  assert.equal(cli(temporary, 'migration', 'copy', '--source', source, '--target', target).status, 2);
+  assert.equal(await readFile(orphan, 'utf8'), 'Unpublished legacy upload');
+  assert.ok(!(await readdir(temporary)).includes('unused-native'));
+  await rm(resumeFiles, { recursive: true });
+
   const alias = join(temporary, 'alias');
   await symlink(source, alias, 'junction');
   await expectRefusal(alias);
@@ -339,13 +351,17 @@ test('Windows publishes a verified migration copy that opens independently of th
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const source = join(temporary, 'legacy'), target = join(temporary, 'native');
   await prepareLegacyFixture(source);
+  const addon = loadAddon(), resumeFile = join('resume-files', 'legacy-resume.txt');
+  addon.createStoreEntry(join(source, 'resume-files'), true);
+  addon.createStoreEntry(join(source, resumeFile), false);
+  await writeFile(join(source, resumeFile), 'Synthetic résumé');
   const original = await migrationSnapshot(source);
   const runCopy = path => cli(temporary, 'migration', 'copy', '--source', source, '--target', path);
   assert.equal(runCopy(join(source, 'nested')).status, 2);
   assert.deepEqual(await migrationSnapshot(source), original);
 
   assert.deepEqual(json(runCopy(target)), { schemaVersion: 1, status: 'copy-ready' });
-  for (const name of legacyFixtureFiles) {
+  for (const name of [...legacyFixtureFiles, resumeFile]) {
     assert.deepEqual(await readFile(join(target, name)), await readFile(join(source, name)), name);
   }
   const marker = JSON.parse(await readFile(join(target, '.native-store-clone'), 'utf8'));

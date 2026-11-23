@@ -22,6 +22,7 @@ const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', '
 const legacyCoreFiles = ['.store.lock', 'profile.json', 'answers.json', 'applications.jsonl', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
 const options = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
+const windowsLegacyDigestPrefix = 'windows-legacy-store-tree-v1:';
 
 const windows = process.platform === 'win32';
 
@@ -73,8 +74,12 @@ async function writePrivate(path: string, bytes: Buffer): Promise<void> {
   try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
 }
 
+function digestFile(digest: ReturnType<typeof createHash>, name: string, bytes: Buffer): void {
+  digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+}
+
 async function copyDirectory(source: string, target: string, digest: ReturnType<typeof createHash>,
-  signal?: AbortSignal): Promise<void> {
+  signal?: AbortSignal, digestDirectory?: string): Promise<void> {
   if (windows) await ensureWindowsPrivateDirectory(target, false);
   else { await mkdir(target, { mode: 0o700 }); await chmod(target, 0o700); }
   const names = (await readdir(source)).sort();
@@ -86,7 +91,7 @@ async function copyDirectory(source: string, target: string, digest: ReturnType<
     const path = join(source, name), metadata = await lstat(path);
     if (!metadata.isFile() || metadata.isSymbolicLink()) throw new JobsError('canonical clone directories must contain regular files');
     const bytes = await privateBytes(path, 10 * 1024 * 1024);
-    digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+    digestFile(digest, digestDirectory === undefined ? name : `${digestDirectory}/${name}`, bytes);
     const destination = join(target, name);
     await writePrivate(destination, bytes);
     await utimes(destination, metadata.atime, metadata.mtime);
@@ -116,11 +121,12 @@ async function missingDocuments(target: string, names: Set<string>, now: string)
 
 async function storeTreeLocked(source: string, entries: Set<string>, provider: PosixFlockProvider,
   candidate = false, signal = AbortSignal.timeout(30_000),
-  policy?: NativePolicyTreeEntry[] | null): Promise<string> {
+  policy?: NativePolicyTreeEntry[] | null, windowsLegacy = false): Promise<string> {
   for (const name of directories) {
     if (entries.has(name)) await privateDirectory(join(source, name), `canonical ${name}`);
   }
   const digest = createHash('sha256');
+  if (windowsLegacy) digest.update(windowsLegacyDigestPrefix);
   for (const name of [...entries].sort()) {
     if (name === '.store.lock' || name === nativePolicyTreeName || (candidate && name === nativeCloneMarkerName)) continue;
     if (directories.has(name)) {
@@ -130,11 +136,11 @@ async function storeTreeLocked(source: string, entries: Set<string>, provider: P
           throw new JobsError('canonical clone directory entry is unsupported');
         }
         const bytes = await privateBytes(join(source, name, child), 10 * 1024 * 1024);
-        digest.update(`${child.length}:${child}:${bytes.length}:`).update(bytes);
+        digestFile(digest, windowsLegacy ? `${name}/${child}` : child, bytes);
       }
     } else {
       const bytes = await privateBytes(join(source, name));
-      digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+      digestFile(digest, name, bytes);
     }
   }
   if (policy === undefined) {
@@ -169,21 +175,21 @@ async function windowsLegacySourceEntries(source: string, signal: AbortSignal): 
 export async function windowsLegacyStoreSourceTreeLocked(source: string, provider: PosixFlockProvider,
   signal: AbortSignal): Promise<string> {
   const entries = await windowsLegacySourceEntries(source, signal);
-  return storeTreeLocked(source, entries, provider, false, signal, null);
+  return storeTreeLocked(source, entries, provider, false, signal, null, true);
 }
 
 async function copyStoreEntries(source: string, target: string, entries: Set<string>,
-  digest: ReturnType<typeof createHash>, signal?: AbortSignal): Promise<Set<string>> {
+  digest: ReturnType<typeof createHash>, signal?: AbortSignal, windowsLegacy = false): Promise<Set<string>> {
   const copied = new Set<string>();
   for (const name of [...entries].sort()) {
     signal?.throwIfAborted();
     if (name === '.store.lock' || name === nativePolicyTreeName) continue;
     if (directories.has(name)) {
       digest.update(`directory:${name.length}:${name}:`);
-      await copyDirectory(join(source, name), join(target, name), digest, signal);
+      await copyDirectory(join(source, name), join(target, name), digest, signal, windowsLegacy ? name : undefined);
     } else {
       const bytes = await privateBytes(join(source, name));
-      digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+      digestFile(digest, name, bytes);
       await writePrivate(join(target, name), bytes);
     }
     copied.add(name);
@@ -198,8 +204,8 @@ export async function copyWindowsLegacyStoreLocked(source: string, target: strin
   for (const name of directories) {
     if (entries.has(name)) await privateDirectory(join(source, name), `canonical ${name}`);
   }
-  const digest = createHash('sha256');
-  await copyStoreEntries(source, target, entries, digest, signal);
+  const digest = createHash('sha256').update(windowsLegacyDigestPrefix);
+  await copyStoreEntries(source, target, entries, digest, signal, true);
   if (`sha256:${digest.digest('hex')}` !== sourceTree) throw new JobsError('legacy Store changed during copy');
   return entries;
 }
@@ -208,7 +214,7 @@ export async function copyWindowsLegacyStoreLocked(source: string, target: strin
 export async function finishWindowsLegacyStoreCloneLocked(target: string, original: Set<string>, sourceTree: string,
   provider: PosixFlockProvider, signal: AbortSignal, now: string): Promise<void> {
   await missingDocuments(target, new Set(await readdir(target)), now);
-  if (await storeTreeLocked(target, original, provider, false, signal, null) !== sourceTree) {
+  if (await storeTreeLocked(target, original, provider, false, signal, null, true) !== sourceTree) {
     throw new JobsError('migrated Store differs from the legacy source');
   }
   const candidateTree = await canonicalStoreCandidateTreeLocked(target, provider, signal);

@@ -1,6 +1,8 @@
+import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
+import { NativeResumeFiles } from './native-resume-files.js';
 import { createNativeStoreBootstrap } from './native-store-bootstrap.js';
 import { windowsLegacyStoreSourceTreeLocked } from './native-store-clone.js';
 import { canonicalWindowsRoot } from './windows-activation.js';
@@ -22,6 +24,7 @@ export async function withCheckedWindowsMigrationSource<T>(source: string, addon
     return withExclusiveFileLock(join(root, '.store.lock'), async () => {
       const digest = await windowsLegacyStoreSourceTreeLocked(root, provider, signal);
       await createNativeStoreBootstrap(root, undefined, process.env, undefined, { importLegacyProfile: false }).validateExisting();
+      if ((await readdir(root)).includes('resume-files')) await new NativeResumeFiles(root).validate();
       const verify = async () => {
         if (await windowsLegacyStoreSourceTreeLocked(root, provider, signal) !== digest || identity() !== before) {
           throw new JobsError('legacy Store changed during migration');

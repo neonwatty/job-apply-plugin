@@ -19,6 +19,7 @@ const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', '
 const legacyCoreFiles = ['.store.lock', 'profile.json', 'answers.json', 'applications.jsonl', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
 const options = { pathProfile: '3.12', intMaxStrDigits: 4300 };
+const windowsLegacyDigestPrefix = 'windows-legacy-store-tree-v1:';
 const windows = process.platform === 'win32';
 async function privateDirectory(path, label, parent = false) {
     if (windows) {
@@ -88,7 +89,10 @@ async function writePrivate(path, bytes) {
         await handle.close();
     }
 }
-async function copyDirectory(source, target, digest, signal) {
+function digestFile(digest, name, bytes) {
+    digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+}
+async function copyDirectory(source, target, digest, signal, digestDirectory) {
     if (windows)
         await ensureWindowsPrivateDirectory(target, false);
     else {
@@ -105,7 +109,7 @@ async function copyDirectory(source, target, digest, signal) {
         if (!metadata.isFile() || metadata.isSymbolicLink())
             throw new JobsError('canonical clone directories must contain regular files');
         const bytes = await privateBytes(path, 10 * 1024 * 1024);
-        digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+        digestFile(digest, digestDirectory === undefined ? name : `${digestDirectory}/${name}`, bytes);
         const destination = join(target, name);
         await writePrivate(destination, bytes);
         await utimes(destination, metadata.atime, metadata.mtime);
@@ -133,12 +137,14 @@ async function missingDocuments(target, names, now) {
             names.add(name);
         }
 }
-async function storeTreeLocked(source, entries, provider, candidate = false, signal = AbortSignal.timeout(30_000), policy) {
+async function storeTreeLocked(source, entries, provider, candidate = false, signal = AbortSignal.timeout(30_000), policy, windowsLegacy = false) {
     for (const name of directories) {
         if (entries.has(name))
             await privateDirectory(join(source, name), `canonical ${name}`);
     }
     const digest = createHash('sha256');
+    if (windowsLegacy)
+        digest.update(windowsLegacyDigestPrefix);
     for (const name of [...entries].sort()) {
         if (name === '.store.lock' || name === nativePolicyTreeName || (candidate && name === nativeCloneMarkerName))
             continue;
@@ -149,12 +155,12 @@ async function storeTreeLocked(source, entries, provider, candidate = false, sig
                     throw new JobsError('canonical clone directory entry is unsupported');
                 }
                 const bytes = await privateBytes(join(source, name, child), 10 * 1024 * 1024);
-                digest.update(`${child.length}:${child}:${bytes.length}:`).update(bytes);
+                digestFile(digest, windowsLegacy ? `${name}/${child}` : child, bytes);
             }
         }
         else {
             const bytes = await privateBytes(join(source, name));
-            digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+            digestFile(digest, name, bytes);
         }
     }
     if (policy === undefined) {
@@ -186,9 +192,9 @@ async function windowsLegacySourceEntries(source, signal) {
 /** Reads a pre-bootstrap Windows migration source while its existing Store lock is held. */
 export async function windowsLegacyStoreSourceTreeLocked(source, provider, signal) {
     const entries = await windowsLegacySourceEntries(source, signal);
-    return storeTreeLocked(source, entries, provider, false, signal, null);
+    return storeTreeLocked(source, entries, provider, false, signal, null, true);
 }
-async function copyStoreEntries(source, target, entries, digest, signal) {
+async function copyStoreEntries(source, target, entries, digest, signal, windowsLegacy = false) {
     const copied = new Set();
     for (const name of [...entries].sort()) {
         signal?.throwIfAborted();
@@ -196,11 +202,11 @@ async function copyStoreEntries(source, target, entries, digest, signal) {
             continue;
         if (directories.has(name)) {
             digest.update(`directory:${name.length}:${name}:`);
-            await copyDirectory(join(source, name), join(target, name), digest, signal);
+            await copyDirectory(join(source, name), join(target, name), digest, signal, windowsLegacy ? name : undefined);
         }
         else {
             const bytes = await privateBytes(join(source, name));
-            digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+            digestFile(digest, name, bytes);
             await writePrivate(join(target, name), bytes);
         }
         copied.add(name);
@@ -214,8 +220,8 @@ export async function copyWindowsLegacyStoreLocked(source, target, sourceTree, s
         if (entries.has(name))
             await privateDirectory(join(source, name), `canonical ${name}`);
     }
-    const digest = createHash('sha256');
-    await copyStoreEntries(source, target, entries, digest, signal);
+    const digest = createHash('sha256').update(windowsLegacyDigestPrefix);
+    await copyStoreEntries(source, target, entries, digest, signal, true);
     if (`sha256:${digest.digest('hex')}` !== sourceTree)
         throw new JobsError('legacy Store changed during copy');
     return entries;
@@ -223,7 +229,7 @@ export async function copyWindowsLegacyStoreLocked(source, target, sourceTree, s
 /** Publishes the native marker after verifying the original files survived target bootstrap. */
 export async function finishWindowsLegacyStoreCloneLocked(target, original, sourceTree, provider, signal, now) {
     await missingDocuments(target, new Set(await readdir(target)), now);
-    if (await storeTreeLocked(target, original, provider, false, signal, null) !== sourceTree) {
+    if (await storeTreeLocked(target, original, provider, false, signal, null, true) !== sourceTree) {
         throw new JobsError('migrated Store differs from the legacy source');
     }
     const candidateTree = await canonicalStoreCandidateTreeLocked(target, provider, signal);
