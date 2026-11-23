@@ -1,13 +1,16 @@
 'use client';
 import { useState } from 'react';
 import { repeatReviewRequest } from '../repeat-review-request';
-import { recordedFormActions, recoveryGuidance, type ActivityProjection } from './projection-model';
+import { handoffChecklistLabels, isCurrentHandoff, recordedFormActions, recoveryGuidance, type ActivityProjection } from './projection-model';
 import { humanize, type ProjectionState } from './projection-view';
 export function JobActivity({activity,jobId,openAnswers}:{activity:ProjectionState<ActivityProjection>;jobId:string;openAnswers?:()=>void}) {
   const [copyNotice,setCopyNotice]=useState('');
   const [fallback,setFallback]=useState('');
   const {data,loading,error,refresh}=activity;
-  const actions = data?.session ? recordedFormActions(data.session) : [];
+  const session = data?.session;
+  const currentHandoff = data && session && !loading && !error && data.job.status === 'needs_info'
+    && data.claim.state === 'none' && isCurrentHandoff(session, data.job.revision);
+  const actions = session ? currentHandoff ? recordedFormActions(session) : handoffChecklistLabels(session.handoffChecklist) : [];
   async function copyRepeatRequest() {
     const request=repeatReviewRequest(jobId);
     try { await navigator.clipboard.writeText(request); setFallback(''); setCopyNotice('Repeat-review request copied.'); }

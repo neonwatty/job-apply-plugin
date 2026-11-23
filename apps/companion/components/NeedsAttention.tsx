@@ -22,10 +22,9 @@ function displayAttention(item: AttentionItem) {
   const browserHandoff = currentHandoff && session.handoff === 'required';
   const checklist = currentHandoff ? recordedFormActions(session) : [];
   let {reasonCode} = item;
-  if (!browserHandoff && reasonCode === 'browser_action_required') reasonCode = 'needs_information';
   if (reasonCode === 'needs_information' && browserHandoff && session.handoffReason === 'owner-upload-required'
     && missingInformationCount === 0n) reasonCode = 'browser_action_required';
-  return {...item, reasonCode, checklist};
+  return {...item, reasonCode, checklist, browserHandoff};
 }
 
 function jobLabels(raw: string) {
@@ -53,6 +52,7 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
   const checklist = selected?.checklist ?? [];
   const upload = selected?.reasonCode === 'browser_action_required'
     && checklist.length === 1 && checklist[0] === handoffActionLabels.resume_upload;
+  const confirmBrowserStep = selected?.reasonCode === 'browser_action_required' && !selected.browserHandoff;
   return <section className="attention-workspace" aria-label="Needs Attention">
     <header className="workspace-hero">
       <div className="workspace-hero-copy">
@@ -93,6 +93,7 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
               <h2>{attentionReasons[selected.reasonCode]}</h2>
               <p className="focus-guidance">{upload
                 ? 'The agent paused at the upload control. Attach your saved resume in your application tab.'
+                : confirmBrowserStep ? 'A browser action was recorded. Check your application tab or ask Job Apply to confirm the current step.'
                 : attentionGuidance[selected.reasonCode]}</p>
               <dl className="focus-context-list">
                 <div><dt>Since</dt><dd>{formatActivityTime(selected.attentionAt)}</dd></div>
@@ -100,7 +101,8 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
                 {checklist.length > 0 && <div><dt>To do on form</dt><dd>{checklist.join(' · ')}</dd></div>}
               </dl>
               <button className="primary" type="button" onClick={()=>openJob({id:selected.jobId, revision:selected.revision})}
-                disabled={loading || Boolean(error)}>{upload ? 'See upload steps' : attentionActionLabels[selected.reasonCode]}</button>
+                disabled={loading || Boolean(error)}>{upload ? 'See upload steps'
+                  : confirmBrowserStep ? 'Open job details' : attentionActionLabels[selected.reasonCode]}</button>
               {selected.reasonCode === 'awaiting_human_review' && <p className="focus-footnote">Only you can submit on the employer site.</p>}
               <span className="visually-hidden">Revision {String(selected.revision)}</span>
             </div>}

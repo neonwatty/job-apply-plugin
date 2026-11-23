@@ -221,7 +221,8 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
     const awaitingReview = selectedJob?.status === 'awaiting_review';
     const selectedNeedsConfirmation = selectedJob?.status === 'ready' && pending.get(selectedJob.id) === selectedJob.revision;
     const reviewRecordUnavailable = activity.loading || Boolean(selectedJob && activity.data
-        && (activity.data.job.revision > selectedJob.revision || activity.data.claim.state !== 'none'));
+        && (activity.data.job.revision > selectedJob.revision
+            || activity.data.job.revision === selectedJob.revision && activity.data.claim.state !== 'none'));
     const transitions = editor && selectedJob && <JobTransitions key={selectedJob.id} client={client} job={selectedJob}
         outcome={closingOutcome} onOutcomeChanged={setClosingOutcome}
         runSetup={run ? runQueue.has(selectedJob.id) ? undefined : 'add-job' : 'start-run'}
