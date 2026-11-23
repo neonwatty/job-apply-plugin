@@ -23,7 +23,7 @@ before upgrading from Python.
 #### Install stable
 
 The default marketplace installs the validated release of Job Apply and its optional Companion.
-On Windows x64, [use preview](#try-preview) until the stable release notes list Windows support.
+Windows x64 support starts with v1.3.9. If your stable marketplace still lists an earlier version, [try preview](#try-preview).
 
 **Codex**, in a terminal:
 
@@ -336,7 +336,7 @@ On Windows, the Store directory and every file in it are created with an access 
 
 On Windows, the first data command or Companion launch creates a new native Store or reopens a validated native Store. Activation preserves legacy and unrecognized Store directories. If you see a refusal, use `--root` or `JOB_APPLY_STORE_DIR` to select a new path under an existing directory. You can also use an existing empty directory that you own and whose ACL grants access only to your account.
 
-On macOS arm64 and Linux x64, stable marketplace installs carry verified native lock artifacts. Their first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, and activates the native Store. Windows preview includes its own verified native lock artifact. Installed production routes run through TypeScript without a Python interpreter. See [runtime closure status](docs/migration/python-runtime-closure.md).
+On macOS arm64 and Linux x64, stable marketplace installs carry verified native lock artifacts. Their first data command or Companion launch validates and clones existing canonical state, retains a byte-exact migration backup, and activates the native Store. Windows x64 installs include their own verified native lock artifact. Installed production routes run through TypeScript without a Python interpreter. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
 All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 
