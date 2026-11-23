@@ -6,7 +6,10 @@
   <meta name="description" content="AI-powered job application assistant for Claude Code and Codex with guided workflows for LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.">
   <link rel="canonical" href="https://job-apply.neonwatty.com/">
   <title>Job Apply Plugin for Codex and Claude Code</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=19">
+  <script src="plinko.js?v=11" defer></script>
+  <script src="automation-preview.js?v=18" defer></script>
+  <script src="section-playback.js?v=10" defer></script>
 <meta property="og:title" content="Job Apply">
 <meta property="og:description" content="Prepare job applications for your review with Codex or Claude Code.">
 <meta property="og:type" content="website">
@@ -29,307 +32,90 @@
       <span>Job Apply</span>
     </a>
     <nav aria-label="Primary navigation">
-      <a href="#skills">Skills</a>
-      <a href="#requirements">Requirements</a>
-      <a href="#install">Install</a>
-      <a href="https://github.com/neonwatty/job-apply-plugin">GitHub</a>
+      <a href="#benefits">Benefits</a>
+      <a class="nav-repository" href="https://github.com/neonwatty/job-apply-plugin">GitHub</a>
+      <a class="nav-install" href="https://github.com/neonwatty/job-apply-plugin#installation">Install</a>
     </nav>
   </header>
 
-  <main id="main">
-    <section class="hero">
+  <main>
+    <section id="main" class="hero plinko-section" tabindex="-1">
       <div class="hero-copy">
-        <p class="eyebrow">AI-powered job application assistant for Claude Code and Codex</p>
-        <h1>Fill out job applications automatically using your resume.</h1>
-        <p class="lede">
-          Guided workflows cover LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday. Set up your profile once, then start a guided application with a single command.
-        </p>
-        <div class="actions" aria-label="Primary actions">
-          <a class="button primary" href="#install">Get started</a>
-          <a class="button secondary" href="https://github.com/neonwatty/job-apply-plugin">View on GitHub</a>
-        </div>
+        <h1>Applying for jobs sucks.</h1>
+        <p class="lede">It’s a numbers game. Dead listings, office politics, bad timing. And you still have to fill out every form by hand.</p>
       </div>
-
-      <div class="product-shot" aria-label="Job Apply Plugin terminal preview">
-        <div class="mac-strip">
-          <span class="mac-dot red"></span>
-          <span class="mac-dot yellow"></span>
-          <span class="mac-dot green"></span>
-        </div>
-        <div class="terminal">
-          <div class="terminal-title">Codex / Claude Code</div>
-          <div class="prompt">$job-apply:job-apply</div>
-          <div class="output output-dim">Paste the job URL you'd like to apply to:</div>
-          <div class="prompt">https://linkedin.com/jobs/view/4019283746</div>
-          <div class="output">
-            <div>Loading profile and confirmed answers from ~/.job-apply/</div>
-            <div class="output-dim" style="margin: 6px 0;">Navigating to job listing...</div>
-            <div>Filling application fields:</div>
-          </div>
-          <div class="panel">
-            <div class="panel-title">Application Progress</div>
-            <div class="field-row"><span class="check">&#10003;</span> Full name</div>
-            <div class="field-row"><span class="check">&#10003;</span> Email address</div>
-            <div class="field-row"><span class="check">&#10003;</span> Phone number</div>
-            <div class="field-row"><span class="check">&#10003;</span> Resume uploaded</div>
-            <div class="field-row"><span class="check">&#10003;</span> Work authorization</div>
-            <div class="field-row"><span class="active">&#9654;</span> Cover letter</div>
-          </div>
-          <div class="output output-confirm">Final review ready. Inspect the fields, then submit manually.</div>
+      <div class="plinko-board" data-plinko="single" data-section-animation hidden>
+        <canvas width="640" height="780" role="img" aria-label="Three steel BBs drop one at a time and miss Callback. The last lands one slot over."></canvas>
+        <div class="plinko-controls">
+          <p class="plinko-result" data-result aria-live="polite"></p>
+          <button class="plinko-control" type="button" data-play aria-label="Play the single drops">Play</button>
+          <a class="plinko-next" href="#benefits">See how it works <span aria-hidden="true">↓</span></a>
         </div>
       </div>
     </section>
 
-    <section class="section intro">
-      <p>
-        Job Apply turns Codex or Claude Code into a job application assistant. Extract your profile once, reuse confirmed answers, and let uncertain or sensitive fields come back to you for review before you submit manually.
-      </p>
+    <section id="benefits" class="hero plinko-section plinko-beat" aria-labelledby="benefits-title">
+      <div class="hero-copy">
+        <h2 id="benefits-title">Effortlessly apply to 10× as many jobs.</h2>
+        <p class="lede"><strong>Give your agent a memory and a playbook.</strong> Job Apply saves your résumé facts and screening answers, then guides your agent through each form.</p>
+      </div>
+      <div class="plinko-board" data-plinko="stream" data-section-animation hidden>
+        <canvas width="640" height="780" role="img" aria-label="Twenty-eight steel BBs stream through the pegboard. The final BB lands in Callback, lighting up the gold slot."></canvas>
+        <div class="plinko-controls">
+          <p class="plinko-result" data-result aria-live="polite"></p>
+          <button class="plinko-control" type="button" data-play aria-label="Play the stream of drops">Play</button>
+          <button class="plinko-control" type="button" data-glow hidden>Pause glow</button>
+        </div>
+      </div>
+      <div class="actions" aria-label="Primary actions">
+        <a class="button primary" href="https://github.com/neonwatty/job-apply-plugin#installation">Install Job Apply</a>
+      </div>
     </section>
 
-    <section id="skills" class="section">
+    <section id="automation-control" class="section automation-control" aria-labelledby="automation-control-title">
       <div class="section-heading">
-        <p class="eyebrow">Nine skills</p>
-        <h2>Remember trusted answers, set preferences, discover, organize, and apply.</h2>
+        <h2 id="automation-control-title">From hand-holding to YOLO mode</h2>
+        <p>Choose how much to hand off to your agent, from filling a few basic fields to preparing and submitting the whole application.</p>
+        <a class="button primary automation-install-wide" href="https://github.com/neonwatty/job-apply-plugin#installation">Install Job Apply</a>
       </div>
-      <div class="skills-grid">
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:job-apply</span>
-          </div>
-          <h3>Fill out applications automatically</h3>
-          <ul class="feature-bullets">
-            <li>One-time profile setup from your resume (PDF, DOCX, or TXT)</li>
-            <li>Multi-platform: LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, Workday</li>
-            <li>Smart field mapping from your profile to form fields</li>
-            <li>Visible automation with Codex Browser or Claude in Chrome</li>
-            <li>Stops at final review so only you can submit</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:answer-memory</span>
-          </div>
-          <h3>Reuse answers without losing control</h3>
-          <ul class="feature-bullets">
-            <li>Stores profile data and reusable answers locally</li>
-            <li>Distinguishes confirmed, inferred, missing, and sensitive answers</li>
-            <li>Requires separate consent before remembering sensitive values</li>
-            <li>Saves resumable progress without copying answer values</li>
-            <li>Migrates the legacy profile non-destructively</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:application-setup</span>
-          </div>
-          <h3>Choose how applications progress</h3>
-          <ul class="feature-bullets">
-            <li>Select the Codex built-in browser or Chrome</li>
-            <li>Choose whether to ask before a browser fallback</li>
-            <li>Use standard or guided page progression</li>
-            <li>Audit and edit the same local choices in Companion</li>
-            <li>Keep consent and final submission outside setup preferences</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:account-setup</span>
-          </div>
-          <h3>Classify account and sign-in requirements</h3>
-          <ul class="feature-bullets">
-            <li>Classifies the exact supported ATS URL through the shared registry</li>
-            <li>Stores only redacted account metadata when you request it</li>
-            <li>Keeps configuration separate from browser and native readiness</li>
-            <li>Leaves passwords, email values, verification codes, and live sign-in to you</li>
-            <li>Keeps direct Greenhouse applications account-free and unpersisted</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:job-search</span>
-          </div>
-          <h3>Find jobs where you have an advantage</h3>
-          <ul class="feature-bullets">
-            <li>Uses saved titles and demonstrated skills to find related roles while honoring your filters</li>
-            <li>Finds jobs at companies where you have connections</li>
-            <li>Identifies jobs with hiring managers listed</li>
-            <li>Searches LinkedIn, Hacker News, and Twitter/X</li>
-            <li>Reports source gaps and saves search results as Markdown</li>
-            <li>Selected jobs enter the shared Store only after a preview and confirmation</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:saved-jobs</span>
-          </div>
-          <h3>Review your canonical saved jobs</h3>
-          <ul class="feature-bullets">
-            <li>Lists and filters active saved jobs from the shared Store</li>
-            <li>Shows exact job IDs and source links for follow-up</li>
-            <li>Leaves records and application state unchanged</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:job-preferences</span>
-          </div>
-          <h3>Save reusable search preferences</h3>
-          <ul class="feature-bullets">
-            <li>Sets target titles and minimum base salary</li>
-            <li>Records remote-work and time-range preferences</li>
-            <li>Filters out unwanted titles and seniority levels</li>
-            <li>Stores preferences with your local profile</li>
-            <li>Updates selected settings without replacing the rest</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:job-title-discovery</span>
-          </div>
-          <h3>Discover related job titles</h3>
-          <ul class="feature-bullets">
-            <li>Researches visible job-board title evidence when available</li>
-            <li>Groups reviewable options into core, adjacent, and stretch roles</li>
-            <li>Reports source limitations and leaves saved preferences unchanged</li>
-            <li>Copy the host invocation from Companion, review the packet, and save only approved target titles</li>
-          </ul>
-        </article>
-        <article class="skill-card">
-          <div class="skill-header">
-            <span class="skill-badge">job-apply:job-workspace</span>
-          </div>
-          <h3>Organize jobs in a local workspace</h3>
-          <ul class="feature-bullets">
-            <li>Opens an optional browser workspace on your device</li>
-            <li>Shares the same canonical Jobs records with CLI agents</li>
-            <li>Captures, filters, edits, and preflights opportunities</li>
-            <li>Preserves drafts when another client changes a record</li>
-            <li>Marks valid jobs ready for explicit agent handoff</li>
-          </ul>
-        </article>
-      </div>
-    </section>
 
-    <section class="section platforms">
-      <div class="section-heading">
-        <p class="eyebrow">Guided ATS workflows</p>
-        <h2>Six families, with honest limits.</h2>
-      </div>
-      <div class="platform-grid">
-        <div class="platform-pill">LinkedIn Easy Apply</div>
-        <div class="platform-pill">Greenhouse</div>
-        <div class="platform-pill">Ashby</div>
-        <div class="platform-pill">Lever</div>
-        <div class="platform-pill">Rippling</div>
-        <div class="platform-pill">Workday</div>
-      </div>
-      <p>
-        Codex and Claude Code host guidance was reviewed on July 28, 2026. Live end-to-end ATS acceptance is tracked separately; individual flows remain unverified and may drift as sites change.
-      </p>
-    </section>
+      <section class="application-preview automation-preview" data-automation-preview data-section-animation aria-label="Illustrative delegation example">
+        <div class="automation-trays">
+          <div class="tray-headings">
+            <h3>You</h3>
+            <h3>Agent</h3>
+          </div>
+          <ul class="tray-tasks" aria-label="Application tasks">
+            <li data-task-level="0" data-delegated>Fill in basic facts<span class="visually-hidden" data-owner> · Agent</span></li>
+            <li data-task-level="1">Answer screening questions<span class="visually-hidden" data-owner> · You</span></li>
+            <li data-task-level="2">Attach résumé<span class="visually-hidden" data-owner> · You</span></li>
+            <li data-task-level="2">Check completed fields<span class="visually-hidden" data-owner> · You</span></li>
+            <li data-task-level="2" data-submit-task>Submit application<span class="visually-hidden" data-owner> · You</span></li>
+          </ul>
+        </div>
 
-    <section id="requirements" class="section split">
-      <div class="section-heading">
-        <p class="eyebrow">Requirements</p>
-        <h2>Choose your agent and a visible browser.</h2>
-      </div>
-      <div class="feature-list">
-        <article>
-          <h3>Codex</h3>
-          <p>Use the Codex CLI or desktop app with the Browser plugin for visible navigation, form filling, and file uploads.</p>
-        </article>
-        <article>
-          <h3>Claude Code</h3>
-          <p>Use Claude Code with Claude in Chrome for the same visible, supervised workflow.</p>
-        </article>
-        <article>
-          <h3>Local runtime</h3>
-          <p>Node.js 22 or newer on macOS Apple Silicon or Linux x64. Python is not required. A source-only Companion install also needs npm and package-registry access on first launch.</p>
-        </article>
-        <article>
-          <h3>Your existing session</h3>
-          <p>Sign in yourself. The plugin never asks for, stores, or enters credentials, passwords, CAPTCHA responses, or MFA codes.</p>
-        </article>
-      </div>
-    </section>
+        <div class="automation-preview-controls" data-automation-controls hidden>
+          <input type="range" min="0" max="2" step="1" value="0" aria-label="Demo automation level" aria-valuetext="Hand-holding" data-automation-level>
+          <div class="automation-level-labels" aria-hidden="true">
+            <span data-current>Hand-holding</span>
+            <span>Guided</span>
+            <span>YOLO</span>
+          </div>
+        </div>
+        <p class="visually-hidden" data-automation-result aria-live="polite"></p>
+      </section>
 
-    <section id="install" class="section install">
-      <div>
-        <p class="eyebrow">Install</p>
-        <h2>Add the plugin and start applying.</h2>
-        <p>
-          Install the stable release for Codex or Claude Code. In a new chat, ask Job Apply to set up your resume, review its facts privately, then give it a job URL. You decide whether to submit at final review.
-        </p>
-      </div>
-      <div class="code-card">
-        <pre><code># Codex
-codex plugin marketplace add neonwatty/job-apply-plugin
-codex plugin add job-apply@neonwatty-plugins
-
-# Claude Code
-claude plugin marketplace add neonwatty/job-apply-plugin
-claude plugin install job-apply@neonwatty-plugins</code></pre>
-        <p>In chat, use <code>$job-apply:job-apply</code> for Codex or <code>/job-apply:job-apply</code> for Claude Code.</p>
-        <p>Companion is optional and still under development. To open it, use <code>$job-apply:job-workspace</code> or <code>/job-apply:job-workspace</code> and open the private local URL printed by the launcher.</p>
-      </div>
-    </section>
-
-    <section class="section safety">
-      <div class="section-heading">
-        <p class="eyebrow">Safety first</p>
-        <h2>You stay in control at every step.</h2>
-      </div>
-      <div class="constraint-grid">
-        <article>
-          <h3>Only you submit</h3>
-          <p>Every application stops at final review with a field summary. You inspect the page and click Submit or Send yourself.</p>
-        </article>
-        <article>
-          <h3>Never enters passwords</h3>
-          <p>The plugin pauses for login, password, CAPTCHA, MFA, or account creation so you can handle it yourself.</p>
-        </article>
-        <article>
-          <h3>Never enters payment info</h3>
-          <p>Premium features and paid prompts are skipped automatically.</p>
-        </article>
-        <article>
-          <h3>Sensitive answers stay deliberate</h3>
-          <p>Using a sensitive answer once never stores it automatically. Remembering it requires a separate explicit choice, and future use is still reconfirmed.</p>
-        </article>
-        <article>
-          <h3>Changing ATS controls</h3>
-          <p>If the visible browser cannot reach a site-specific field, the plugin reports it and leaves it for you.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-heading">
-        <p class="eyebrow">Privacy and support</p>
-        <h2>Know what stays local, and where to get help.</h2>
-      </div>
-      <div class="constraint-grid">
-        <article>
-          <h3>Plaintext local store</h3>
-          <p>Your profile, answer bank, minimal history, and resumable sessions live under <code>~/.job-apply/</code>. Protect it like a resume; never attach its files to a public issue.</p>
-        </article>
-        <article>
-          <h3>No plugin telemetry</h3>
-          <p>The repository defines no telemetry service. Information is shared with third-party sites only when you direct Codex or Claude Code to use it in browser or search workflows.</p>
-        </article>
-        <article>
-          <h3>Friendly, redacted support</h3>
-          <p><a href="https://github.com/neonwatty/job-apply-plugin/issues/new/choose">Use a guided GitHub issue form</a> for setup help, ATS failures, or feature requests.</p>
-        </article>
-      </div>
+      <a class="button primary automation-install-stacked" href="https://github.com/neonwatty/job-apply-plugin#installation">Install Job Apply</a>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>Job Apply Plugin is MIT licensed.</span>
-    <a href="https://discord.gg/7xsxU4ZG6A">Discord</a>
-    <a href="https://github.com/neonwatty/job-apply-plugin">GitHub</a>
-  <div role="navigation" aria-label="More from Jeremy Watt" style="display:flex;flex-wrap:wrap;justify-content:center;gap:1.25rem;padding:1.5rem 1rem;width:100%;box-sizing:border-box;font:500 14px/1.5 system-ui,sans-serif"><a href="https://neonwatty.com/projects/" style="color:inherit;text-decoration:underline;text-underline-offset:4px">All projects</a><a href="https://neonwatty.com/posts/" style="color:inherit;text-decoration:underline;text-underline-offset:4px">Blog</a></div>
-</footer>
+    <span><span class="footer-desktop">Job Apply Plugin is </span>MIT licensed.</span>
+    <nav aria-label="Footer links">
+      <a href="https://github.com/neonwatty/job-apply-plugin">GitHub</a>
+      <a class="footer-desktop" href="https://neonwatty.com/projects/">All projects</a>
+      <a class="footer-desktop" href="https://neonwatty.com/posts/">Blog</a>
+    </nav>
+  </footer>
 </body>
 </html>
