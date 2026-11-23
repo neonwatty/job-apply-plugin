@@ -13,10 +13,13 @@ Codex and Claude Code catalogs that point to `main`. A stable release has a
 2. For a hosted validation rehearsal, dispatch **Release Validation** on `main`
    with the selected full commit SHA in `checkout_sha`. Its macOS and Linux jobs
    validate installed copies of the plugin and Companion.
-3. Create and push the annotated tag on the selected SHA, then publish its
+3. For Windows runtime or Store changes, run **Windows Preview Install** from
+   `main`. Confirm both Codex and Claude Code jobs report the selected SHA and
+   pass the installed Companion, migration, and rollback checks.
+4. Create and push the annotated tag on the selected SHA, then publish its
    stable release in GitHub Releases. **Promote Stable Release** validates the
    tagged SHA and advances `stable` after both platform jobs pass.
-4. Confirm the promotion outcome and final `stable` SHA in the workflow
+5. Confirm the promotion outcome and final `stable` SHA in the workflow
    summary. Check the default install path in Codex and Claude Code and launch
    Companion against a disposable local Store. [Promotion workflow](../.github/workflows/promote-release.yml)
 
