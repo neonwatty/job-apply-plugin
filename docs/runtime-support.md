@@ -42,8 +42,20 @@ node apps/companion/command.mjs migration copy --source SOURCE_PATH --target TAR
 ```
 
 After `copy-ready`, select the target with `--root` or `JOB_APPLY_STORE_DIR`. Keep
-the original as a recovery source. A failed copy can be retried while the target
-path is unused. Legacy final-action policy trees require separate migration work.
+the original as a recovery source.
+
+To recover the migration-time data, use the original legacy Store, the migrated
+Store, and a third unused path. The legacy files must match the digest recorded
+by the migration. Rollback creates a separate native Store and preserves newer
+edits in the migrated Store.
+
+```text
+node apps/companion/command.mjs migration rollback --source SOURCE_PATH --migrated MIGRATED_PATH --target RECOVERY_PATH
+```
+
+After `recovery-ready`, select the recovery path with `--root` or
+`JOB_APPLY_STORE_DIR`. A failed copy can be retried while the target path is
+unused. Legacy final-action policy trees require separate migration work.
 This does not establish a host guarantee that Node is
 preinstalled, or live ATS/account acceptance. See
 [testing](testing.md) and the [transition guide](typescript-transition.md).

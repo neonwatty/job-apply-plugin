@@ -2,18 +2,20 @@ import { realpath } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 import { checkWindowsMigrationSource } from '../store/windows-migration-source.js';
-import { copyWindowsStoreForMigration } from '../store/windows-store-migration.js';
+import { copyWindowsStoreForMigration, rollbackWindowsStoreMigration } from '../store/windows-store-migration.js';
 const help = 'Usage: migration check --source PATH\n       migration copy --source PATH --target PATH\n'
-    + 'Checks or copies a legacy Windows x64 Store while keeping the original intact.\n';
-const [command, sourceFlag, source, targetFlag, target, ...extra] = process.argv.slice(2);
+    + '       migration rollback --source PATH --migrated PATH --target PATH\n';
+const [command, sourceFlag, source, flag, path, targetFlag, target, ...extra] = process.argv.slice(2);
 const pathValue = (value) => Boolean(value && !value.startsWith('--'));
 const sourceArgs = sourceFlag === '--source' && pathValue(source);
-const check = command === 'check' && sourceArgs && targetFlag === undefined;
-const copy = command === 'copy' && sourceArgs && targetFlag === '--target' && pathValue(target) && extra.length === 0;
+const check = command === 'check' && sourceArgs && flag === undefined;
+const copy = command === 'copy' && sourceArgs && flag === '--target' && pathValue(path) && targetFlag === undefined;
+const rollback = command === 'rollback' && sourceArgs && flag === '--migrated' && pathValue(path)
+    && targetFlag === '--target' && pathValue(target) && extra.length === 0;
 if ((command === '--help' || command === '-h') && sourceFlag === undefined) {
     process.stdout.write(help);
 }
-else if (!check && !copy) {
+else if (!check && !copy && !rollback) {
     process.stderr.write(help);
     process.exitCode = 2;
 }
@@ -25,16 +27,22 @@ else {
     try {
         const pluginRoot = await realpath(fileURLToPath(new URL('../..', import.meta.url)));
         const addon = await resolvePackagedNativeLock(pluginRoot);
-        if (copy)
-            await copyWindowsStoreForMigration(source, target, addon);
+        if (rollback)
+            await rollbackWindowsStoreMigration(source, path, target, addon);
+        else if (copy)
+            await copyWindowsStoreForMigration(source, path, addon);
         else
             await checkWindowsMigrationSource(source, addon);
-        process.stdout.write(JSON.stringify({ schemaVersion: 1, status: copy ? 'copy-ready' : 'source-checked' }) + '\n');
+        const status = rollback ? 'recovery-ready' : copy ? 'copy-ready' : 'source-checked';
+        process.stdout.write(JSON.stringify({ schemaVersion: 1, status }) + '\n');
     }
     catch {
-        process.stderr.write(copy
-            ? 'The migration copy failed. Use a private, supported legacy Store and a separate unused destination.\n'
-            : 'The selected source could not be verified as a private, supported legacy Windows Store. It was left unchanged.\n');
+        const message = rollback
+            ? 'The rollback copy failed. Use the retained legacy Store, its migrated Store, and a separate unused destination.'
+            : copy
+                ? 'The migration copy failed. Use a private, supported legacy Store and a separate unused destination.'
+                : 'The selected source could not be verified as a private, supported legacy Windows Store. It was left unchanged.';
+        process.stderr.write(message + '\n');
         process.exitCode = 2;
     }
 }

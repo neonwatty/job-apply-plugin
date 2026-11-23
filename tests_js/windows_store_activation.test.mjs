@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { activateWindowsStoreScoped } from '../runtime/store/windows-activation.js';
-import { copyWindowsStoreForMigration } from '../runtime/store/windows-store-migration.js';
+import { copyWindowsStoreForMigration, rollbackWindowsStoreMigration } from '../runtime/store/windows-store-migration.js';
 import { openWindowsStoreFile, withWindowsStore } from '../runtime/store/windows-store.js';
 
 // Windows install path: the packaged lock, no Python, and no clone or writer switch.
@@ -404,4 +404,62 @@ test('Windows migration cancellation, source drift, and target collisions leave 
   assert.deepEqual(json(cli(temporary, 'migration', 'copy', '--source', source, '--target', target)),
     { schemaVersion: 1, status: 'copy-ready' });
   assert.deepEqual(await migrationSnapshot(source), original);
+});
+
+test('Windows rollback restores the verified legacy snapshot and preserves post-migration edits', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-rollback-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy');
+  const migrated = join(temporary, 'native'), recovery = join(temporary, 'recovery');
+  await prepareLegacyFixture(source);
+  const original = await migrationSnapshot(source);
+  await copyWindowsStoreForMigration(source, migrated, addonPath);
+
+  const input = join(temporary, 'job.json');
+  await writeFile(input, JSON.stringify({ id: 'post-migration', url: 'https://example.invalid/post-migration', role: 'Synthetic' }));
+  assert.equal(json(cli(temporary, 'store', 'job-create', '--root', migrated, '--input', input)).id, 'post-migration');
+  const withEdits = await migrationSnapshot(migrated);
+  const runRollback = (from = source, reference = migrated, target = recovery) =>
+    cli(temporary, 'migration', 'rollback', '--source', from, '--migrated', reference, '--target', target);
+
+  assert.equal(runRollback(source, migrated, join(migrated, 'nested')).status, 2);
+  assert.equal(runRollback(migrated, migrated).status, 2);
+  assert.equal(runRollback(source, source).status, 2);
+  const receipt = join(migrated, '.native-store-clone');
+  const receiptBytes = await readFile(receipt);
+  await writeFile(receipt, '{"mode":"canonical-store-clone","version":2}');
+  assert.equal(runRollback().status, 2, 'rollback requires a valid receipt');
+  await writeFile(receipt, receiptBytes);
+
+  const profile = join(source, 'profile.json');
+  const profileBytes = await readFile(profile);
+  await writeFile(profile, Buffer.concat([profileBytes, Buffer.from('\n')]));
+  const drifted = await migrationSnapshot(source);
+  assert.equal(runRollback().status, 2, 'rollback requires the exact source bytes');
+  assert.deepEqual(await migrationSnapshot(source), drifted);
+  await writeFile(profile, profileBytes);
+
+  const controller = new AbortController();
+  const interrupted = new Error('Interrupted rollback');
+  await assert.rejects(rollbackWindowsStoreMigration(source, migrated, recovery, addonPath, {
+    signal: controller.signal,
+    beforePublish: async () => controller.abort(interrupted),
+  }), interrupted);
+  assert.deepEqual((await readdir(temporary)).sort(), ['job.json', 'legacy', 'native']);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  assert.deepEqual(await migrationSnapshot(migrated), withEdits);
+
+  assert.deepEqual(json(runRollback()), { schemaVersion: 1, status: 'recovery-ready' });
+  for (const name of legacyFixtureFiles) {
+    assert.deepEqual(await readFile(join(recovery, name)), await readFile(join(source, name)), name);
+  }
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', recovery)), []);
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', migrated)).map(job => job.id), ['post-migration']);
+  const recovered = await migrationSnapshot(recovery);
+  assert.equal(runRollback().status, 2);
+  assert.deepEqual(await migrationSnapshot(recovery), recovered);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  assert.deepEqual(await migrationSnapshot(migrated), withEdits);
 });

@@ -1,18 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import { lstat, realpath, rename, rm } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { lstat, readdir, realpath, rename, rm } from 'node:fs/promises';
 import { win32 } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { syncDirectory } from './directory-sync.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import { createNativeStoreBootstrap } from './native-store-bootstrap.js';
 import { copyWindowsLegacyStoreLocked, finishWindowsLegacyStoreCloneLocked } from './native-store-clone.js';
+import { nativeCloneMarkerName, nativeCloneTrees, nativeFixtureMarkerName, nativeStorePendingName } from './native-store-layout.js';
 import { canonicalWindowsRoot } from './windows-activation.js';
 import { withCheckedWindowsMigrationSource } from './windows-migration-source.js';
-import { ensureWindowsPrivateDirectory, missingWindowsEntry, requireWindowsPrivate, windowsFileIdentity, withWindowsStore } from './windows-store.js';
+import { ensureWindowsPrivateDirectory, missingWindowsEntry, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity, withWindowsStore } from './windows-store.js';
 function includesPath(root, path) {
     root = root.toLowerCase();
     path = path.toLowerCase();
     return path === root || path.startsWith(root.endsWith('\\') ? root : root + '\\');
+}
+function overlaps(left, right) {
+    return includesPath(left, right) || includesPath(right, left);
 }
 async function requireUnusedTarget(target) {
     const parent = win32.dirname(target);
@@ -27,13 +32,14 @@ async function requireUnusedTarget(target) {
     if (metadata !== null)
         throw new JobsError('migration target already exists');
 }
-/** Publishes a verified native copy at an explicit unused path, keeping the legacy source intact. */
-export function copyWindowsStoreForMigration(source, target, addonPath, { signal = AbortSignal.timeout(120_000), beforePublish } = {}) {
+function publishWindowsStoreCopy(source, target, addonPath, { signal = AbortSignal.timeout(120_000), beforePublish }, expectedSourceTree) {
     return withCheckedWindowsMigrationSource(source, addonPath, signal, async (checked) => {
-        const destination = await canonicalWindowsRoot(target);
-        if (includesPath(checked.root, destination) || includesPath(destination, checked.root)) {
-            throw new JobsError('migration source and target must be separate');
+        if (expectedSourceTree !== undefined && checked.digest !== expectedSourceTree) {
+            throw new JobsError('legacy Store differs from the migration receipt');
         }
+        const destination = await canonicalWindowsRoot(target);
+        if (overlaps(checked.root, destination))
+            throw new JobsError('migration source and target must be separate');
         await requireUnusedTarget(destination);
         const parent = win32.dirname(destination);
         const staging = win32.join(parent, `.job-apply-migration-${randomUUID()}`);
@@ -72,4 +78,40 @@ export function copyWindowsStoreForMigration(source, target, addonPath, { signal
             throw error;
         }
     });
+}
+/** Publishes a verified native copy at an explicit unused path, keeping the legacy source intact. */
+export function copyWindowsStoreForMigration(source, target, addonPath, options = {}) {
+    return publishWindowsStoreCopy(source, target, addonPath, options);
+}
+async function readMigrationSourceTree(migrated, addonPath, signal) {
+    return withWindowsStore(migrated, addonPath, async (provider) => {
+        requireWindowsPrivate(migrated, true);
+        return withExclusiveFileLock(win32.join(migrated, '.store.lock'), async () => {
+            const entries = await readdir(migrated);
+            if (entries.includes(nativeFixtureMarkerName) || entries.includes(nativeStorePendingName)) {
+                throw new JobsError('migration receipt must be from an initialized native clone');
+            }
+            const handle = await openWindowsStoreFile(win32.join(migrated, nativeCloneMarkerName), constants.O_RDONLY);
+            try {
+                if ((await handle.stat()).size > 4096)
+                    throw new JobsError('migration receipt is too large');
+                return nativeCloneTrees(await handle.readFile()).sourceTree;
+            }
+            finally {
+                await handle.close();
+            }
+        }, { provider, pathProfile: '3.12', signal, existingOnly: true });
+    });
+}
+/** Reopens the migration-time data as a separate native Store, preserving both input Stores. */
+export async function rollbackWindowsStoreMigration(source, migrated, target, addonPath, options = {}) {
+    const signal = options.signal ?? AbortSignal.timeout(120_000);
+    const [legacyRoot, migratedRoot, recoveryRoot] = await Promise.all([
+        canonicalWindowsRoot(source), canonicalWindowsRoot(migrated), canonicalWindowsRoot(target),
+    ]);
+    if (overlaps(legacyRoot, migratedRoot) || overlaps(migratedRoot, recoveryRoot) || overlaps(legacyRoot, recoveryRoot)) {
+        throw new JobsError('rollback Store paths must be separate');
+    }
+    const sourceTree = await readMigrationSourceTree(migratedRoot, addonPath, signal);
+    await publishWindowsStoreCopy(legacyRoot, recoveryRoot, addonPath, { ...options, signal }, sourceTree);
 }
