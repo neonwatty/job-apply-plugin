@@ -28,7 +28,12 @@ lock, Store ACLs and file identity, the authenticated attempt broker, fresh Stor
 creation, reopening a native Store, refusing legacy or unrecognized Store data
 without changing it, interrupted atomic-write recovery, and Companion shutdown
 while a save is in progress. Windows activation never clones or migrates a Python-era Store; that
-migration is separate work. This does not establish a host guarantee that Node is
+migration is separate work. On Windows x64, run
+`node apps/companion/command.mjs migration check --source PATH` from the plugin
+directory to check a private legacy Store without changing it. It requires the
+existing Store lock and checks the Store layout and supported documents. Sources
+with a legacy final-action policy tree are outside this check's current scope.
+This does not establish a host guarantee that Node is
 preinstalled, or live ATS/account acceptance. See
 [testing](testing.md) and the [transition guide](typescript-transition.md).
 

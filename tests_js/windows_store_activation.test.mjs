@@ -260,3 +260,50 @@ test('Windows CLI leaves legacy and unrecognized Store data untouched', { skip: 
   assert.equal(cli(temporary, 'store', 'init', '--root', unknown).status, 2);
   assert.deepEqual(await snapshot(unknown), unknownBefore);
 });
+
+test('Windows migration check validates an explicit legacy Store without activating it', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-check-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy');
+  assert.equal(json(cli(temporary, 'store', 'init', '--root', source)).root, source);
+  const runCheck = (path = source) => cli(temporary, 'migration', 'check', '--source', path);
+  const expectRefusal = async path => {
+    const before = await snapshot(source);
+    const refused = runCheck(path);
+    assert.equal(refused.status, 2);
+    assert.equal(refused.stdout, '');
+    assert.match(refused.stderr, /could not be verified.*left unchanged/);
+    assert.doesNotMatch(refused.stderr, /SYNTHETIC_PRIVATE_VALUE/);
+    assert.deepEqual(await snapshot(source), before);
+  };
+
+  await expectRefusal(source); // A native-marked Store is not a migration source.
+  await unlink(join(source, '.native-store-clone'));
+  await unlink(join(source, 'resume-operation.json'));
+  const original = await snapshot(source);
+  assert.deepEqual(json(runCheck()), { schemaVersion: 1, status: 'source-checked' });
+  assert.deepEqual(await snapshot(source), original);
+  assert.deepEqual(await readdir(temporary), ['legacy']);
+
+  const jobs = join(source, 'jobs.json');
+  const validJobs = await readFile(jobs);
+  await writeFile(jobs, '{"schemaVersion":999,"jobs":{"SYNTHETIC_PRIVATE_VALUE":{}}}');
+  await expectRefusal(source);
+  await writeFile(jobs, validJobs);
+
+  const policy = join(source, 'auto-submit');
+  loadAddon().createStoreEntry(policy, true);
+  await expectRefusal(source);
+  await rm(policy, { recursive: true });
+
+  const alias = join(temporary, 'alias');
+  await symlink(source, alias, 'junction');
+  await expectRefusal(alias);
+  assert.ok((await readdir(temporary)).includes('alias'));
+
+  await unlink(join(source, '.store.lock'));
+  await expectRefusal(source);
+  assert.ok(!(await readdir(source)).includes('.store.lock'));
+});
