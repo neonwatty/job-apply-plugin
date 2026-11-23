@@ -416,11 +416,6 @@ h3 {
   font-weight: 700;
 }
 
-.tray-tasks [data-submit-task][data-delegated] {
-  border-color: #ae6f19;
-  background: #ffcf61;
-}
-
 .automation-preview-controls {
   margin-top: 6px;
 }

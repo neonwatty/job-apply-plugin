@@ -7,7 +7,6 @@
     owner: card.querySelector('[data-owner]'),
     level: Number(card.dataset.taskLevel),
   }));
-  const submit = cards.find(({ card }) => card.hasAttribute('data-submit-task'));
   const slider = preview.querySelector('[data-automation-level]');
   const modeLabels = Array.from(preview.querySelector('.automation-level-labels').children);
   const result = preview.querySelector('[data-automation-result]');
@@ -15,9 +14,8 @@
   const messages = [
     'The agent fills in basic facts.',
     'The agent also answers the screening questions.',
-    'Submit application moved to the Agent tray.',
+    'The agent prepares the whole application. You submit it.',
   ];
-  let submitTimer;
   let playbackTimer;
 
   function assign(task, delegated) {
@@ -25,37 +23,27 @@
     task.owner.textContent = delegated ? ' · Agent' : ' · You';
   }
 
-  function showLevel(level, animate, announce = true) {
-    clearTimeout(submitTimer);
-    submitTimer = undefined;
-    // The other YOLO cards finish sliding before the final card begins.
-    const delaySubmit = level === 2 && animate && !motion.matches && !submit.card.hasAttribute('data-delegated');
+  function showLevel(level, announce = true) {
     slider.value = level;
     slider.setAttribute('aria-valuetext', modeLabels[level].textContent);
     for (const [index, label] of modeLabels.entries()) {
       label.toggleAttribute('data-current', index === level);
     }
     for (const task of cards) {
-      assign(task, task.level <= level && (task !== submit || !delaySubmit));
+      assign(task, task.level <= level);
     }
-    if (delaySubmit) {
-      submitTimer = setTimeout(() => {
-        submitTimer = undefined;
-        assign(submit, true);
-        if (announce) result.textContent = messages[2];
-      }, 570);
-    } else if (announce) {
+    if (announce) {
       result.textContent = messages[level];
     }
   }
 
   function startPlayback() {
-    showLevel(0, true, false);
+    showLevel(0, false);
     playbackTimer = setTimeout(() => {
-      showLevel(1, true, false);
+      showLevel(1, false);
       playbackTimer = setTimeout(() => {
         playbackTimer = undefined;
-        showLevel(2, true);
+        showLevel(2);
       }, 900);
     }, 720);
   }
@@ -69,14 +57,14 @@
   slider.addEventListener('focus', takeControl);
   slider.addEventListener('input', () => {
     takeControl();
-    showLevel(slider.valueAsNumber, true);
+    showLevel(slider.valueAsNumber);
   });
 
   motion.addEventListener('change', () => {
     if (!motion.matches) return;
-    const isAnimating = playbackTimer !== undefined || submitTimer !== undefined;
+    const isAnimating = playbackTimer !== undefined;
     takeControl();
-    if (isAnimating) showLevel(2, false);
+    if (isAnimating) showLevel(2);
   });
 
   preview.querySelector('[data-automation-controls]').hidden = false;
