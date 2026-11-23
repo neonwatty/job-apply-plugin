@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { activateWindowsStoreScoped } from '../runtime/store/windows-activation.js';
+import { copyWindowsStoreForMigration } from '../runtime/store/windows-store-migration.js';
 import { openWindowsStoreFile, withWindowsStore } from '../runtime/store/windows-store.js';
 
 // Windows install path: the packaged lock, no Python, and no clone or writer switch.
@@ -261,24 +262,33 @@ test('Windows CLI leaves legacy and unrecognized Store data untouched', { skip: 
   assert.deepEqual(await snapshot(unknown), unknownBefore);
 });
 
+const legacyFixtureFiles = ['profile.json', 'answers.json', 'applications.jsonl', 'sessions/legacy-application.json'];
+async function prepareLegacyFixture(source) {
+  const addon = loadAddon();
+  const fixture = new URL('../test/fixtures/python-store-v1.1.0/store/', import.meta.url);
+  addon.createStoreEntry(source, true);
+  addon.createStoreEntry(join(source, 'sessions'), true);
+  addon.createStoreEntry(join(source, '.store.lock'), false);
+  for (const name of legacyFixtureFiles) {
+    const path = join(source, ...name.split('/'));
+    addon.createStoreEntry(path, false);
+    await writeFile(path, await readFile(new URL(name, fixture)));
+  }
+}
+
+async function migrationSnapshot(root) {
+  return [await snapshot(root), await snapshot(join(root, 'sessions'))];
+}
+
 test('Windows migration check validates an explicit legacy Store without activating it', {
   skip: !windows, timeout: 120_000,
 }, async t => {
   const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-check-')));
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const source = join(temporary, 'legacy');
+  await prepareLegacyFixture(source);
   const addon = loadAddon();
-  const historyFixture = new URL('../test/fixtures/python-store-v1.1.0/store/', import.meta.url);
-  addon.createStoreEntry(source, true);
-  addon.createStoreEntry(join(source, 'sessions'), true);
-  addon.createStoreEntry(join(source, '.store.lock'), false);
-  for (const name of ['profile.json', 'answers.json', 'applications.jsonl', 'sessions/legacy-application.json']) {
-    const path = join(source, ...name.split('/'));
-    addon.createStoreEntry(path, false);
-    await writeFile(path, await readFile(new URL(name, historyFixture)));
-  }
-
-  const sourceSnapshot = async () => [await snapshot(source), await snapshot(join(source, 'sessions'))];
+  const sourceSnapshot = () => migrationSnapshot(source);
   const runCheck = (path = source) => cli(temporary, 'migration', 'check', '--source', path);
   const expectRefusal = async path => {
     const before = await sourceSnapshot();
@@ -320,4 +330,78 @@ test('Windows migration check validates an explicit legacy Store without activat
   await unlink(join(source, '.store.lock'));
   await expectRefusal(source);
   assert.ok(!(await readdir(source)).includes('.store.lock'));
+});
+
+test('Windows publishes a verified migration copy that opens independently of the legacy Store', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-copy-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy'), target = join(temporary, 'native');
+  await prepareLegacyFixture(source);
+  const original = await migrationSnapshot(source);
+  const runCopy = path => cli(temporary, 'migration', 'copy', '--source', source, '--target', path);
+  assert.equal(runCopy(join(source, 'nested')).status, 2);
+  assert.deepEqual(await migrationSnapshot(source), original);
+
+  assert.deepEqual(json(runCopy(target)), { schemaVersion: 1, status: 'copy-ready' });
+  for (const name of legacyFixtureFiles) {
+    assert.deepEqual(await readFile(join(target, name)), await readFile(join(source, name)), name);
+  }
+  const marker = JSON.parse(await readFile(join(target, '.native-store-clone'), 'utf8'));
+  assert.equal(marker.mode, 'canonical-store-clone');
+  assert.match(marker.sourceTree, /^sha256:[a-f0-9]{64}$/);
+  assert.match(marker.candidateTree, /^sha256:[a-f0-9]{64}$/);
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', target)), []);
+
+  const input = join(temporary, 'job.json');
+  await writeFile(input, JSON.stringify({ id: 'after-migration', url: 'https://example.invalid/migrated-job', role: 'Synthetic' }));
+  assert.equal(json(cli(temporary, 'store', 'job-create', '--root', target, '--input', input)).id, 'after-migration');
+  const migrated = await migrationSnapshot(target);
+  assert.equal(runCopy(target).status, 2, 'a retry must preserve an existing target');
+  assert.deepEqual(await migrationSnapshot(target), migrated);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  assert.deepEqual((await readdir(temporary)).sort(), ['job.json', 'legacy', 'native']);
+});
+
+test('Windows migration cancellation, source drift, and target collisions leave the original usable', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-interrupted-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy'), target = join(temporary, 'native');
+  await prepareLegacyFixture(source);
+  const original = await migrationSnapshot(source);
+  const controller = new AbortController();
+  const interrupted = new Error('Interrupted migration');
+  await assert.rejects(copyWindowsStoreForMigration(source, target, addonPath, {
+    signal: controller.signal,
+    beforePublish: async () => controller.abort(interrupted),
+  }), interrupted);
+  assert.deepEqual(await readdir(temporary), ['legacy']);
+  assert.deepEqual(await migrationSnapshot(source), original);
+
+  const profile = join(source, 'profile.json');
+  const bytes = await readFile(profile);
+  await assert.rejects(copyWindowsStoreForMigration(source, target, addonPath, {
+    beforePublish: () => writeFile(profile, Buffer.concat([bytes, Buffer.from('\n')])),
+  }), /legacy Store changed/);
+  assert.deepEqual(await readdir(temporary), ['legacy']);
+  await writeFile(profile, bytes);
+
+  const collision = join(target, 'keep.txt');
+  await assert.rejects(copyWindowsStoreForMigration(source, target, addonPath, {
+    beforePublish: async () => {
+      await mkdir(target);
+      await writeFile(collision, 'existing destination');
+    },
+  }), /migration target already exists/);
+  assert.equal(await readFile(collision, 'utf8'), 'existing destination');
+  assert.deepEqual((await readdir(temporary)).sort(), ['legacy', 'native']);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  await rm(target, { recursive: true });
+
+  assert.deepEqual(json(cli(temporary, 'migration', 'copy', '--source', source, '--target', target)),
+    { schemaVersion: 1, status: 'copy-ready' });
+  assert.deepEqual(await migrationSnapshot(source), original);
 });

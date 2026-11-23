@@ -27,12 +27,23 @@ Codex/Claude installation on macOS and Linux. On Windows, CI exercises the nativ
 lock, Store ACLs and file identity, the authenticated attempt broker, fresh Store
 creation, reopening a native Store, refusing legacy or unrecognized Store data
 without changing it, interrupted atomic-write recovery, and Companion shutdown
-while a save is in progress. Windows activation never clones or migrates a Python-era Store; that
-migration is separate work. On Windows x64, run
-`node apps/companion/command.mjs migration check --source PATH` from the plugin
-directory to check a private legacy Store without changing it. It requires the
-existing Store lock and checks the Store layout and supported documents. Sources
-with a legacy final-action policy tree are outside this check's current scope.
+while a save is in progress.
+
+### Explicit Windows Store migration
+
+Ordinary startup leaves legacy Store directories untouched. Stop Store writers
+before migration. Use `migration check` to verify the private source under its
+existing Store lock, then use `migration copy` to write a verified native copy at
+a separate unused path with an existing parent. Run these from the plugin directory.
+
+```text
+node apps/companion/command.mjs migration check --source SOURCE_PATH
+node apps/companion/command.mjs migration copy --source SOURCE_PATH --target TARGET_PATH
+```
+
+After `copy-ready`, select the target with `--root` or `JOB_APPLY_STORE_DIR`. Keep
+the original as a recovery source. A failed copy can be retried while the target
+path is unused. Legacy final-action policy trees require separate migration work.
 This does not establish a host guarantee that Node is
 preinstalled, or live ATS/account acceptance. See
 [testing](testing.md) and the [transition guide](typescript-transition.md).

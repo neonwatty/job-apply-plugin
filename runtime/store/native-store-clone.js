@@ -11,7 +11,7 @@ import { syncDirectory } from './directory-sync.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { nativeApplicationAuthorityName, nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
-import { openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
+import { ensureWindowsPrivateDirectory, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
 const sourceFiles = new Set([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'),
     nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json']);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
@@ -88,11 +88,16 @@ async function writePrivate(path, bytes) {
         await handle.close();
     }
 }
-async function copyDirectory(source, target, digest) {
-    await mkdir(target, { mode: 0o700 });
-    await chmod(target, 0o700);
+async function copyDirectory(source, target, digest, signal) {
+    if (windows)
+        await ensureWindowsPrivateDirectory(target, false);
+    else {
+        await mkdir(target, { mode: 0o700 });
+        await chmod(target, 0o700);
+    }
     const names = (await readdir(source)).sort();
     for (const name of names) {
+        signal?.throwIfAborted();
         if (!/^[A-Za-z0-9._-]{1,200}$/.test(name) || name === '.' || name === '..') {
             throw new JobsError('canonical clone directory entry is unsupported');
         }
@@ -170,14 +175,59 @@ function requireSourceEntries(entries, required) {
         throw new JobsError('canonical clone source contains unsupported or incomplete state');
     }
 }
-/** Reads a pre-bootstrap Windows migration source while its existing Store lock is held. */
-export async function windowsLegacyStoreSourceTreeLocked(source, provider, signal) {
+async function windowsLegacySourceEntries(source, signal) {
     signal.throwIfAborted();
     const entries = new Set(await readdir(source));
     requireSourceEntries(entries, legacyCoreFiles);
     if (entries.has(nativePolicyTreeName))
         throw new JobsError('Windows legacy policy migration is unsupported');
+    return entries;
+}
+/** Reads a pre-bootstrap Windows migration source while its existing Store lock is held. */
+export async function windowsLegacyStoreSourceTreeLocked(source, provider, signal) {
+    const entries = await windowsLegacySourceEntries(source, signal);
     return storeTreeLocked(source, entries, provider, false, signal, null);
+}
+async function copyStoreEntries(source, target, entries, digest, signal) {
+    const copied = new Set();
+    for (const name of [...entries].sort()) {
+        signal?.throwIfAborted();
+        if (name === '.store.lock' || name === nativePolicyTreeName)
+            continue;
+        if (directories.has(name)) {
+            digest.update(`directory:${name.length}:${name}:`);
+            await copyDirectory(join(source, name), join(target, name), digest, signal);
+        }
+        else {
+            const bytes = await privateBytes(join(source, name));
+            digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+            await writePrivate(join(target, name), bytes);
+        }
+        copied.add(name);
+    }
+    return copied;
+}
+/** Copies legacy entries into the scoped private staging Store. Both Store locks are held by the caller. */
+export async function copyWindowsLegacyStoreLocked(source, target, sourceTree, signal) {
+    const entries = await windowsLegacySourceEntries(source, signal);
+    for (const name of directories) {
+        if (entries.has(name))
+            await privateDirectory(join(source, name), `canonical ${name}`);
+    }
+    const digest = createHash('sha256');
+    await copyStoreEntries(source, target, entries, digest, signal);
+    if (`sha256:${digest.digest('hex')}` !== sourceTree)
+        throw new JobsError('legacy Store changed during copy');
+    return entries;
+}
+/** Publishes the native marker after verifying the original files survived target bootstrap. */
+export async function finishWindowsLegacyStoreCloneLocked(target, original, sourceTree, provider, signal) {
+    if (await storeTreeLocked(target, original, provider, false, signal, null) !== sourceTree) {
+        throw new JobsError('migrated Store differs from the legacy source');
+    }
+    const candidateTree = await canonicalStoreCandidateTreeLocked(target, provider, signal);
+    signal.throwIfAborted();
+    await atomicWritePointJson(join(target, nativeCloneMarkerName), fromJSON({ mode: 'canonical-store-clone', version: 2, sourceTree, candidateTree }), options);
 }
 /** Computes the prepared candidate digest. The caller must hold the candidate Store lock. */
 export async function canonicalStoreCandidateTreeLocked(root, provider, signal = AbortSignal.timeout(30_000), policy) {
@@ -213,23 +263,8 @@ export async function prepareCanonicalStoreClone(source, target, provider, now =
             await mkdir(target, { mode: 0o700 });
             created = true;
             await chmod(target, 0o700);
-            const digest = createHash('sha256'), copied = new Set();
-            for (const name of [...entries].sort()) {
-                if (name === '.store.lock')
-                    continue;
-                if (name === nativePolicyTreeName)
-                    continue;
-                if (directories.has(name)) {
-                    digest.update(`directory:${name.length}:${name}:`);
-                    await copyDirectory(join(source, name), join(target, name), digest);
-                }
-                else {
-                    const bytes = await privateBytes(join(source, name));
-                    digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
-                    await writePrivate(join(target, name), bytes);
-                }
-                copied.add(name);
-            }
+            const digest = createHash('sha256');
+            const copied = await copyStoreEntries(source, target, entries, digest);
             await withNativePolicyTree(source, provider, async (policy) => {
                 updateNativePolicyDigest(digest, policy);
                 await copyNativePolicyTree(target, policy);
