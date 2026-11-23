@@ -8,9 +8,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { activateWindowsStoreScoped } from '../runtime/store/windows-activation.js';
+import { copyWindowsStoreForMigration, rollbackWindowsStoreMigration } from '../runtime/store/windows-store-migration.js';
 import { openWindowsStoreFile, withWindowsStore } from '../runtime/store/windows-store.js';
 
-// Windows install path: the packaged lock, no Python, and no clone or writer switch.
+// Windows activation and explicit migration use the packaged lock without Python.
 const command = fileURLToPath(new URL('../apps/companion/command.mjs', import.meta.url));
 const windows = process.platform === 'win32';
 const addonPath = fileURLToPath(new URL('../native/packaged-lock/win32-x64-napi8/flock.node', import.meta.url));
@@ -259,4 +260,222 @@ test('Windows CLI leaves legacy and unrecognized Store data untouched', { skip: 
   const unknownBefore = await snapshot(unknown);
   assert.equal(cli(temporary, 'store', 'init', '--root', unknown).status, 2);
   assert.deepEqual(await snapshot(unknown), unknownBefore);
+});
+
+const legacyFixtureFiles = ['profile.json', 'answers.json', 'applications.jsonl', 'sessions/legacy-application.json'];
+async function prepareLegacyFixture(source) {
+  const addon = loadAddon();
+  const fixture = new URL('../test/fixtures/python-store-v1.1.0/store/', import.meta.url);
+  addon.createStoreEntry(source, true);
+  addon.createStoreEntry(join(source, 'sessions'), true);
+  addon.createStoreEntry(join(source, '.store.lock'), false);
+  for (const name of legacyFixtureFiles) {
+    const path = join(source, ...name.split('/'));
+    addon.createStoreEntry(path, false);
+    await writeFile(path, await readFile(new URL(name, fixture)));
+  }
+}
+
+async function migrationSnapshot(root) {
+  return [await snapshot(root), await snapshot(join(root, 'sessions'))];
+}
+
+test('Windows migration check validates an explicit legacy Store without activating it', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-check-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy');
+  await prepareLegacyFixture(source);
+  const addon = loadAddon();
+  const sourceSnapshot = () => migrationSnapshot(source);
+  const runCheck = (path = source) => cli(temporary, 'migration', 'check', '--source', path);
+  const expectRefusal = async path => {
+    const before = await sourceSnapshot();
+    const refused = runCheck(path);
+    assert.equal(refused.status, 2);
+    assert.equal(refused.stdout, '');
+    assert.match(refused.stderr, /could not be verified.*left unchanged/);
+    assert.doesNotMatch(refused.stderr, /SYNTHETIC_PRIVATE_VALUE/);
+    assert.deepEqual(await sourceSnapshot(), before);
+  };
+
+  const original = await sourceSnapshot();
+  assert.deepEqual(json(runCheck()), { schemaVersion: 1, status: 'source-checked' });
+  assert.deepEqual(await sourceSnapshot(), original);
+  assert.deepEqual(await readdir(temporary), ['legacy']);
+
+  const marker = join(source, '.native-store-clone');
+  addon.createStoreEntry(marker, false);
+  await writeFile(marker, '{}\n');
+  await expectRefusal(source);
+  await unlink(marker);
+
+  const profile = join(source, 'profile.json');
+  const validProfile = await readFile(profile);
+  await writeFile(profile, '{"schemaVersion":999,"profile":{"name":"SYNTHETIC_PRIVATE_VALUE"}}');
+  await expectRefusal(source);
+  await writeFile(profile, validProfile);
+
+  const policy = join(source, 'auto-submit');
+  addon.createStoreEntry(policy, true);
+  await expectRefusal(source);
+  await rm(policy, { recursive: true });
+
+  const resumeFiles = join(source, 'resume-files');
+  const orphan = join(resumeFiles, '.browser-upload.12345678.txt');
+  addon.createStoreEntry(resumeFiles, true);
+  addon.createStoreEntry(orphan, false);
+  await writeFile(orphan, 'Unpublished legacy upload');
+  await expectRefusal(source);
+  const target = join(temporary, 'unused-native');
+  assert.equal(cli(temporary, 'migration', 'copy', '--source', source, '--target', target).status, 2);
+  assert.equal(await readFile(orphan, 'utf8'), 'Unpublished legacy upload');
+  assert.ok(!(await readdir(temporary)).includes('unused-native'));
+  await rm(resumeFiles, { recursive: true });
+
+  const alias = join(temporary, 'alias');
+  await symlink(source, alias, 'junction');
+  await expectRefusal(alias);
+  assert.ok((await readdir(temporary)).includes('alias'));
+
+  await unlink(join(source, '.store.lock'));
+  await expectRefusal(source);
+  assert.ok(!(await readdir(source)).includes('.store.lock'));
+});
+
+test('Windows publishes a verified migration copy that opens independently of the legacy Store', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-copy-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy'), target = join(temporary, 'native');
+  await prepareLegacyFixture(source);
+  const addon = loadAddon(), resumeFile = join('resume-files', 'legacy-resume.txt');
+  addon.createStoreEntry(join(source, 'resume-files'), true);
+  addon.createStoreEntry(join(source, resumeFile), false);
+  await writeFile(join(source, resumeFile), 'Synthetic résumé');
+  const original = await migrationSnapshot(source);
+  const runCopy = path => cli(temporary, 'migration', 'copy', '--source', source, '--target', path);
+  assert.equal(runCopy(join(source, 'nested')).status, 2);
+  assert.deepEqual(await migrationSnapshot(source), original);
+
+  assert.deepEqual(json(runCopy(target)), { schemaVersion: 1, status: 'copy-ready' });
+  for (const name of [...legacyFixtureFiles, resumeFile]) {
+    assert.deepEqual(await readFile(join(target, name)), await readFile(join(source, name)), name);
+  }
+  const marker = JSON.parse(await readFile(join(target, '.native-store-clone'), 'utf8'));
+  assert.equal(marker.mode, 'canonical-store-clone');
+  assert.match(marker.sourceTree, /^sha256:[a-f0-9]{64}$/);
+  assert.match(marker.candidateTree, /^sha256:[a-f0-9]{64}$/);
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', target)), []);
+
+  const input = join(temporary, 'job.json');
+  await writeFile(input, JSON.stringify({ id: 'after-migration', url: 'https://example.invalid/migrated-job', role: 'Synthetic' }));
+  assert.equal(json(cli(temporary, 'store', 'job-create', '--root', target, '--input', input)).id, 'after-migration');
+  const migrated = await migrationSnapshot(target);
+  assert.equal(runCopy(target).status, 2, 'a retry must preserve an existing target');
+  assert.deepEqual(await migrationSnapshot(target), migrated);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  assert.deepEqual((await readdir(temporary)).sort(), ['job.json', 'legacy', 'native']);
+});
+
+test('Windows migration cancellation, source drift, and target collisions leave the original usable', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-interrupted-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy'), target = join(temporary, 'native');
+  await prepareLegacyFixture(source);
+  const original = await migrationSnapshot(source);
+  const controller = new AbortController();
+  const interrupted = new Error('Interrupted migration');
+  await assert.rejects(copyWindowsStoreForMigration(source, target, addonPath, {
+    signal: controller.signal,
+    beforePublish: async () => controller.abort(interrupted),
+  }), interrupted);
+  assert.deepEqual(await readdir(temporary), ['legacy']);
+  assert.deepEqual(await migrationSnapshot(source), original);
+
+  const profile = join(source, 'profile.json');
+  const bytes = await readFile(profile);
+  await assert.rejects(copyWindowsStoreForMigration(source, target, addonPath, {
+    beforePublish: () => writeFile(profile, Buffer.concat([bytes, Buffer.from('\n')])),
+  }), /legacy Store changed/);
+  assert.deepEqual(await readdir(temporary), ['legacy']);
+  await writeFile(profile, bytes);
+
+  const collision = join(target, 'keep.txt');
+  await assert.rejects(copyWindowsStoreForMigration(source, target, addonPath, {
+    beforePublish: async () => {
+      await mkdir(target);
+      await writeFile(collision, 'existing destination');
+    },
+  }), /migration target already exists/);
+  assert.equal(await readFile(collision, 'utf8'), 'existing destination');
+  assert.deepEqual((await readdir(temporary)).sort(), ['legacy', 'native']);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  await rm(target, { recursive: true });
+
+  assert.deepEqual(json(cli(temporary, 'migration', 'copy', '--source', source, '--target', target)),
+    { schemaVersion: 1, status: 'copy-ready' });
+  assert.deepEqual(await migrationSnapshot(source), original);
+});
+
+test('Windows rollback restores the verified legacy snapshot and preserves post-migration edits', {
+  skip: !windows, timeout: 120_000,
+}, async t => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'job-apply-migration-rollback-')));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = join(temporary, 'legacy');
+  const migrated = join(temporary, 'native'), recovery = join(temporary, 'recovery');
+  await prepareLegacyFixture(source);
+  const original = await migrationSnapshot(source);
+  await copyWindowsStoreForMigration(source, migrated, addonPath);
+
+  const input = join(temporary, 'job.json');
+  await writeFile(input, JSON.stringify({ id: 'post-migration', url: 'https://example.invalid/post-migration', role: 'Synthetic' }));
+  assert.equal(json(cli(temporary, 'store', 'job-create', '--root', migrated, '--input', input)).id, 'post-migration');
+  const withEdits = await migrationSnapshot(migrated);
+  const runRollback = (from = source, reference = migrated, target = recovery) =>
+    cli(temporary, 'migration', 'rollback', '--source', from, '--migrated', reference, '--target', target);
+
+  assert.equal(runRollback(source, migrated, join(migrated, 'nested')).status, 2);
+  assert.equal(runRollback(migrated, migrated).status, 2);
+  assert.equal(runRollback(source, source).status, 2);
+  const receipt = join(migrated, '.native-store-clone');
+  const receiptBytes = await readFile(receipt);
+  await writeFile(receipt, '{"mode":"canonical-store-clone","version":2}');
+  assert.equal(runRollback().status, 2, 'rollback requires a valid receipt');
+  await writeFile(receipt, receiptBytes);
+
+  const profile = join(source, 'profile.json');
+  const profileBytes = await readFile(profile);
+  await writeFile(profile, Buffer.concat([profileBytes, Buffer.from('\n')]));
+  const drifted = await migrationSnapshot(source);
+  assert.equal(runRollback().status, 2, 'rollback requires the exact source bytes');
+  assert.deepEqual(await migrationSnapshot(source), drifted);
+  await writeFile(profile, profileBytes);
+
+  const controller = new AbortController();
+  const interrupted = new Error('Interrupted rollback');
+  await assert.rejects(rollbackWindowsStoreMigration(source, migrated, recovery, addonPath, {
+    signal: controller.signal,
+    beforePublish: async () => controller.abort(interrupted),
+  }), interrupted);
+  assert.deepEqual((await readdir(temporary)).sort(), ['job.json', 'legacy', 'native']);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  assert.deepEqual(await migrationSnapshot(migrated), withEdits);
+
+  assert.deepEqual(json(runRollback()), { schemaVersion: 1, status: 'recovery-ready' });
+  for (const name of legacyFixtureFiles) {
+    assert.deepEqual(await readFile(join(recovery, name)), await readFile(join(source, name)), name);
+  }
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', recovery)), []);
+  assert.deepEqual(json(cli(temporary, 'store', 'job-list', '--root', migrated)).map(job => job.id), ['post-migration']);
+  const recovered = await migrationSnapshot(recovery);
+  assert.equal(runRollback().status, 2);
+  assert.deepEqual(await migrationSnapshot(recovery), recovered);
+  assert.deepEqual(await migrationSnapshot(source), original);
+  assert.deepEqual(await migrationSnapshot(migrated), withEdits);
 });
