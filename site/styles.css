@@ -460,6 +460,106 @@ h3 {
   }
 }
 
+.platform-coverage {
+  overflow-anchor: none;
+}
+
+.platform-coverage .section-heading {
+  margin-block-end: clamp(22px, 4.5vw, 40px);
+}
+
+.platform-coverage h2 {
+  text-wrap: balance;
+}
+
+.platform-coverage .section-heading p {
+  max-width: 50ch;
+  margin-bottom: 0;
+}
+
+.provider-carousel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.provider-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 128px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.provider-list li {
+  display: grid;
+  min-width: 0;
+  min-height: 44px;
+  place-items: center;
+}
+
+.provider-list img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 132px);
+  max-height: 32px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.provider-list img[src$="/workday.png"] {
+  max-height: 40px;
+}
+
+.provider-list img[src$="/lever.png"] {
+  max-width: min(100%, 116px);
+}
+
+.provider-list[aria-hidden="true"] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .provider-carousel[data-ready] {
+    --provider-gap: clamp(14px, 4vw, 26px);
+    container-type: inline-size;
+    touch-action: pan-y;
+    cursor: grab;
+    -webkit-user-select: none;
+    user-select: none;
+    mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  }
+
+  .provider-carousel[data-ready]:active {
+    cursor: grabbing;
+  }
+
+  .provider-carousel[data-ready] .provider-track {
+    display: flex;
+    width: max-content;
+    margin-inline-start: 8px;
+    animation: provider-loop 30s linear infinite;
+  }
+
+  .provider-carousel[data-ready] .provider-list {
+    display: flex;
+    flex: none;
+    min-inline-size: 100cqw;
+    gap: var(--provider-gap);
+    padding-inline-end: var(--provider-gap);
+  }
+
+  .provider-carousel[data-ready] .provider-list li {
+    flex: 1 0 clamp(138px, 22vw, 156px);
+  }
+}
+
+@keyframes provider-loop {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
 .site-footer {
   min-height: 96px;
   padding: 16px var(--page-gutter);
