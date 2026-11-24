@@ -477,6 +477,10 @@ h3 {
   margin-bottom: 0;
 }
 
+.platform-coverage > .button {
+  margin-block-start: clamp(24px, 4.5vw, 40px);
+}
+
 .provider-carousel {
   min-width: 0;
   overflow: hidden;
@@ -698,6 +702,14 @@ h3 {
 
   .automation-install-stacked {
     display: inline-flex;
+  }
+
+  .platform-coverage {
+    padding-block-end: max(var(--section-space), 18svh);
+  }
+
+  .platform-coverage > .button {
+    inline-size: 100%;
   }
 }
 
