@@ -1,1 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect x="0" y="0" width="1200" height="630" rx="0" fill="#f6f7f9" /><rect x="60" y="64" width="40" height="5" rx="2" fill="#0891b2" /><text x="60" y="114" font-family="Geist" font-size="17" fill="#5d6673">CODEX + CLAUDE CODE</text><text x="56" y="224" font-family="Geist" font-size="68" fill="#15181d">Job Apply</text><text x="60" y="318" font-family="Geist" font-size="31" fill="#5d6673">Your experience.</text><text x="60" y="362" font-family="Geist" font-size="31" fill="#5d6673">Less repetitive typing.</text><rect x="740" y="155" width="350" height="350" rx="22" fill="#ffffff" stroke="#d9dee7"/><text x="772" y="202" font-family="Geist" font-size="16" fill="#5d6673">APPLICATION</text><rect x="772" y="250" width="236" height="12" rx="6" fill="#dce6ea" /><circle cx="1048" cy="256" r="14" fill="#d1fae5"/><path d="m1042 256 4 4 8-9" stroke="#15803d" stroke-width="3" fill="none"/><rect x="772" y="308" width="206" height="12" rx="6" fill="#dce6ea" /><circle cx="1048" cy="314" r="14" fill="#d1fae5"/><path d="m1042 314 4 4 8-9" stroke="#15803d" stroke-width="3" fill="none"/><rect x="772" y="366" width="176" height="12" rx="6" fill="#dce6ea" /><circle cx="1048" cy="372" r="14" fill="#d1fae5"/><path d="m1042 372 4 4 8-9" stroke="#15803d" stroke-width="3" fill="none"/><rect x="772" y="421" width="286" height="50" rx="10" fill="#0891b2" /><text x="816" y="453" font-family="Geist" font-size="18" fill="#ffffff">Ready for your review</text><path d="M60 551L1140 551" fill="none" stroke="#0891b2" stroke-width="1"/><text x="60" y="592" font-family="Geist" font-size="19" fill="#5d6673">job-apply.neonwatty.com</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title">
+  <title id="title">Job Apply for Codex and Claude Code</title>
+  <rect width="1200" height="630" fill="#f3f8fd"/>
+  <rect x="60" y="64" width="40" height="5" rx="2" fill="#0000ff"/>
+  <g font-family="Helvetica, Arial, sans-serif">
+    <text x="60" y="114" font-size="17" font-weight="600" fill="#576b80">CODEX + CLAUDE CODE</text>
+    <path transform="translate(45 127) scale(.145)" fill="#0000ff" d="M310 88V282C310 350 272 392 208 392C144 392 106 352 106 292V271.6L178 206.8V292C178 314 189 326 208 326C227 326 238 312 238 286V152.8Z"/>
+    <text x="104" y="173" font-size="36" font-weight="700" fill="#172d49">Job Apply</text>
+    <text x="60" y="270" font-size="62" font-weight="700" fill="#172d49">
+      <tspan x="60">Put your job search</tspan>
+      <tspan x="60" dy="67">on autopilot.</tspan>
+    </text>
+    <text x="60" y="402" font-size="29" fill="#576b80">
+      <tspan x="60">Find more jobs and submit more</tspan>
+      <tspan x="60" dy="38">applications with tools and skills</tspan>
+      <tspan x="60" dy="38">that keep your agent on track.</tspan>
+    </text>
+    <rect x="740" y="155" width="350" height="350" rx="22" fill="#ffffff" stroke="#d5e3ef"/>
+    <text x="772" y="202" font-size="16" fill="#576b80">APPLICATION</text>
+    <g fill="#d5e3ef">
+      <rect x="772" y="250" width="236" height="12" rx="6"/>
+      <rect x="772" y="308" width="206" height="12" rx="6"/>
+      <rect x="772" y="366" width="176" height="12" rx="6"/>
+    </g>
+    <g fill="#e0f2ff">
+      <circle cx="1048" cy="256" r="14"/>
+      <circle cx="1048" cy="314" r="14"/>
+      <circle cx="1048" cy="372" r="14"/>
+    </g>
+    <path d="M1042 256l4 4 8-9m-12 63 4 4 8-9m-12 63 4 4 8-9" fill="none" stroke="#0000cc" stroke-width="3"/>
+    <rect x="772" y="421" width="286" height="50" rx="10" fill="#0000ff"/>
+    <text x="915" y="452" text-anchor="middle" font-size="18" fill="#ffffff">Ready for your review</text>
+    <path d="M60 551H1140" stroke="#d5e3ef"/>
+    <text x="60" y="592" font-size="19" fill="#576b80">job-apply.neonwatty.com</text>
+  </g>
+</svg>
