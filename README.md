@@ -23,7 +23,7 @@ before upgrading from Python.
 #### Install stable
 
 The default marketplace installs the validated release of Job Apply and its optional Companion.
-Windows x64 support starts with v1.3.9. If your stable marketplace still lists an earlier version, [try preview](#try-preview).
+Windows x64 support starts with v1.3.9. Starting in v1.3.10, you can [migrate a legacy Store or recover its original data](docs/runtime-support.md#explicit-windows-store-migration).
 
 **Codex**, in a terminal:
 
