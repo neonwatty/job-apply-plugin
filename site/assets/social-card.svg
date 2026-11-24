@@ -1,19 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title">
-  <title id="title">Job Apply for Codex and Claude Code</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title" aria-describedby="description">
+  <title id="title">Job Apply. Applying for jobs sucks.</title>
+  <desc id="description">Give your agent the Job Apply harness and put it to work safely applying for jobs for you.</desc>
   <rect width="1200" height="630" fill="#f3f8fd"/>
   <rect x="60" y="64" width="40" height="5" rx="2" fill="#0000ff"/>
   <g font-family="Helvetica, Arial, sans-serif">
     <text x="60" y="114" font-size="17" font-weight="600" fill="#576b80">CODEX + CLAUDE CODE</text>
     <path transform="translate(45 127) scale(.145)" fill="#0000ff" d="M310 88V282C310 350 272 392 208 392C144 392 106 352 106 292V271.6L178 206.8V292C178 314 189 326 208 326C227 326 238 312 238 286V152.8Z"/>
     <text x="104" y="173" font-size="36" font-weight="700" fill="#172d49">Job Apply</text>
-    <text x="60" y="270" font-size="62" font-weight="700" fill="#172d49">
-      <tspan x="60">Put your job search</tspan>
-      <tspan x="60" dy="67">on autopilot.</tspan>
+    <text x="60" y="270" font-size="68" font-weight="700" fill="#172d49">
+      <tspan x="60">Applying for jobs</tspan>
+      <tspan x="60" dy="72">sucks.</tspan>
     </text>
-    <text x="60" y="402" font-size="29" fill="#576b80">
-      <tspan x="60">Find more jobs and submit more</tspan>
-      <tspan x="60" dy="38">applications with tools and skills</tspan>
-      <tspan x="60" dy="38">that keep your agent on track.</tspan>
+    <text x="60" y="402" font-size="33" fill="#576b80">
+      <tspan x="60">Give your agent the Job Apply</tspan>
+      <tspan x="60" dy="40">harness and put it to work safely</tspan>
+      <tspan x="60" dy="40">applying for jobs for you.</tspan>
     </text>
     <rect x="740" y="155" width="350" height="350" rx="22" fill="#ffffff" stroke="#d5e3ef"/>
     <text x="772" y="202" font-size="16" fill="#576b80">APPLICATION</text>
