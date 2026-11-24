@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title" aria-describedby="description">
   <title id="title">Job Apply. Applying for jobs sucks.</title>
-  <desc id="description">Give your agent the Job Apply harness and put it to work safely applying for jobs for you.</desc>
+  <desc id="description">It’s all just a numbers game. So give your agent the Job Apply harness and put it to work safely applying to jobs for you. And get those numbers up.</desc>
   <rect width="1200" height="630" fill="#f3f8fd"/>
   <rect x="60" y="64" width="40" height="5" rx="2" fill="#0000ff"/>
   <g font-family="Helvetica, Arial, sans-serif">
@@ -11,10 +11,11 @@
       <tspan x="60">Applying for jobs</tspan>
       <tspan x="60" dy="72">sucks.</tspan>
     </text>
-    <text x="60" y="402" font-size="33" fill="#576b80">
-      <tspan x="60">Give your agent the Job Apply</tspan>
-      <tspan x="60" dy="40">harness and put it to work safely</tspan>
-      <tspan x="60" dy="40">applying for jobs for you.</tspan>
+    <text x="60" y="396" font-size="30" fill="#576b80">
+      <tspan x="60">It’s all just a numbers game.</tspan>
+      <tspan x="60" dy="38">So give your agent the Job Apply harness</tspan>
+      <tspan x="60" dy="38">and put it to work safely applying to jobs for you.</tspan>
+      <tspan x="60" dy="38">And get those numbers up.</tspan>
     </text>
     <rect x="740" y="155" width="350" height="350" rx="22" fill="#ffffff" stroke="#d5e3ef"/>
     <text x="772" y="202" font-size="16" fill="#576b80">APPLICATION</text>
