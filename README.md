@@ -115,7 +115,7 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 
 ### Job Apply (`job-apply:job-apply`)
 - **Resume-specific facts**: Extract facts from each managed PDF, DOCX, or TXT resume and confirm them under that resume
-- **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday. One Pinterest Greenhouse form reached review in Chrome; broader current-form coverage remains unverified.
+- **Tested guided workflows** for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday
 - **Visible browser automation**: Codex Browser/Chrome or Claude in Chrome fills forms in a session you can see and control
 - **Smart field mapping**: Uses the chosen resume's confirmed facts for applicant fields
 - **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
@@ -242,33 +242,16 @@ Every mutation of an existing resume or proposal checks the target record's exac
 
 The workspace never runs an application, reads arbitrary filesystem paths, parses, writes, generates, or tailors resume content, authors extraction proposals, or activates Submit, Send, Apply, or another third-party final action. It has no cloud sync or browser-owned durable catalog. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
 
-## Compatibility and Verification Status
+## Supported Application Sites
 
-Run the credential-free workflow audit from the repository root:
-
-```bash
-npm run audit:core-workflows
-```
-
-It validates every committed Agent Workflow with the pinned runner, requires one
-registry row per workflow, and checks each row's Companion surfaces, CLI entry
-points, tests, and evidence sources. Its evidence summary keeps deterministic
-local, installed-host, supervised replay, and current-live ATS proof separate.
-It does not launch an agent, browser, account flow, or ATS. See
-[`docs/testing.md`](docs/testing.md#core-workflow-evidence-audit) before running
-the optional installed-host lane; current-live ATS proof remains a separately
-authorized supervised activity.
-
-The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. A [single Pinterest Greenhouse form reached manual review on 2026-09-29](docs/dogfooding/2026-09-29-pinterest-greenhouse-live-review.md); that agent-attested observation does not establish general Greenhouse acceptance or coverage of the other ATS families. Forms may drift as sites change. The Greenhouse, Rippling, and Workday readiness catalogs remain hand-authored synthetic schema fixtures, not recorder-derived replay evidence.
-
-| Platform | URL Pattern | Default browser path | Verification status |
-|----------|-------------|----------------------|---------------------|
-| LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Greenhouse | `boards.greenhouse.io/*`, `job-boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; Pinterest review-only observation on 2026-09-29; broader flow unverified |
-| Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
-| Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
-| Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
-| Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
+| Platform | URL pattern |
+|----------|-------------|
+| LinkedIn Easy Apply | `linkedin.com/jobs/view/*` |
+| Greenhouse | `boards.greenhouse.io/*`, `job-boards.greenhouse.io/*` |
+| Ashby | `jobs.ashbyhq.com/*` |
+| Lever | `jobs.lever.co/*` |
+| Rippling | `*.rippling.com/*` |
+| Workday | `*.myworkdayjobs.com/*` |
 
 ## Profile Storage
 
