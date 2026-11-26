@@ -1,0 +1,385 @@
+.store-section {
+  display: grid;
+  grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr);
+  grid-template-areas: "copy demo" "install demo";
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 18px clamp(22px, 4.2vw, 54px);
+}
+
+.store-section .section-heading {
+  grid-area: copy;
+  align-self: end;
+  min-width: 0;
+}
+
+.store-section .store-install {
+  grid-area: install;
+  justify-self: start;
+  align-self: start;
+}
+
+.store-section h2 {
+  text-wrap: balance;
+}
+
+.store-section .section-heading p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 920px) {
+  .store-section {
+    grid-template-columns: minmax(0, 590px);
+    grid-template-areas: "copy" "demo" "install";
+    grid-template-rows: auto;
+    justify-content: center;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .store-section .store-install { justify-self: stretch; }
+}
+
+@media (min-width: 561px) and (max-height: 540px) {
+  .store-section {
+    grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+    grid-template-areas: "copy demo" "install demo";
+    gap: 12px 16px;
+  }
+}
+
+#job-apply-store-stamps {
+  --desk: light-dark(#e5f3ff, #15243d);
+  --desk-edge: light-dark(#c6dcff, #203961);
+  --desk-grain: light-dark(#2947b317, #b4d6ff24);
+  --cabinet: light-dark(#344ce4, #334bdb);
+  --cabinet-edge: light-dark(#172881, #1b2a74);
+  --shelf: light-dark(#25377b, #213269);
+  --nameplate: #eef6ff;
+  --brass: #f1c675;
+  --white-ink: #fff8eb;
+  --paper: light-dark(#fff8ea, #283044);
+  --ink: light-dark(#172d49, #f3e8d5);
+  --rule: light-dark(#dfcfb4, #65657a);
+  --shadow: light-dark(#16245040, #050a1c80);
+  --red: light-dark(#a32848, #ffa6b5);
+  --blue: light-dark(#243cac, #b5c8ff);
+  --green: light-dark(#1a5b43, #9ce5bf);
+  display: grid;
+  gap: 5px;
+  grid-area: demo;
+  justify-self: end;
+  width: min(100%, 584px);
+  min-width: 0;
+  container: store-demo / inline-size;
+}
+#job-apply-store-stamps .store-station {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 15px;
+  padding: 15px 16px 16px;
+  border: 1px solid var(--desk-edge);
+  border-radius: 15px;
+  background:
+    repeating-linear-gradient(137deg, transparent 0 10px, var(--desk-grain) 10px 11px, transparent 11px 18px),
+    linear-gradient(150deg, var(--desk), var(--desk-edge));
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+#job-apply-store-stamps .store-cabinet {
+  min-inline-size: 0;
+  padding: 8px;
+  border: 1px solid var(--cabinet-edge);
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 19%), transparent 48%),
+    linear-gradient(var(--cabinet), var(--cabinet-edge));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 33%),
+    0 4px 0 var(--cabinet-edge),
+    0 7px 11px var(--shadow);
+}
+#job-apply-store-stamps .store-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 0 1px 6px;
+  color: var(--white-ink);
+}
+#job-apply-store-stamps .store-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: 720 14px/1.2 "Avenir Next", "Segoe UI", sans-serif;
+}
+#job-apply-store-stamps .store-name img {
+  padding: 3px;
+  border-radius: 6px;
+  background: var(--nameplate);
+}
+#job-apply-store-stamps .store-count {
+  padding: 2px 6px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 4px;
+  background: var(--cabinet-edge);
+  font-size: 11px;
+  white-space: nowrap;
+}
+#job-apply-store-stamps .store-count strong {
+  display: inline-block;
+  color: var(--brass);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+#job-apply-store-stamps .store-rack {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px 3px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--cabinet-edge);
+  border-block: 2px solid var(--brass);
+  border-radius: 5px;
+  background: var(--shelf);
+  box-shadow: inset 0 2px 5px var(--shadow);
+}
+#job-apply-store-stamps .store-slot {
+  position: relative;
+  display: grid;
+  align-items: end;
+  min-inline-size: 0;
+  min-block-size: 37px;
+  padding: 2px 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  --stamp-top: #3d61a6;
+  --stamp-side: #263c73;
+}
+#job-apply-store-stamps .store-slot:nth-child(3n) {
+  --stamp-top: #96672e;
+  --stamp-side: #593b23;
+}
+#job-apply-store-stamps .store-slot:nth-child(3n + 2) {
+  --stamp-top: #637aac;
+  --stamp-side: #3e4c7d;
+}
+#job-apply-store-stamps .store-slot[data-stamp="start"] {
+  --stamp-top: #c44a61;
+  --stamp-side: #8a2845;
+}
+#job-apply-store-stamps .store-slot[data-stamp="travel"] {
+  --stamp-top: #536be0;
+  --stamp-side: #273baf;
+}
+#job-apply-store-stamps .store-slot:not([data-saved]) {
+  border: 1px dashed var(--brass);
+}
+#job-apply-store-stamps .store-slot:not([data-saved]) .store-tool { visibility: hidden; }
+#job-apply-store-stamps .store-tool {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: end;
+  min-height: 14px;
+  border-radius: 3px;
+  background: linear-gradient(var(--stamp-top), var(--stamp-side));
+  box-shadow: 0 3px 0 var(--stamp-side);
+  color: var(--white-ink);
+  font: 700 11px/1.3 "Avenir Next", "Segoe UI", sans-serif;
+  text-align: center;
+  transform-origin: center bottom;
+  pointer-events: none;
+}
+#job-apply-store-stamps .store-tool::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 17px;
+  height: 16px;
+  translate: -50% 0;
+  border-radius: 43% 43% 28% 28%;
+  background: radial-gradient(ellipse at 35% 27%, var(--brass), var(--stamp-top) 48%, var(--stamp-side) 95%);
+}
+#job-apply-store-stamps .store-paper-stack { position: relative; min-inline-size: 0; }
+#job-apply-store-stamps .store-paper-stack::before {
+  content: "";
+  position: absolute;
+  inset: 6px 2px 0;
+  border-radius: 5px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--rule), 0 6px 8px var(--shadow);
+  rotate: 2.6deg;
+}
+#job-apply-store-stamps .store-paper {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 7px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 2px 5px 10px var(--shadow);
+}
+#job-apply-store-stamps .store-paper-title {
+  margin: 0;
+  padding-block-end: 4px;
+  border-block-end: 2px dotted var(--rule);
+  font: 750 15px/1.2 "Avenir Next", "Segoe UI", sans-serif;
+}
+#job-apply-store-stamps .store-fields { display: grid; gap: 4px; }
+#job-apply-store-stamps .store-field { display: grid; gap: 1px; font-size: 12px; font-weight: 650; }
+#job-apply-store-stamps .store-field[hidden] { display: grid; visibility: hidden; }
+#job-apply-store-stamps .store-line { min-block-size: 23px; border-block-end: 1px solid var(--rule); }
+#job-apply-store-stamps .store-impression {
+  display: inline-block;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 760;
+}
+#job-apply-store-stamps [data-entry="empty"] .store-impression { visibility: hidden; }
+#job-apply-store-stamps [data-entry="written"] .store-impression {
+  color: var(--blue);
+  font-family: "Bradley Hand", "Segoe Print", Georgia, serif;
+  font-style: italic;
+}
+#job-apply-store-stamps [data-entry="stamped"] .store-impression {
+  border-color: currentColor;
+  color: var(--red);
+  rotate: -4deg;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+#job-apply-store-stamps [data-field="travel"][data-entry="stamped"] .store-impression {
+  color: var(--blue);
+  rotate: 3deg;
+}
+#job-apply-store-stamps .store-review { min-height: 16px; color: var(--green); font-size: 11px; font-weight: 750; }
+#job-apply-store-stamps [data-review]:not([hidden]) { display: inline-block; }
+#job-apply-store-stamps .store-flying,
+#job-apply-store-stamps .store-spark {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+}
+#job-apply-store-stamps .store-flying {
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--blue);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+}
+#job-apply-store-stamps .store-spark {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  color: var(--red);
+  background: currentColor;
+  box-shadow:
+    11px -15px var(--brass),
+    -17px -8px currentColor,
+    16px 12px var(--blue),
+    -20px 8px var(--brass);
+}
+#job-apply-store-stamps .store-controls,
+#job-apply-store-stamps .store-scenes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+#job-apply-store-stamps .store-controls { justify-content: space-between; }
+#job-apply-store-stamps .store-controls[hidden] { display: none; }
+
+#job-apply-store-stamps .store-play,
+#job-apply-store-stamps [aria-pressed="true"] {
+  color: var(--accent-dark);
+  background: var(--surface);
+  border-color: var(--line);
+}
+#job-apply-store-stamps .store-controls .plinko-control { padding-inline: 10px; }
+
+@container store-demo (max-width: 510px) {
+  #job-apply-store-stamps .store-station {
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+    gap: 9px;
+    padding: 9px 8px 12px;
+  }
+
+  #job-apply-store-stamps .store-rack {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  #job-apply-store-stamps .store-header {
+    padding-bottom: 5px;
+  }
+
+  #job-apply-store-stamps .store-cabinet {
+    padding: 5px;
+  }
+
+  #job-apply-store-stamps .store-slot {
+    min-block-size: 32px;
+    padding: 1px 0 3px;
+  }
+
+  #job-apply-store-stamps .store-tool::before {
+    height: 13px;
+  }
+}
+
+@container store-demo (max-width: 385px) {
+  #job-apply-store-stamps .store-name {
+    gap: 3px;
+    font-size: 12px;
+  }
+
+  #job-apply-store-stamps .store-name img {
+    width: 19px;
+    height: 19px;
+  }
+
+  #job-apply-store-stamps .store-count {
+    padding: 1px 4px;
+  }
+
+  #job-apply-store-stamps .store-topic {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  #job-apply-store-stamps .store-slot:not([data-stamp]) .store-tool::after {
+    content: "";
+    position: absolute;
+    inset: auto 29% 4px;
+    height: 2px;
+    border-top: 1px solid rgb(255 255 255 / 38%);
+    border-bottom: 1px solid rgb(255 255 255 / 19%);
+  }
+
+  #job-apply-store-stamps .store-controls .plinko-control { padding-inline: 7px; }
+}
+
+@container store-demo (max-width: 305px) {
+  #job-apply-store-stamps .store-paper { padding-inline: 7px; }
+  #job-apply-store-stamps .store-paper-title { font-size: 13px; }
+  #job-apply-store-stamps .store-impression { font-size: 11px; letter-spacing: .02em; }
+}

@@ -8,9 +8,11 @@
   <title>Job Apply Plugin for Codex and Claude Code</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/job-apply-icon-32.png">
   <link rel="icon" type="image/svg+xml" sizes="any" href="assets/job-apply-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="store-preview.css?v=3">
   <script src="plinko.js?v=11" defer></script>
   <script src="automation-preview.js?v=20" defer></script>
+  <script src="store-preview.js?v=2" defer></script>
   <script src="section-playback.js?v=10" defer></script>
   <script src="provider-carousel.js?v=1" defer></script>
 <meta property="og:title" content="Job Apply">
@@ -59,8 +61,8 @@
 
     <section id="benefits" class="hero plinko-section plinko-beat" aria-labelledby="benefits-title">
       <div class="hero-copy">
-        <h2 id="benefits-title">Effortlessly apply to 10× as many jobs.</h2>
-        <p class="lede"><strong>Give your agent a memory and a playbook.</strong> Job Apply saves your résumé facts and screening answers, then guides your agent through each form.</p>
+        <h2 id="benefits-title">Apply to 10 jobs in less time than it takes you to fill out one by hand.</h2>
+        <p class="lede"><strong>And get your time back.</strong> Job Apply parses your résumé and saves your answers to common questions so it can fill out applications for you.</p>
       </div>
       <div class="plinko-board" data-plinko="stream" data-section-animation hidden>
         <canvas width="640" height="780" role="img" aria-label="Twenty-eight steel BBs stream through the pegboard. The final BB lands in Callback, lighting up the gold slot."></canvas>
@@ -73,6 +75,68 @@
       <div class="actions" aria-label="Primary actions">
         <a class="button primary" href="https://github.com/neonwatty/job-apply-plugin#installation">Install Job Apply</a>
       </div>
+    </section>
+
+    <section id="answer-memory" class="section store-section" aria-labelledby="answer-memory-title">
+      <div class="section-heading">
+        <h2 id="answer-memory-title">The more you use it, the better it gets.</h2>
+        <p>Job Apply helps your agent get better with each application. It saves your answers and keeps your details and preferences up to date so you have less to type next time.</p>
+      </div>
+
+      <div id="job-apply-store-stamps" class="store-demo" data-store-demo data-section-animation>
+        <div class="store-station" role="group" aria-label="Job Apply Store stamp animation">
+          <section class="store-cabinet" aria-labelledby="demo-store-title">
+            <header class="store-header">
+              <h3 id="demo-store-title" class="store-name">
+                <img width="24" height="24" alt="" src="assets/job-apply-icon-32.png">
+                Job Apply Store
+              </h3>
+              <span class="store-count"><strong data-count>10</strong> saved answers</span>
+            </header>
+            <ul class="store-rack" aria-label="Saved answer stamps">
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Remote</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">City</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Pay</span></span></li>
+              <li class="store-slot" data-saved aria-label="Work authorization"><span class="store-tool"><span class="store-topic">Auth</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Visa</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Hours</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Shift</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Degree</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Move</span></span></li>
+              <li class="store-slot" data-saved><span class="store-tool"><span class="store-topic">Phone</span></span></li>
+              <li class="store-slot" data-stamp="start" aria-label="Open slot for start date"><span class="store-tool">Start</span></li>
+              <li class="store-slot" data-stamp="travel" aria-label="Open slot for travel"><span class="store-tool">Travel</span></li>
+            </ul>
+          </section>
+
+          <div class="store-paper-stack">
+            <section class="store-paper" aria-labelledby="store-demo-application">
+              <h3 class="store-paper-title" id="store-demo-application" data-paper-title>Application 1</h3>
+              <div class="store-fields">
+                <div class="store-field" data-field="start" data-entry="written">
+                  <span>Start date</span>
+                  <div class="store-line"><span class="store-impression">In two weeks</span></div>
+                </div>
+                <div class="store-field" data-field="travel" data-entry="empty" hidden>
+                  <span>Travel limit</span>
+                  <div class="store-line"><span class="store-impression">Up to 10%</span></div>
+                </div>
+              </div>
+              <div class="store-review"><span data-review hidden>✓ Ready for review</span></div>
+            </section>
+          </div>
+        </div>
+        <div class="store-controls" data-store-controls hidden>
+          <button class="plinko-control store-play" type="button" data-play>Play animation</button>
+          <div class="store-scenes" role="group" aria-label="Jump to an application">
+            <button class="plinko-control" type="button" data-scene="0" aria-pressed="true">First</button>
+            <button class="plinko-control" type="button" data-scene="1" aria-pressed="false">Second</button>
+            <button class="plinko-control" type="button" data-scene="2" aria-pressed="false">Third</button>
+          </div>
+        </div>
+        <span class="visually-hidden" aria-live="polite" data-announcement></span>
+      </div>
+      <a class="button primary store-install" href="https://github.com/neonwatty/job-apply-plugin#installation">Install Job Apply</a>
     </section>
 
     <section id="automation-control" class="section automation-control" aria-labelledby="automation-control-title">
