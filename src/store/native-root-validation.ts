@@ -2,6 +2,7 @@ import { readdir, realpath } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { requirePrivateStoreDirectory } from './private-store-entry.js';
+import { validateCollectionCompatibility } from './native-collection-compatibility.js';
 import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries,
   nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
 
@@ -20,4 +21,5 @@ export async function validateNativeJobsRoot(root: string, read: (name: string) 
     throw new JobsError('native Jobs cannot open unsupported state or recovery journals');
   await validateNativeStoreMetadata(root, markers[0]!, await read(markers[0]!));
   await read('.store.lock');
+  if (locked) await validateCollectionCompatibility(root, new Set(entries));
 }

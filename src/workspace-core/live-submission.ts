@@ -5,11 +5,16 @@ import { liveSubmissionEnabled } from '../contracts/workspace/submission-prefere
 import { get, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { ClaimRepository, ClaimTransaction } from './claims.js';
 import { preflightJobRecord, reviewedInputsFingerprint } from './job-preflight.js';
+import { canonicalSubmissionObservation, isSubmissionFingerprint, matchesSubmissionFingerprint,
+  privateSubmissionFingerprint } from './submission-fingerprint.js';
 
-type Item = { jobId: string; jobRevision: string; reviewFingerprint: string };
+type JobRevision = { jobId: string; jobRevision: string };
+type Item = JobRevision & { reviewFingerprint: string };
 type Bound = Item & { workspaceFingerprint: string };
 type Approval = { expiresAt: number; profileRevision: string; items: Bound[] };
-type ActionRecord = { approvalId: string; claimId: string; jobRevision: string; status: 'claimed' | 'uncertain' | 'confirmed'; confirmation?: string };
+type ActionRecord = { approvalId: string; claimId: string; jobRevision: string; status: 'claimed' | 'uncertain' | 'confirmed';
+  confirmation?: string; targetFingerprint?: string };
+type ReconciledReceipt = { status: 'confirmed'; receiptId: string; targetFingerprint: string };
 export interface SubmissionLedger {
   read(key: string): Promise<unknown>;
   write(key: string, value: unknown): Promise<void>;
@@ -22,16 +27,18 @@ const opaqueId = (value: unknown): value is string => typeof value === 'string' 
 export const liveSubmissionJobKey = (id: string) => `job-${sha(id)}`;
 const check = (condition: unknown, reason: string) => { if (!condition) throw new JobsError(reason); };
 
-function receipt(jobId: string, action: ActionRecord, storeUpdated: boolean) {
+function receipt(jobId: string, action: ActionRecord | ReconciledReceipt, storeUpdated: boolean) {
+  const receiptId = 'receiptId' in action ? action.receiptId : `receipt:${sha(`${jobId}:${action.claimId}`)}`;
   return { status: 'confirmed_submitted' as const, evidence: 'agent_observed_portal_confirmation' as const,
-    receiptId: `receipt:${sha(`${jobId}:${action.claimId}`)}`, storeUpdated };
+    receiptId, storeUpdated };
 }
 
 export function projectSubmissionOutcome(jobId: string, value: unknown, applied: boolean) {
-  const action = value as ActionRecord | null | undefined;
+  const action = value as ActionRecord | ReconciledReceipt | null | undefined;
   if (!action) return null;
   if (action.status !== 'confirmed') return { status: 'verify_submission_status' as const };
-  check(opaqueId(action.claimId) && fingerprint(action.confirmation), 'submission ledger is invalid');
+  check('receiptId' in action ? /^receipt:[a-f0-9]{64}$/.test(action.receiptId) && fingerprint(action.targetFingerprint)
+    : opaqueId(action.claimId) && fingerprint(action.confirmation), 'submission ledger is invalid');
   return receipt(jobId, action, applied);
 }
 
@@ -41,12 +48,16 @@ function fields(value: unknown, names: string[]): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function readJobRevision(item: Record<string, unknown>): JobRevision {
+  const jobId = safeId(typeof item.jobId === 'string' ? item.jobId : null);
+  if (typeof item.jobRevision !== 'string' || !/^[1-9][0-9]{0,29}$/.test(item.jobRevision)) throw new JobsError('an exact job revision is required');
+  return { jobId, jobRevision: item.jobRevision };
+}
+
 function readItem(raw: unknown): Item {
   const item = fields(raw, ['jobId', 'jobRevision', 'reviewFingerprint']);
-  const jobId = safeId(typeof item.jobId === 'string' ? item.jobId : null);
-  check(typeof item.jobRevision === 'string' && /^[1-9][0-9]{0,29}$/.test(item.jobRevision)
-    && fingerprint(item.reviewFingerprint), 'an exact job revision and browser review fingerprint are required');
-  return { jobId, jobRevision: item.jobRevision as string, reviewFingerprint: item.reviewFingerprint as string };
+  if (!isSubmissionFingerprint(item.reviewFingerprint)) throw new JobsError('a private browser review fingerprint is required');
+  return { ...readJobRevision(item), reviewFingerprint: item.reviewFingerprint };
 }
 
 function activeJob(tx: ClaimTransaction, id: string) {
@@ -54,6 +65,21 @@ function activeJob(tx: ClaimTransaction, id: string) {
   if (value === null) return null;
   const job = object(value, 'job');
   return get(job, 'deletedAt') === null ? job : null;
+}
+
+function postingFingerprint(job: NonNullable<ReturnType<typeof activeJob>>) {
+  return revision(['canonical-posting', string(get(job, 'normalizedUrl'))]);
+}
+
+async function saveApplied(tx: ClaimTransaction, id: string, job: NonNullable<ReturnType<typeof activeJob>>, now: number) {
+  const at = new Date(now).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  set(job, 'status', text('applied'));
+  set(job, 'closedOutcome', null);
+  set(job, 'revision', integer(int(get(job, 'revision'))! + 1n));
+  set(job, 'updatedAt', text(at));
+  set(object(get(tx.jobs, 'metadata'), 'jobs metadata'), 'updatedAt', text(at));
+  validateJob(id, job);
+  await tx.saveJobs(tx.jobs);
 }
 
 function profileRevision(tx: ClaimTransaction) {
@@ -94,6 +120,36 @@ export class LiveSubmissionService {
     return this.repository.claimTransaction(async tx => ({ enabled: liveSubmissionEnabled(tx.profile) }));
   }
 
+  fingerprint(input: unknown) {
+    const packet = fields(input, ['jobId', 'jobRevision', 'observation']);
+    const { jobId, jobRevision } = readJobRevision(packet);
+    const observation = canonicalSubmissionObservation(packet.observation);
+    return this.repository.claimTransaction(async tx => {
+      profileRevision(tx);
+      const job = activeJob(tx, jobId);
+      check(job && string(get(job, 'status')) === 'awaiting_review' && int(get(job, 'revision'))?.toString() === jobRevision,
+        'job review is no longer current');
+      const key = await this.fingerprintKey(true);
+      return { reviewFingerprint: privateSubmissionFingerprint(observation, key, jobId, jobRevision) };
+    });
+  }
+
+  private async fingerprintKey(create = false): Promise<string> {
+    const name = 'review-fingerprint-key';
+    const stored = await this.ledger.read(name) as { key?: unknown } | null;
+    if (stored === null && create) {
+      const key = opaque();
+      await this.ledger.write(name, { key });
+      return key;
+    }
+    if (!opaqueId(stored?.key)) throw new JobsError('a private browser review fingerprint is required');
+    return stored.key;
+  }
+
+  private verifyFingerprint({ reviewFingerprint, jobId, jobRevision }: Item, key: string) {
+    check(matchesSubmissionFingerprint(reviewFingerprint, key, jobId, jobRevision), 'browser review fingerprint does not match this job');
+  }
+
   preview(input: unknown, approvedId?: string) {
     const { jobs } = fields(input, ['jobs']);
     check(Array.isArray(jobs) && jobs.length >= 1 && jobs.length <= 10, 'select one to ten reviewed jobs');
@@ -101,8 +157,10 @@ export class LiveSubmissionService {
     check(new Set(items.map(item => item.jobId)).size === items.length, 'reviewed jobs must be unique');
     return this.repository.claimTransaction(async tx => {
       const profile = profileRevision(tx);
+      const key = await this.fingerprintKey();
       const bound: Bound[] = [];
       for (const item of items) {
+        this.verifyFingerprint(item, key);
         check(await this.ledger.read(liveSubmissionJobKey(item.jobId)) === null, 'verify submission status before another attempt');
         bound.push(await bind(tx, item));
       }
@@ -124,6 +182,7 @@ export class LiveSubmissionService {
       const approval = await this.ledger.read(`approval-${approvalId}`) as Approval | null;
       check(approval && approval.profileRevision === profile && Number.isSafeInteger(approval.expiresAt)
         && this.now() < approval.expiresAt && Array.isArray(approval.items), 'submission approval expired or the saved setting changed');
+      this.verifyFingerprint(item, await this.fingerprintKey());
       const permitted = approval!.items.find(row => row.jobId === item.jobId);
       check(permitted && JSON.stringify(permitted) === JSON.stringify(await bind(tx, item)), 'the application changed after approval');
       check(await this.ledger.read(liveSubmissionJobKey(item.jobId)) === null, 'verify submission status before another attempt');
@@ -135,7 +194,8 @@ export class LiveSubmissionService {
       check(now < approval!.expiresAt, 'submission approval expired');
       const useBefore = Math.min(approval!.expiresAt, now + 15_000);
       const claimId = opaque();
-      const action: ActionRecord = { approvalId, claimId, jobRevision: item.jobRevision, status: 'claimed' };
+      const action: ActionRecord = { approvalId, claimId, jobRevision: item.jobRevision, status: 'claimed',
+        targetFingerprint: postingFingerprint(activeJob(tx, item.jobId)!) };
       const key = liveSubmissionJobKey(item.jobId);
       await this.ledger.write(key, action);
       if (this.now() >= useBefore) {
@@ -173,13 +233,7 @@ export class LiveSubmissionService {
         return receipt(jobId, record, alreadyApplied);
       }
       requireJobUnclaimed(tx.coordinator, jobId);
-      const at = new Date(this.now()).toISOString().replace(/\.\d{3}Z$/, 'Z');
-      set(job, 'status', text('applied'));
-      set(job, 'revision', integer(current! + 1n));
-      set(job, 'updatedAt', text(at));
-      set(object(get(tx.jobs, 'metadata'), 'jobs metadata'), 'updatedAt', text(at));
-      validateJob(jobId, job);
-      await tx.saveJobs(tx.jobs);
+      await saveApplied(tx, jobId, job, this.now());
       return receipt(jobId, record, true);
     });
   }
@@ -194,4 +248,47 @@ export class LiveSubmissionService {
     });
   }
 
+  confirmedReceiptForTransfer(jobId: string): Promise<ReconciledReceipt> {
+    safeId(jobId);
+    return this.repository.claimTransaction(async tx => {
+      const action = await this.ledger.read(liveSubmissionJobKey(jobId)) as ActionRecord | ReconciledReceipt | null;
+      const job = activeJob(tx, jobId);
+      if (job === null || action?.status !== 'confirmed') throw new JobsError('source has no confirmed submission for this job');
+      const targetFingerprint = postingFingerprint(job);
+      if (action.targetFingerprint === undefined) {
+        // Older receipts predate the posting binding. Only the original applied revision is safe to transfer.
+        check('jobRevision' in action && /^[1-9][0-9]{0,29}$/.test(action.jobRevision) && string(get(job, 'status')) === 'applied'
+          && int(get(job, 'revision')) === BigInt(action.jobRevision) + 1n, 'source posting cannot be verified');
+      } else check(action.targetFingerprint === targetFingerprint, 'source posting changed after submission');
+      const result = projectSubmissionOutcome(jobId, action, true);
+      if (result?.status !== 'confirmed_submitted') throw new JobsError('source has no confirmed submission for this job');
+      return { status: 'confirmed', receiptId: result.receiptId, targetFingerprint };
+    });
+  }
+
+  async reconcileFrom(source: Pick<LiveSubmissionService, 'confirmedReceiptForTransfer'>, jobId: string, expectedRevision: string) {
+    safeId(jobId);
+    check(/^[1-9][0-9]{0,29}$/.test(expectedRevision), 'an exact destination job revision is required');
+    const expected = BigInt(expectedRevision), incoming = await source.confirmedReceiptForTransfer(jobId);
+    return this.repository.claimTransaction(async tx => {
+      const job = activeJob(tx, jobId);
+      if (job === null || postingFingerprint(job) !== incoming.targetFingerprint) throw new JobsError('destination posting does not match the receipt');
+      requireJobUnclaimed(tx.coordinator, jobId);
+      const key = liveSubmissionJobKey(jobId);
+      const stored = await this.ledger.read(key);
+      const prior = projectSubmissionOutcome(jobId, stored, false);
+      check(prior === null || prior.status === 'confirmed_submitted' && prior.receiptId === incoming.receiptId,
+        'destination already has a different submission attempt');
+      const current = int(get(job, 'revision')), status = string(get(job, 'status'));
+      if (prior !== null && status === 'applied' && (current === expected || current === expected + 1n)) {
+        return receipt(jobId, incoming, true);
+      }
+      check(current === expected, 'destination job revision conflict');
+      check(status !== 'in_progress' && (status !== 'closed' || string(get(job, 'closedOutcome')) === 'duplicate'),
+        'destination job is unavailable for reconciliation');
+      if (prior === null) await this.ledger.write(key, incoming);
+      if (status !== 'applied') await saveApplied(tx, jobId, job, this.now());
+      return receipt(jobId, incoming, true);
+    });
+  }
 }

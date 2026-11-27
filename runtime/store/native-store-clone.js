@@ -12,8 +12,9 @@ import { atomicWritePointJson } from './point-persistence.js';
 import { nativeApplicationAuthorityName, nativeCloneMarkerName, nativeLiveSubmissionName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
 import { ensureWindowsPrivateDirectory, openWindowsStoreFile, requireWindowsPrivate, windowsFileIdentity } from './windows-store.js';
+import { collectionPreviewStoreEntries, validateCollectionCompatibility } from './native-collection-compatibility.js';
 const sourceFiles = new Set([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'),
-    nativePolicyTreeName, nativeApplicationAuthorityName, nativeLiveSubmissionName, 'resume-facts.json']);
+    nativePolicyTreeName, nativeApplicationAuthorityName, nativeLiveSubmissionName, 'resume-facts.json', ...collectionPreviewStoreEntries]);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
     'answers.json', 'applications.jsonl', 'resume-files', 'sessions'];
 const legacyCoreFiles = ['.store.lock', 'profile.json', 'answers.json', 'applications.jsonl', 'sessions'];
@@ -174,6 +175,7 @@ async function storeTreeLocked(source, entries, provider, candidate = false, sig
 export async function canonicalStoreSourceTreeLocked(source, provider, signal = AbortSignal.timeout(30_000), policy) {
     const entries = new Set(await readdir(source));
     requireSourceEntries(entries, coreFiles);
+    await validateCollectionCompatibility(source, entries);
     return storeTreeLocked(source, entries, provider, false, signal, policy);
 }
 function requireSourceEntries(entries, required) {
@@ -185,6 +187,7 @@ async function windowsLegacySourceEntries(source, signal) {
     signal.throwIfAborted();
     const entries = new Set(await readdir(source));
     requireSourceEntries(entries, legacyCoreFiles);
+    await validateCollectionCompatibility(source, entries);
     if (entries.has(nativePolicyTreeName))
         throw new JobsError('Windows legacy policy migration is unsupported');
     return entries;
@@ -240,10 +243,11 @@ export async function finishWindowsLegacyStoreCloneLocked(target, original, sour
 export async function canonicalStoreCandidateTreeLocked(root, provider, signal = AbortSignal.timeout(30_000), policy) {
     const entries = new Set(await readdir(root));
     const allowed = new Set([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName,
-        nativeApplicationAuthorityName, nativeLiveSubmissionName, 'resume-facts.json']);
+        nativeApplicationAuthorityName, nativeLiveSubmissionName, 'resume-facts.json', ...collectionPreviewStoreEntries]);
     if (nativeStoreRequiredEntries.some(name => !entries.has(name)) || [...entries].some(name => !allowed.has(name))) {
         throw new JobsError('canonical clone candidate contains unsupported or incomplete state');
     }
+    await validateCollectionCompatibility(root, entries);
     return storeTreeLocked(root, entries, provider, true, signal, policy);
 }
 /** Computes the clone marker digest while holding the canonical Store lock. */
@@ -265,6 +269,7 @@ export async function prepareCanonicalStoreClone(source, target, provider, now =
         await withExclusiveFileLock(join(source, '.store.lock'), async () => {
             const entries = new Set(await readdir(source));
             requireSourceEntries(entries, coreFiles);
+            await validateCollectionCompatibility(source, entries);
             for (const name of directories)
                 await privateDirectory(join(source, name), `canonical ${name}`);
             await mkdir(target, { mode: 0o700 });

@@ -677,6 +677,8 @@ In Companion, open **Settings → Submit after approval**. This saved switch app
 
 Look in **Job activity** for a receipt after a confirmed agent submission. When **Needs attention** shows **Verify submission status**, check the employer portal or confirmation email for the exact application. If you verify that the employer received it, use **Record as submitted** to update the job in Companion.
 
+A matching saved job in another Store can be marked **Applied** from an existing confirmed receipt through the [submission workflow](skills/job-apply/references/submit-after-approval.md#record-a-confirmed-receipt-in-another-store). When upgrading from the collection preview, finish any interrupted collection operation before switching writers. The submission build preserves the collection files.
+
 ### Submit after approval in the QA harness
 
 The isolated Greenhouse replay also supports **Submit after approval**. It uses the existing browser review and a separate owner approval command. The replay accepts the packaged fictional Greenhouse fixture and its synthetic résumé.

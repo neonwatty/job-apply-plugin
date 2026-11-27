@@ -12,7 +12,7 @@ export class NativeLiveSubmissionLedger implements SubmissionLedger {
   constructor(root: string) { this.path = join(root, nativeLiveSubmissionName); }
 
   private key(key: string) {
-    if (!/^(approval|job)-[a-f0-9]{64}$/.test(key)) throw new JobsError('invalid submission ledger key');
+    if (key !== 'review-fingerprint-key' && !/^(approval|job)-[a-f0-9]{64}$/.test(key)) throw new JobsError('invalid submission ledger key');
     return key;
   }
 

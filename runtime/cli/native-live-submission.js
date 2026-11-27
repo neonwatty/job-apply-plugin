@@ -17,15 +17,17 @@ import { LiveSubmissionService } from '../workspace-core/live-submission.js';
 const options = {
     root: { type: 'string' }, input: { type: 'string' }, preview: { type: 'string' },
     approval: { type: 'string' }, id: { type: 'string' }, 'owner-confirmed': { type: 'boolean' },
+    'source-root': { type: 'string' }, 'expected-revision': { type: 'string' },
 };
 const commands = {
     status: [], preview: ['input'], approve: ['input', 'preview', 'owner-confirmed'], claim: ['input', 'approval'],
-    outcome: ['input'], inspect: ['id'],
+    outcome: ['input'], inspect: ['id'], fingerprint: ['input'],
+    reconcile: ['source-root', 'id', 'expected-revision', 'owner-confirmed'],
 };
-async function privateInput(path) {
+async function privateInput(path, maxBytes) {
     const file = await openPrivateStoreFile(expandRoot(path), constants.O_RDONLY, 'submission input must be private and owned');
     try {
-        if ((await file.stat()).size > 32_768)
+        if ((await file.stat()).size > maxBytes)
             throw new JobsError('submission input is too large');
         try {
             return JSON.parse(await file.readFile('utf8'));
@@ -45,16 +47,31 @@ async function run(args) {
         || Object.keys(parsed.values).some(key => key !== 'root' && !permitted.includes(key))
         || permitted.some(key => !Object.hasOwn(parsed.values, key)))
         throw new JobsError('invalid submission command arguments');
-    if (command === 'approve' && parsed.values['owner-confirmed'] !== true)
+    if (permitted.includes('owner-confirmed') && parsed.values['owner-confirmed'] !== true)
         throw new JobsError('explicit owner approval is required');
     const selected = parsed.values.root ?? process.env.JOB_APPLY_STORE_DIR ?? join(homedir(), '.job-apply');
-    const root = process.platform === 'win32' ? await canonicalWindowsRoot(expandRoot(selected)) : expandRoot(selected);
+    const normalize = (path) => process.platform === 'win32' ? canonicalWindowsRoot(expandRoot(path)) : expandRoot(path);
+    const root = await normalize(selected);
     const plugin = await realpath(fileURLToPath(new URL('../../', import.meta.url)));
-    return withNativeStore(root, await resolvePackagedNativeLock(plugin), async (provider) => {
-        const input = parsed.values.input ? await privateInput(parsed.values.input) : null;
-        const service = new LiveSubmissionService(new NativeJobsRepository(root, provider), new NativeLiveSubmissionLedger(root));
+    const addon = await resolvePackagedNativeLock(plugin);
+    const make = (path, provider) => new LiveSubmissionService(new NativeJobsRepository(path, provider), new NativeLiveSubmissionLedger(path));
+    if (command === 'reconcile') {
+        const sourceRoot = await normalize(parsed.values['source-root']);
+        if (sourceRoot === root)
+            throw new JobsError('reconciliation requires separate source and destination Stores');
+        return withNativeStore(root, addon, provider => {
+            const target = make(root, provider);
+            return target.reconcileFrom({
+                confirmedReceiptForTransfer: jobId => withNativeStore(sourceRoot, addon, sourceProvider => make(sourceRoot, sourceProvider).confirmedReceiptForTransfer(jobId)),
+            }, parsed.values.id, parsed.values['expected-revision']);
+        });
+    }
+    return withNativeStore(root, addon, async (provider) => {
+        const input = parsed.values.input ? await privateInput(parsed.values.input, command === 'fingerprint' ? 256 * 1024 : 32_768) : null;
+        const service = make(root, provider);
         switch (command) {
             case 'status': return service.status();
+            case 'fingerprint': return service.fingerprint(input);
             case 'preview': return service.preview(input);
             case 'approve': return service.preview(input, parsed.values.preview);
             case 'claim': return service.claim(parsed.values.approval, input);

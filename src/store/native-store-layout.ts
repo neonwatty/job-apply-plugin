@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
 import { openWindowsStoreFile } from './windows-store.js';
+import { collectionPreviewStoreEntries } from './native-collection-compatibility.js';
 
 export const nativeAttemptPidName = '.job-apply-attempt.pid';
 export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
@@ -31,7 +32,7 @@ export const nativeStoreRequiredEntries = [
 export const nativeStoreAllowedEntries = new Set([
   ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
   ...(process.platform === 'win32' ? [nativeAttemptLockName, nativeAttemptKeyName, nativeWriterLeaseName] : []),
-  nativePolicyTreeName, nativeApplicationAuthorityName, nativeLiveSubmissionName, 'resume-facts.json',
+  nativePolicyTreeName, nativeApplicationAuthorityName, nativeLiveSubmissionName, 'resume-facts.json', ...collectionPreviewStoreEntries,
 ]);
 
 export function nativeCloneTrees(bytes: Buffer): { sourceTree: string; candidateTree: string } {
