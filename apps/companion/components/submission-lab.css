@@ -1,0 +1,37 @@
+.lab-panel { display: grid; gap: 1rem; margin-bottom: 1rem; padding: 1.25rem; }
+.lab-panel > :is(h2, p, ul, ol) { margin: 0; }
+.lab-panel > button { justify-self: start; }
+.lab-toggle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 44px; cursor: pointer; }
+.lab-toggle span[id] { display: block; margin-top: .2rem; color: var(--muted); }
+.lab-toggle input[role="switch"] {
+  appearance: none; flex: 0 0 2.75rem; inline-size: 2.75rem; block-size: 1.55rem; margin: 0;
+  border: 1px solid var(--muted); border-radius: 2rem; padding: 0; background: var(--line); cursor: pointer;
+  position: relative;
+}
+.lab-toggle input[role="switch"]::after {
+  content: ""; position: absolute; inset-block-start: .15rem; inset-inline-start: .15rem;
+  inline-size: 1.12rem; block-size: 1.12rem; border-radius: 50%; background: white;
+}
+.lab-toggle input[role="switch"]:checked { background: var(--ink); }
+.lab-toggle input[role="switch"]:checked::after { inset-inline-start: 1.33rem; }
+.lab-toggle input[role="switch"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.lab-options { display: grid; gap: .55rem; min-inline-size: 0; border: 1px solid var(--line); border-radius: 10px; padding: .75rem 1rem; }
+.lab-options legend, .lab-previews summary { font-weight: 650; }
+.lab-options p, .lab-jobs p { margin: .2rem 0; color: var(--muted); }
+.lab-options label { display: flex; align-items: baseline; gap: .45rem; }
+.lab-options input { width: auto; }
+.lab-jobs { display: grid; gap: .5rem; padding: 0; list-style: none; }
+.lab-jobs li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; padding: .75rem; border: 1px solid var(--line); border-radius: 10px; }
+.lab-jobs code, .lab-fields dd { overflow-wrap: anywhere; }
+.lab-previews { display: grid; gap: .5rem; }
+.lab-previews details { border: 1px solid var(--line); border-radius: 10px; padding: .75rem; }
+.lab-previews summary, .lab-jobs summary { cursor: pointer; }
+.lab-fields, .lab-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .25rem 1rem; }
+.lab-field { grid-column: 1 / -1; }
+.lab-fields dt { color: var(--muted); }
+.lab-fields dd { margin: 0; }
+.lab-actions { margin-bottom: 1rem; }
+@media (max-width: 560px) {
+  .lab-jobs li, .lab-fields, .lab-field { grid-template-columns: 1fr; }
+  .lab-field { margin-top: .25rem; }
+}

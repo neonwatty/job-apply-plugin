@@ -98,6 +98,27 @@ try {
       const jobs = await request(running, 'GET', '/api/jobs');
       const ids = jobs.body.jobs?.map(job => job.id) ?? jobs.body.map?.(job => job.id) ?? [];
       if (jobs.status !== 200 || !ids.includes('native-only-job')) throw new Error('installed native mutation did not survive restart');
+      if (attempt === 0) {
+        if ((await cli('submission', 'status')).enabled !== false) {
+          throw new Error('installed submission preference did not default to off');
+        }
+        const lab = await request(running, 'GET', '/api/submission-lab');
+        if (lab.status !== 200 || lab.body.approvalEnabled !== false || lab.body.jobs?.length !== 3 || lab.body.session !== null) {
+          throw new Error('installed Companion did not open an isolated submission lab');
+        }
+        const started = await request(running, 'POST', '/api/submission-lab/start', {
+          jobIds: ['greenhouse-demo'],
+        });
+        const destination = started.body.runs?.[0]?.url;
+        if (started.status !== 200 || !/^http:\/\/127\.0\.0\.1:\d+$/.test(destination)) throw new Error('installed test form was unavailable');
+        const renderer = await fetch(destination + '/lab.js', { redirect: 'error', signal: AbortSignal.timeout(5000) });
+        if (!renderer.ok || !(await renderer.text()).includes('Load fictional answers and résumé')) {
+          throw new Error('installed test form renderer was unavailable');
+        }
+        if ((await request(running, 'POST', '/api/submission-lab/end', {})).status !== 200) {
+          throw new Error('installed Companion did not retire the isolated test form');
+        }
+      }
       if ((await cli('attempt', 'heartbeat')).event !== 'heartbeat') throw new Error('Companion interrupted the active broker');
     } finally { await stopSupervisor(running); }
   }

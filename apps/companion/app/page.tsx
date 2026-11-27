@@ -2,5 +2,5 @@ import { connection } from "next/server";
 import Companion from "../components/Companion";
 export default async function Page() {
   await connection();
-  return <Companion />;
+  return <Companion submissionLabEnabled={Boolean(process.env.COMPANION_SUBMISSION_LAB_ROOT)} />;
 }

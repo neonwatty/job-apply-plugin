@@ -12,4 +12,4 @@
 4. Correct any mis-parsed fields
 5. **Location combobox**: Clear existing value, type the correct location, wait for dropdown, click match
 6. Fill any remaining required fields
-7. Review the visible form without echoing its values, give a value-free field-name/status summary, stop before the final action, and let the user submit manually
+7. Review the visible form without echoing its values, give a value-free field-name/status summary, stop before the final action, and follow the [Review handoff](application.md)

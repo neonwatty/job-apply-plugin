@@ -1,6 +1,7 @@
 import { factSources, validateProfile } from '../contracts/workspace/profile.js';
 import { copy, get, has, set, object, int, integer, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
+import { submitAfterApprovalEnabled, submitAfterApprovalPath, submitAfterApprovalValue } from '../contracts/workspace/submission-preference.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { applyPatch, changedPaths, provenanceAfter } from './profile-patch.js';
 
@@ -26,7 +27,13 @@ export class ProfileService {
   async patch(value: Value, revision: bigint, source: string, atomic: string[] = [], deleted: string[] = []): Promise<Document> {
     const patch = object(value, 'profile patch');
     if (!patch.size) throw new JobsError('profile patch must not be empty');
-    return this.mutate(revision, source, current => applyPatch(current, patch, atomic, deleted));
+    return this.mutate(revision, source, (current, provenance) => {
+      const [next, changed] = applyPatch(current, patch, atomic, deleted);
+      if (source === 'user' && !atomic.includes('/applicationPreferences')
+        && submitAfterApprovalValue(patch) === true && !changed.includes(submitAfterApprovalPath)
+        && !submitAfterApprovalEnabled(next, provenance)) changed.push(submitAfterApprovalPath);
+      return [next, changed];
+    });
   }
   async replace(value: Value, revision: bigint, source: string): Promise<Document> {
     const next = object(value, 'profile');
@@ -41,17 +48,17 @@ export class ProfileService {
       return [next, changedPaths(current, next)];
     });
   }
-  private mutate(revision: bigint, source: string, update: (current: Document) => [Document, string[]]): Promise<Document> {
+  private mutate(revision: bigint, source: string, update: (current: Document, provenance: Document) => [Document, string[]]): Promise<Document> {
     if (!factSources.has(source)) throw new JobsError('profile fact source is unsupported');
     return this.repository.profileTransaction(async (raw, save) => {
       const document = validateProfile(raw), metadata = object(get(document, 'metadata'), 'profile.metadata');
       const actual = has(metadata, 'revision') ? int(get(metadata, 'revision'))! : 1n;
       if (actual !== revision) throw new JobsError('profile revision conflict');
       const current = object(get(document, 'profile'), 'profile.profile');
-      const [next, changed] = update(current);
+      const provenance = has(metadata, 'factProvenance') ? object(get(metadata, 'factProvenance'), 'profile fact provenance') : emptyObject();
+      const [next, changed] = update(current, provenance);
       if (!changed.length) return inspectProfile(document);
       const now = this.now();
-      const provenance = has(metadata, 'factProvenance') ? object(get(metadata, 'factProvenance'), 'profile fact provenance') : emptyObject();
       const updatedMetadata = copy(metadata);
       set(updatedMetadata, 'factProvenance', provenanceAfter(provenance, changed, source, now, current));
       set(updatedMetadata, 'updatedAt', text(now));

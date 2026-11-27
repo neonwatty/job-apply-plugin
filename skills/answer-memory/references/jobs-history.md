@@ -32,8 +32,8 @@ node "<plugin-root>/apps/companion/command.mjs" store job-delete \
   --id <job-id> --expected-revision <revision>
 ```
 
-Only explicit user confirmation may transition a reviewed job to `applied`; pass
-`--user-confirmed` only for that direct confirmation. A job must be in recoverable
+For `job-transition --status applied`, pass `--user-confirmed` only after the user
+confirms their personal submission. The [agent submission workflow](../../job-apply/references/submit-after-approval.md) records its own portal outcome. A job must be in recoverable
 trash before permanent deletion. Use `--include-trashed` only when the user wants
 to inspect or restore trashed records. Run `job-preflight` before `ready`; the
 transition fails if the profile is empty or no usable assigned/default resume file

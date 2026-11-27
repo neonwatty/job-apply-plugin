@@ -1,12 +1,12 @@
 ---
 name: job-apply
-description: Fill a selected job application to manual review, or fulfill a requested resume fact extraction.
+description: Fill a selected job application, submit it after exact approval when enabled, or extract resume facts.
 allowed-tools: Read, Write, Bash, mcp__claude-in-chrome__*, mcp__plugin_playwright_playwright__*
 ---
 
 # Job Application Assistant
 
-Complete the requested application through verified manual review, or record the precise blocker and next action. Resume extraction is a separate workflow and ends at owner fact review.
+Complete the requested application through verified Review, then follow the owner's submission mode. Record the precise blocker and next action when one exists. Resume extraction ends at owner fact review.
 
 ## Route the request
 
@@ -19,7 +19,8 @@ For first use or a cross-skill handoff, read the shared [workflow map](../answer
 - Ordinary application: after Store initialization, read [canonical intake](references/intake.md), [early account check](references/account-readiness.md), [application automation](references/application-automation.md), then [filling and handoff](references/application.md). Start or reuse an application run whose managed resume and confirmed facts are authorized by the current exact-job request or an explicit choice under the intake rules. A supplied URL is ingested before browser work and added to that run's queue. Check account requirements before filling or, in Guided mode, acquiring the job.
 - For a separate filling agent, read [one application task or worker](references/worker-delegation.md) before launch. In Codex desktop, use an owner-requested top-level local task for browser-bound filling with a selected model and reasoning effort. The filling agent follows the ordinary route above and does not delegate again. Model settings do not choose a job or authorize filling.
 - Account or sign-in readiness: use [account-setup](../account-setup/SKILL.md) to classify the exact URL and configure only redacted metadata. Return here for the ordinary application after the user completes any required live sign-in step.
-- Expired attempt reset, reviewed or blocked job: read [recovery](references/recovery.md). Preserve the job, session, managed resume, and displayed revisions. An expired claim requires a separate owner-approved reset before normal selection.
+- Exact request to send an existing verified review or reply to its approval preview. Preserve the same handoff and visible tab and follow [Submit after approval](references/submit-after-approval.md).
+- Expired attempt reset, blocked job, or request to resume filling a reviewed job: read [recovery](references/recovery.md). Preserve the job, session, managed resume, and displayed revisions. An expired claim requires a separate owner-approved reset before normal selection.
 
 Before interacting with a form, read [browser and consent](references/browser.md). It defines post-readiness consent, observed field verification, bounded recovery, and visible manual handoff. Advance through clearly non-final Next, Continue, Save, or Review steps; stop before any final submission action. A Review navigation control is not itself proof that the application reached final review.
 For consent or acknowledgment questions, also read [reusable consent intents](references/consent-intents.md).
@@ -40,7 +41,7 @@ Read only the matching platform notes when needed: [LinkedIn](references/linkedi
 
 ## Essential boundaries and completion
 
-Guided is the default; Autofill to Review and Campaign to Review are durable, bounded grants defined in [application automation](references/application-automation.md). Every mode remains review-only. User confirmation never authorizes this skill to click Submit, Send, Apply, or any equivalent final-action button. Authentication, passwords, CAPTCHA, MFA, verification, and ordinary account creation remain user-only steps. A saved consent answer is a proposed choice; act on a consent control only under [reusable consent intents](references/consent-intents.md) after live-form approval. Explicit account-canary or policy work uses [account and policy internals](references/account-canaries.md); its approvals never spill into ordinary applications.
+Guided is the default; Autofill to Review and Campaign to Review are bounded filling grants defined in [application automation](references/application-automation.md). Each filling mode stops at Review. For the separate global setting and exact final approval, follow [Submit after approval](references/submit-after-approval.md). A current request for manual review, user-only submission, or preparation only takes precedence. Authentication, passwords, CAPTCHA, MFA, verification, and ordinary account creation remain user-only steps. A saved consent answer is a proposed choice; act on a consent control only under [reusable consent intents](references/consent-intents.md) after live-form approval.
 
 Obtain the bounded post-readiness consent before entering applicant data. Reuse matching authorization within that pass; do not ask again for unchanged scope, destination, and purpose. Keep sensitive current-use consent separate from permission to remember.
 

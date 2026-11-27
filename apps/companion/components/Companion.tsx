@@ -11,6 +11,7 @@ import { Extractions } from './Extractions';
 import { NeedsAttention } from './NeedsAttention';
 import { Automation } from './Automation';
 import { ApplicationSettings } from './ApplicationSettings';
+import { SubmissionLab } from './SubmissionLab';
 import './companion.css';
 import './automation.css';
 import './trash.css';
@@ -24,14 +25,14 @@ import './focus-sidebar.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
-type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'consents'|'extractions'|'attention'|'accounts'|'automation'|'settings'|'trash';
-const workspaceTabs: WorkspaceTab[] = ['overview','jobs','facts','resumes','answers','consents','extractions','attention','accounts','automation','settings','trash'];
+type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'consents'|'extractions'|'attention'|'accounts'|'automation'|'settings'|'trash'|'submission';
+const workspaceTabs: WorkspaceTab[] = ['overview','jobs','facts','resumes','answers','consents','extractions','attention','accounts','automation','settings','trash','submission'];
 // Keep screens for the session; only their saved data has a refresh interval.
 // Jobs and attention can change through agent or CLI work while this tab is hidden.
 const refreshAfter: Record<WorkspaceTab,number> = {
     overview:15_000,jobs:0,attention:0,trash:30_000,
     facts:60_000,resumes:60_000,extractions:60_000,answers:60_000,consents:60_000,
-    accounts:60_000,automation:60_000,settings:120_000
+    accounts:60_000,automation:60_000,settings:120_000,submission:0
 };
 const paths: Record<string,string> = {
   attention:'M4 5h16v14H4z M8 9h8 M8 13h5',
@@ -43,6 +44,7 @@ const paths: Record<string,string> = {
   automation:'M12 3v3 M12 18v3 M3 12h3 M18 12h3 M6 6l2 2 M16 16l2 2 M6 18l2-2 M16 8l2-2 M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
   accounts:'M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M4 21v-3a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v3',
   consents:'M12 3l8 3v6c0 5-8 9-8 9S4 17 4 12V6z M8 12l3 3 5-6',
+  submission:'M4 4h16v16H4z M8 12l3 3 5-6',
   settings:'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6',
   trash:'M4 6h16 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7',
   external:'M14 3h7v7 M21 3l-9 9 M10 5H4v15h15v-6',
@@ -55,7 +57,7 @@ function SidebarIcon({name}:{name:string}) {
   </svg>;
 }
 
-export default function Companion() {
+export default function Companion({ submissionLabEnabled = false }: { submissionLabEnabled?: boolean }) {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
     const [error,setError]=useState('');
@@ -206,13 +208,14 @@ export default function Companion() {
             case 'consents': return <Answers client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}
                 consentOnly={view==='consents'}/>;
             case 'settings': return <ApplicationSettings client={client} dirtyChanged={markDirty} refreshKey={refreshKeys[view]??0}/>;
+            case 'submission': return <SubmissionLab token={token}/>;
             case 'jobs': return <Jobs client={client} dirtyChanged={markDirty} active={view===tab} claimsEnabled={nativeWorkspace} showHandoff={view===tab && showJobsHandoff}
                 refreshKey={refreshKeys[view]??0} requestedJob={view===tab?requestedJob:null} jobOpened={jobOpened} openAnswers={() => navigate('answers')}
                 workspaceChanged={refreshShellCounts}/>;
         }
     }
     useEffect(()=>{void refreshShellCounts();},[refreshShellCounts,tab]);
-    useEffect(()=>{document.title=`${tab==='attention'?'Needs Attention':tab==='extractions'?'Resume extraction':tab[0]!.toUpperCase()+tab.slice(1)} · Job Apply Workspace`;},[tab]);
+    useEffect(()=>{document.title=`${tab==='attention'?'Needs Attention':tab==='extractions'?'Resume extraction':tab==='submission'?'Submission lab':tab[0]!.toUpperCase()+tab.slice(1)} · Job Apply Workspace`;},[tab]);
     const connection=boot?.status==='ready'? 'Local data connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…';
     const navButton=(workspace:WorkspaceTab,label:string,count?:number,active=tab===workspace) => <button className="nav-link" aria-label={label} aria-current={active?'page':undefined} title={collapsed?label:undefined} onClick={() => navigate(workspace)}><SidebarIcon name={workspace}/><span className="nav-label">{label}</span>{count!==undefined&&<span className="nav-count" aria-hidden="true">{count}</span>}</button>;
     return <div className="focus-shell" data-collapsed={collapsed}>
@@ -224,7 +227,7 @@ export default function Companion() {
             <div className="product-context">
                 <p className="eyebrow">Focus Queue</p>
                 <h1>Job Apply</h1>
-                <p id="workspace-trust-context" className="trust-context">Your data stays local. Only you submit applications.</p>
+                <p id="workspace-trust-context" className="trust-context">Your data stays local. You approve what gets sent.</p>
             </div>
             <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
                 <span className="connection-dot" aria-hidden="true" />
@@ -258,6 +261,7 @@ export default function Companion() {
                         {nativeWorkspace&&navButton('automation','Automation')}
                         {nativeWorkspace&&navButton('accounts','Accounts & Sign-in')}
                         {nativeWorkspace&&navButton('settings','Settings')}
+                        {nativeWorkspace&&submissionLabEnabled&&navButton('submission','Submission lab')}
                         {navButton('trash','Trash',nativeWorkspace?shellCounts?.trash:undefined)}
                     </div>
                 </div>

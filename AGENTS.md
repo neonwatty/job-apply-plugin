@@ -26,8 +26,10 @@ Buffer context is relevant only to Buffer publishing or analytics tasks; use the
 ## Codebase modernization architecture
 
 Keep behavioral, CLI, JSON, HTTP, privacy, and persisted-data contracts stable
-through the modernization. Preserve human-only final submission. Python and
-TypeScript writers must not mutate the same live Store during migration.
+through the modernization. Ordinary filling ends at Review. Agent submission
+requires the global owner setting and exact final approval through the native
+submission guard. Python and TypeScript writers must not mutate the same live
+Store during migration.
 
 ## Source-size policy
 

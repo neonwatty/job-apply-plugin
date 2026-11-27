@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/SubmissionLab.tsx",
+      "sha256": "de57fd78f1dfb65b48f0a52a9c10a2bdbd912b128bc30d819ab7a2f4b202516e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/submission-lab-client.ts",
+      "sha256": "beb49b2096c3d6970956dc8697bdf9c7a490031f9ca1668b0b14bd957faaac7c",
+      "classification": "unreviewed"
+    }
+  ]
+}

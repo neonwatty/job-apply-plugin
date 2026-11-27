@@ -1,3 +1,5 @@
+import { addSampleAnswers } from "./lab.js";
+
 const application = document.querySelector("#application");
 const progress = document.querySelector("#progress");
 const enteredValues = new Map();
@@ -7,7 +9,10 @@ let expectedResumeFilename;
 const uploadFilenameMatches = new Map();
 let eventQueue = Promise.resolve();
 let currentStepId;
+let submitAfterApproval = false;
 let controlFailurePending = false;
+let syntheticJob;
+let companion = false;
 
 async function recordEvent(type, controlId, stepId) {
   const expectedFilenameMatched =
@@ -218,6 +223,39 @@ async function ensureControlEvents(step) {
   }
 }
 
+async function captureSubmissionReview(step, reviewStep) {
+  const resume = step.controls.find((control) => control.kind === "resume.file");
+  const additionalUpload = step.controls.some((control) => control.role === "file" &&
+    control.id !== resume?.id && document.getElementById(control.id).files.length > 0);
+  if (additionalUpload) throw new Error("Synthetic submission supports the fixture résumé only");
+  const file = resume && document.getElementById(resume.id).files[0];
+  if (!file) throw new Error("Synthetic review is missing its résumé");
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  const resumeDigest = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+  const values = step.controls.filter((control) => control.role !== "file").map((control) => {
+    const input = document.getElementById(control.id);
+    let value;
+    if (control.role === "radiogroup") {
+      value = input.querySelector("input:checked")?.value ?? "";
+    } else if (control.role === "checkbox") {
+      value = input.checked ? "Selected" : "";
+    } else {
+      value = input.value;
+    }
+    enteredValues.set(control.id, value);
+    return { id: control.id, value };
+  });
+  enteredValues.set(resume.id, file.name);
+  const response = await fetch("/__qa/submission-review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stepId: reviewStep.id, values, resumeDigest }),
+  });
+  if (!response.ok) throw new Error("Unable to record the exact synthetic review");
+}
+
 function reviewList() {
   const list = document.createElement("dl");
   list.className = "review-list";
@@ -312,24 +350,37 @@ function renderStep(fixture, stepId) {
   const heading = document.createElement("h2");
   heading.textContent = step.title;
   application.append(heading);
+  if (syntheticJob) {
+    const job = document.createElement("p");
+    job.textContent = `${syntheticJob.role} at ${syntheticJob.employer}`;
+    application.append(job);
+  }
 
   if (step.kind === "review") {
     application.append(reviewList());
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = step.finalAction.label;
-    button.disabled = !step.finalAction.enabled;
+    button.disabled = !step.finalAction.enabled || submitAfterApproval || companion;
     button.addEventListener("click", () => activateFinalAction(step.id));
     const notice = document.createElement("p");
     notice.id = "tripwire-notice";
     notice.className = "tripwire";
     notice.tabIndex = -1;
     application.append(button, notice);
+    if (submitAfterApproval || companion) {
+      const guidance = document.createElement("p");
+      guidance.textContent = companion
+        ? "Review the fictional answers, then return to Companion."
+        : "Review the application here, then use the local QA harness to approve and submit.";
+      application.append(guidance);
+    }
     return;
   }
 
   const form = document.createElement("form");
   form.noValidate = true;
+  if (companion) addSampleAnswers(form, expectedResumeFilename);
   for (const control of step.controls) form.append(renderControl(control));
   const button = document.createElement("button");
   button.type = "submit";
@@ -359,13 +410,20 @@ function renderStep(fixture, stepId) {
         (candidate) => candidate.id === step.next,
       );
       if (nextStep?.kind === "review") {
+        if (submitAfterApproval) {
+          form.inert = true;
+          await captureSubmissionReview(step, nextStep);
+        }
         await recordEvent("reviewed", "", nextStep.id);
       }
       renderStep(fixture, step.next);
     } catch {
       showInfrastructureError();
     } finally {
-      if (button.isConnected) button.disabled = false;
+      if (button.isConnected) {
+        button.disabled = false;
+        form.inert = false;
+      }
     }
   });
   application.append(form);
@@ -381,10 +439,17 @@ Promise.all([fetch("/__qa/fixture"), fetch("/__qa/upload-policy")])
     if (
       !policy ||
       typeof policy.expectedFilename !== "string" ||
-      Object.keys(policy).length !== 1
+      Object.keys(policy).some(key => !["expectedFilename", "mode", "job", "companion"].includes(key)) ||
+      (policy.mode !== undefined && policy.mode !== "submit_after_approval") ||
+      (policy.companion !== undefined && (policy.companion !== true || !policy.job)) ||
+      (policy.job !== undefined && (!policy.mode && !policy.companion ||
+        typeof policy.job?.role !== "string" || typeof policy.job?.employer !== "string"))
     )
       throw new Error("Upload policy unavailable");
     expectedResumeFilename = policy.expectedFilename;
+    submitAfterApproval = policy.mode === "submit_after_approval";
+    syntheticJob = policy.job;
+    companion = policy.companion === true;
     fixtureData = fixture;
     renderStep(fixture, fixture.steps[0].id);
   })

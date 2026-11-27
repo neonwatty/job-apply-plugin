@@ -44,4 +44,4 @@ Use exact current revisions for mutations. A conflict means inspect the changed 
 
 Permission to fill is not permission to remember. Non-null sensitive answers require explicit field-specific retention consent and `--remember-sensitive`; remembered sensitive answers still require current-use approval. History and sessions contain references and closed status metadata, never answer/profile/resume values or credentials.
 
-Only the user may submit an application. Record `reviewed` at final review, and `completed`/`applied` only after the user confirms their submission. Storage or policy operations do not grant browser authority.
+Record `reviewed` at final review. Use the ordinary history and job commands to record a personal submission only after the user confirms it. The top-level Job Apply agent uses the separate [Submit after approval](../job-apply/references/submit-after-approval.md) workflow for any approved agent submission and portal receipt. Storage and policy operations alone grant no browser authority.

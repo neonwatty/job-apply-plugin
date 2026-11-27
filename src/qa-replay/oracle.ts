@@ -30,7 +30,7 @@ function evaluateEvents(fixture: Fixture, events: ReplayEvent[]): { filled: Set<
   }
   return { filled, uploaded, reviewed, finalAction, filenames };
 }
-async function storeEvidence(root: string): Promise<{ lifecycle: boolean; notCompleted: boolean; historyCategory: string | null; session: boolean; valueFree: boolean; sessionArtifact: boolean }> {
+async function storeEvidence(root: string, applicationId?: string): Promise<{ lifecycle: boolean; notCompleted: boolean; historyCategory: string | null; session: boolean; valueFree: boolean; sessionArtifact: boolean }> {
   let text: string; try { text = await readFile(join(root, 'applications.jsonl'), 'utf8'); } catch { return { lifecycle: false, notCompleted: true, historyCategory: 'history-missing', session: false, valueFree: true, sessionArtifact: false }; }
   const rows = text.split(/\r?\n/).filter(Boolean); if (rows.length > 10000) throw new ReplayError('invalid history artifact');
   const events: Record<string, unknown>[] = [];
@@ -38,6 +38,7 @@ async function storeEvidence(root: string): Promise<{ lifecycle: boolean; notCom
   catch { throw new ReplayError('invalid history artifact'); }
   const started = new Map<string, number>(), reviewed = new Set<string>(); let completed = false;
   events.forEach((event, index) => { const id = event.applicationId as string, kind = event.event as string;
+    if (applicationId !== undefined && id !== applicationId) return;
     if (kind === 'started' && !started.has(id)) started.set(id, index); if (kind === 'reviewed' && (started.get(id) ?? Infinity) < index) reviewed.add(id); if (kind === 'completed') completed = true; });
   let names: string[]; try { names = (await readdir(join(root, 'sessions'))).filter(name => name.endsWith('.json')); } catch { names = []; }
   if (names.length > 256) throw new ReplayError('invalid session artifacts');
@@ -49,8 +50,8 @@ async function storeEvidence(root: string): Promise<{ lifecycle: boolean; notCom
   }
   return { lifecycle: reviewed.size > 0, notCompleted: !completed, historyCategory: reviewed.size ? null : 'history-lifecycle-incomplete', session: correlated, valueFree, sessionArtifact: names.length > 0 };
 }
-export async function evaluateRun(fixture: Fixture, scenarioId: string, events: ReplayEvent[], storeRoot: string): Promise<Record<string, unknown>> {
-  const observed = evaluateEvents(fixture, events), evidence = await storeEvidence(storeRoot);
+export async function evaluateRun(fixture: Fixture, scenarioId: string, events: ReplayEvent[], storeRoot: string, applicationId?: string): Promise<Record<string, unknown>> {
+  const observed = evaluateEvents(fixture, events), evidence = await storeEvidence(storeRoot, applicationId);
   const requiredFields = fixture.steps.flatMap(step => step.controls).filter(control => control.required && control.role !== 'file').map(control => control.id);
   const requiredFiles = fixture.steps.flatMap(step => step.controls).filter(control => control.required && control.role === 'file').map(control => control.id);
   const missingFields = requiredFields.filter(id => !observed.filled.has(id)), missingFiles = requiredFiles.filter(id => !observed.uploaded.has(id));

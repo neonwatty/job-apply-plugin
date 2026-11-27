@@ -1392,6 +1392,7 @@
         "tests_js/workspace_native_job_transition_model.test.mjs",
         "tests_js/workspace_native_job_upsert_cli.test.mjs",
         "tests_js/workspace_native_legacy_directory.test.mjs",
+        "tests_js/workspace_native_live_submission.test.mjs",
         "tests_js/workspace_native_lifecycle_resumes.test.mjs",
         "tests_js/workspace_native_pending_answer_model.test.mjs",
         "tests_js/workspace_native_pending_answers.test.mjs",

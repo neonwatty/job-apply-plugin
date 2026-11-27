@@ -45,7 +45,7 @@ function evaluateEvents(fixture, events) {
     }
     return { filled, uploaded, reviewed, finalAction, filenames };
 }
-async function storeEvidence(root) {
+async function storeEvidence(root, applicationId) {
     let text;
     try {
         text = await readFile(join(root, 'applications.jsonl'), 'utf8');
@@ -72,6 +72,8 @@ async function storeEvidence(root) {
     let completed = false;
     events.forEach((event, index) => {
         const id = event.applicationId, kind = event.event;
+        if (applicationId !== undefined && id !== applicationId)
+            return;
         if (kind === 'started' && !started.has(id))
             started.set(id, index);
         if (kind === 'reviewed' && (started.get(id) ?? Infinity) < index)
@@ -104,8 +106,8 @@ async function storeEvidence(root) {
     }
     return { lifecycle: reviewed.size > 0, notCompleted: !completed, historyCategory: reviewed.size ? null : 'history-lifecycle-incomplete', session: correlated, valueFree, sessionArtifact: names.length > 0 };
 }
-export async function evaluateRun(fixture, scenarioId, events, storeRoot) {
-    const observed = evaluateEvents(fixture, events), evidence = await storeEvidence(storeRoot);
+export async function evaluateRun(fixture, scenarioId, events, storeRoot, applicationId) {
+    const observed = evaluateEvents(fixture, events), evidence = await storeEvidence(storeRoot, applicationId);
     const requiredFields = fixture.steps.flatMap(step => step.controls).filter(control => control.required && control.role !== 'file').map(control => control.id);
     const requiredFiles = fixture.steps.flatMap(step => step.controls).filter(control => control.required && control.role === 'file').map(control => control.id);
     const missingFields = requiredFields.filter(id => !observed.filled.has(id)), missingFiles = requiredFiles.filter(id => !observed.uploaded.has(id));

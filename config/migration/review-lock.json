@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "files": [
     {
+      "path": "browser-submission-lab-surfaces.json",
+      "sha256": "9694e9cb1fa6231e2601044c794abec18ea6a7dacbab822ba2f9e5418f3e8302"
+    },
+    {
+      "path": "source-catalog-submission-lab.json",
+      "sha256": "f20cedf0989daa24e2ae0206ec94d85c144a5cb0065b1f5cf0f04499ea59114f"
+    },
+    {
       "path": "source-catalog-application-runs.json",
       "sha256": "9f19ecdabdf5fa98ce24bc646665edb3c768db53a7c7f85962dc8d0d2c258056"
     },

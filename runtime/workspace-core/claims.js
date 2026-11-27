@@ -5,7 +5,7 @@ import { validateReviewRestartEvidence } from '../contracts/workspace/review-res
 import { safeId, validateJob } from '../contracts/workspace/jobs.js';
 import { strip } from '../contracts/workspace/job-url.js';
 import { copy, fromJSON, get, has, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
-import { preflightJobRecord } from './job-preflight.js';
+import { preflightJobRecord, reviewedInputsFingerprint } from './job-preflight.js';
 import { consumeAutofillAuthority } from '../contracts/workspace/application-authority.js';
 const doc = (value) => object(fromJSON(value), 'claim result');
 function activeJob(jobs, id, error = 'job does not exist') {
@@ -266,6 +266,9 @@ export class ClaimsService {
             validateClaimHandoff(session, incoming, status, get(job, 'revision'));
             const op = operation('handoff', job, now, status === 'needs_info' ? 'job-blocked' : 'reviewed', status, null);
             if (status === 'awaiting_review') {
+                const reviewedInputs = reviewedInputsFingerprint(tx.jobs, tx.resumes);
+                if (reviewedInputs !== null)
+                    set(session, 'reviewedInputsFingerprint', text(reviewedInputs));
                 const authority = consumeAutofillAuthority(tx.authority, id, now);
                 if (authority !== null)
                     set(op, 'applicationAuthority', authority);

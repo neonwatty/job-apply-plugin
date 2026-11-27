@@ -4,13 +4,18 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ReplayError, readJson, validateFixture, type Fixture, type ReplayEvent } from './contracts.js';
+import { PolicyError } from '../final-action-policy/service.js';
+import { createApprovedSubmission, submissionActions } from './approved-submission.js';
+import { approvalRootFromFixture, browserResumeFilename, submissionFixture, submissionMode, submissionScenario, submissionScenariosRoot } from './submission-boundary.js';
+import { submissionJob } from './submission-jobs.js';
+import { ReplayError, readJson, token, validateFixture, type Fixture, type ReplayEvent } from './contracts.js';
 
 const root = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const security = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY',
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" };
 const staticRoutes: Record<string, [string, string]> = { '/': ['index.html', 'text/html; charset=utf-8'],
-  '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/styles.css': ['styles.css', 'text/css; charset=utf-8'] };
+  '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/lab.js': ['lab.js', 'text/javascript; charset=utf-8'],
+  '/styles.css': ['styles.css', 'text/css; charset=utf-8'] };
 
 function send(response: ServerResponse, status: number, body: Buffer | string = '', contentType = 'application/json; charset=utf-8'): void {
   const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body);
@@ -48,8 +53,16 @@ function validEvent(value: unknown, fixture: Fixture): value is ReplayEvent {
   return value.type === 'reviewed' && value.controlId === '' && step?.kind === 'review';
 }
 
-export function serve(fixture: Fixture, expectedFilename: string, shutdownToken: string, requestedPort = 0): Promise<void> {
+export function serve(fixture: Fixture, expectedFilename: string, shutdownToken: string, requestedPort = 0,
+  approvedRoot?: string, jobId?: string, companion = false): Promise<void> {
+  if (approvedRoot && !token.test(shutdownToken)) throw new ReplayError('invalid synthetic submission run token');
+  if (jobId !== undefined && !approvedRoot && !companion) throw new ReplayError('synthetic job selection requires submit after approval');
+  if (companion && (fixture.id !== submissionFixture || !jobId || expectedFilename !== browserResumeFilename)) {
+    throw new ReplayError('invalid Companion submission fixture');
+  }
+  const job = jobId === undefined ? undefined : submissionJob(jobId);
   const events: ReplayEvent[] = []; let finalActionActivations = 0;
+  let submission: ReturnType<typeof createApprovedSubmission> | undefined;
   const server = createServer(async (request, response) => {
     const port = (server.address() as { port: number }).port, path = new URL(request.url ?? '/', `http://127.0.0.1:${port}`).pathname;
     try {
@@ -57,8 +70,17 @@ export function serve(fixture: Fixture, expectedFilename: string, shutdownToken:
         if (!local(request, port)) return json(response, 400, { error: 'invalid local request' });
         const asset = staticRoutes[path]; if (asset) return send(response, 200, await readFile(resolve(root, 'qa/renderer', asset[0])), asset[1]);
         if (path === '/__qa/fixture') return json(response, 200, fixture);
-        if (path === '/__qa/upload-policy') return json(response, 200, { expectedFilename });
-        if (path === '/__qa/identity') return capability(request, shutdownToken) ? json(response, 200, { fixtureId: fixture.id }) : json(response, 404, { error: 'not found' });
+        if (companion && path === '/__qa/lab-resume') {
+          return send(response, 200, await readFile(resolve(submissionScenariosRoot, submissionScenario, browserResumeFilename)), 'application/pdf');
+        }
+        if (path === '/__qa/upload-policy') {
+          await submission?.invalidate();
+          return json(response, 200, { expectedFilename, ...(submission ? { mode: submissionMode } : {}),
+            ...(job ? { job } : {}), ...(companion ? { companion: true } : {}) });
+        }
+        if (path === '/__qa/identity') return capability(request, shutdownToken)
+          ? json(response, 200, { fixtureId: fixture.id, ...(job ? { jobId: job.jobId } : {}) })
+          : json(response, 404, { error: 'not found' });
         if (path === '/__qa/state') return json(response, 200, { events: events.map(event => ({ ...event })), finalActionActivations });
         return json(response, 404, { error: 'not found' });
       }
@@ -67,12 +89,29 @@ export function serve(fixture: Fixture, expectedFilename: string, shutdownToken:
         if (!local(request, port) || !capability(request, shutdownToken)) return json(response, 404, { error: 'not found' });
         send(response, 204); setImmediate(() => server.close()); return;
       }
+      const ownerAction = submissionActions.find(action => path === `/__qa/approved-submission/${action}`);
+      if (ownerAction) {
+        if (!submission || !local(request, port) || request.headers.origin !== undefined || !capability(request, shutdownToken)) {
+          return json(response, 404, { error: 'not found' });
+        }
+        try {
+          return json(response, 200, await submission.ownerAction(ownerAction, await body(request)));
+        } catch (error) {
+          return json(response, 409, { error: (error instanceof ReplayError || error instanceof PolicyError) ? error.message : 'synthetic submission operation failed' });
+        }
+      }
       if (!authorized(request, port)) return json(response, local(request, port) ? 403 : 400, { error: 'invalid local request' });
       const value = await body(request);
       if (path === '/__qa/event') {
         if (!validEvent(value, fixture)) return json(response, 400, { error: 'invalid semantic event' });
         if (events.length >= 10000) return json(response, 503, { error: 'event limit reached' });
+        if (value.type !== 'reviewed') await submission?.invalidate();
         events.push({ ...value }); return send(response, 204);
+      }
+      if (path === '/__qa/submission-review') {
+        if (!submission) return json(response, 404, { error: 'not found' });
+        await submission.capture(value);
+        return send(response, 204);
       }
       if (path === '/__qa/final-action') {
         const stepId = record(value) && Object.keys(value).length === 1 && typeof value.stepId === 'string' ? value.stepId : null;
@@ -87,14 +126,19 @@ export function serve(fixture: Fixture, expectedFilename: string, shutdownToken:
   return new Promise((resolvePromise, reject) => {
     server.once('error', reject); server.listen(requestedPort, '127.0.0.1', () => {
       const port = (server.address() as { port: number }).port;
+      if (approvedRoot) submission = createApprovedSubmission(approvedRoot, `http://127.0.0.1:${port}`, fixture, shutdownToken, jobId, companion);
       process.stdout.write(`${JSON.stringify({ url: `http://127.0.0.1:${port}`, port, fixtureId: fixture.id })}\n`);
     }); server.once('close', resolvePromise);
   });
 }
 async function main(args: string[]): Promise<void> {
   const options = new Map<string, string>(); for (let index = 0; index < args.length; index += 2) options.set(args[index]!, args[index + 1]!);
-  const fixturePath = options.get('--fixture'), expected = options.get('--expected-resume-filename'), token = process.env.JOB_APPLY_QA_SHUTDOWN_TOKEN ?? randomBytes(32).toString('hex');
+  const fixturePath = options.get('--fixture'), expected = options.get('--expected-resume-filename'), shutdownToken = process.env.JOB_APPLY_QA_SHUTDOWN_TOKEN ?? randomBytes(32).toString('hex');
   if (!fixturePath || !expected) throw new ReplayError('invalid server arguments');
-  await serve(validateFixture(await readJson(fixturePath, 'invalid fixture')), expected, token, Number(options.get('--port') ?? '0'));
+  const mode = options.get('--mode');
+  if (mode !== undefined && mode !== submissionMode) throw new ReplayError('invalid replay mode');
+  await serve(validateFixture(await readJson(fixturePath, 'invalid fixture')), expected, shutdownToken,
+    Number(options.get('--port') ?? '0'), mode === submissionMode ? approvalRootFromFixture(fixturePath) : undefined,
+    options.get('--job'), options.get('--companion') === 'true');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main(process.argv.slice(2)).catch(error => { process.stderr.write(`${error instanceof Error ? error.message : 'fixture server failed'}\n`); process.exitCode = 2; });

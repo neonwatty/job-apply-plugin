@@ -3,6 +3,9 @@ import { ApiError,type Client } from './client';
 import { applicationPreferencesPatch,readApplicationPreferences,type ApplicationPreferences } from './application-preferences-model';
 import { readAgentModelPreferences, validAgentModelId, validCodexReasoningEffort, type AgentModelPreferences } from './agent-model-preferences-model';
 import type { ProfileSnapshot } from './facts-model';
+import { object } from './contracts';
+import { submitAfterApprovalEnabled } from '../../../src/contracts/workspace/submission-preference';
+import './submission-lab.css';
 
 const equal=(a:ApplicationPreferences,b:ApplicationPreferences)=>a.preferredBrowser===b.preferredBrowser
   &&a.browserFallback===b.browserFallback&&a.progressionMode===b.progressionMode
@@ -36,6 +39,7 @@ export function ApplicationSettings({client,dirtyChanged,refreshKey=0}:{client:C
   const canSave=!complete||dirty;
   const invalidModel=Boolean(models&&modelKeys.some(key=>!validAgentModelId(models[key].trim())));
   const invalidEffort=Boolean(models&&effortKeys.some(key=>!validCodexReasoningEffort(models[key].trim())));
+  const approvalEnabled=base ? submitAfterApprovalEnabled(base.profile,base.provenance) : false;
   dirtyRef.current=dirty;
   useEffect(()=>{dirtyChanged(dirty||busy);return()=>dirtyChanged(false);},[dirty,busy,dirtyChanged]);
   async function refresh(discard=false) {
@@ -64,11 +68,47 @@ export function ApplicationSettings({client,dirtyChanged,refreshKey=0}:{client:C
       if(cause instanceof ApiError&&cause.status===409){try{const next=await client.profile(controller.signal);if(alive.current&&version===generation.current)setLatest(next);}catch{setError('Setup changed elsewhere. Refresh to load the current revision; your choices are retained.');}}
     } finally{if(alive.current&&version===generation.current)setBusy(false);}
   }
+  async function changeSubmissionMode(enabled:boolean) {
+    if(!base||busy||latest)return;
+    request.current?.abort();
+    const controller=new AbortController();request.current=controller;
+    const version=++generation.current;
+    setBusy(true);setError('');setNotice('');
+    try {
+      const patch=object.stringifyJson({patch:{applicationPreferences:{submitAfterApproval:enabled}},
+        expectedRevision:base.revision,atomicPaths:[],deletedPaths:[]});
+      const next=await client.patchProfile(patch,controller.signal);
+      if(!alive.current||version!==generation.current)return;
+      setBase(next);
+      const effective=submitAfterApprovalEnabled(next.profile,next.provenance);
+      if(effective!==enabled) setError('The requested submission mode did not take effect.');
+      else setNotice(effective?'Submit after approval is on.':'Submit after approval is off.');
+    } catch(cause) {
+      if(!alive.current||version!==generation.current)return;
+      setError(cause instanceof Error?cause.message:'Unable to save submission mode');
+      if(cause instanceof ApiError&&cause.status===409) {
+        try {
+          const next=await client.profile(controller.signal);
+          if(alive.current&&version===generation.current)setLatest(next);
+        } catch { /* Keep the draft and let the user refresh. */ }
+      }
+    } finally {if(alive.current&&version===generation.current)setBusy(false);}
+  }
   return <section className="settings-workspace" aria-labelledby="settings-workspace-title">
     <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Controls</p><h1 id="settings-workspace-title">Settings</h1><p>Choose defaults for new tasks.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={busy||loading} onClick={()=>void refresh()}>Refresh setup</button></div></header>
     <p className="workspace-status" role="status">{loading?'Loading setup…':notice}</p>
     {error&&<p className="error" role="alert">{error} <button disabled={busy||loading} onClick={()=>void refresh()}>Retry loading setup</button></p>}
     {latest&&base&&draft&&models&&<aside className="notice facts-conflict" role="alert"><p><strong>Setup changed elsewhere.</strong> Your choices are retained.</p><button disabled={busy} onClick={()=>{setDraft(reapplyPreferences(base,draft,latest));setModels(reapplyModels(base,models,latest));setBase(latest);setComplete(readApplicationPreferences(latest.profile).complete);setLatest(null);setError('');setNotice('Only your changed choices were reapplied to the latest revision. Review before saving.');}}>Reapply my setup choices</button><button disabled={busy} onClick={()=>{const parsed=readApplicationPreferences(latest.profile);setBase(latest);setDraft(parsed.preferences);setModels(readAgentModelPreferences(latest.profile));setComplete(parsed.complete);setLatest(null);setError('');setNotice('Saved setup loaded.');}}>Load saved setup</button></aside>}
+    {base&&<div className="workspace-panel lab-panel">
+      <label className="lab-toggle"><span><strong>Submit after approval</strong>
+        <span id="application-submission-description">{approvalEnabled
+          ? 'Job Apply can send applications after you approve the exact review.'
+          : 'Job Apply stops all applications at Review.'}</span></span>
+        <input type="checkbox" role="switch" aria-label="Submit after approval" aria-describedby="application-submission-description"
+          checked={approvalEnabled} disabled={busy||loading||Boolean(latest)}
+          onChange={event=>void changeSubmissionMode(event.target.checked)}/>
+      </label>
+    </div>}
     {base&&draft&&models&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy||loading}><legend>Application and agent defaults</legend>
       <label>Preferred Codex browser<select value={draft.preferredBrowser} onChange={event=>setDraft({...draft,preferredBrowser:event.target.value as ApplicationPreferences['preferredBrowser']})}><option value="codex_browser">Codex built-in browser</option><option value="chrome">Chrome</option></select><span className="field-help">Claude Code continues to use Claude in Chrome.</span></label>
       <label>If that browser is unavailable<select value={draft.browserFallback} onChange={event=>setDraft({...draft,browserFallback:event.target.value as ApplicationPreferences['browserFallback']})}><option value="ask">Ask before switching</option><option value="other_supported">Use the other supported browser</option></select></label>
@@ -87,7 +127,7 @@ export function ApplicationSettings({client,dirtyChanged,refreshKey=0}:{client:C
       </details>
       {invalidModel&&<p role="alert" className="error">Open Advanced agent model defaults and use a model ID with letters, numbers, . _ : / + or -.</p>}
       {invalidEffort&&<p role="alert" className="error">Open Advanced agent model defaults and choose Host default, Low, Medium, or High for Codex reasoning effort.</p>}
-      <div className="settings-boundaries"><strong>Always manual</strong><p>Login, passwords, CAPTCHA, MFA, sensitive-answer approval, legal consent, and the final Submit or Send action are never enabled by these preferences.</p></div>
+      <div className="settings-boundaries"><strong>Owner actions</strong><p>Login, passwords, CAPTCHA, MFA, sensitive-answer approval, and legal consent still require your involvement.</p></div>
       <div className="button-row settings-actions"><button className="primary" type="submit" disabled={!canSave||Boolean(latest)||invalidModel||invalidEffort}>Save setup</button><button className="secondary" type="button" disabled={!dirty} onClick={()=>{const parsed=readApplicationPreferences(base.profile);setDraft(parsed.preferences);setModels(readAgentModelPreferences(base.profile));setComplete(parsed.complete);setLatest(null);setError('');setNotice('Unsaved setup changes discarded.');}}>Discard changes</button></div>
     </fieldset></form>}
   </section>;

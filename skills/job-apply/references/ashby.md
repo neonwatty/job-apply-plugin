@@ -12,4 +12,4 @@
 4. **Location combobox**: Type the location to trigger suggestions, then click the matching option
 5. **Resume upload**: Use the resume field, not the separate autofill file input, and verify the filename
 6. Review all visible values
-7. Stop before the final action, give a value-free field-name/status summary, and let the user submit manually
+7. Stop before the final action, give a value-free field-name/status summary, and follow the [Review handoff](application.md)

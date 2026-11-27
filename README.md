@@ -96,7 +96,7 @@ app. See the [workspace details](skills/job-workspace/references/workspace.md).
 
 | Skill | Description |
 |-------|-------------|
-| `job-apply:job-apply` | Prepare application fields from your resume and stop before final submission |
+| `job-apply:job-apply` | Prepare applications for Review and handle exact submission approval when enabled |
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
 | `job-apply:account-setup` | Classify supported account flows and manage only redacted metadata; passwords, email values, verification codes, and live sign-in remain outside the skill |
@@ -109,7 +109,7 @@ app. See the [workspace details](skills/job-workspace/references/workspace.md).
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 The [workflow map](skills/answer-memory/references/workflow-map.md) shows how first use, job search, and one application move between these skills and the shared Store.
 
-Application filling has three owner-selected modes: Guided, Autofill to Review for one exact job, and Campaign to Review for a bounded application-run queue. Every mode stops at the final review page; Submit, Send, Apply, authentication, verification, and legal consent remain manual. Higher modes are expiring, revocable grants bound to current job, run, destination, resume, facts, answer revisions, and a live attempt claim.
+Choose Guided, Autofill to Review for one exact job, or Campaign to Review for a bounded application-run queue. All three filling modes end at Review. Autofill and Campaign grants can expire or be revoked and are bound to the current job, run, destination, résumé, facts, answer revisions, and live attempt claim. Final submission is personal by default. The separate [Submit after approval](#submit-after-approval) switch lets the agent send an exact reviewed application after you approve it. Authentication, verification, and legal consent still involve the user.
 
 ## Features
 
@@ -121,7 +121,7 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 - **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
 - **Resumable progress**: Saves application step metadata and answer references without copying answer values
 - **Ready-job handoff**: Confirms the exact job, resume, and fact revision in chat, then claims that input-bound job with a recoverable lease and hands it to needs-info or final review
-- **Manual submission**: Stops at final review so only you can click Submit or Send
+- **Submission approval**: Stops at final review by default, with an optional global switch for agent submission after your exact approval
 - **Local resume library**: Files and versioned facts remain together in the private Store
 
 ### Answer Memory (`job-apply:answer-memory`)
@@ -174,7 +174,7 @@ Once a resume's facts are confirmed:
 
 3. Confirm the exact resume and its facts with the agent once for an application run, then manage the run's queue and watch each application fill from that fact set
 
-4. Inspect the final review page and field summary. The assistant stops before final submission; only you may decide whether to complete it manually on the third-party site.
+4. Inspect the final review page and field summary. You can complete it personally on the third-party site. To approve the agent to send the exact review, first enable **Submit after approval**.
 
 ### Searching for Jobs
 
@@ -224,7 +224,7 @@ Codex:       $job-apply:job-apply
 Claude Code: /job-apply:job-apply
 ```
 
-The agent acquires the Ready job from the canonical Store. Watch durable progress in **Application Activity** and use **Needs Attention** for missing information, human review, expired claims, or interrupted attempts. The agent stops before final submission; only you may submit on the third-party site.
+The agent acquires the Ready job from the canonical Store. Watch durable progress in **Application Activity** and use **Needs Attention** for missing information, human review, expired claims, or interrupted attempts. The agent stops at Review by default. You can submit personally or use **Submit after approval** to approve the agent to send the exact review.
 
 Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If Store validation fails during startup, Companion may exit before printing a URL. Preserve the Store directory and follow the [recovery guide](skills/answer-memory/references/upgrade.md).
 
@@ -240,7 +240,7 @@ Answer aggregate lists never contain values. Sensitive values are also absent fr
 
 Every mutation of an existing resume or proposal checks the target record's exact revision. Import is a new-record operation protected by ID/content uniqueness rather than an expected revision. Making a resume default checks the selected resume revision, then atomically advances any prior default as part of the compound change; it does not separately require the prior default's revision. If CLI or agent work changes a target record, the browser does not retry or overwrite it: only metadata fields actually edited in the browser remain as drafts, while untouched fields refresh from the canonical record; selected files also stay in place until you explicitly refresh and reapply them. Proposal review can decide a subset of pending paths; accepted values refresh Facts with user provenance. If accepting a child path would replace an existing scalar or array ancestor, the review discloses that ancestor and its current value and requires a separate confirmation of the exact replacement scope. Aggregate lists never contain resume bytes, file identities, or extracted values, and content requests require the in-memory workspace token and are returned with no-store and fixed content types.
 
-The workspace never runs an application, reads arbitrary filesystem paths, parses, writes, generates, or tailors resume content, authors extraction proposals, or activates Submit, Send, Apply, or another third-party final action. It has no cloud sync or browser-owned durable catalog. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
+The workspace never runs an application, reads arbitrary filesystem paths, parses, writes, generates, or tailors resume content, authors extraction proposals, or activates Submit, Send, Apply, or another third-party final action. It has no cloud sync or browser-owned durable catalog. A ready job remains an explicit handoff to `$job-apply:job-apply`; you control submission through personal action or exact approval.
 
 ## Supported Application Sites
 
@@ -325,7 +325,7 @@ All plugin skills access this data through the bundled native command router. Ca
 
 The packaged native `task` surface is the ordinary agent-facing job protocol. `snapshot` returns one redacted Store-owned overview/jobs/attention view; `activity --id <job-id>` returns value-free activity for one exact canonical job. `intake --input <private-json>` atomically resolves or creates exactly one active job without returning its URL or the Store's upsert token. After the owner explicitly chooses a displayed job, `select --id <job-id> --expected-revision <revision> --owner-confirmed` rechecks preflight and marks it Ready, or returns a stable no-op when that exact revision is already Ready. `semantic-lookup` recomputes deterministic candidates and bounded reuse policy from current canonical answers without returning answer values. `approval-preview` and `approval-approve` preserve current-use, remember, policy-mode, and use-authority decisions per opaque field reference. `cleanup-preview` never mutates; `cleanup-approve` requires the exact current preview plus explicit owner confirmation. All failures are stable machine-readable JSON; identity conflicts, trashed matches, stale revisions, unavailable jobs, failed policy, and failed preflight stop before browser work.
 
-The packaged native `attempt` surface uses a detached broker scoped to one Store and exact selected attempt. A short `start` client launches the broker, acquires the exact Ready job and revision, returns the redacted application inputs, and exits; no launcher, stdin stream, terminal, or conversational process stays attached. A separate `restart-review` launcher is available only after the owner explicitly confirms that one exact `awaiting_review` application was not submitted. It requires the exact job revision, complete same-job review evidence with no pending work, no global claim, and a fresh current managed-resume preflight. It atomically advances that same job once to `in_progress`, creates one 300-second claim, records one value-free restart event, and preserves prior review-session bytes until claim-gated progress. Modern sessions still require their complete 1.3.2 review envelope. A one-time legacy rebuild is permitted only when `attemptRevision`, `readiness`, and `browserHandoff` are all structurally absent from a `review`/`final_review` session with no pending work, the latest same-job event is `reviewed`/`awaiting_review`, and no prior restart exists. It records `legacy-review-rebuild`; partial, explicit-null, malformed, or contradictory envelopes fail without mutation. Legacy readiness remains unknown, so the rebuilt attempt must observe the visible form and provide fresh current-attempt readiness and browser handoff before returning to review. Restart never treats reviewed work as Ready or grants browser/final-action authority. The broker retains claim authority only in memory, heartbeats automatically, and accepts later stateless `heartbeat`, value-free `progress`, and `handoff` clients through its OS-user-restricted Store socket. It cannot switch jobs, Stores, revisions, owners, or claims. Its argv, environment, JSON responses, diagnostics, and durable files never carry the raw claim authority. An `awaiting_review` handoff succeeds only when the Store recomputes a complete `agent_attested_current_attempt` readiness report whose attempt revision matches the acquired revision, its complete current-form inventory and recomputed manifest agree, every assertion passes, no unresolved work remains, and final action remains untouched. Customized required controls can be attested in the live inventory. Missing, stale, or inaccessible required controls make the review handoff fail closed; the broker retains the claim until a separate valid handoff or claim expiry. This is an agent attestation over a closed observation, not independent browser provenance proof; the owner must still inspect and submit the visible form. Repository replay evidence is deliberately insufficient. A bounded `needs_info` handoff may instead retain only allowlisted typed blocker codes and a closed browser-handoff state; neither session form retains question text, answers, credentials, URLs, paths, tab IDs, or browser state.
+The packaged native `attempt` surface uses a detached broker scoped to one Store and exact selected attempt. A short `start` client launches the broker, acquires the exact Ready job and revision, returns the redacted application inputs, and exits; no launcher, stdin stream, terminal, or conversational process stays attached. A separate `restart-review` launcher is available only after the owner explicitly confirms that one exact `awaiting_review` application was not submitted. It requires the exact job revision, complete same-job review evidence with no pending work, no global claim, and a fresh current managed-resume preflight. It atomically advances that same job once to `in_progress`, creates one 300-second claim, records one value-free restart event, and preserves prior review-session bytes until claim-gated progress. Modern sessions still require their complete 1.3.2 review envelope. A one-time legacy rebuild is permitted only when `attemptRevision`, `readiness`, and `browserHandoff` are all structurally absent from a `review`/`final_review` session with no pending work, the latest same-job event is `reviewed`/`awaiting_review`, and no prior restart exists. It records `legacy-review-rebuild`; partial, explicit-null, malformed, or contradictory envelopes fail without mutation. Legacy readiness remains unknown, so the rebuilt attempt must observe the visible form and provide fresh current-attempt readiness and browser handoff before returning to review. Restart never treats reviewed work as Ready or grants browser/final-action authority. The broker retains claim authority only in memory, heartbeats automatically, and accepts later stateless `heartbeat`, value-free `progress`, and `handoff` clients through its OS-user-restricted Store socket. It cannot switch jobs, Stores, revisions, owners, or claims. Its argv, environment, JSON responses, diagnostics, and durable files never carry the raw claim authority. An `awaiting_review` handoff succeeds only when the Store recomputes a complete `agent_attested_current_attempt` readiness report whose attempt revision matches the acquired revision, its complete current-form inventory and recomputed manifest agree, every assertion passes, no unresolved work remains, and final action remains untouched. Customized required controls can be attested in the live inventory. Missing, stale, or inaccessible required controls make the review handoff fail closed; the broker retains the claim until a separate valid handoff or claim expiry. This is an agent attestation over a closed observation, not independent browser provenance proof; the owner reviews the visible form before personal submission or exact approval. Repository replay evidence is deliberately insufficient. A bounded `needs_info` handoff may instead retain only allowlisted typed blocker codes and a closed browser-handoff state; neither session form retains question text, answers, credentials, URLs, paths, tab IDs, or browser state.
 
 Version 1.3.0 is the first package identity containing this human-attention contract. Version 1.3.2 adds the explicit owner-confirmed-not-submitted review restart, and 1.3.3 adds only the fail-closed, one-time legacy review-rebuild compatibility branch. Version 1.3.4 integrates the macOS employer-account seam and labels a verified known-data entry failure as **Browser action required** rather than missing information. Version 1.3.5 adds the durable human-requested resume-extraction and grouped review workflow. None of these versions changes final-action or applied-status authority. Session additions are optional and revisioned within the existing schema: older v1 sessions remain readable, while the next coordinator write replaces legacy question/role/company/URL copies with value-free blocker, readiness, approval, and browser-handoff projections. Validation remains non-mutating on corrupt or future documents, and coordinator journal recovery remains the only crash roll-forward path.
 
@@ -423,7 +423,7 @@ mutation, and two-way sync are not supported.
 
 - **Never handles credentials** - Pauses for you to complete login, password, CAPTCHA, or MFA steps
 - **Account handling stays explicit** - The plugin pauses for Workday sign-in and other account steps. Reviewed direct Greenhouse application URLs need no account.
-- **Never submits applications** - Stops at final review, summarizes entered fields, and leaves Submit or Send for you
+- **Stops at Review by default** - Summarizes entered fields and supports optional, explicit approval for the agent to send the application
 - **Never enters payment info** - Skips premium features
 - **Confirms sensitive questions** - Salary, visa status, etc.
 - **Separates use from storage consent** - Filling a sensitive answer once never automatically remembers it
@@ -661,7 +661,7 @@ node runtime/cli/native-qa-replay.js reviewed --run-id GENERATED_RUN_ID
 node runtime/cli/native-qa-replay.js evaluate --run-id GENERATED_RUN_ID
 ```
 
-`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `node runtime/cli/native-qa-replay.js resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the native Store. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `node runtime/cli/native-qa-replay.js cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
+In review-only mode, `prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `node runtime/cli/native-qa-replay.js resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the native Store. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `node runtime/cli/native-qa-replay.js cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
 
 The committed `linkedin-screening` review lane remains wholly synthetic and requires zero final-action activations. A second repeatable loopback verifier exercises the high-risk Auto-submit state machine at the policy-coupled activation boundary, including actual review-only refusal, kill/expiry and concurrency races, forged/stale/prompt/redirect denial, all runtime stops, redaction, one-winner success with independent confirmation, and terminal one-retry uncertainty:
 
@@ -670,6 +670,52 @@ node runtime/cli/native-qa-replay.js verify-auto-submit --fixture qa/fixtures/li
 ```
 
 That verifier uses only `127.0.0.1`, a private per-run capability, opaque identities, and redacted reports. It does not contact LinkedIn, authenticate, use applicant data, or authorize a live action. A real canary remains a separate audited and exactly approved step.
+
+### Submit after approval
+
+In Companion, open **Settings → Submit after approval**. This saved switch applies to all Job Apply applications in that Store. Off, the agent stops at Review. On, the top-level Job Apply agent can send an exact reviewed application or batch after you explicitly approve it. The agent uses the same visible browser as the application and reports the portal outcome. Turning the switch off prevents subsequent attempts. You can also ask the agent “Turn on Submit after approval for Job Apply.” The Application Setup skill saves the same setting. [Submission workflow](skills/job-apply/references/submit-after-approval.md)
+
+### Submit after approval in the QA harness
+
+The isolated Greenhouse replay also supports **Submit after approval**. It uses the existing browser review and a separate owner approval command. The replay accepts the packaged fictional Greenhouse fixture and its synthetic résumé.
+
+```bash
+node runtime/cli/native-qa-replay.js prepare --fixture greenhouse-single-page-2026-08-v1 --scenario greenhouse-complete-profile --mode submit_after_approval
+node runtime/cli/native-qa-replay.js started --run-id RUN_ID
+# Open the generated fixture URL, fill it with fictional answers, attach the fixture résumé, and reach Review.
+node runtime/cli/native-qa-replay.js reviewed --run-id RUN_ID
+node runtime/cli/native-qa-replay.js submission-preview --run-id RUN_ID
+# Inspect the preview and substitute its exact review revision.
+node runtime/cli/native-qa-replay.js submission-approve --run-id RUN_ID --review REVIEW_REVISION --owner-confirmed
+node runtime/cli/native-qa-replay.js submission-submit --run-id RUN_ID --review REVIEW_REVISION
+node runtime/cli/native-qa-replay.js submission-status --run-id RUN_ID
+```
+
+The preview includes the exact fictional answers and résumé. A changed browser review needs a fresh preview and approval. After reopening a form, return to Review before resuming. Use `submission-cancel --run-id RUN_ID` to stop a pending approval. If the outcome is uncertain, use `submission-status` to reconcile it before taking any further action. After checking the outcome, `evaluate` includes it in the redacted run report, and `cleanup` retires the synthetic run.
+
+### Submit a named QA batch
+
+Prepare two or three distinct fictional jobs in the same isolated runs directory. Add `--job greenhouse-demo`, `--job sample-ml-engineer`, or `--job sample-forward-deployed-engineer` to the `prepare` command above. Each run shows the named job in the browser. Complete `started` and `reviewed` on each run before previewing the batch. The batch commands handle approval and execution for the selected applications.
+
+```bash
+node runtime/cli/native-qa-replay.js submission-batch-preview --run-ids FIRST_RUN_ID,SECOND_RUN_ID
+# Review each application's job, destination, attached résumé, and answers.
+node runtime/cli/native-qa-replay.js submission-batch-approve --batch-id BATCH_ID --review BATCH_REVISION --owner-confirmed
+node runtime/cli/native-qa-replay.js submission-batch-execute --batch-id BATCH_ID
+node runtime/cli/native-qa-replay.js submission-batch-status --batch-id BATCH_ID
+```
+
+Approval lasts five minutes and covers the exact previews in the order listed. Execution uses one application at a time. A changed or blocked application is reported as `needs_attention` while the other eligible jobs continue. An uncertain attempt is held for reconciliation. A confirmed receipt stays in the batch report.
+
+Run `submission-batch-stop --batch-id BATCH_ID` from a separate terminal to stop the remaining jobs. An action already in progress may settle with a receipt. Use batch status to check the outcome before evaluating and cleaning up the individual runs. The batch report contains job names, statuses, and receipt IDs. The preview displays the fictional answers locally.
+
+### Try batch approval in Companion
+
+On macOS or Linux, open **Controls → Submission lab** in a Companion build that includes the QA fixtures. **Submit after approval** is one setting for all test applications. It starts off and stays where you set it across batches and page reloads while Companion runs. Choose one to three fictional jobs.
+
+Open each test form, load the fictional answers and résumé, and continue to Review. With the switch off, Companion stops at Review. With it on, choose **Review batch**. Inspect each job’s destination, résumé, and answers, then choose **Approve and submit**. Turning the switch off stops remaining submissions and preserves the forms and any receipts. **Stop remaining jobs** stops the current batch while leaving the setting on.
+
+The lab uses private, disposable QA Stores. Reloading Companion restores the current session and batch status while the launcher is running. Choose **End lab session** to retire the test forms. For a local worktree build, see [Companion development](docs/testing.md#companion-development).
 
 ## Contributing
 

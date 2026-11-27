@@ -23,6 +23,23 @@ export const CRITICAL_TREES = [
   "apps/companion", "native",
 ] as const;
 
+const companionLabRenderer = [
+  "qa/renderer/lab.js", "qa/renderer/index.html", "qa/renderer/app.js", "qa/renderer/styles.css",
+] as const;
+
+async function includeCompanionLab(root: string, paths: Set<string>): Promise<void> {
+  try {
+    await lstat(artifactBytes(constructPosixPath(root, companionLabRenderer[0])));
+  } catch (error) {
+    if (artifactOSError(error) && error.code === "ENOENT") return;
+    throw error;
+  }
+  for (const asset of companionLabRenderer) {
+    await regularArtifactFile(root, asset);
+    paths.add(asset);
+  }
+}
+
 function pythonStringOrder(left: string, right: string): number {
   const first = [...left];
   const second = [...right];
@@ -105,6 +122,7 @@ export async function criticalPaths(root: string, profile: PythonPathProfile): P
     }
     await walkArtifacts(root, relative, profile, paths);
   }
+  await includeCompanionLab(root, paths);
   return [...paths].sort(pythonStringOrder);
 }
 
