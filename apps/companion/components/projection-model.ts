@@ -5,6 +5,7 @@ export const attentionReasons = {
   awaiting_human_review: 'Awaiting your review', browser_action_required: 'Browser action required', needs_information: 'Needs information',
   owner_confirmation_required: 'Confirmation needed', pending_live_reconfirmation: 'Live confirmation needed',
   site_consent_conflict: 'Site consent conflict',
+  verify_submission_status: 'Verify submission status', reconcile_submission_receipt: 'Record confirmed submission',
 } as const;
 export const handoffActionLabels: Record<string,string> = {
   resume_upload: 'Attach resume', passport_country: 'Answer passport country',
@@ -26,12 +27,14 @@ export const recoveryGuidance = {
 };
 export const attentionGuidance: Record<AttentionReason, string> = {
   expired_agent_attempt: recoveryGuidance.expired, claimless_interrupted_attempt: recoveryGuidance.interrupted,
-  awaiting_human_review: 'Open the review steps and check the draft in your application tab. After you submit on the employer site, record submission in Companion.',
+  awaiting_human_review: 'Open the review steps and check the draft in your application tab. After the employer confirms submission, record it in Companion.',
   browser_action_required: 'Continue in your application tab. The agent needs your help with a form control.',
   needs_information: 'Open Job details and resolve missing facts, resume, or answers. Run preflight, then mark the job Ready.',
   owner_confirmation_required: 'Confirm the requested action for the visible application form, then mark the job Ready to resume the attempt.',
   pending_live_reconfirmation: 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.',
   site_consent_conflict: 'The site requires an opt-in that conflicts with a saved decline. Review the visible notice and draft; do not opt in merely to advance.',
+  verify_submission_status: 'Check the employer portal or confirmation email for this exact application before trying again.',
+  reconcile_submission_receipt: 'Companion has a portal receipt. Open Job details to review it and record the submission.',
 };
 function str(d: Document, key: string, fallback?: string): string {
   const value = get(d,key);
@@ -134,8 +137,25 @@ export function attentionProjection(raw:string): {items:AttentionItem[]} {
   return {items};
 }
 export function filterAttention<T extends AttentionItem>(items:T[],reason:string):T[] { return reason ? items.filter(item=>item.reasonCode===reason) : items; }
+type SubmissionOutcome = { status: 'verify_submission_status' }
+  | { status: 'confirmed_submitted'; receiptId: string };
+
+function submissionOutcome(value: Value | undefined): SubmissionOutcome | null {
+  const outcome = nullableRecord(value);
+  if (outcome === null) return null;
+  const status = str(outcome, 'status');
+  if (status === 'verify_submission_status') return { status };
+  if (status === 'confirmed_submitted' && str(outcome, 'evidence') === 'agent_observed_portal_confirmation') {
+    const receiptId = str(outcome, 'receiptId');
+    if (/^receipt:[a-f0-9]{64}$/.test(receiptId)) return { status, receiptId };
+  }
+  throw Error('Invalid submission outcome');
+}
+
 export interface ActivityProjection {
   job:{status:string;revision:bigint};
+  submission: SubmissionOutcome | null;
+  submitAfterApproval: boolean;
   session:(SessionSummary & {revision:bigint;status:string;step:string;updatedAt:string;approvalCount:number;pending:{sensitive:boolean;eligible:boolean;approved:boolean;state:string;fieldClass:string}[]}) | null;
   claim:{state:string;acquiredAt:string;heartbeatAt:string;expiresAt:string}; history:{event:string;status:string;at:string}[];
 }
@@ -145,6 +165,8 @@ export function activityProjection(raw:string):ActivityProjection {
   const approvals=session ? array(session,'approvals',true).map(value=>object(value,'approval')) : [];
   if (!['none','active','expired','interrupted'].includes(state)) throw Error('Invalid claim state');
   return {job:{status:str(job,'status'),revision:revision(job,'revision')},
+    submission: submissionOutcome(get(doc, 'submission')),
+    submitAfterApproval: bool(doc, 'submitAfterApproval', false),
     session:session ? {...summary(session),revision:revision(session,'revision'),status:str(session,'status','Not recorded'),step:str(session,'step','Not recorded'),updatedAt:str(session,'updatedAt','Not recorded'),approvalCount:approvals.length,
       pending:array(session,'pendingInformation',true).map(value=>{const field=object(value,'pending information');return {sensitive:bool(field,'sensitive',false)||str(field,'state','')==='sensitive',eligible:bool(field,'resolutionEligible'),approved:approvals.some(approval=>str(approval,'reference','')===str(field,'reference','') && str(field,'reference','')!==''),state:str(field,'state','Not recorded'),fieldClass:str(field,'fieldClass','general')};})} : null,
     claim:{state,acquiredAt:str(claim,'acquiredAt','Not recorded'),heartbeatAt:str(claim,'heartbeatAt','Not recorded'),expiresAt:str(claim,'expiresAt','Not recorded')},

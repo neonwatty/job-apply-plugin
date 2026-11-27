@@ -7,13 +7,14 @@ import { strip } from '../contracts/workspace/job-url.js';
 import { copy, fromJSON, get, has, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import type { NativeResumeFiles } from '../store/native-resume-files.js';
-import { preflightJobRecord } from './job-preflight.js';
+import { preflightJobRecord, reviewedInputsFingerprint } from './job-preflight.js';
 import { consumeAutofillAuthority } from '../contracts/workspace/application-authority.js';
 
 export interface ClaimTransaction {
   jobs: Document; coordinator: Document; profile: Document; resumes: Document; facts?: Document; requests?: Document; answers: Document;
   authority: Document;
   sessions: Document[]; history: Document[]; files: NativeResumeFiles;
+  readLiveSubmissions?(jobIds: string[]): Promise<Map<string, unknown>>;
   saveJobs(document:Document):Promise<void>;
   saveCoordinator(document:Document):Promise<void>;
   saveSession(document:Document):Promise<void>;
@@ -224,6 +225,8 @@ export class ClaimsService {
       validateClaimHandoff(session,incoming,status,get(job,'revision'));
       const op = operation('handoff',job,now,status === 'needs_info' ? 'job-blocked' : 'reviewed',status,null);
       if (status === 'awaiting_review') {
+        const reviewedInputs = reviewedInputsFingerprint(tx.jobs, tx.resumes);
+        if (reviewedInputs !== null) set(session, 'reviewedInputsFingerprint', text(reviewedInputs));
         const authority = consumeAutofillAuthority(tx.authority, id, now);
         if (authority !== null) set(op, 'applicationAuthority', authority);
       }

@@ -17,6 +17,7 @@ const app = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(app, '../..');
 const targets = {
   store: 'native-jobs.js', task: 'native-task.js', attempt: 'native-attempt.js', policy: 'native-final-action-policy.js',
+  submission: 'native-live-submission.js',
   migration: 'native-store-migration.js',
 };
 function selectedRoot(args) {

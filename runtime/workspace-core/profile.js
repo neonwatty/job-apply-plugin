@@ -1,5 +1,6 @@
 import { factSources, validateProfile } from '../contracts/workspace/profile.js';
 import { copy, get, has, set, object, int, integer, text, JobsError } from '../contracts/workspace/values.js';
+import { submitAfterApprovalEnabled, submitAfterApprovalPath, submitAfterApprovalValue } from '../contracts/workspace/submission-preference.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { applyPatch, changedPaths, provenanceAfter } from './profile-patch.js';
 export function inspectProfile(document) {
@@ -27,7 +28,14 @@ export class ProfileService {
         const patch = object(value, 'profile patch');
         if (!patch.size)
             throw new JobsError('profile patch must not be empty');
-        return this.mutate(revision, source, current => applyPatch(current, patch, atomic, deleted));
+        return this.mutate(revision, source, (current, provenance) => {
+            const [next, changed] = applyPatch(current, patch, atomic, deleted);
+            if (source === 'user' && !atomic.includes('/applicationPreferences')
+                && submitAfterApprovalValue(patch) === true && !changed.includes(submitAfterApprovalPath)
+                && !submitAfterApprovalEnabled(next, provenance))
+                changed.push(submitAfterApprovalPath);
+            return [next, changed];
+        });
     }
     async replace(value, revision, source) {
         const next = object(value, 'profile');
@@ -53,11 +61,11 @@ export class ProfileService {
             if (actual !== revision)
                 throw new JobsError('profile revision conflict');
             const current = object(get(document, 'profile'), 'profile.profile');
-            const [next, changed] = update(current);
+            const provenance = has(metadata, 'factProvenance') ? object(get(metadata, 'factProvenance'), 'profile fact provenance') : emptyObject();
+            const [next, changed] = update(current, provenance);
             if (!changed.length)
                 return inspectProfile(document);
             const now = this.now();
-            const provenance = has(metadata, 'factProvenance') ? object(get(metadata, 'factProvenance'), 'profile fact provenance') : emptyObject();
             const updatedMetadata = copy(metadata);
             set(updatedMetadata, 'factProvenance', provenanceAfter(provenance, changed, source, now, current));
             set(updatedMetadata, 'updatedAt', text(now));

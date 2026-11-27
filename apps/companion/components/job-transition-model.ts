@@ -18,7 +18,7 @@ export function transitionBody(job: Job, status: string, closedOutcome = '', use
   if (!job.id) throw Error('The job identity is missing.');
   if (typeof job.revision !== 'bigint' || job.revision < 1n) throw Error('The job revision is invalid.');
   if (!transitionTargets(job).includes(status as TransitionTarget)) throw Error('This status transition is unavailable.');
-  if (status === 'applied' && userConfirmed !== true) throw Error('Confirm that you personally submitted this application.');
+  if (status === 'applied' && userConfirmed !== true) throw Error('Confirm that the employer received this application.');
   if (status === 'closed' && !closedOutcomes.some(value => value === closedOutcome)) throw Error('Choose a closing outcome.');
   return object.stringifyJson({ status, expectedRevision: job.revision,
     ...(status === 'closed' ? { closedOutcome } : {}),

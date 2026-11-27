@@ -14,7 +14,7 @@
    - Work authorization questions (dropdowns)
    - Custom screening questions (varies by employer)
 4. Click "Next" to advance, "Review" on final step
-5. Stop on the review page, give a value-free field-name/status summary, and leave "Submit application" untouched for the user
+5. Stop on the review page, give a value-free field-name/status summary, and leave "Submit application" untouched during the [Review handoff](application.md)
 
 **Field patterns to look for:**
 - `input[name*="phone"]` - Phone number

@@ -18,7 +18,7 @@
 6. Education section similar pattern
 7. Handle custom questions at bottom
 8. Upload the resume through the visible file control and confirm the filename
-9. Stop before the final "Submit Application" button, give a value-free field-name/status summary, and hand control to the user
+9. Stop before the final "Submit Application" button, give a value-free field-name/status summary, and follow the [Review handoff](application.md)
 
 **Field patterns:**
 - Standard `<input>` and `<select>` elements

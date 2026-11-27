@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import type { Job } from './contracts';
-import { handoffActionLabels, isCurrentHandoff, recordedFormActions, type ActivityProjection } from './projection-model';
+import { attentionGuidance, attentionReasons, handoffActionLabels, isCurrentHandoff, recordedFormActions, type ActivityProjection } from './projection-model';
 import { formatActivityTime, humanize, type ProjectionState } from './projection-view';
 
 export function JobHandoff({job, activity, children}: {
@@ -15,10 +15,23 @@ export function JobHandoff({job, activity, children}: {
   const session = matchesJob && !loading && !error && data.claim.state === 'none'
     && data.session && isCurrentHandoff(data.session, job.revision) ? data.session : null;
   const review = job.status === 'awaiting_review';
+  const submission = matchesJob ? data.submission : null;
   const checked = session?.status === 'review' && session.reviewChecksRecorded
     && session.pending.length === 0 && session.blockers.length === 0 && session.handoffChecklist.length === 0;
   const blocked = job.status === 'needs_info' && session?.handoff === 'required';
   if (!review && !blocked) return null;
+
+  if (review && submission) {
+    const reason = submission.status === 'confirmed_submitted' ? 'reconcile_submission_receipt' : 'verify_submission_status';
+    return <section className="workspace-panel job-handoff" aria-labelledby={titleId}>
+      <h3 id={titleId}>{attentionReasons[reason]}</h3>
+      {submission.status === 'confirmed_submitted' ? <>
+        <p>The agent found confirmation on the employer portal.</p>
+        <p>Receipt <code>{submission.receiptId}</code></p>
+      </> : <p>{attentionGuidance.verify_submission_status}</p>}
+      {children}
+    </section>;
+  }
 
   const actions = blocked ? recordedFormActions(session) : [];
   const upload = actions.length === 1 && actions[0] === handoffActionLabels.resume_upload;
@@ -31,7 +44,9 @@ export function JobHandoff({job, activity, children}: {
     <h3 id={titleId}>{title}</h3>
     {checked && review ? <>
       <p>The agent reported that required fields were complete and stopped before submission.</p>
-      <p>Return to your application tab to review the draft. Submit on the employer site when you’re ready.</p>
+      <p>Return to your application tab to review the draft. {data?.submitAfterApproval
+        ? 'Submit it yourself or approve this reviewed application in chat for the agent to submit.'
+        : 'Submit on the employer site when you’re ready.'}</p>
       <details open>
         <summary>Agent’s check{session.updatedAt !== 'Not recorded' && <> · {formatActivityTime(session.updatedAt)}</>}</summary>
         <ul>

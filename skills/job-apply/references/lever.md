@@ -12,4 +12,4 @@
 3. Read the visible form structure and fill text fields
 4. **Radio buttons**: If a custom overlay blocks a control, follow the [browser fallback rules](browser.md) or leave it for the user
 5. **Resume upload**: Use the visible resume file control and verify the filename
-6. Review all fields, stop before the final action, and let the user submit manually
+6. Review all fields, stop before the final action, and follow the [Review handoff](application.md)

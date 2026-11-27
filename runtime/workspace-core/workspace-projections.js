@@ -7,8 +7,10 @@ import { currentClaimApprovals } from '../contracts/workspace/claim-session-pend
 import { pendingResolutionProjection, sessionRevision } from '../contracts/workspace/answer-resolution.js';
 import { validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
 import { safeId } from '../contracts/workspace/jobs.js';
+import { liveSubmissionEnabled } from '../contracts/workspace/submission-preference.js';
 import { fromJSON, get, has, int, integer, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { preflightJobRecord } from './job-preflight.js';
+import { projectSubmissionOutcome } from './live-submission.js';
 const doc = (value) => object(fromJSON(value), 'projection');
 const digest = (value) => createHash('sha256').update(canonicalJson(value)).digest('hex');
 const label = (value, key) => string(get(value, key)) ?? '';
@@ -52,7 +54,10 @@ const reasons = [
     ['owner_confirmation_required', 'Confirmation needed', 'Confirm the requested action for the visible application form, then mark the job ready to resume the attempt.'],
     ['pending_live_reconfirmation', 'Live confirmation needed', 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.'],
     ['site_consent_conflict', 'Site consent conflict', 'The site requires an opt-in that conflicts with a saved decline. Review the visible notice and draft; do not opt in merely to advance.'],
+    ['verify_submission_status', 'Verify submission status', 'Check the employer portal or confirmation email for this exact application before trying again.'],
+    ['reconcile_submission_receipt', 'Record confirmed submission', 'Companion has a portal receipt. Open Job details to review it and record the submission.'],
 ];
+const verifySubmission = 8, reconcileSubmission = 9;
 function compareText(a, b) {
     return text(a).compare(text(b));
 }
@@ -87,12 +92,21 @@ function siteConsentConflict(session) {
     return blockers.length === 1 && label(blockers[0], 'type') === 'owner_review'
         && label(blockers[0], 'code') === 'site-required-opt-in-conflict';
 }
-function attentionLocked(tx, now) {
+async function attentionRows(tx, now) {
     const rows = [];
-    for (const job of active(records(tx.jobs, 'jobs'))) {
+    const jobs = active(records(tx.jobs, 'jobs'));
+    const agentSubmissionEnabled = liveSubmissionEnabled(tx.profile);
+    const submissions = await tx.readLiveSubmissions?.(jobs.filter(job => !['applied', 'closed'].includes(label(job, 'status')))
+        .map(job => label(job, 'id')));
+    for (const job of jobs) {
         const id = label(job, 'id'), status = label(job, 'status');
+        const submission = projectSubmissionOutcome(id, submissions?.get(id), false);
         let reason = null, at = get(job, 'updatedAt');
-        if (status === 'in_progress') {
+        if (submission?.status === 'verify_submission_status')
+            reason = verifySubmission;
+        else if (status === 'awaiting_review' && submission?.status === 'confirmed_submitted')
+            reason = reconcileSubmission;
+        else if (status === 'in_progress') {
             const claim = selectedClaim(tx, id);
             if (claim === null)
                 reason = 1;
@@ -127,7 +141,10 @@ function attentionLocked(tx, now) {
                     reason = 5;
             }
         }
-        const [code, reasonLabel, guidance] = reasons[reason];
+        const [code, reasonLabel, defaultGuidance] = reasons[reason];
+        const guidance = code === 'awaiting_human_review' && agentSubmissionEnabled
+            ? 'Open Job details and check the draft in your application tab. You can submit it yourself or approve the reviewed application in chat.'
+            : defaultGuidance;
         const row = doc({ jobId: id, status, reasonCode: code, reasonLabel, guidance, missingInformationCount: missing });
         set(row, 'revision', get(job, 'revision'));
         set(row, 'priority', get(job, 'priority') ?? integer(0n));
@@ -136,13 +153,16 @@ function attentionLocked(tx, now) {
         set(row, 'session', projected);
         rows.push(row);
     }
+    return rows;
+}
+function attentionProjection(rows) {
     rows.sort((a, b) => reasons.findIndex(item => item[0] === label(a, 'reasonCode'))
         - reasons.findIndex(item => item[0] === label(b, 'reasonCode'))
         || comparePriority(a, b) || compareText(label(a, 'attentionAt'), label(b, 'attentionAt'))
         || compareText(label(a, 'jobId'), label(b, 'jobId')));
     return set(doc({ snapshotSignature: digest(rows) }), 'items', rows);
 }
-async function overviewLocked(tx, now) {
+async function overviewLocked(tx, now, attentionJobs) {
     const jobs = active(records(tx.jobs, 'jobs')), resumes = active(records(tx.resumes, 'resumes'));
     const answers = active(records(tx.answers, 'answers')).filter(item => !has(item, 'reviewStatus') || label(item, 'reviewStatus') === 'accepted');
     const scoped = tx.facts ? object(get(tx.facts, 'sets'), 'resume fact sets') : null;
@@ -161,17 +181,6 @@ async function overviewLocked(tx, now) {
     const hasProfileFacts = confirmedFacts.length > 0;
     const runFactsCurrent = selection === null || confirmedFacts.some(({ resumeId, latest }) => label(selection, 'resumeId') === resumeId && same(get(latest, 'revision'), get(selection, 'factRevision'))
         && same(get(latest, 'contentRevision'), get(selection, 'contentRevision')));
-    const attentionJobs = jobs.filter(job => {
-        const status = label(job, 'status'), id = label(job, 'id');
-        if (['needs_info', 'awaiting_review'].includes(status))
-            return true;
-        if (status === 'ready') {
-            const session = sessionRecord(tx, id);
-            return session !== null && (get(session, 'pendingFields') ?? []).length > 0;
-        }
-        const claim = selectedClaim(tx, id);
-        return status === 'in_progress' && (claim === null || claimExpired(claim, now));
-    }).length;
     const rawClaim = get(tx.coordinator, 'claim');
     let acquirable = false;
     if (rawClaim === null || claimExpired(object(rawClaim, 'claim'), now)) {
@@ -203,10 +212,13 @@ export class WorkspaceProjectionsService {
         this.now = now;
     }
     overview() {
-        return this.repository.claimTransaction(tx => overviewLocked(tx, this.now()));
+        return this.repository.claimTransaction(async (tx) => {
+            const now = this.now();
+            return overviewLocked(tx, now, (await attentionRows(tx, now)).length);
+        });
     }
     attention() {
-        return this.repository.claimTransaction(async (tx) => attentionLocked(tx, this.now()));
+        return this.repository.claimTransaction(async (tx) => attentionProjection(await attentionRows(tx, this.now())));
     }
     preflight(id) {
         safeId(id);
@@ -214,7 +226,8 @@ export class WorkspaceProjectionsService {
     }
     taskSnapshot() {
         return this.repository.claimTransaction(async (tx) => {
-            const now = this.now(), overview = await overviewLocked(tx, now), attention = attentionLocked(tx, now);
+            const now = this.now(), rows = await attentionRows(tx, now);
+            const overview = await overviewLocked(tx, now, rows.length), attention = attentionProjection(rows);
             const jobs = active(records(tx.jobs, 'jobs')).sort((a, b) => comparePriority(a, b)
                 || compareText(label(a, 'createdAt'), label(b, 'createdAt')) || compareText(label(a, 'id'), label(b, 'id')))
                 .map(job => taskJobProjection(job));
@@ -253,6 +266,12 @@ export class WorkspaceProjectionsService {
             else if (label(claim, 'state') === 'interrupted')
                 set(claim, 'recoveryGuidance', text(`Reset this claimless attempt with the CLI job-transition command to needs_info using revision ${int(get(job, 'revision'))}; resolve any missing information, then mark it ready for a new agent attempt.`));
             const result = set(doc({}), 'job', select(job, ['status', 'revision']));
+            const submissions = await tx.readLiveSubmissions?.([id]);
+            const outcome = projectSubmissionOutcome(id, submissions?.get(id), label(job, 'status') === 'applied');
+            if (outcome !== null)
+                set(result, 'submission', doc(outcome));
+            if (liveSubmissionEnabled(tx.profile))
+                set(result, 'submitAfterApproval', true);
             set(result, 'session', session);
             set(result, 'claim', claim);
             return set(result, 'history', tx.history.filter(event => label(event, 'applicationId') === id)

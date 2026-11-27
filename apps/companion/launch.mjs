@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { createReadStream, existsSync, fstatSync } from "node:fs";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -18,6 +20,7 @@ if (externalProcessOwner && !fstatSync(3).isFile()) throw new Error('Companion p
 let stopping = false;
 let ownerChannel;
 let windowsWriter;
+let submissionLabRoot;
 function stopChild(child, signal) {
   if (!Number.isSafeInteger(child.pid) || child.pid <= 0) return;
   try {
@@ -41,6 +44,7 @@ async function shutdown(code) {
     delay(3000, undefined, { ref: false }),
   ]);
   for (const child of children) stopChild(child, "SIGKILL");
+  if (submissionLabRoot) await rm(submissionLabRoot, { recursive: true, force: true }).catch(() => {});
   process.exitCode = code;
 }
 function owned(command, argv, env = process.env, ipc = false) {
@@ -109,8 +113,16 @@ try {
   const standalone = join(app, ".next/standalone/apps/companion/server.js");
   if (!options.dev && !existsSync(standalone)) throw new Error("Build the Companion before starting it");
   const command = options.dev ? [require.resolve("next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", String(port)] : [standalone];
+  const labAssets = ["runtime/cli/companion-submission-lab.js", "qa/renderer/lab.js", "qa/renderer/index.html",
+    "qa/renderer/app.js", "qa/renderer/styles.css", "qa/fixtures/greenhouse-single-page-2026-08-v1/fixture.json",
+    "qa/scenarios/greenhouse-complete-profile/synthetic-resume.pdf"];
+  if (!windows && labAssets.every(path => existsSync(join(options.pluginRoot, path)))) {
+    submissionLabRoot = await mkdtemp(join(await realpath(tmpdir()), "job-apply-companion-lab-"));
+  }
   const next = owned(process.execPath, command, { ...process.env, HOSTNAME: "127.0.0.1", PORT: String(port),
-    COMPANION_ORIGIN: origin, COMPANION_PYTHON_ORIGIN: upstream, COMPANION_TOKEN: token });
+    COMPANION_ORIGIN: origin, COMPANION_PYTHON_ORIGIN: upstream, COMPANION_TOKEN: token,
+    COMPANION_SUBMISSION_LAB_ROOT: submissionLabRoot ?? "", COMPANION_SUBMISSION_LAB_PLUGIN: options.pluginRoot,
+    COMPANION_SUBMISSION_LAB_STORE: options.root });
   next.stdout.on("data", () => {});
   const deadline = Date.now() + 60000;
   let ready = false;

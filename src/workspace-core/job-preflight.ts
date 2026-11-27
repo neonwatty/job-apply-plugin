@@ -1,8 +1,24 @@
+import { createHash } from 'node:crypto';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { get, int, keys, object, same, set, string, text, integer, truth } from '../contracts/workspace/values.js';
 import type { Document } from '../contracts/workspace/values.js';
 import type { NativeResumeFiles } from '../store/native-resume-files.js';
 import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
+
+/** Bind the handoff to the managed résumé and confirmed facts used by the active run. */
+export function reviewedInputsFingerprint(jobs: Document, resumes: Document): string | null {
+  const run = activeApplicationRun(jobs);
+  if (run === null) return null;
+  const selection = object(get(run, 'selection'), 'application run selection');
+  const resumeId = string(get(selection, 'resumeId'))!;
+  const value = get(object(get(resumes, 'resumes'), 'resumes'), resumeId);
+  if (value === null) return null;
+  const resume = object(value, 'resume');
+  if (string(get(resume, 'storageKind')) !== 'managed' || get(resume, 'deletedAt') !== null) return null;
+  const identity = JSON.stringify([resumeId, string(get(resume, 'digest')), string(get(resume, 'contentRevision')),
+    int(get(resume, 'revision'))?.toString(), int(get(selection, 'factRevision'))?.toString()]);
+  return 'sha256:' + createHash('sha256').update(identity).digest('hex');
+}
 
 /** Inspect documents already held by the caller's transaction, without acquiring another lock. */
 export async function preflightJobRecord(job: Document, profileDocument: Document,

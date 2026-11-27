@@ -27,13 +27,20 @@ function violations(text) {
   });
 }
 
-test('Job Apply skill and its references preserve manual submission instructions', async () => {
+test('Job Apply instructions preserve Review and bind agent submission to exact final approval', async () => {
   const skill = new URL('../skills/job-apply/', import.meta.url);
   const entries = await readdir(skill, { recursive: true, withFileTypes: true });
   for (const entry of entries.filter(item => item.isFile() && item.name.endsWith('.md'))) {
     const file = join(entry.parentPath, entry.name);
     assert.deepEqual(violations(await readFile(file, 'utf8')), [], file);
   }
+  const reference = await readFile(new URL('references/submit-after-approval.md', skill), 'utf8');
+  assert.match(reference, /default is off/);
+  assert.match(reference, /ask for explicit permission to send that exact reviewed selection/i);
+  assert.match(reference, /independently recompute its fingerprint.*claim --approval/);
+  assert.match(reference, /Only a current `claimed` response authorizes one click/);
+  assert.match(reference, /After the claim returns, re-observe the same tab and confirm its fingerprint still matches immediately before that single click/);
+  assert.match(reference, /verify it before any manual retry/);
 });
 
 test('final-action instruction check accepts manual review and rejects unguarded final actions', () => {

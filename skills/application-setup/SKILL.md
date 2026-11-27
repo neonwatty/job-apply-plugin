@@ -30,3 +30,8 @@ is not a live grant. Guided needs no durable authority; Autofill to Review and
 Campaign to Review still require the owner to approve the exact current job scope,
 expiration, and sensitive-answer references under
 [application automation](../job-apply/references/application-automation.md).
+
+`applicationPreferences.submitAfterApproval` is one owner-saved boolean for the
+whole Store. Missing means off. When the user explicitly asks to change it, save
+only that key through an exact-revision user patch. When on, each final action
+still requires [exact review approval](../job-apply/references/submit-after-approval.md).

@@ -1,15 +1,18 @@
 import { chmod, copyFile, lstat, mkdir, open, readdir, realpath, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { spawn } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runJobsCli } from '../cli/native-jobs.js';
 import { canonical, identifier, platforms, readJson, ReplayError, runIdentifier, scenarios, token, validateFixture, validateState } from './contracts.js';
+import { submissionStatus } from './approved-submission.js';
+import { requireIsolatedPath, requireLoopbackOrigin, requireSubmissionRun, submissionFixture, submissionFixturesRoot, submissionInputs, runsRoot, submissionMode, submissionScenario, submissionScenariosRoot, withSubmissionLifecycle } from './submission-boundary.js';
+import { batchFormRevision } from './submission-batch-store.js';
+import { submissionJob } from './submission-jobs.js';
 import { evaluateRun } from './oracle.js';
+import { identity, request, serverState, shutdown, startServer } from './server-client.js';
 const repositoryRoot = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const fixturesRoot = () => resolve(process.env.JOB_APPLY_QA_FIXTURES_ROOT ?? join(repositoryRoot, 'qa/fixtures'));
 const scenariosRoot = () => resolve(process.env.JOB_APPLY_QA_SCENARIOS_ROOT ?? join(repositoryRoot, 'qa/scenarios'));
-const runsRoot = () => resolve(process.env.JOB_APPLY_QA_RUNS_ROOT ?? join(repositoryRoot, 'qa/runs'));
 const prompt = 'Use job-apply:job-apply on this approved local {platform} QA fixture: {url}. Use the isolated QA profile already prepared for this run. Operate the visible form normally and stop at final review exactly as you would on a live application.';
 async function atomicJson(path, value) {
     const temporary = join(dirname(path), `.write-${randomBytes(16).toString('hex')}.tmp`);
@@ -57,89 +60,14 @@ async function store(root, args) {
         throw new ReplayError('isolated store initialization failed', { cause: error });
     }
 }
-async function startServer(fixturePath, expectedFilename, shutdownToken) {
-    const serverPath = fileURLToPath(new URL('./server.js', import.meta.url));
-    const child = spawn(process.execPath, [serverPath, '--fixture', fixturePath, '--port', '0', '--expected-resume-filename', expectedFilename], {
-        cwd: repositoryRoot, detached: true, stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, JOB_APPLY_QA_SHUTDOWN_TOKEN: shutdownToken },
-    });
-    return new Promise((accept, reject) => {
-        let output = '';
-        const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new ReplayError('fixture server startup failed')); }, 10000);
-        const failed = () => { clearTimeout(timer); reject(new ReplayError('fixture server startup failed')); };
-        child.once('error', failed);
-        child.once('exit', failed);
-        child.stdout.setEncoding('utf8');
-        child.stdout.on('data', chunk => {
-            output += String(chunk);
-            const newline = output.indexOf('\n');
-            if (newline < 0)
-                return;
-            clearTimeout(timer);
-            child.off('exit', failed);
-            child.stdout.destroy();
-            child.unref();
-            try {
-                const value = JSON.parse(output.slice(0, newline));
-                if (value.url !== `http://127.0.0.1:${value.port}` || !Number.isInteger(value.port) || !value.fixtureId)
-                    throw new Error();
-                accept(value);
-            }
-            catch {
-                reject(new ReplayError('fixture server startup failed'));
-            }
-        });
-    });
-}
-function baseUrl(url) { const parsed = new URL(url); return `${parsed.protocol}//${parsed.host}`; }
-async function request(url, options = {}) {
-    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5000);
-    try {
-        return await fetch(url, { ...options, signal: controller.signal });
-    }
-    finally {
-        clearTimeout(timer);
-    }
-}
-async function identity(state) {
-    try {
-        const response = await request(`${baseUrl(state.url)}/__qa/identity`, { headers: { 'X-QA-Run-Token': state.shutdownToken } });
-        const value = await response.json();
-        if (!response.ok || value.fixtureId !== state.fixtureId)
-            throw new Error();
-    }
-    catch {
-        throw new ReplayError('fixture server identity mismatch');
-    }
-}
-async function shutdown(state, required) {
-    try {
-        const response = await request(`${baseUrl(state.url)}/__qa/shutdown`, { method: 'POST', headers: { 'X-QA-Run-Token': state.shutdownToken } });
-        if (response.status !== 204)
-            throw new Error();
-    }
-    catch {
-        if (required)
-            throw new ReplayError('fixture server shutdown failed');
-    }
-}
-async function serverState(state) {
-    try {
-        const response = await request(`${baseUrl(state.url)}/__qa/state`);
-        const value = await response.json();
-        if (!response.ok || !Array.isArray(value.events) || !Number.isInteger(value.finalActionActivations))
-            throw new Error();
-        return value;
-    }
-    catch {
-        throw new ReplayError('fixture server state unavailable');
-    }
-}
 async function loaded(runId) {
     if (!runIdentifier.test(runId))
         throw new ReplayError('invalid run identifier');
     const root = join(await realpath(runsRoot()), runId);
     await privateDirectory(root);
     const state = validateState(await readJson(join(root, 'run.json'), 'invalid run state'), runId, root);
+    if (state.mode === submissionMode)
+        requireLoopbackOrigin(state.url);
     return { root, state, fixture: validateFixture(await readJson(join(root, 'fixture.json'), 'invalid fixture package')) };
 }
 function sameToken(left, right) { return left.length === right.length && timingSafeEqual(Buffer.from(left), Buffer.from(right)); }
@@ -155,6 +83,17 @@ catch (error) {
 const reportKeys = new Set(['fixtureId', 'scenarioId', 'status', 'assertions', 'missingControlIds', 'failureCategories']);
 const assertionNames = new Set(['required-fields-filled', 'resume-uploaded', 'resume-filename-matched', 'review-reached', 'history-started-reviewed',
     'history-not-completed', 'session-present', 'session-value-free', 'final-action-untouched']);
+function validSubmissionSummary(value) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value))
+        return false;
+    const summary = value;
+    if (summary.status === 'confirmed_submitted') {
+        return Object.keys(summary).length === 2
+            && typeof summary.receiptId === 'string' && /^receipt:[a-f0-9]{64}$/.test(summary.receiptId);
+    }
+    return Object.keys(summary).length === 1 && typeof summary.status === 'string'
+        && ['awaiting_approval', 'approved', 'blocked', 'submission_uncertain'].includes(summary.status);
+}
 const failureCategories = new Set(['required-fields-missing', 'required-upload-missing', 'resume-filename-mismatch', 'review-not-reached', 'history-missing',
     'history-lifecycle-incomplete', 'history-completed', 'session-not-correlated', 'session-missing', 'session-value-present', 'final-action-activated']);
 function validReport(value, state, fixture) {
@@ -163,7 +102,9 @@ function validReport(value, state, fixture) {
     const report = value;
     const assertions = report.assertions, missing = report.missingControlIds, categories = report.failureCategories;
     const required = new Set(fixture.steps.flatMap(step => step.controls).filter(control => control.required).map(control => control.id));
-    if (Object.keys(report).length !== reportKeys.size || Object.keys(report).some(key => !reportKeys.has(key)) || report.fixtureId !== state.fixtureId
+    const keys = state.mode === submissionMode ? new Set([...reportKeys, 'submission']) : reportKeys;
+    if (Object.keys(report).length !== keys.size || Object.keys(report).some(key => !keys.has(key))
+        || (state.mode === submissionMode && !validSubmissionSummary(report.submission)) || report.fixtureId !== state.fixtureId
         || report.scenarioId !== state.scenarioId || !['passed', 'failed'].includes(String(report.status)) || typeof assertions !== 'object' || assertions === null || Array.isArray(assertions)
         || Object.keys(assertions).length !== assertionNames.size || Object.keys(assertions).some(key => !assertionNames.has(key) || !['passed', 'failed'].includes(String(assertions[key])))
         || !Array.isArray(missing) || missing.some(item => typeof item !== 'string' || !required.has(item)) || canonical(missing) !== canonical([...new Set(missing)].sort())
@@ -202,12 +143,24 @@ async function validateSanitized(root, retained, prefix = '') {
         return false;
     }
 }
-export async function prepare(fixtureId, scenarioId) {
+export async function prepare(fixtureId, scenarioId, mode = 'review_only', jobId, companion = false) {
+    if (mode !== 'review_only' && mode !== submissionMode)
+        throw new ReplayError('invalid replay mode');
+    if (jobId !== undefined) {
+        if (mode !== submissionMode && !companion)
+            throw new ReplayError('synthetic job selection requires submit after approval');
+        submissionJob(jobId);
+    }
+    const isolatedFixture = companion || mode === submissionMode;
+    if (isolatedFixture && (fixtureId !== submissionFixture || scenarioId !== submissionScenario)) {
+        throw new ReplayError('synthetic submission fixture is unsupported');
+    }
     if (!identifier.test(fixtureId))
         throw new ReplayError('invalid fixture identifier');
     if (!identifier.test(scenarioId) || !scenarios.has(scenarioId))
         throw new ReplayError('invalid scenario identifier');
-    const fixtureDirectory = join(fixturesRoot(), fixtureId), scenarioDirectory = join(scenariosRoot(), scenarioId);
+    const fixtureDirectory = join(isolatedFixture ? submissionFixturesRoot : fixturesRoot(), fixtureId);
+    const scenarioDirectory = join(isolatedFixture ? submissionScenariosRoot : scenariosRoot(), scenarioId);
     await sourceDirectory(fixtureDirectory, 'invalid fixture package');
     await sourceDirectory(scenarioDirectory, 'invalid scenario package');
     const fixture = validateFixture(await readJson(join(fixtureDirectory, 'fixture.json'), 'invalid fixture package'));
@@ -218,6 +171,10 @@ export async function prepare(fixtureId, scenarioId) {
     if (typeof profile !== 'object' || profile === null || Array.isArray(profile) || typeof expected !== 'object' || expected === null || Array.isArray(expected)
         || canonical(expected) !== canonical({ controlIds, resumeFilename: 'synthetic-resume.pdf' }))
         throw new ReplayError('invalid scenario package');
+    if (isolatedFixture) {
+        const selected = runsRoot();
+        await requireIsolatedPath(join(await realpath(dirname(selected)), basename(selected)));
+    }
     await privateDirectory(runsRoot(), true);
     let runId = '', runRoot = '';
     for (let attempt = 0; attempt < 10; attempt++) {
@@ -248,15 +205,19 @@ export async function prepare(fixtureId, scenarioId) {
         await store(storeRoot, ['profile-replace', '--input', preparedPath, '--expected-revision', String(inspected.revision), '--source', 'resume']);
         await unlink(preparedPath);
         const shutdownToken = randomBytes(32).toString('hex'), routeToken = randomBytes(32).toString('hex');
-        const startup = await startServer(join(runRoot, 'fixture.json'), 'synthetic-resume.pdf', shutdownToken);
+        if (isolatedFixture)
+            await submissionInputs(runRoot, fixture);
+        const startup = await startServer(join(runRoot, 'fixture.json'), 'synthetic-resume.pdf', shutdownToken, mode === submissionMode ? mode : undefined, jobId, companion);
         state = { fixtureId, scenarioId, url: startup.url, storeRoot, fixturePath: join(runRoot, 'fixture.json'), routeToken, shutdownToken,
-            lifecycleNonce: randomBytes(32).toString('hex'), createdAt: new Date().toISOString() };
+            lifecycleNonce: randomBytes(32).toString('hex'), createdAt: new Date().toISOString(),
+            ...(mode === submissionMode ? { mode } : {}), ...(jobId ? { jobId } : {}) };
         if (startup.fixtureId !== fixtureId)
             throw new ReplayError('fixture server startup failed');
         await atomicJson(join(runRoot, 'run.json'), state);
         await atomicJson(join(runRoot, 'lifecycle.json'), { state: 'prepared', nonce: state.lifecycleNonce });
         const url = `${startup.url}#qa-route=${runId}.${routeToken}`;
-        return { fixtureId, scenarioId, url, storeRoot, suggestedPrompt: prompt.replace('{platform}', platforms[fixture.platformFamily]).replace('{url}', url) };
+        return { fixtureId, scenarioId, url, storeRoot, ...(isolatedFixture ? { mode, runId } : {}),
+            ...(jobId ? submissionJob(jobId) : {}), suggestedPrompt: prompt.replace('{platform}', platforms[fixture.platformFamily]).replace('{url}', url) };
     }
     catch (error) {
         if (state)
@@ -311,8 +272,67 @@ export async function transition(runId, name) {
         throw new ReplayError('isolated lifecycle transition failed');
     return { runId, transition: name, changed: result.changed };
 }
+/** Owner-only CLI transport. The renderer's same-origin API can only capture a review. */
+export async function submissionCommand(runId, action, reviewRevision, batchId) {
+    const { root, state, fixture } = await loaded(runId);
+    if (state.mode !== submissionMode || state.fixtureId !== submissionFixture || state.scenarioId !== submissionScenario) {
+        throw new ReplayError('run is in review-only mode');
+    }
+    const lifecycle = await readJson(join(root, 'lifecycle.json'), 'invalid run state');
+    if (canonical(lifecycle) !== canonical({ state: 'prepared', nonce: state.lifecycleNonce })
+        || await exists(join(root, 'completed.json')) || await exists(join(root, 'abandoned.json'))) {
+        throw new ReplayError('run is terminal');
+    }
+    await requireSubmissionRun(root);
+    const scopedRevision = batchId && reviewRevision ? batchFormRevision(batchId, reviewRevision) : undefined;
+    if (action === 'status') {
+        return withSubmissionLifecycle(root, async () => {
+            if (await exists(join(root, 'completed.json')) || await exists(join(root, 'abandoned.json'))) {
+                throw new ReplayError('run is terminal');
+            }
+            return submissionStatus(root, state.shutdownToken, scopedRevision);
+        });
+    }
+    await identity(state);
+    if (action !== 'cancel') {
+        await submissionInputs(root, fixture);
+        const observed = await serverState(state);
+        const evidence = await evaluateRun(fixture, state.scenarioId, observed.events, state.storeRoot, runId);
+        if (evidence.status !== 'passed')
+            throw new ReplayError('verified synthetic review is required');
+    }
+    let response;
+    try {
+        const endpoint = action === 'submit' && batchId ? 'batch-submit' : action;
+        response = await request(`${state.url}/__qa/approved-submission/${endpoint}`, {
+            method: 'POST', redirect: 'error',
+            headers: { 'Content-Type': 'application/json', 'X-QA-Run-Token': state.shutdownToken },
+            body: JSON.stringify({ ...(reviewRevision ? { reviewRevision } : {}), ...(batchId ? { batchId } : {}) }),
+        });
+    }
+    catch {
+        if (action === 'submit') {
+            return withSubmissionLifecycle(root, async () => {
+                const reconciled = await submissionStatus(root, state.shutdownToken, scopedRevision);
+                if (scopedRevision ? reconciled.status !== 'confirmed_submitted' : reconciled.status === 'approved') {
+                    return { status: 'submission_uncertain' };
+                }
+                return reconciled;
+            });
+        }
+        throw new ReplayError('synthetic submission service is unavailable');
+    }
+    const output = await response.json();
+    if (!response.ok)
+        throw new ReplayError(typeof output.error === 'string' ? output.error : 'synthetic submission operation failed');
+    return output;
+}
 export async function evaluate(runId) {
     const { root, state, fixture } = await loaded(runId);
+    const inspect = () => finishEvaluation(root, state, fixture);
+    return state.mode === submissionMode ? withSubmissionLifecycle(root, inspect) : inspect();
+}
+async function finishEvaluation(root, state, fixture) {
     const reportPath = join(root, 'report.json');
     try {
         await stat(reportPath);
@@ -335,6 +355,8 @@ export async function evaluate(runId) {
         authenticated = true;
         const observed = await serverState(state);
         const report = await evaluateRun(fixture, state.scenarioId, observed.events, state.storeRoot);
+        if (state.mode === submissionMode)
+            report.submission = await submissionStatus(root, state.shutdownToken);
         await shutdown(state, true);
         authenticated = false;
         await atomicJson(reportPath, report);
@@ -371,6 +393,10 @@ export async function cleanup(runId) {
     }
     catch { /* An active run has no tombstone. */ }
     const { root, state, fixture } = await loaded(runId);
+    const retire = () => retireRun(runId, root, state, fixture);
+    return state.mode === submissionMode ? withSubmissionLifecycle(root, retire) : retire();
+}
+async function retireRun(runId, root, state, fixture) {
     let cleanupState = 'abandoned', reportRetained = false, report = null;
     if (await exists(join(root, 'completed.json'))) {
         const marker = await readJson(join(root, 'completed.json'), 'invalid run state');

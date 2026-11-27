@@ -58,5 +58,4 @@ has a durable review or Needs Attention handoff and campaign progress still
 names the next Ready job. Never run parallel filling agents.
 
 The filling agent returns the exact canonical job status and a value-free
-account of completed fields, blockers, and manual review. It never activates Submit, Send, Apply, Mark applied, or an equivalent final action. The owner
-inspects and submits the visible form manually.
+account of completed fields, blockers, and review. It never activates Submit, Send, Apply, Mark applied, or an equivalent final action. The owner can complete the visible form manually. The top-level application agent may take over after the handoff under [Submit after approval](submit-after-approval.md).

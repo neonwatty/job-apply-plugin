@@ -227,6 +227,7 @@ export function Jobs({ client, dirtyChanged, active = true, claimsEnabled = fals
         outcome={closingOutcome} onOutcomeChanged={setClosingOutcome}
         runSetup={run ? runQueue.has(selectedJob.id) ? undefined : 'add-job' : 'start-run'}
         recordInHandoff={awaitingReview && !editor.latest && !editor.missing}
+        verifySubmission={activity.data?.job.revision === selectedJob.revision && Boolean(activity.data.submission)}
         disabled={busy || loading || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing || (awaitingReview && reviewRecordUnavailable)}
         onBusyChanged={setTransitionBusy} onChanged={job => {
             // The write is acknowledged: replace the clean editor before a background read.

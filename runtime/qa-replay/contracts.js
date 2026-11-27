@@ -46,7 +46,9 @@ export async function readJson(path, diagnostic, limit = 1024 * 1024) {
 }
 export function validateState(value, runId, runRoot) {
     const keys = ['fixtureId', 'scenarioId', 'url', 'storeRoot', 'fixturePath', 'routeToken', 'shutdownToken', 'lifecycleNonce', 'createdAt'];
-    if (!record(value) || !exact(value, keys) || keys.some(key => typeof value[key] !== 'string') || !identifier.test(String(value.fixtureId))
+    if (!record(value) || !exact(value, [...keys, ...['mode', 'jobId'].filter(key => Object.hasOwn(value, key))])
+        || (Object.hasOwn(value, 'mode') && value.mode !== 'submit_after_approval') || keys.some(key => typeof value[key] !== 'string') || !identifier.test(String(value.fixtureId))
+        || (Object.hasOwn(value, 'jobId') && (typeof value.jobId !== 'string' || !identifier.test(value.jobId)))
         || !scenarios.has(String(value.scenarioId)) || !token.test(String(value.routeToken)) || !token.test(String(value.shutdownToken))
         || !token.test(String(value.lifecycleNonce)) || !runIdentifier.test(runId)
         || value.storeRoot !== `${runRoot}/store` || value.fixturePath !== `${runRoot}/fixture.json`)

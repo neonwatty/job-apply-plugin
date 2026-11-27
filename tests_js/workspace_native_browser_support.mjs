@@ -15,6 +15,7 @@ import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.m
 import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
 import { nativeExtractionsBrowser } from './workspace_native_extractions_browser_support.mjs';
 import { nativeAutomationBrowser } from './workspace_native_automation_browser_support.mjs';
+import { submissionLabBrowser } from './workspace_submission_lab_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { execFile } from 'node:child_process';
@@ -22,7 +23,10 @@ import { promisify } from 'node:util';
 import { realpath, readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
+import { initializeJobsFixture, NativeJobsRepository } from '../runtime/store/native-jobs.js';
+import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
+import { NativeLiveSubmissionLedger } from '../runtime/store/native-live-submission-ledger.js';
+import { LiveSubmissionService, liveSubmissionJobKey } from '../runtime/workspace-core/live-submission.js';
 import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 const execute = promisify(execFile);
 
@@ -75,6 +79,7 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
     assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
+    const submissionLab = await submissionLabBrowser(page, startup, root);
     await clickCompanionNav(page, 'Needs Attention');
     await page.getByText('Nothing needs your attention.',{exact:true}).waitFor();
     await clickCompanionNav(page, 'Jobs');
@@ -222,10 +227,19 @@ export async function nativeJobsBrowser(buildRoot) {
     await clickCompanionNav(page, 'Jobs');
     await claimsBrowser(page, { jobId: job.id, claimRequests });
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const submissionRepository = new NativeJobsRepository(root, loadPosixFlockProvider(fixture.receipt.artifact));
+    const submissionLedger = new NativeLiveSubmissionLedger(root);
+    const liveSubmission = new LiveSubmissionService(submissionRepository, submissionLedger);
+    const syntheticClaim = { approvalId: '1'.repeat(64), claimId: '2'.repeat(64), status: 'claimed' };
     const transitions = await jobTransitionsBrowser(page, {
       jobId: job.id,
       readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
       confirmInputs: async latest => ({ jobRevision: latest.revision }),
+      seedSubmissionAttempt: revision => submissionRepository.claimTransaction(() =>
+        submissionLedger.write(liveSubmissionJobKey(job.id), { ...syntheticClaim, jobRevision: String(revision) })),
+      confirmSubmissionAttempt: () => liveSubmission.outcome({
+        jobId: job.id, claimId: syntheticClaim.claimId, status: 'confirmed', confirmation: `sha256:${'3'.repeat(64)}`,
+      }),
       prepareInterrupted: async () => {
         // root was initialized above from nativeFixture(), never an owner Store.
         const coordinator = JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8'));
@@ -289,10 +303,25 @@ export async function nativeJobsBrowser(buildRoot) {
     const taskCli = await taskCliBrowser(page, root, fixture, buildRoot);
     const jobTrash = await jobTrashBrowser(page, root, fixture, buildRoot);
     const reactTrash = await nativeReactTrashBrowser(page, root, fixture, buildRoot);
+    await clickCompanionNav(page, 'Settings');
+    const submissionSwitch = page.getByRole('switch', { name: 'Submit after approval', exact: true });
+    await submissionSwitch.waitFor();
+    assert.equal(await submissionSwitch.isChecked(), false);
+    await submissionSwitch.click();
+    await page.getByText('Submit after approval is on.', { exact: true }).waitFor();
+    const liveProfile = JSON.parse(await readFile(join(root, 'profile.json'), 'utf8'));
+    assert.equal(liveProfile.profile.applicationPreferences.submitAfterApproval, true);
+    assert.equal(liveProfile.metadata.factProvenance['/applicationPreferences/submitAfterApproval'].source, 'user');
+    await page.reload();
+    await clickCompanionNav(page, 'Settings');
+    await submissionSwitch.waitFor();
+    assert.equal(await submissionSwitch.isChecked(), true);
+    await submissionSwitch.click();
+    await page.getByText('Submit after approval is off.', { exact: true }).waitFor();
     const unsupported = await fetch(startup.origin + '/api/resumes/fixture/unknown', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
     assert.equal(unsupported.status, 404);
     assert.deepEqual(pageErrors, []);
-    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, titleDiscovery, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { submissionLab, reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, titleDiscovery, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     if (browser) await browser.close();
     await launcher?.stop();

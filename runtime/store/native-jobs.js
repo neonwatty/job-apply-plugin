@@ -2,6 +2,7 @@ import { automationTransaction as runAutomationTransaction } from './native-auto
 import { accountOperation, emptyAccountOperationJournal, validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from './native-claim-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
+import { NativeLiveSubmissionLedger } from './native-live-submission-ledger.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { constants } from "node:fs";
 import { readdir } from "node:fs/promises";
@@ -321,6 +322,7 @@ export class NativeJobsRepository {
                 facts: await this.resumeFactsDocument(),
                 requests: validateExtractionRequests(await this.document('resume-extraction-requests')),
                 files: new NativeResumeFiles(this.root),
+                readLiveSubmissions: ids => new NativeLiveSubmissionLedger(this.root).readJobs(ids),
                 saveJobs: async (document) => { validateJobsDocument(document); await this.write(join(this.root, 'jobs.json'), document, options); },
                 saveCoordinator: async (document) => { validateCoordinator(document); await this.write(join(this.root, 'coordinator.json'), document, options); },
                 saveSession: async (document) => { validateAnswerSession(document); await this.write(join(this.root, `sessions/${safeId(string(get(document, 'applicationId')))}.json`), document, options); },

@@ -163,9 +163,10 @@ async function group1(t) {
   await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   const liveSkillFiles = (await trackedPaths(GRAPH_ROOT)).filter(SKILL_SOURCE_PATH);
-  assert.equal(liveSkillFiles.length, 38);
+  assert.equal(liveSkillFiles.length, 39);
   assert.ok(liveSkillFiles.includes('skills/answer-memory/references/upgrade.md'));
   assert.ok(liveSkillFiles.includes('skills/job-apply/references/consent-intents.md'));
+  assert.ok(liveSkillFiles.includes('skills/job-apply/references/submit-after-approval.md'));
   assert.deepEqual(liveSkillFiles.filter(file => file.startsWith('skills/job-title-discovery/')), [
     'skills/job-title-discovery/SKILL.md',
     'skills/job-title-discovery/references/discovery-workflow.md',
@@ -176,13 +177,16 @@ async function group1(t) {
   const companionLauncherInputs = ['apps/companion/launch.mjs', 'apps/companion/writer-route.mjs',
     'apps/companion/supervise.mjs'];
   // This fixture replays the previously reviewed documentation variant.
+  const previousRevision = '19e71631342f9e48988b3dc344a53533b0e7f1d0';
+  const previousFiles = new Set(execFileSync('git', ['--no-replace-objects', 'ls-tree', '-r', '--name-only', '-z',
+    previousRevision, '--', 'skills'], { cwd: GRAPH_ROOT, encoding: 'utf8' }).split('\0').filter(SKILL_SOURCE_PATH));
   const previousSkill = file => execFileSync('git', ['--no-replace-objects', 'show',
-    `19e71631342f9e48988b3dc344a53533b0e7f1d0:${file}`], { cwd: GRAPH_ROOT });
-  for (const file of [...liveSkillFiles.filter(file => ![workspaceDocument, extractionDocument].includes(file)),
+    `${previousRevision}:${file}`], { cwd: GRAPH_ROOT });
+  for (const file of [...[...previousFiles].filter(file => ![workspaceDocument, extractionDocument].includes(file)),
     ...companionLauncherInputs,
     'tests_js/workspace_skill_support.mjs',
     'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
-    await f.write(file, liveSkillFiles.includes(file) ? previousSkill(file)
+    await f.write(file, previousFiles.has(file) ? previousSkill(file)
       : await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
   }
   let priorWorkspaceDocument = previousSkill(workspaceDocument).toString('utf8');

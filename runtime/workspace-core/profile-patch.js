@@ -1,3 +1,4 @@
+import { submitAfterApprovalPath } from '../contracts/workspace/submission-preference.js';
 import { PythonObject } from '../contracts/python-object.js';
 import { copy, get, has, set, keys, same, string, text, fromJSON, JobsError } from '../contracts/workspace/values.js';
 export const segment = (key) => key.replaceAll('~', '~0').replaceAll('/', '~1');
@@ -26,7 +27,7 @@ function merge(target, patch, prefix = '') {
                 changed.push(...(paths.length ? paths : [path]));
             }
         }
-        else if (!same(current, value)) {
+        else if (path === submitAfterApprovalPath && typeof value === 'boolean' ? current !== value : !same(current, value)) {
             updated.set(key, value);
             changed.push(path);
         }

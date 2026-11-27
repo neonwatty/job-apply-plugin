@@ -17,6 +17,23 @@ export const CRITICAL_TREES = [
     "runtime", "qa/fixtures", "qa/scenarios", "workspace",
     "apps/companion", "native",
 ];
+const companionLabRenderer = [
+    "qa/renderer/lab.js", "qa/renderer/index.html", "qa/renderer/app.js", "qa/renderer/styles.css",
+];
+async function includeCompanionLab(root, paths) {
+    try {
+        await lstat(artifactBytes(constructPosixPath(root, companionLabRenderer[0])));
+    }
+    catch (error) {
+        if (artifactOSError(error) && error.code === "ENOENT")
+            return;
+        throw error;
+    }
+    for (const asset of companionLabRenderer) {
+        await regularArtifactFile(root, asset);
+        paths.add(asset);
+    }
+}
 function pythonStringOrder(left, right) {
     const first = [...left];
     const second = [...right];
@@ -103,6 +120,7 @@ export async function criticalPaths(root, profile) {
         }
         await walkArtifacts(root, relative, profile, paths);
     }
+    await includeCompanionLab(root, paths);
     return [...paths].sort(pythonStringOrder);
 }
 /** Exact critical inventory and bytes; file modes are deliberately not compared. */

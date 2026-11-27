@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { localConfig } from "./server/config";
 import { legacyAssets } from "./server/assets";
 import { forward } from "./server/forward";
+import { submissionLab } from "./server/submission-lab";
 
 export function proxy(request: NextRequest) {
-  let origin: string;
-  try { origin = localConfig().origin; }
+  let workspace: ReturnType<typeof localConfig>;
+  try { workspace = localConfig(); }
   catch { return new NextResponse("Workspace launcher configuration is required", { status: 503 }); }
+  const { origin } = workspace;
   if (request.headers.get("host") !== new URL(origin).host) {
     return NextResponse.json({ error: { code: "host_rejected", message: "request host is not the workspace" } }, { status: 403 });
   }
@@ -14,6 +16,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/legacy/", origin), 307);
   }
   const path = request.nextUrl.pathname;
+  if (path === "/api/submission-lab" || path.startsWith("/api/submission-lab/")) return submissionLab(request, workspace);
   if (path.startsWith("/api/")) return forward(request, "api");
   if (path.startsWith("/legacy/") || (path !== "/" && legacyAssets.has(path))) {
     return forward(request, "asset");

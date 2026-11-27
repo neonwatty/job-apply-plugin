@@ -34,9 +34,9 @@ test('payload binds current revision and rejects unsupported transitions or malf
   assert.throws(() => model.transitionBody({ ...job, id: '' }, 'ready'), /identity/i);
 });
 
-test('applied requires explicit personal submission confirmation and omits consent elsewhere', () => {
+test('applied requires explicit submission confirmation and omits consent elsewhere', () => {
   const review = { ...job, status: 'awaiting_review' };
-  assert.throws(() => model.transitionBody(review, 'applied'), /personally submitted/i);
+  assert.throws(() => model.transitionBody(review, 'applied'), /confirm that the employer received/i);
   assert.deepEqual(JSON.parse(model.transitionBody(review, 'applied', '', true)), {
     status: 'applied', expectedRevision: 7, userConfirmed: true,
   });

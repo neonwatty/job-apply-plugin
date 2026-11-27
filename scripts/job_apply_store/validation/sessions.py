@@ -68,7 +68,7 @@ def _validate_session_document(
         "schemaVersion", "applicationId", "status", "ats", "company", "role",
         "url", "step", "answerKeys", "pendingFields", "attemptRevision",
         "readiness", "blockers", "approvals", "browserHandoff", "createdAt",
-        "updatedAt",
+        "updatedAt", "reviewedInputsFingerprint",
     }
     if set(session) - allowed:
         raise StoreError("session contains unsupported fields")
@@ -146,6 +146,14 @@ def _validate_session_document(
         or attempt_revision < 1
     ):
         raise StoreError("session attempt revision is invalid")
+    if "reviewedInputsFingerprint" in session:
+        fingerprint = session["reviewedInputsFingerprint"]
+        if (
+            session["status"] != "review"
+            or not isinstance(fingerprint, str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", fingerprint) is None
+        ):
+            raise StoreError("session reviewed inputs fingerprint is invalid")
     readiness = session.get("readiness")
     if readiness is not None:
         readiness = require_object(readiness, "session readiness")

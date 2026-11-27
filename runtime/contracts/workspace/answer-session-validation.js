@@ -52,7 +52,7 @@ function validateHandoff(value) {
 export function validateAnswerSession(value) {
     const session = object(value, 'session');
     validateVersion(session, 'session');
-    check(fields(session, ['schemaVersion', 'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'attemptRevision', 'readiness', 'blockers', 'approvals', 'browserHandoff', 'handoffChecklist', 'createdAt', 'updatedAt']), 'session contains unsupported fields');
+    check(fields(session, ['schemaVersion', 'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'attemptRevision', 'readiness', 'blockers', 'approvals', 'browserHandoff', 'handoffChecklist', 'reviewedInputsFingerprint', 'createdAt', 'updatedAt']), 'session contains unsupported fields');
     safeAnswerSessionId(get(session, 'applicationId'));
     check(member(get(session, 'status'), ['active', 'review', 'completed', 'abandoned']), 'session status is unsupported');
     const answerKeys = fallback(session, 'answerKeys', []);
@@ -61,6 +61,9 @@ export function validateAnswerSession(value) {
     const attempt = get(session, 'attemptRevision');
     if (attempt !== null)
         check(positive(attempt), 'session attempt revision is invalid');
+    if (has(session, 'reviewedInputsFingerprint')) {
+        check(string(get(session, 'status')) === 'review' && matches(get(session, 'reviewedInputsFingerprint'), /^sha256:[0-9a-f]{64}$/u), 'session reviewed inputs fingerprint is invalid');
+    }
     if (get(session, 'readiness') !== null)
         validateReadiness(get(session, 'readiness'), attempt);
     validateBlockers(fallback(session, 'blockers', []));
