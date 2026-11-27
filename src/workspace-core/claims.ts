@@ -14,6 +14,7 @@ export interface ClaimTransaction {
   jobs: Document; coordinator: Document; profile: Document; resumes: Document; facts?: Document; requests?: Document; answers: Document;
   authority: Document;
   sessions: Document[]; history: Document[]; files: NativeResumeFiles;
+  readLiveSubmissions?(jobIds: string[]): Promise<Map<string, unknown>>;
   saveJobs(document:Document):Promise<void>;
   saveCoordinator(document:Document):Promise<void>;
   saveSession(document:Document):Promise<void>;

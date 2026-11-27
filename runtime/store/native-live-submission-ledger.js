@@ -1,6 +1,7 @@
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { fromJSON, JobsError } from '../contracts/workspace/values.js';
+import { liveSubmissionJobKey } from '../workspace-core/live-submission.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { openPrivateStoreFile } from './private-store-entry.js';
 import { nativeLiveSubmissionName } from './native-store-layout.js';
@@ -35,7 +36,15 @@ export class NativeLiveSubmissionLedger {
         }
     }
     async read(key) {
-        const id = this.key(key), values = await this.load();
+        return this.record(await this.load(), this.key(key));
+    }
+    async readJobs(ids) {
+        if (!ids.length)
+            return new Map();
+        const values = await this.load();
+        return new Map(ids.map(id => [id, this.record(values, liveSubmissionJobKey(id))]));
+    }
+    record(values, id) {
         if (!Object.hasOwn(values, id))
             return null;
         const record = values[id];

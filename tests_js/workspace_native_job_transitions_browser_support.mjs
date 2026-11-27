@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readyPacket } from './workspace_native_claims_support.mjs';
 
 // Caller owns a disposable native fixture with a preflight-ready job and no claim.
-export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInputs, prepareInterrupted }) {
+export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInputs, prepareInterrupted,
+  seedSubmissionAttempt, confirmSubmissionAttempt }) {
   const authorization = await page.evaluate(() => `Bearer ${sessionStorage.getItem('jobApplyWorkspaceToken')}`);
   async function api(path, body, method = body === undefined ? 'GET' : 'POST') {
     const response = await page.request.fetch(new URL(path, page.url()).href, {
@@ -243,7 +244,18 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await handoff.getByRole('button', {name:'Cancel',exact:true}).click();
   assert.equal(requests, beforeApplied);
   assert.deepEqual(await readJob(), beforeRecord);
+  // An interrupted synthetic agent send changes the queue and drawer even with the switch off.
+  await seedSubmissionAttempt(beforeRecord.revision);
+  await close.click();
+  await clickCompanionNav(page, 'Needs Attention');
+  await attention.getByRole('button', {name:/Transition conflict writer Native fixture role Verify submission status/}).click();
+  await attention.getByRole('button', {name:'Open job to verify',exact:true}).click();
+  await handoff.getByRole('heading', {name:'Verify submission status',exact:true}).waitFor();
+  await modal.getByText('Full job activity', {exact:true}).click();
+  await activity.getByRole('heading', {name:'Verify submission status',exact:true}).waitFor();
+  assert.equal(await activity.getByRole('button', {name:'Copy repeat-review request',exact:true}).count(), 0);
   await handoff.getByRole('button', {name:'Record as submitted',exact:true}).click();
+  await handoff.getByText('Did you verify that the employer received this application?').waitFor();
   const appliedResponse = transitionResponse();
   await handoff.getByRole('button', {name:'Yes, record as submitted',exact:true}).click();
   const submission = await appliedResponse;
@@ -253,6 +265,11 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   });
   await modal.getByText('Submission recorded in Companion.', {exact:true}).waitFor();
   assert.equal((await readJob()).status, 'applied');
+  await activity.getByText('The agent’s submission attempt had an uncertain outcome.', {exact:true}).waitFor();
+  const receipt = await confirmSubmissionAttempt();
+  await activity.getByRole('button', {name:'Refresh activity', exact:true}).click();
+  await activity.getByRole('heading', {name:'Submission confirmed',exact:true}).waitFor();
+  await activity.getByText(receipt.receiptId, {exact:true}).waitFor();
   assert.equal(externalRequests, 0);
   assert.equal(context.pages().length, tabsBeforeApply);
   await context.unroute('https://example.invalid/**', rejectExternal);
@@ -309,6 +326,6 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
     await page.unroute('**/api/state', getRoute);
     page.off('request', count);
   }
-  return { closeReopen: true, cancellation: true, dirtyDisabled: true, personallySubmitted: true,
+  return { closeReopen: true, cancellation: true, dirtyDisabled: true, verifiedSubmission: true, submissionReceipt: true,
     claimlessRecovery: true, conflictPreserved: true, pendingGuard: true, acknowledgedRefreshClean: true, narrowViewport: true };
 }

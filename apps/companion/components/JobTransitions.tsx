@@ -9,7 +9,7 @@ const labels: Record<Exclude<TransitionTarget, 'closed' | 'applied'>, string> = 
   saved: 'Mark saved', needs_info: 'Mark needs info', ready: 'Mark ready',
   awaiting_review: 'Mark awaiting review',
 };
-export function JobTransitions({ client, job, disabled, outcome, onOutcomeChanged, runSetup, recordInHandoff = false, onBusyChanged, onChanged }: {
+export function JobTransitions({ client, job, disabled, outcome, onOutcomeChanged, runSetup, recordInHandoff = false, verifySubmission = false, onBusyChanged, onChanged }: {
   client: Client;
   job: Job;
   disabled: boolean;
@@ -17,6 +17,7 @@ export function JobTransitions({ client, job, disabled, outcome, onOutcomeChange
   onOutcomeChanged: (outcome: string) => void;
   runSetup?: 'start-run' | 'add-job';
   recordInHandoff?: boolean;
+  verifySubmission?: boolean;
   onBusyChanged: (busy: boolean) => void;
   onChanged: (job: Job) => void;
 }) {
@@ -108,9 +109,11 @@ export function JobTransitions({ client, job, disabled, outcome, onOutcomeChange
     {targets.includes('applied') && <div className="job-handoff-actions">
       <button className="primary" ref={recordButton} type="button" aria-expanded={recordOpen}
         disabled={disabled || busy} onClick={() => setRecordRevision(job.revision)}>Record as submitted</button>
-      <p className="focus-footnote">Use after you submit on the employer site. This updates your local job record.</p>
+      <p className="focus-footnote">{verifySubmission ? 'Use after verifying that the employer received this application.'
+        : 'Use after you submit on the employer site.'} This updates your local job record.</p>
       {recordOpen && <fieldset className="notice" disabled={disabled || busy}>
-        <legend>Did you personally submit this application on the employer site?</legend>
+        <legend>{verifySubmission ? 'Did you verify that the employer received this application?'
+          : 'Did you personally submit this application on the employer site?'}</legend>
         <div className="button-row">
           <button type="button" onClick={() => { setRecordRevision(null); recordButton.current?.focus(); }}>Cancel</button>
           <button className="primary" ref={confirmButton} type="button"
@@ -127,7 +130,7 @@ export function JobTransitions({ client, job, disabled, outcome, onOutcomeChange
 
   return <section aria-labelledby={headingId} aria-busy={busy}>
     <h3 id={headingId}>Job status</h3>
-    <p>Current status: {job.status.replaceAll('_', ' ')}. These actions update the local record only. Final application submission stays manual.</p>
+    <p>Current status: {job.status.replaceAll('_', ' ')}. These actions update the local record only.</p>
     {targets.includes('ready') && (runSetup === 'start-run'
       ? <p>Ask Job Apply in Codex or Claude Code to prepare this saved job. Confirm the resume and facts in chat to start an application run.</p>
       : runSetup === 'add-job' ? <p>Ask Job Apply in chat to add this job to the active application run.</p>

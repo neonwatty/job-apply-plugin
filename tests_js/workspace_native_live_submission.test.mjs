@@ -13,6 +13,9 @@ import { ResumeService } from '../runtime/workspace-core/resumes.js';
 import { SessionService } from '../runtime/workspace-core/store-sessions.js';
 import { TrashService } from '../runtime/workspace-core/trash.js';
 import { ProfileService } from '../runtime/workspace-core/profile.js';
+import { JobsService } from '../runtime/workspace-core/jobs.js';
+import { JobTransitionsService } from '../runtime/workspace-core/job-transitions.js';
+import { WorkspaceProjectionsService } from '../runtime/workspace-core/workspace-projections.js';
 import { LiveSubmissionService } from '../runtime/workspace-core/live-submission.js';
 import { NativeLiveSubmissionLedger } from '../runtime/store/native-live-submission-ledger.js';
 
@@ -38,6 +41,7 @@ test('global submission preference governs exact approvals, one-use claims, and 
       applicationPreferences: { submitAfterApproval: enabled },
     }), int(get(await profile.inspect(), 'revision')), source);
     const ledger = new NativeLiveSubmissionLedger(root);
+    const projections = new WorkspaceProjectionsService(repository);
     let clock = Date.now();
     const makeService = () => new LiveSubmissionService(repository, ledger, () => clock);
     const service = makeService();
@@ -100,6 +104,8 @@ test('global submission preference governs exact approvals, one-use claims, and 
     assert.equal(won.length, 1);
     await assert.rejects(service.claim(exact.approvalId, second), /previous application outcome/);
     assert.deepEqual(await makeService().inspect(first.jobId), { status: 'verify_submission_status' });
+    assert.deepEqual(plain(await projections.activity(first.jobId)).submission, { status: 'verify_submission_status' });
+    assert.equal(plain(await projections.activity(first.jobId)).submitAfterApproval, true);
     await service.outcome({ jobId: first.jobId, claimId: won[0].value.claimId, status: 'uncertain', confirmation: null });
     await assert.rejects(service.claim(exact.approvalId, first), /verify submission status/);
     const secondClaim = await service.claim(exact.approvalId, second);
@@ -112,6 +118,15 @@ test('global submission preference governs exact approvals, one-use claims, and 
     assert.deepEqual(await makeService().inspect(second.jobId), receipt);
     assert.equal(receipt.evidence, 'agent_observed_portal_confirmation');
     assert.equal(receipt.storeUpdated, true);
+    assert.deepEqual(plain(await projections.activity(second.jobId)).submission, receipt);
+    const snapshot = plain(await projections.taskSnapshot());
+    assert.deepEqual(snapshot.attention.items.map(({jobId, reasonCode}) => [jobId, reasonCode]),
+      [[first.jobId, 'verify_submission_status']]);
+    assert.equal(snapshot.overview.counts.attentionJobs, 1);
+    const visible = JSON.stringify([snapshot, plain(await projections.activity(second.jobId))]);
+    for (const secret of [exact.approvalId, secondClaim.claimId, outcome.confirmation]) {
+      assert.equal(visible.includes(secret), false);
+    }
     const { jobs } = await read(root, 'jobs.json');
     assert.equal(jobs.job.status, 'awaiting_review');
     assert.equal(jobs.other.status, 'applied');
@@ -148,5 +163,36 @@ test('a different managed résumé cannot authorize an unchanged review handoff'
     const confirmed = plain(await facts.confirm(resume.id, BigInt(draft.revision), draft.contentRevision));
     await runs.start(resume.id, BigInt(resume.revision), BigInt(confirmed.revision), true, fromJSON({ jobIds: ['job'] }));
     await assert.rejects(service.preview({ jobs: [first] }), /reviewed résumé or confirmed facts/);
+  } finally { await fixture.cleanup(); }
+});
+
+test('a confirmed receipt survives a concurrent job edit and can be reconciled at the new revision', { timeout: 60000 }, async () => {
+  const fixture = await nativeFixture();
+  try {
+    const { root, claims, repository } = await setup(fixture, 'reconcile-receipt');
+    const item = await review(claims, 'job');
+    const profile = new ProfileService(repository);
+    await profile.patch(fromJSON({ applicationPreferences: { submitAfterApproval: true } }),
+      int(get(await profile.inspect(), 'revision')), 'user');
+    const service = new LiveSubmissionService(repository, new NativeLiveSubmissionLedger(root));
+    const selection = { jobs: [item] };
+    const { previewId } = await service.preview(selection);
+    const { approvalId } = await service.preview(selection, previewId);
+    const { claimId } = await service.claim(approvalId, item);
+    const edited = plain(await new JobsService(repository).update(item.jobId,
+      fromJSON({ notes: 'Concurrent owner edit' }), BigInt(item.jobRevision)));
+    const receipt = await service.outcome({ jobId: item.jobId, claimId, status: 'confirmed', confirmation: digest('e') });
+    assert.equal(receipt.storeUpdated, false);
+    const projections = new WorkspaceProjectionsService(repository);
+    assert.deepEqual(plain(await projections.activity(item.jobId)).submission, receipt);
+    assert.equal(plain(await projections.attention()).items.find(row => row.jobId === item.jobId).reasonCode,
+      'reconcile_submission_receipt');
+    const transitions = new JobTransitionsService(repository);
+    await assert.rejects(transitions.transition(item.jobId, 'applied', BigInt(item.jobRevision), null, true), /revision conflict/);
+    await assert.rejects(transitions.transition(item.jobId, 'applied', BigInt(edited.revision)), /explicit user confirmation/);
+    const applied = plain(await transitions.transition(item.jobId, 'applied', BigInt(edited.revision), null, true));
+    assert.equal(applied.notes, edited.notes);
+    assert.deepEqual(plain(await projections.activity(item.jobId)).submission, { ...receipt, storeUpdated: true });
+    assert.equal(plain(await projections.attention()).items.some(row => row.jobId === item.jobId), false);
   } finally { await fixture.cleanup(); }
 });

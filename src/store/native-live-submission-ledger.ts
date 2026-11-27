@@ -1,7 +1,7 @@
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { fromJSON, JobsError } from '../contracts/workspace/values.js';
-import type { SubmissionLedger } from '../workspace-core/live-submission.js';
+import { liveSubmissionJobKey, type SubmissionLedger } from '../workspace-core/live-submission.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { openPrivateStoreFile } from './private-store-entry.js';
 import { nativeLiveSubmissionName } from './native-store-layout.js';
@@ -32,7 +32,16 @@ export class NativeLiveSubmissionLedger implements SubmissionLedger {
   }
 
   async read(key: string): Promise<unknown> {
-    const id = this.key(key), values = await this.load();
+    return this.record(await this.load(), this.key(key));
+  }
+
+  async readJobs(ids: string[]): Promise<Map<string, unknown>> {
+    if (!ids.length) return new Map();
+    const values = await this.load();
+    return new Map(ids.map(id => [id, this.record(values, liveSubmissionJobKey(id))]));
+  }
+
+  private record(values: Record<string, unknown>, id: string): unknown {
     if (!Object.hasOwn(values, id)) return null;
     const record = values[id];
     if (!record || typeof record !== 'object' || Array.isArray(record)) throw new JobsError('submission ledger is invalid');

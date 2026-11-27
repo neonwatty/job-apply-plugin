@@ -23,7 +23,10 @@ import { promisify } from 'node:util';
 import { realpath, readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
+import { initializeJobsFixture, NativeJobsRepository } from '../runtime/store/native-jobs.js';
+import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
+import { NativeLiveSubmissionLedger } from '../runtime/store/native-live-submission-ledger.js';
+import { LiveSubmissionService, liveSubmissionJobKey } from '../runtime/workspace-core/live-submission.js';
 import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 const execute = promisify(execFile);
 
@@ -224,10 +227,19 @@ export async function nativeJobsBrowser(buildRoot) {
     await clickCompanionNav(page, 'Jobs');
     await claimsBrowser(page, { jobId: job.id, claimRequests });
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const submissionRepository = new NativeJobsRepository(root, loadPosixFlockProvider(fixture.receipt.artifact));
+    const submissionLedger = new NativeLiveSubmissionLedger(root);
+    const liveSubmission = new LiveSubmissionService(submissionRepository, submissionLedger);
+    const syntheticClaim = { approvalId: '1'.repeat(64), claimId: '2'.repeat(64), status: 'claimed' };
     const transitions = await jobTransitionsBrowser(page, {
       jobId: job.id,
       readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
       confirmInputs: async latest => ({ jobRevision: latest.revision }),
+      seedSubmissionAttempt: revision => submissionRepository.claimTransaction(() =>
+        submissionLedger.write(liveSubmissionJobKey(job.id), { ...syntheticClaim, jobRevision: String(revision) })),
+      confirmSubmissionAttempt: () => liveSubmission.outcome({
+        jobId: job.id, claimId: syntheticClaim.claimId, status: 'confirmed', confirmation: `sha256:${'3'.repeat(64)}`,
+      }),
       prepareInterrupted: async () => {
         // root was initialized above from nativeFixture(), never an owner Store.
         const coordinator = JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8'));

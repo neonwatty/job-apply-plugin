@@ -675,6 +675,8 @@ That verifier uses only `127.0.0.1`, a private per-run capability, opaque identi
 
 In Companion, open **Settings → Submit after approval**. This saved switch applies to all Job Apply applications in that Store. Off, the agent stops at Review. On, the top-level Job Apply agent can send an exact reviewed application or batch after you explicitly approve it. The agent uses the same visible browser as the application and reports the portal outcome. Turning the switch off prevents subsequent attempts. You can also ask the agent “Turn on Submit after approval for Job Apply.” The Application Setup skill saves the same setting. [Submission workflow](skills/job-apply/references/submit-after-approval.md)
 
+Look in **Job activity** for a receipt after a confirmed agent submission. When **Needs attention** shows **Verify submission status**, check the employer portal or confirmation email for the exact application. If you verify that the employer received it, use **Record as submitted** to update the job in Companion.
+
 ### Submit after approval in the QA harness
 
 The isolated Greenhouse replay also supports **Submit after approval**. It uses the existing browser review and a separate owner approval command. The replay accepts the packaged fictional Greenhouse fixture and its synthetic résumé.

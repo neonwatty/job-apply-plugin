@@ -14,6 +14,8 @@ const attentionActionLabels: Record<AttentionReason, string> = {
   site_consent_conflict: 'See consent details',
   expired_agent_attempt: 'See recovery steps',
   claimless_interrupted_attempt: 'See recovery steps',
+  verify_submission_status: 'Open job to verify',
+  reconcile_submission_receipt: 'See submission receipt',
 };
 
 function displayAttention(item: AttentionItem) {
@@ -57,7 +59,7 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
     <header className="workspace-hero">
       <div className="workspace-hero-copy">
         <h1>Needs attention</h1>
-        <p>Select a job to review its next step. Final submission stays manual.</p>
+        <p>Select a job to review its next step.</p>
       </div>
       <div className="workspace-hero-actions"><button type="button" onClick={() => { refresh(); labels.refresh(); }} disabled={loading || labels.loading}>Refresh attention</button></div>
     </header>
@@ -96,14 +98,14 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
                 : confirmBrowserStep ? 'A browser action was recorded. Check your application tab or ask Job Apply to confirm the current step.'
                 : attentionGuidance[selected.reasonCode]}</p>
               <dl className="focus-context-list">
-                <div><dt>Since</dt><dd>{formatActivityTime(selected.attentionAt)}</dd></div>
+                <div><dt>{selected.reasonCode === 'verify_submission_status' || selected.reasonCode === 'reconcile_submission_receipt'
+                  ? 'Job updated' : 'Since'}</dt><dd>{formatActivityTime(selected.attentionAt)}</dd></div>
                 {selected.missingInformationCount > 0n && <div><dt>Missing information</dt><dd>{String(selected.missingInformationCount)}</dd></div>}
                 {checklist.length > 0 && <div><dt>To do on form</dt><dd>{checklist.join(' · ')}</dd></div>}
               </dl>
               <button className="primary" type="button" onClick={()=>openJob({id:selected.jobId, revision:selected.revision})}
                 disabled={loading || Boolean(error)}>{upload ? 'See upload steps'
                   : confirmBrowserStep ? 'Open job details' : attentionActionLabels[selected.reasonCode]}</button>
-              {selected.reasonCode === 'awaiting_human_review' && <p className="focus-footnote">Only you can submit on the employer site.</p>}
               <span className="visually-hidden">Revision {String(selected.revision)}</span>
             </div>}
           </div>}

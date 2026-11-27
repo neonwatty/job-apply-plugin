@@ -62,7 +62,8 @@ test('native recovery and review guidance describes only supported authority',()
  assert.doesNotMatch(model.attentionGuidance.claimless_interrupted_attempt, /job-transition/);
  assert.match(model.recoveryGuidance.expired, /reset this expired attempt/);
  assert.match(model.attentionGuidance.awaiting_human_review, /check the draft in your application tab/);
- assert.match(model.attentionGuidance.awaiting_human_review, /After you submit on the employer site, record submission in Companion/);
+ assert.match(model.attentionGuidance.awaiting_human_review, /After the employer confirms submission, record it in Companion/);
+ assert.match(model.attentionGuidance.verify_submission_status, /before trying again/);
 });
 
 test('attention and activity allow a null unbound attempt revision but reject malformed bindings',()=>{

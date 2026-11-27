@@ -9,9 +9,22 @@ const revision = (value) => `sha256:${sha(JSON.stringify(value))}`;
 const opaque = () => randomBytes(32).toString('hex');
 const fingerprint = (value) => typeof value === 'string' && /^sha256:[a-f0-9]{64}$/.test(value);
 const opaqueId = (value) => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
-const jobKey = (id) => `job-${sha(id)}`;
+export const liveSubmissionJobKey = (id) => `job-${sha(id)}`;
 const check = (condition, reason) => { if (!condition)
     throw new JobsError(reason); };
+function receipt(jobId, action, storeUpdated) {
+    return { status: 'confirmed_submitted', evidence: 'agent_observed_portal_confirmation',
+        receiptId: `receipt:${sha(`${jobId}:${action.claimId}`)}`, storeUpdated };
+}
+export function projectSubmissionOutcome(jobId, value, applied) {
+    const action = value;
+    if (!action)
+        return null;
+    if (action.status !== 'confirmed')
+        return { status: 'verify_submission_status' };
+    check(opaqueId(action.claimId) && fingerprint(action.confirmation), 'submission ledger is invalid');
+    return receipt(jobId, action, applied);
+}
 function fields(value, names) {
     check(typeof value === 'object' && value !== null && !Array.isArray(value)
         && Object.keys(value).length === names.length && names.every(key => Object.hasOwn(value, key)), 'invalid submission request');
@@ -79,7 +92,7 @@ export class LiveSubmissionService {
             const profile = profileRevision(tx);
             const bound = [];
             for (const item of items) {
-                check(await this.ledger.read(jobKey(item.jobId)) === null, 'verify submission status before another attempt');
+                check(await this.ledger.read(liveSubmissionJobKey(item.jobId)) === null, 'verify submission status before another attempt');
                 bound.push(await bind(tx, item));
             }
             const previewId = revision({ profile, items: bound });
@@ -102,9 +115,9 @@ export class LiveSubmissionService {
                 && this.now() < approval.expiresAt && Array.isArray(approval.items), 'submission approval expired or the saved setting changed');
             const permitted = approval.items.find(row => row.jobId === item.jobId);
             check(permitted && JSON.stringify(permitted) === JSON.stringify(await bind(tx, item)), 'the application changed after approval');
-            check(await this.ledger.read(jobKey(item.jobId)) === null, 'verify submission status before another attempt');
+            check(await this.ledger.read(liveSubmissionJobKey(item.jobId)) === null, 'verify submission status before another attempt');
             for (const other of approval.items) {
-                const active = await this.ledger.read(jobKey(other.jobId));
+                const active = await this.ledger.read(liveSubmissionJobKey(other.jobId));
                 check(active?.status !== 'claimed', 'check the previous application outcome before continuing');
             }
             const now = this.now();
@@ -112,7 +125,7 @@ export class LiveSubmissionService {
             const useBefore = Math.min(approval.expiresAt, now + 15_000);
             const claimId = opaque();
             const action = { approvalId, claimId, jobRevision: item.jobRevision, status: 'claimed' };
-            const key = jobKey(item.jobId);
+            const key = liveSubmissionJobKey(item.jobId);
             await this.ledger.write(key, action);
             if (this.now() >= useBefore) {
                 // The Store lock is still held and no caller has received the claim.
@@ -128,7 +141,7 @@ export class LiveSubmissionService {
         check(opaqueId(claimId) && (status === 'confirmed' ? fingerprint(confirmation)
             : status === 'uncertain' && confirmation === null), 'a valid attempt and portal confirmation status are required');
         return this.repository.claimTransaction(async (tx) => {
-            const key = jobKey(jobId);
+            const key = liveSubmissionJobKey(jobId);
             const prior = await this.ledger.read(key);
             check(prior?.claimId === claimId, 'submission attempt does not match');
             const record = prior.status === 'confirmed' ? prior : {
@@ -142,12 +155,12 @@ export class LiveSubmissionService {
                 return { status: 'verify_submission_status' };
             const job = activeJob(tx, jobId);
             if (job === null)
-                return this.receipt(jobId, record, false);
+                return receipt(jobId, record, false);
             const current = int(get(job, 'revision'));
             const alreadyApplied = string(get(job, 'status')) === 'applied';
             if (current?.toString() !== record.jobRevision
                 || string(get(job, 'status')) !== 'awaiting_review') {
-                return this.receipt(jobId, record, alreadyApplied);
+                return receipt(jobId, record, alreadyApplied);
             }
             requireJobUnclaimed(tx.coordinator, jobId);
             const at = new Date(this.now()).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -157,23 +170,16 @@ export class LiveSubmissionService {
             set(object(get(tx.jobs, 'metadata'), 'jobs metadata'), 'updatedAt', text(at));
             validateJob(jobId, job);
             await tx.saveJobs(tx.jobs);
-            return this.receipt(jobId, record, true);
+            return receipt(jobId, record, true);
         });
     }
     inspect(jobId) {
         safeId(jobId);
         return this.repository.claimTransaction(async (tx) => {
-            const action = await this.ledger.read(jobKey(jobId));
-            if (!action)
-                return { status: 'no_agent_attempt' };
-            if (action.status !== 'confirmed')
-                return { status: 'verify_submission_status' };
+            const action = await this.ledger.read(liveSubmissionJobKey(jobId));
             const job = activeJob(tx, jobId);
-            return this.receipt(jobId, action, job !== null && string(get(job, 'status')) === 'applied');
+            return projectSubmissionOutcome(jobId, action, job !== null && string(get(job, 'status')) === 'applied')
+                ?? { status: 'no_agent_attempt' };
         });
-    }
-    receipt(jobId, action, storeUpdated) {
-        return { status: 'confirmed_submitted', evidence: 'agent_observed_portal_confirmation',
-            receiptId: `receipt:${sha(`${jobId}:${action.claimId}`)}`, storeUpdated };
     }
 }

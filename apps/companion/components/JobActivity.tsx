@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { repeatReviewRequest } from '../repeat-review-request';
-import { handoffChecklistLabels, isCurrentHandoff, recordedFormActions, recoveryGuidance, type ActivityProjection } from './projection-model';
+import { attentionGuidance, handoffChecklistLabels, isCurrentHandoff, recordedFormActions, recoveryGuidance, type ActivityProjection } from './projection-model';
 import { humanize, type ProjectionState } from './projection-view';
 export function JobActivity({activity,jobId,openAnswers}:{activity:ProjectionState<ActivityProjection>;jobId:string;openAnswers?:()=>void}) {
   const [copyNotice,setCopyNotice]=useState('');
@@ -22,7 +22,15 @@ export function JobActivity({activity,jobId,openAnswers}:{activity:ProjectionSta
     {error && <p role="alert">{error} {data && 'Showing the last loaded job data; it may be outdated.'}</p>}
     {data && <>
       <p>Status: {humanize(data.job.status)} · Revision {String(data.job.revision)}</p>
-      {data.job.status==='awaiting_review' && data.claim.state==='none' && !error && <>
+      {data.submission?.status === 'confirmed_submitted' && <>
+        <h4>Submission confirmed</h4>
+        <p>The agent found confirmation on the employer portal.</p>
+        <p>Receipt <code>{data.submission.receiptId}</code></p>
+      </>}
+      {data.submission?.status === 'verify_submission_status' && (data.job.status === 'applied'
+        ? <><h4>Submission recorded in Companion</h4><p>The agent’s submission attempt had an uncertain outcome.</p></>
+        : <><h4>Verify submission status</h4><p>{attentionGuidance.verify_submission_status}</p></>)}
+      {data.job.status==='awaiting_review' && !data.submission && data.claim.state==='none' && !loading && !error && <>
         <p>Want to repeat this review from a blank form? The agent will ask you to confirm the previous form was not submitted and request fresh form-specific approval.</p>
         <button type="button" onClick={() => void copyRepeatRequest()}>Copy repeat-review request</button>
         {copyNotice && <p role="status">{copyNotice}</p>}
