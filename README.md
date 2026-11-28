@@ -24,6 +24,7 @@ before upgrading from Python.
 
 The default marketplace installs the validated release of Job Apply and its optional Companion.
 Windows x64 support starts with v1.3.9. Starting in v1.3.10, you can [migrate a legacy Store or recover its original data](docs/runtime-support.md#explicit-windows-store-migration).
+Starting in v1.3.11, you can opt in to [Submit after approval](#submit-after-approval).
 
 **Codex**, in a terminal:
 
