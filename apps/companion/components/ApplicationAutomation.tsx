@@ -30,9 +30,16 @@ export function ApplicationAutomation({client,authority,refreshVersion,disabled,
     return()=>controller.abort();},[client,refreshVersion]);
   useEffect(()=>{if(authority.mode==='campaign_to_review')void loadProgress();else setProgress(null);},[authority.mode,authority.revision]);
   const queued=useMemo(()=>{const ids=state?.applicationRun?.queueVersions.at(-1)?.jobIds??[];
-    const jobs=ids.map(id=>state?.jobs.find(job=>job.id===id)).filter((job):job is NonNullable<typeof job>=>Boolean(job));
-    return jobs.sort((left,right)=>Number(eligible(right))-Number(eligible(left)));
+    return ids.map(id=>state?.jobs.find(job=>job.id===id)).filter((job):job is NonNullable<typeof job>=>Boolean(job));
   },[state]);
+  const eligibleJobs=queued.filter(eligible);
+  const unavailableJobs=queued.filter(job=>!eligible(job));
+  function jobChoice(job: WorkspaceState['jobs'][number]) {
+    return <label className="check-row" key={job.id}>
+      <input type="checkbox" checked={selected.includes(job.id)} disabled={!eligible(job)} onChange={()=>toggle(job.id)}/>
+      <span><strong>{String(job.role||'Untitled role')} · {String(job.company||'Unknown company')}</strong><small>{job.status.replaceAll('_',' ')} · revision {job.revision}</small></span>
+    </label>;
+  }
   async function loadProgress(){try{setProgress(campaignProgress(await client.automationRequest('/api/application-authority/progress')));}
     catch(failure){setError(failure instanceof Error?failure.message:'Unable to load campaign progress.');}}
   function toggle(id:string){setSelected(current=>current.includes(id)?current.filter(item=>item!==id):mode==='autofill_to_review'?[id]:[...current,id]);}
@@ -66,11 +73,12 @@ export function ApplicationAutomation({client,authority,refreshVersion,disabled,
       <div data-approval-step="2">
         <h3 className="approval-step-title" tabIndex={-1}>Select jobs</h3>
         <fieldset className="automation-job-scope"><legend>Jobs in the active application run</legend>
-          {stateLoading?<p>Loading application run…</p>:queued.length?queued.map(job=><label className="check-row" key={job.id}>
-            <input type="checkbox" checked={selected.includes(job.id)}
-              disabled={!eligible(job)} onChange={()=>toggle(job.id)}/>
-            <span><strong>{String(job.role||'Untitled role')} · {String(job.company||'Unknown company')}</strong><small>{job.status.replaceAll('_',' ')} · revision {job.revision}</small></span>
-          </label>):<p>No queued jobs are available. Start an application run and prepare its jobs first.</p>}
+          {eligibleJobs.map(jobChoice)}
+          {!eligibleJobs.length && <p>{stateLoading?'Loading application run…':'No jobs are ready for this approval.'}</p>}
+          {unavailableJobs.length>0 && <details className="approval-ineligible">
+            <summary>{unavailableJobs.length} unavailable {unavailableJobs.length===1?'job':'jobs'}</summary>
+            <div className="approval-ineligible-list">{unavailableJobs.map(jobChoice)}</div>
+          </details>}
         </fieldset>
       </div>
       <div data-approval-step="3">

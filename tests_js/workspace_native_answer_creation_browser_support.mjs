@@ -68,5 +68,14 @@ export async function nativeAnswerCreationBrowser(page, root) {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
+  const answerRow = page.getByRole('button', { name: 'Browser-created question?', exact: true });
+  assert.ok((await answerRow.boundingBox()).height >= 44);
+  assert.equal(await answerRow.evaluate(row => document.getElementById(row.getAttribute('aria-describedby')).textContent), 'Value retained');
+  await answerRow.getByText('Open →', { exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser-created question?', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
+  await answerRow.getByText('Value retained', { exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser-created question?', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
   return { creation: true, duplicateRetainsDraft: true, dirtyNavigation: true, sensitiveConsent: true, discard: true, reload: true, narrow: true };
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AnswerFields } from './answer-fields';
 import { AnswerCleanup } from './AnswerCleanup';
 import { PendingAnswers } from './PendingAnswers';
@@ -7,6 +7,30 @@ import { DetailDrawer } from './DetailDrawer';
 import { string, get, has, int, object, parse, serialize } from '../../../src/contracts/workspace/values';
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
+
+function AnswerListRow({item, consentOnly, disabled, open}: {
+  item: Document; consentOnly: boolean; disabled: boolean; open: () => void;
+}) {
+  const metadataId = useId();
+  const key = string(get(item, 'key'))!;
+  const question = string(get(item, 'question')) || key;
+  const redacted = get(item, 'valueRedacted') === true;
+  const state = redacted ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value';
+  const intent = get(item, 'consentIntent');
+  const kind = intent ? string(get(object(intent, 'consent intent'), 'kind'))?.replaceAll('_', ' ') : null;
+  const scope = get(item, 'scope');
+  const employer = scope ? string(get(object(scope, 'scope'), 'employer')) : null;
+  const scopeLabel = scope && object(scope, 'scope').size ? employer ?? 'Specific scope' : 'General';
+  return <li><button className="answer-row" type="button" aria-label={question} aria-describedby={metadataId}
+    disabled={disabled} onClick={open}>
+    <span className="answer-row-title"><span className="answer-question-mark" aria-hidden="true">Q</span><span>{question}</span></span>
+    <span className="answer-row-metadata" id={metadataId}>
+      {consentOnly && <span className="answer-value-state">{kind} · {scopeLabel} · {string(get(item, 'source')) ?? 'Unknown source'}</span>}
+      <span className={redacted ? 'answer-value-state sensitive' : 'answer-value-state'}>{state}</span>
+    </span>
+    <span className="answer-row-action" aria-hidden="true">Open →</span>
+  </button></li>;
+}
 
 export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey = 0 }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean; refreshKey?:number }) {
   const [pendingBusy, setPendingBusy] = useState(false);
@@ -212,17 +236,8 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
   }
   function renderAnswer(item:Document) {
     const key = string(get(item, 'key'))!;
-    const state = get(item, 'valueRedacted') === true ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value';
-    const intent = get(item, 'consentIntent');
-    const kind = intent ? string(get(object(intent, 'consent intent'), 'kind'))?.replaceAll('_', ' ') : null;
-    const scope = get(item, 'scope');
-    const employer = scope ? string(get(object(scope, 'scope'), 'employer')) : null;
-    const scopeLabel = scope && object(scope, 'scope').size ? employer ?? 'Specific scope' : 'General';
-    return <li key={key}><div><span className="answer-question-mark" aria-hidden="true">Q</span><button className="text-action" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(key)}>{string(get(item, 'question')) || key}</button></div>
-      {consentOnly && <span className="answer-value-state">{kind} · {scopeLabel} · {string(get(item, 'source')) ?? 'Unknown source'}</span>}
-      <span className={get(item, 'valueRedacted') === true ? 'answer-value-state sensitive' : 'answer-value-state'}>{state}</span>
-      <span className="answer-row-action" aria-hidden="true">Open →</span>
-    </li>;
+    return <AnswerListRow key={key} item={item} consentOnly={consentOnly}
+      disabled={pendingBusy || mergeBusy || busy || invalid} open={() => void select(key)} />;
   }
   const label = consentOnly ? 'Consent defaults' : 'Answers';
   return <section className="answers-workspace" aria-labelledby="answers-workspace-title">

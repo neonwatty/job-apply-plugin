@@ -58,7 +58,7 @@ a { color:var(--green-2); }
 }
 .pipeline-metrics>div:last-child,.resume-metrics>div:last-child,.automation-metrics>div:last-child,.extraction-metrics>div:last-child { border-right:0; }
 .pipeline-metrics strong,.resume-metrics strong,.automation-metrics strong,.extraction-metrics strong { font:600 25px 'Trebuchet MS',sans-serif; }
-.jobs-panel .job-card:hover:not(:disabled),.answer-list-native>li:hover { background:var(--paper); }
+.jobs-panel .job-card:hover:not(:disabled) { background:var(--paper); }
 .company-mark,.resume-file-mark,.answer-question-mark,.answer-empty-mark,.automation-realm-mark { background:var(--mint);color:var(--green);border-radius:6px; }
 .job-card strong,.resume-card-heading strong { font-family:'Trebuchet MS',sans-serif; }
 .resume-card,.fact-card,.extraction-list>li,.answer-support-list>li,.automation-account,.check-row,
