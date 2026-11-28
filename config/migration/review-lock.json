@@ -47,7 +47,7 @@
     },
     {
       "path": "browser-g02-next-surfaces.json",
-      "sha256": "f989066982130f857b4cc8fd57cf42ad507011faefc698974c9fe60e6f5a5caa"
+      "sha256": "703f7e12fdf747367cf7ca65eda15da875ecf6b2b40bf99fb1825d3d605ddf29"
     },
     {
       "path": "browser-agent-model-preferences-surfaces.json",
@@ -395,7 +395,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "6998b6c55b742e8bd754e5402db79beb024a39bba154b0e1cc81be0ac7ad67d7"
+      "sha256": "c356949e2fbbb9d6ec9c3d791a506912aa51de8652175a23fe814eff70ba0b9e"
     },
     {
       "path": "source-catalog-m01.json",

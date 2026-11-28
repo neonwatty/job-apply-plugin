@@ -656,6 +656,39 @@
       "kind": "browser", "export": "TitleDiscovery", "node": "UIF",
       "sources": ["apps/companion/components/TitleDiscovery.tsx"], "effects": "unclassified",
       "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/WorkspaceNavigation.tsx:MoreWorkspace",
+      "kind": "browser", "export": "MoreWorkspace", "node": "UIF",
+      "sources": ["apps/companion/components/WorkspaceNavigation.tsx"], "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/WorkspaceNavigation.tsx:WorkspaceNavigation",
+      "kind": "browser", "export": "WorkspaceNavigation", "node": "UIF",
+      "sources": ["apps/companion/components/WorkspaceNavigation.tsx"], "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/WorkspaceNavigation.tsx:workspaceTabs",
+      "kind": "browser", "export": "workspaceTabs", "node": "UIF",
+      "sources": ["apps/companion/components/WorkspaceNavigation.tsx"], "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
     }
   ]
 }

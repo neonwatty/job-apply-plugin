@@ -5,6 +5,17 @@ import { join } from 'node:path';
 
 export async function nativeAnswerCreationBrowser(page, root) {
   const answers = async () => Object.values(JSON.parse(await readFile(join(root, 'answers.json'), 'utf8')).answers);
+  const pristineDialogs = [];
+  const dismissUnexpected = dialog => { pristineDialogs.push(dialog.message()); void dialog.dismiss(); };
+  page.on('dialog', dismissUnexpected);
+  try {
+    await page.getByRole('button', { name: 'New answer', exact: true }).click();
+    await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
+    await page.getByRole('heading', { name: 'New answer', exact: true }).waitFor({ state: 'hidden' });
+    assert.deepEqual(pristineDialogs, []);
+  } finally {
+    page.off('dialog', dismissUnexpected);
+  }
   await page.getByRole('button', { name: 'New answer', exact: true }).click();
   assert.equal(await page.getByRole('heading', { name: 'New answer', exact: true }).evaluate(element => element === document.activeElement), true);
   const valueType = page.getByLabel('Answer value type', { exact: true });

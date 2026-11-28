@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -47,7 +47,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   assert.equal(await company.inputValue(), 'Unsaved trash browser draft');
   // External lifecycle changes must not replace the owner's current editor draft.
   await company.fill(job.company);
-  await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(modal).click();
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.waitFor({ state: 'hidden' });
   const beforeList = await readFile(join(root, 'jobs.json'), 'utf8');
@@ -70,7 +70,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   assert.equal(await company.inputValue(), job.company);
   assert.equal(await modal.locator('[name="notes"]').inputValue(), job.notes);
-  await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(modal).click();
   const again = await api(`/api/jobs/${job.id}/trash`, { expectedRevision: restored.revision });
   assert.equal(again.revision, restored.revision + 1);
   const final = await cli('job-restore', args(again.revision));
@@ -81,7 +81,7 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   await modal.getByRole('button', { name: 'Edit job', exact: true }).click();
   assert.equal(await company.inputValue(), job.company);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-  await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(modal).click();
   const deletion = await cli('job-trash', args(final.revision));
   const beforeDelete = await readFile(join(root, 'jobs.json'), 'utf8');
   await assert.rejects(cli('job-delete', args(final.revision)), /revision conflict/);

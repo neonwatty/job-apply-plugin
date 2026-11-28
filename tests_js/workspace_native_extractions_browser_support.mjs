@@ -14,6 +14,11 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     return JSON.parse((await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'),
       '--root', root, '--native-lock', fixture.receipt.artifact, command, ...args], { env: { PATH: '' } })).stdout);
   }
+  async function openExtraction() {
+    const actions = page.getByRole('button', { name: 'Actions', exact: true });
+    if (await actions.isVisible()) await actions.click();
+    await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  }
   const resume = Object.values((await document('resumes')).resumes)[0];
   let profile = await document('profile');
   await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)], { employer: ['Existing employer'] });
@@ -23,7 +28,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.locator('.resume-card').first().waitFor();
   assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
   assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
-  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await openExtraction();
   await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
   assert.equal(await page.title(), 'Resume extraction · Job Apply Workspace');
   await page.waitForFunction(() => document.activeElement?.id === 'workspace-content');
@@ -106,9 +111,6 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   // The rejected method is synthetic and page-scoped. Reload through the normal
   // application lifecycle so later copy assertions exercise the real clipboard.
   await page.reload();
-  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-  await clickCompanionNav(page, 'Resumes');
-  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByRole('heading', { name: 'Extraction review', exact: true }).waitFor();
   // Legacy proposal review remains readable, but the UI now requests scoped
   // extraction. Create one legacy request privately to exercise that path.
@@ -168,7 +170,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     await page.unroute(detailPath);
   }
   await clickCompanionNav(page, 'Resumes');
-  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await openExtraction();
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
   await page.getByText('Review complete.', { exact: true }).waitFor();
   profile = await document('profile');
@@ -181,6 +183,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     { preferences: { removable: true, retained: true } });
   await page.setViewportSize({ width: 390, height: 844 });
   await clickCompanionNav(page, 'Facts');
+  await page.getByRole('button', { name: 'Edit facts', exact: true }).click();
   const city = page.locator('.fact-card').filter({has:page.getByLabel('extractedCity',{exact:true})});
   await city.getByText(/Source · Resume extraction/).waitFor();
   const employer = page.locator('.fact-card').filter({has:page.getByRole('group',{name:'employer',exact:true})});

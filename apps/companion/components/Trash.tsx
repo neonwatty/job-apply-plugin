@@ -107,13 +107,13 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation, countCha
     const limited = (['job', 'resume', 'answer'] as const).some(type => !capabilities[type].restore || !capabilities[type].delete);
     return <section className="trash-workspace" aria-labelledby="trash-title" aria-busy={loading || busy}>
         <header className="workspace-hero">
-            <div className="workspace-hero-copy"><p className="eyebrow">Recovery</p><h1 id="trash-title">Trash</h1>
-                <p>Restore or permanently delete individual records. Application history and audit evidence stay intact.</p></div>
+            <div className="workspace-hero-copy"><h1 id="trash-title">Trash</h1>
+</div>
             <div className="workspace-hero-actions"><button id="trash-refresh" className="secondary" disabled={loading || busy || selection !== null} onClick={() => { void refresh(); }}>Refresh Trash</button></div>
         </header>
         {limited && <p className="notice">Unavailable actions are disabled in this workspace.</p>}
         <section className="workspace-panel trash-panel" aria-labelledby="trash-list-heading">
-            <div className="workspace-panel-heading"><div><p className="eyebrow">Recoverable records</p><h2 id="trash-list-heading">Jobs, resumes, and answers</h2></div>
+            <div className="workspace-panel-heading"><div><h2 id="trash-list-heading" className="visually-hidden">Jobs, resumes, and answers</h2></div>
                 {(snapshot?.total || filter) && <label className="trash-filter">Record type<select value={filter} disabled={busy || selection !== null} onChange={event => setFilter(event.target.value as TrashType | '')}>
                     <option value="">All types</option><option value="job">Jobs</option><option value="resume">Resumes</option><option value="answer">Answers</option>
                 </select></label>}

@@ -3,10 +3,11 @@ import type { ReactNode } from 'react';
 import { object,textFields,type JobFields,type Resume } from './contracts';
 import type { Editor } from './job-editor-state';
 
-export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,reapply,load,refresh,handoff,notice,children }: {
+export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,reapply,load,refresh,handoff,notice,children,backLabel }: {
     children?: ReactNode;
     handoff?: ReactNode;
     notice?: string;
+    backLabel: string;
     editor: Editor;
     resumes: Resume[];
     busy: boolean;
@@ -67,7 +68,10 @@ export function JobEditor({ editor,resumes,busy,error,change,close,reset,save,re
             if (event.clientX < bounds.left || event.clientX >= bounds.right
                 || event.clientY < bounds.top || event.clientY >= bounds.bottom) close();
         }}>
-        <header className="job-drawer-header">
+        <header className="job-drawer-header" data-saved={Boolean(editor.selected)}>
+            {editor.selected && <button className="job-drawer-back" type="button" onClick={close} disabled={busy}>
+                <span aria-hidden="true">‹</span> {backLabel}
+            </button>}
             <div><p className="eyebrow">{editor.selected ? 'Saved job' : 'New job'}</p>
                 <h2 ref={heading} tabIndex={-1} id={titleId}>{title}</h2></div>
             <button className="job-drawer-close" type="button" onClick={close} disabled={busy} aria-label="Close job details">×</button>

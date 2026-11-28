@@ -38,6 +38,8 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
 ));
 
 export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>boolean; refreshKey?:number }) {
+    const [resumeActionsOpen,setResumeActionsOpen]=useState(false);
+    const resumeActionsButton=useRef<HTMLButtonElement>(null);
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
     const [editing, setEditing] = useState(false);
     const [factStatus, setFactStatus] = useState<Map<string, ResumeFactStatus>>(() => new Map());
@@ -244,11 +246,25 @@ export function Resumes({ client, dirtyChanged, openExtractions, refreshKey = 0 
         }
     }
     return <section className="resumes-workspace" aria-labelledby="resumes-workspace-title">
-        <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="resumes-workspace-title">Resumes</h1><p>Manage the resume files available to your application agents.</p></div><div className="workspace-hero-actions">
-            <button className="secondary" disabled={busy} onClick={refreshLibrary}>Refresh</button>
-            {openExtractions&&<button className="secondary" disabled={busy} onClick={openExtractions}>Resume extraction</button>}
-            <button className="primary" disabled={busy} onClick={() => open(null)}>Import resume</button>
-        </div></header>
+        <header className="workspace-hero">
+            <div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="resumes-workspace-title">Resumes</h1><p>Manage the resume files available to your application agents.</p></div>
+            <div className="workspace-hero-actions resume-actions">
+                <button ref={resumeActionsButton} className="secondary resume-actions-toggle" type="button"
+                    aria-expanded={resumeActionsOpen} aria-controls="resume-secondary-actions" onClick={()=>setResumeActionsOpen(open=>!open)}>Actions</button>
+                <div id="resume-secondary-actions" className="resume-secondary-actions" data-open={resumeActionsOpen}>
+                    <button className="secondary" disabled={busy} onClick={()=>{
+                        if(resumeActionsOpen)resumeActionsButton.current?.focus();
+                        setResumeActionsOpen(false);
+                        refreshLibrary();
+                    }}>Refresh</button>
+                    {openExtractions&&<button className="secondary" disabled={busy} onClick={()=>{
+                        setResumeActionsOpen(false);
+                        openExtractions();
+                    }}>Resume extraction</button>}
+                </div>
+                <button className="primary resume-import" disabled={busy} onClick={() => open(null)}>Import resume</button>
+            </div>
+        </header>
         <div className="workspace-panel resumes-panel" aria-labelledby="resume-library-heading">
             <div className="workspace-panel-heading"><div><p className="eyebrow">Your documents</p><h2 id="resume-library-heading">Saved resumes</h2></div></div>
             <p className="workspace-status" role="status">{loading ? 'Loading resumes…' : notice}</p>

@@ -30,6 +30,7 @@ export async function nativeAutomationBrowser(page, root) {
     }}});
   });
   await workspace.getByRole('button',{name:'Refresh',exact:true}).click();
+  await workspace.getByRole('button',{name:'Continue to jobs',exact:true}).click();
   await workspace.getByText('Refreshed role · Synthetic employer',{exact:true}).waitFor();
   const refreshedChoice=workspace.getByRole('checkbox',{name:/Refreshed role/});
   await refreshedChoice.check();
@@ -38,6 +39,31 @@ export async function nativeAutomationBrowser(page, root) {
   await refreshedChoice.uncheck();
   await page.waitForFunction(()=>[...document.querySelectorAll('.automation-workspace button')]
     .some(button=>button.textContent?.trim()==='Refresh'&&!button.disabled));
+  const approvals=[];
+  const approvalPath='**/api/application-authority';
+  await page.route(approvalPath,async route=>{
+    approvals.push(route.request().postDataJSON());
+    await route.fulfill({status:409,json:{error:{message:'Synthetic approval test'}}});
+  });
+  try {
+    await refreshedChoice.check();
+    await workspace.getByRole('button',{name:'Back',exact:true}).click();
+    await workspace.getByRole('button',{name:'Continue to jobs',exact:true}).click();
+    assert.equal(await refreshedChoice.isChecked(),true);
+    await workspace.getByRole('button',{name:'Review approval',exact:true}).click();
+    await workspace.getByRole('heading',{name:'Confirm approval',exact:true}).waitFor();
+    await workspace.locator('.approval-scope').getByText('Refreshed role · Synthetic employer',{exact:true}).waitFor();
+    assert.deepEqual(approvals,[]);
+    await workspace.getByRole('button',{name:'Approve bounded mode',exact:true}).click();
+    await workspace.getByRole('alert').filter({hasText:'Synthetic approval test'}).waitFor();
+    assert.equal(approvals.length,1);
+    assert.deepEqual(approvals[0].authority.jobIds,[refreshedJob.id]);
+    assert.equal(approvals[0].authority.runId,'refreshed-run');
+    await workspace.getByRole('button',{name:'Back',exact:true}).click();
+    await refreshedChoice.uncheck();
+  } finally {
+    await page.unroute(approvalPath);
+  }
   await page.unroute('**/api/state');
   await workspace.getByText('Trusted Fill approvals',{exact:true}).click();
   await workspace.getByLabel('Job ID for status or revocation',{exact:true}).fill('missing-job');

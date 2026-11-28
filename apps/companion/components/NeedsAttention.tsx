@@ -38,7 +38,10 @@ function jobLabels(raw: string) {
   }]));
 }
 
-export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;openJob:(job:{id:string;revision:bigint})=>void;refreshKey?:number}) {
+export function NeedsAttention({client,openJob,selectedId,select,back,refreshKey=0}:{
+  client:Client;openJob:(job:{id:string;revision:bigint})=>void;
+  selectedId?:string;select:(id:string)=>void;back:()=>void;refreshKey?:number;
+}) {
   const {data,loading,error,refresh}=useProjection(client,'/api/attention',attentionProjection,refreshKey);
   const labels = useProjection(client,'/api/state',jobLabels,refreshKey);
   function identity(item: AttentionItem) {
@@ -48,27 +51,36 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
     return name.length ? name : [`Job ${item.jobId}`];
   }
   const [reason,setReason]=useState('');
-  const [selectedId,setSelectedId]=useState<string|null>(null);
-  const visible=filterAttention(data?.items.map(displayAttention) ?? [],reason);
-  const selected=visible.find(item=>item.jobId===selectedId) ?? visible[0];
+  const items=data?.items.map(displayAttention) ?? [];
+  const visible=filterAttention(items,reason);
+  const routeSelection=selectedId ? items.find(item=>item.jobId===selectedId) : undefined;
+  const selectionExcluded=Boolean(reason && routeSelection && routeSelection.reasonCode!==reason);
+  const focused=Boolean(selectedId && !selectionExcluded);
+  const selected=focused ? routeSelection : visible[0];
+  function filterByReason(nextReason:string) {
+    setReason(nextReason);
+    if (selectedId && nextReason && routeSelection?.reasonCode!==nextReason) back();
+  }
   const checklist = selected?.checklist ?? [];
   const upload = selected?.reasonCode === 'browser_action_required'
     && checklist.length === 1 && checklist[0] === handoffActionLabels.resume_upload;
   const confirmBrowserStep = selected?.reasonCode === 'browser_action_required' && !selected.browserHandoff;
-  return <section className="attention-workspace" aria-label="Needs Attention">
+  return <section className="attention-workspace" aria-label="Needs Attention" data-focused={focused}>
     <header className="workspace-hero">
       <div className="workspace-hero-copy">
         <h1>Needs attention</h1>
-        <p>Select a job to review its next step.</p>
       </div>
       <div className="workspace-hero-actions"><button type="button" onClick={() => { refresh(); labels.refresh(); }} disabled={loading || labels.loading}>Refresh attention</button></div>
     </header>
+    {focused && <button className="attention-back" type="button" onClick={back}>
+      <span aria-hidden="true">‹</span> Back to Needs Attention
+    </button>}
     <div className="workspace-panel attention-panel">
       <div className="workspace-panel-heading">
-        <div><p className="eyebrow">Review queue</p><h2>Jobs requiring action</h2></div>
+        <h2>Jobs requiring action</h2>
         <div className="attention-controls">
           {data && data.items.length>0 && <strong className="queue-count">{visible.length} {visible.length===1?'job':'jobs'}</strong>}
-          {data && data.items.length>0 && <label>Filter by reason <select value={reason} onChange={event=>setReason(event.target.value)}>
+          {data && data.items.length>0 && <label>Filter by reason <select value={reason} onChange={event=>filterByReason(event.target.value)}>
             <option value="">All reasons</option>{Object.entries(attentionReasons).map(([code,label])=><option key={code} value={code}>{label}</option>)}
           </select></label>}
         </div>
@@ -76,14 +88,16 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
       {loading && <p className="workspace-status" role="status">{data?'Refreshing attention…':'Loading attention…'}</p>}
       {error && <p role="alert" className="error">{error} {data && 'Showing the last loaded data; it may be outdated.'}</p>}
       {data && <><p className="visually-hidden" role="status">{data.items.length} jobs need attention. {visible.length} shown.</p>
-        {data.items.length===0 ? <div className="workspace-empty attention-empty"><span className="empty-check" aria-hidden="true">✓</span><strong>Nothing needs your attention.</strong><span>Check Jobs to continue preparing applications.</span></div>
-          : visible.length===0 ? <div className="workspace-empty"><strong>No jobs match this reason filter.</strong><button className="text-action" type="button" onClick={()=>setReason('')}>Clear filter</button></div> :
+        {focused && !selected && <p role="status" className="notice">This job no longer needs attention.</p>}
+        {!focused && data.items.length===0 && <div className="workspace-empty attention-empty"><span className="empty-check" aria-hidden="true">✓</span><strong>Nothing needs your attention.</strong><span>Check Jobs to continue preparing applications.</span></div>}
+        {!focused && data.items.length>0 && visible.length===0 && <div className="workspace-empty"><strong>No jobs match this reason filter.</strong><button className="text-action" type="button" onClick={()=>setReason('')}>Clear filter</button></div>}
+        {(selected || visible.length>0) &&
           <div className="focus-review-layout">
             <ul className="attention-list focus-items" aria-label="Choose a job to review">{visible.map(item=>{
               const [title, role] = identity(item);
               return <li key={item.jobId}>
                 <button className="focus-item" type="button" aria-pressed={selected?.jobId===item.jobId}
-                  onClick={()=>setSelectedId(item.jobId)} aria-controls="focus-decision">
+                  onClick={()=>select(item.jobId)} data-workspace-focus={`attention:${item.jobId}`}>
                   <span>{title}</span>
                   {role && <small>{role}</small>}
                   <small>{attentionReasons[item.reasonCode]}</small>
@@ -92,20 +106,21 @@ export function NeedsAttention({client,openJob,refreshKey=0}:{client:Client;open
             })}</ul>
             {selected && <div id="focus-decision" className="focus-decision" aria-live="polite">
               <p className="focus-context">{identity(selected).join(' · ')}</p>
-              <h2>{attentionReasons[selected.reasonCode]}</h2>
+              <h2 tabIndex={-1} data-workspace-focus="attention-detail">{attentionReasons[selected.reasonCode]}</h2>
               <p className="focus-guidance">{upload
                 ? 'The agent paused at the upload control. Attach your saved resume in your application tab.'
                 : confirmBrowserStep ? 'A browser action was recorded. Check your application tab or ask Job Apply to confirm the current step.'
                 : attentionGuidance[selected.reasonCode]}</p>
+              <button className="primary" type="button" data-workspace-focus={`attention-action:${selected.jobId}`}
+                onClick={()=>openJob({id:selected.jobId, revision:selected.revision})}
+                disabled={loading || Boolean(error)}>{upload ? 'See upload steps'
+                  : confirmBrowserStep ? 'Open job details' : attentionActionLabels[selected.reasonCode]}</button>
               <dl className="focus-context-list">
                 <div><dt>{selected.reasonCode === 'verify_submission_status' || selected.reasonCode === 'reconcile_submission_receipt'
                   ? 'Job updated' : 'Since'}</dt><dd>{formatActivityTime(selected.attentionAt)}</dd></div>
                 {selected.missingInformationCount > 0n && <div><dt>Missing information</dt><dd>{String(selected.missingInformationCount)}</dd></div>}
                 {checklist.length > 0 && <div><dt>To do on form</dt><dd>{checklist.join(' · ')}</dd></div>}
               </dl>
-              <button className="primary" type="button" onClick={()=>openJob({id:selected.jobId, revision:selected.revision})}
-                disabled={loading || Boolean(error)}>{upload ? 'See upload steps'
-                  : confirmBrowserStep ? 'Open job details' : attentionActionLabels[selected.reasonCode]}</button>
               <span className="visually-hidden">Revision {String(selected.revision)}</span>
             </div>}
           </div>}

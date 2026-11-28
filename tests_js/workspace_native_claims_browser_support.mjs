@@ -64,9 +64,8 @@ export async function claimsBrowser(page, { jobId, claimRequests = [] }) {
         await panel.getByText('Claude Code invocation copied.', { exact: true }).waitFor();
 
         await page.reload();
-        await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-        assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
-        await clickCompanionNav(page, 'Jobs');
+        await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
+        assert.equal(await page.locator('#workspace-navigation button[aria-label="Jobs"]').getAttribute('aria-current'), 'page');
         const reloadedPanel = page.getByRole('region', { name: 'Ready-job handoff', exact: true });
         await reloadedPanel.getByRole('button', { name: 'Copy Claude invocation', exact: true }).click();
         assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '/job-apply:job-apply');
@@ -155,7 +154,9 @@ export async function overviewHandoffBrowser(buildRoot) {
         await page.getByRole('button', {name:'Refresh',exact:true}).click();
         await readyRow.getByText('Live confirmation needed', {exact:true}).waitFor();
         await page.getByRole('button', {name:/Review fixture role.*Awaiting your review/}).waitFor();
-        await page.getByRole('combobox', {name:/^Status/}).selectOption({label:'Ready for agent'});
+        const filters = page.getByRole('button', {name:'Filters',exact:true});
+        if (await filters.isVisible()) await filters.click();
+        await page.getByRole('combobox', {name:'Status',exact:true}).selectOption({label:'Ready for agent'});
         assert.equal(await page.getByRole('button', {name:/Review fixture role/}).count(), 0);
         await readyRow.click();
         await page.getByRole('region', {name:'Live confirmation needed',exact:true})

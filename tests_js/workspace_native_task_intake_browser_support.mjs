@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // The caller owns a synthetic Store and invokes intake through the native CLI.
@@ -68,7 +68,7 @@ export async function taskIntakeBrowser(page, { intake, snapshot, readDocument }
     assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human task company');
     assert.equal(await modal.locator('[name="role"]').inputValue(), role);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+    await jobDetailBack(modal).click();
     await clickCompanionNav(page, 'Overview');
   await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     assert.equal(navigationPrompts, 0);

@@ -64,12 +64,14 @@ export function Overview({ client, openJobs, openAgentHandoff, legacyHref, openW
     const guidanceCopy = handoff ? 'Continue in your preferred host, then confirm the job you want to prepare.'
         : Array.isArray(guidance) && typeof guidance[1] === 'string' ? guidance[1] : 'Choose a section to get started.';
     const nativeDestinations = ['facts','resumes','attention','answers','automation','settings','trash'];
+    const actionLabel = data?.nextAction === 'review_facts'
+        ? 'Review resume facts' : `Open ${destinations[destination]}`;
     const action = handoff ? <button className="button primary" type="button" onClick={handoff}
         disabled={loading || Boolean(error)}>Continue in Codex or Claude Code</button>
         : target === 'jobs' ? <button className="button primary" onClick={openJobs}>Open Jobs</button>
         : openWorkspace && nativeDestinations.includes(target)
-            ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'settings'|'trash')}>Open {destinations[target]}</button>
-            : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>;
+            ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'settings'|'trash')}>{actionLabel}</button>
+            : <a className="button primary" href={link(destination)}>{actionLabel}</a>;
     return <div className="overview-workspace">
         <section className="overview-hero">
             <div><p className="eyebrow">Overview</p><h1>Your next move, at a glance.</h1></div>

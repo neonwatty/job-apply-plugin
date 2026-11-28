@@ -208,9 +208,9 @@ export function Extractions({ client, dirtyChanged, openResumes, refreshKey = 0 
   const addedCount = base ? int(get(base, 'autoFilledCount')) : null;
   const sourceResume = base ? resumes.find(resume => string(get(resume, 'id')) === string(get(base, 'resumeId'))) : undefined;
   return <section className="extractions-workspace" aria-labelledby="extractions-workspace-title">
-    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes</p><h1 id="extractions-workspace-title">Extraction review</h1><p>See what extraction added to your profile and review proposed changes.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh</button></div></header>
+    <header className="workspace-hero"><div className="workspace-hero-copy"><h1 id="extractions-workspace-title">Extraction review</h1><p>See what extraction added to your profile and review proposed changes.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh</button></div></header>
     <section className="workspace-panel extraction-request-panel" aria-labelledby="extraction-request-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div></div>
+      <div className="workspace-panel-heading"><div><h2 id="extraction-request-heading">Request facts from a resume</h2></div></div>
       <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice}</p>
       {fallback && <label className="clipboard-fallback">Agent handoff to copy<input readOnly value={fallback.value} onFocus={event => event.currentTarget.select()} /></label>}
       {error && <p className="error" role="alert">{error}</p>}

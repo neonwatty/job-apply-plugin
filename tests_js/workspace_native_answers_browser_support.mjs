@@ -71,7 +71,6 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     assert.equal((await stored(pending.key)).reviewStatus, 'accepted');
 
     await page.reload();
-    await clickCompanionNav(page, 'Answers');
     await page.getByRole('button', { name: 'Preferred work location?', exact: true }).click();
     await page.getByRole('button', { name: 'Edit answer', exact: true }).click();
     assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'My answer draft');

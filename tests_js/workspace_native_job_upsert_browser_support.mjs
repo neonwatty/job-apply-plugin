@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 // The caller owns an isolated native fixture; every upsert uses the native CLI.
@@ -70,7 +70,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     assert.equal(await modal.locator('[name="role"]').inputValue(), role);
     assert.equal(JSON.parse(await readDocument()).jobs[id].ats, 'Fixture ATS');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+    await jobDetailBack(modal).click();
     await clickCompanionNav(page, 'Overview');
     await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
     assert.equal(navigationPrompts, 0, 'acknowledged CLI/browser writes leave no false unsaved draft');

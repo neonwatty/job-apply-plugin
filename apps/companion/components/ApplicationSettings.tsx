@@ -109,11 +109,18 @@ export function ApplicationSettings({client,dirtyChanged,refreshKey=0}:{client:C
           onChange={event=>void changeSubmissionMode(event.target.checked)}/>
       </label>
     </div>}
-    {base&&draft&&models&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy||loading}><legend>Application and agent defaults</legend>
+    {base&&draft&&models&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy||loading}><legend className="visually-hidden">Application and agent defaults</legend>
+      <fieldset className="settings-group"><legend>Browser preferences</legend>
       <label>Preferred Codex browser<select value={draft.preferredBrowser} onChange={event=>setDraft({...draft,preferredBrowser:event.target.value as ApplicationPreferences['preferredBrowser']})}><option value="codex_browser">Codex built-in browser</option><option value="chrome">Chrome</option></select><span className="field-help">Claude Code continues to use Claude in Chrome.</span></label>
-      <label>If that browser is unavailable<select value={draft.browserFallback} onChange={event=>setDraft({...draft,browserFallback:event.target.value as ApplicationPreferences['browserFallback']})}><option value="ask">Ask before switching</option><option value="other_supported">Use the other supported browser</option></select></label>
-      <label>Page transitions<select value={draft.progressionMode} onChange={event=>setDraft({...draft,progressionMode:event.target.value as ApplicationPreferences['progressionMode']})}><option value="standard">Standard — continue through clearly non-final steps</option><option value="guided">Pause before every page transition</option></select></label>
-      <label>Preferred application mode<select value={draft.preferredAutomationMode} onChange={event=>setDraft({...draft,preferredAutomationMode:event.target.value as ApplicationPreferences['preferredAutomationMode']})}><option value="guided">Guided</option><option value="autofill_to_review">Autofill one application to review</option><option value="campaign_to_review">Process selected applications to review</option></select><span className="field-help">This chooses what the agent offers. Autofill and campaigns still require approval for the exact jobs and expiration.</span></label>
+      <label>If that browser is unavailable<select value={draft.browserFallback} onChange={event=>setDraft({...draft,browserFallback:event.target.value as ApplicationPreferences['browserFallback']})}><option value="ask">Ask before switching</option><option value="other_supported">Use the other browser</option></select></label>
+      </fieldset>
+      <fieldset className="settings-group"><legend>Application preferences</legend>
+      <label>Page transitions<select aria-label="Page transitions" aria-describedby="page-transition-help" value={draft.progressionMode} onChange={event=>setDraft({...draft,progressionMode:event.target.value as ApplicationPreferences['progressionMode']})}><option value="standard">Standard</option><option value="guided">Guided</option></select>
+        <span className="field-help" id="page-transition-help">{draft.progressionMode==='standard'
+          ?'Continue through clearly non-final steps.'
+          :'Pause before every page transition.'}</span></label>
+      <label>Preferred application mode<select value={draft.preferredAutomationMode} onChange={event=>setDraft({...draft,preferredAutomationMode:event.target.value as ApplicationPreferences['preferredAutomationMode']})}><option value="guided">Guided</option><option value="autofill_to_review">Autofill to Review</option><option value="campaign_to_review">Campaign to Review</option></select><span className="field-help">This chooses what the agent offers. Autofill and campaigns still require approval for the exact jobs and expiration.</span></label>
+      </fieldset>
       <details className="settings-advanced"><summary>Advanced agent model defaults</summary>
       <p>Leave a field blank to use the host default. These choices apply to new agent tasks.</p>
       <h3>Find jobs</h3>
