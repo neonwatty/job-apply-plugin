@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -13,12 +13,27 @@ async function capture(page, name) {
 export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Ready to apply?', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
-  await capture(page, 'mobile-sidebar.png');
+  await page.setViewportSize({ width: 820, height: 1024 });
+  await page.getByRole('button', { name: 'Expand sidebar', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Expand sidebar', exact: true }).getAttribute('aria-expanded'), 'false');
+  await page.setViewportSize({ width: 320, height: 568 });
+  const phone = page.getByRole('navigation', { name: 'Mobile workspace sections', exact: true });
+  await phone.waitFor();
+  assert.deepEqual(await phone.getByRole('button').allTextContents().then(labels => labels.map(label => label.trim().replace(/\d+$/, ''))),
+    ['Needs Attention', 'Jobs', 'More']);
+  for (const button of await phone.getByRole('button').all()) {
+    const bounds = await button.boundingBox();
+    assert.ok(bounds.height >= 44 && bounds.y + bounds.height <= 568);
+  }
+  await clickCompanionNav(page, 'More');
+  await page.getByRole('heading', { name: 'More', exact: true }).waitFor();
+  assert.equal(await phone.getByRole('button', { name: 'More' }).getAttribute('aria-current'), 'page');
+  await capture(page, 'mobile-navigation.png');
+  await clickCompanionNav(page, 'Settings');
+  await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+  await page.goBack();
+  await page.getByRole('heading', { name: 'More', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
-  await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.evaluate(() => scrollTo(0, 0));
   await clickCompanionNav(page, 'Answers');
@@ -136,15 +151,27 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   page.once('dialog', prompt => prompt.dismiss());
   await page.evaluate(() => [...document.querySelectorAll('nav button')].find(button => button.textContent.trim() === 'Overview').click());
   assert.equal(await dialog.isVisible(), true);
+  const detailUrl = page.url();
+  assert.equal(new URL(detailUrl).searchParams.get('job'), job.id);
+  page.once('dialog', prompt => prompt.dismiss());
+  await page.goBack();
+  await page.waitForURL(detailUrl);
+  assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Draft survives failed refresh');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.equal(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth), true);
   await capture(page, 'job-editor-narrow.png');
   page.once('dialog', prompt => prompt.accept());
   await dialog.getByRole('button', { name: 'Cancel editing', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(dialog).click();
   await dialog.waitFor({ state: 'hidden' });
+  await page.waitForFunction(() => document.activeElement?.getAttribute('data-workspace-focus')?.startsWith('job:'));
   assert.equal(await card.evaluate(node => node === document.activeElement), true);
+  assert.equal(await page.getByLabel('Search jobs', { exact: true }).inputValue(), 'Next synthetic');
+  await page.goForward();
+  await dialog.getByRole('heading', { name: 'Next synthetic role', exact: true }).waitFor();
+  await jobDetailBack(dialog).click();
+  await dialog.waitFor({ state: 'hidden' });
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // A vanished record must not leave an apparently saveable stale draft.
@@ -160,7 +187,7 @@ export async function nextDraftAndRecovery(page, origin, headers) {
   assert.equal(await dialog.locator('[name="notes"]').inputValue(), 'Preserve missing-record draft');
   await page.unroute('**/api/state');
   page.once('dialog', prompt => prompt.accept());
-  await dialog.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(dialog).click();
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await card.waitFor();
 }

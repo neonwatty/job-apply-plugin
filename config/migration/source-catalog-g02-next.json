@@ -42,6 +42,11 @@
       "classification": "unreviewed"
     },
     {
+      "path": "apps/companion/components/WorkspaceNavigation.tsx",
+      "sha256": "dea9897da0c0fc535147909f2021fb4cbeffcc35d16bca656aeb95fd9de65ed6",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/application-preferences-model.ts",
       "sha256": "4cbc76b041404a46a51f76f387ec47833f5dc71c4a239ec53fcd8f0ee5892137",
       "classification": "unreviewed"

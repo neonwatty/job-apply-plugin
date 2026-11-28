@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
@@ -6,7 +6,7 @@ import { promisify } from 'node:util';
 import { join } from 'node:path';
 const execute=promisify(execFile);
 export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
-  await page.getByRole('button',{name:'Close job details'}).click();
+  await jobDetailBack(page.locator('dialog.job-drawer')).click();
   await clickCompanionNav(page, 'Facts');
   await page.getByText('No facts saved yet.',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('Fact name',{exact:true}).count(),0,'new-fact form stays collapsed until requested');
@@ -72,11 +72,8 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   const groups=JSON.parse(await readFile(join(root,'fact-groups.json'),'utf8')).groups;
   assert.deepEqual(Object.values(groups)[0].paths,['/firstName','/phone ']);
   await page.reload();
-  await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-  assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
-  // Reload returns to Overview; navigate explicitly instead of synchronizing on
-  // claim traffic that the Companion must never own.
-  await clickCompanionNav(page, 'Facts');
+  await page.getByLabel('firstName',{exact:true}).waitFor();
+  assert.equal(await page.locator('#workspace-navigation button[aria-label="Facts"]').getAttribute('aria-current'), 'page');
   await page.getByLabel('firstName',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('firstName',{exact:true}).inputValue(),'Browser draft');
   assert.equal(await page.getByLabel('phone',{exact:true}).inputValue(),'CLI phone');
@@ -86,5 +83,16 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   assert.match(saved,/9007199254740993/);assert.match(saved,/1\.0/);
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
+  assert.equal(await page.getByLabel('firstName',{exact:true}).isVisible(),false);
+  const findFact=page.getByLabel('Find a fact',{exact:true});
+  await findFact.fill('firstname');
+  await page.getByText('Browser draft',{exact:true}).waitFor();
+  assert.equal(await page.getByText('CLI phone',{exact:true}).isVisible(),false);
+  await findFact.clear();
+  await page.locator('.fact-reading-view summary').filter({hasText:'opaque'}).click();
+  await page.getByText('9007199254740993',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Edit facts',exact:true}).click();
+  assert.equal(await page.getByLabel('firstName',{exact:true}).isVisible(),true);
+  await page.getByRole('button',{name:'Done editing',exact:true}).click();
   return {profileDisk:true,cliConflict:true,reapplyReload:true,repeaters:true,groups:true,numericPreservation:true};
 }

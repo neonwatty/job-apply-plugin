@@ -5,6 +5,17 @@ import { join } from 'node:path';
 
 export async function nativeAnswerCreationBrowser(page, root) {
   const answers = async () => Object.values(JSON.parse(await readFile(join(root, 'answers.json'), 'utf8')).answers);
+  const pristineDialogs = [];
+  const dismissUnexpected = dialog => { pristineDialogs.push(dialog.message()); void dialog.dismiss(); };
+  page.on('dialog', dismissUnexpected);
+  try {
+    await page.getByRole('button', { name: 'New answer', exact: true }).click();
+    await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
+    await page.getByRole('heading', { name: 'New answer', exact: true }).waitFor({ state: 'hidden' });
+    assert.deepEqual(pristineDialogs, []);
+  } finally {
+    page.off('dialog', dismissUnexpected);
+  }
   await page.getByRole('button', { name: 'New answer', exact: true }).click();
   assert.equal(await page.getByRole('heading', { name: 'New answer', exact: true }).evaluate(element => element === document.activeElement), true);
   const valueType = page.getByLabel('Answer value type', { exact: true });
@@ -56,6 +67,15 @@ export async function nativeAnswerCreationBrowser(page, root) {
   assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Created in the browser');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
+  const answerRow = page.getByRole('button', { name: 'Browser-created question?', exact: true });
+  assert.ok((await answerRow.boundingBox()).height >= 44);
+  assert.equal(await answerRow.evaluate(row => document.getElementById(row.getAttribute('aria-describedby')).textContent), 'Value retained');
+  await answerRow.getByText('Open →', { exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser-created question?', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
+  await answerRow.getByText('Value retained', { exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser-created question?', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Close answer details', exact: true }).click();
   return { creation: true, duplicateRetainsDraft: true, dirtyNavigation: true, sensitiveConsent: true, discard: true, reload: true, narrow: true };
 }

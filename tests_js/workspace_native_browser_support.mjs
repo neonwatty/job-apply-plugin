@@ -109,9 +109,8 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: 'Save job', exact: true }).click();
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.reload();
-    await page.getByRole('heading', { name: 'Your next move, at a glance.', exact: true }).waitFor();
-    assert.equal(await page.locator('#workspace-navigation button[aria-label="Overview"]').getAttribute('aria-current'), 'page');
-    await clickCompanionNav(page, 'Jobs');
+    await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
+    assert.equal(await page.locator('#workspace-navigation button[aria-label="Jobs"]').getAttribute('aria-current'), 'page');
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     await page.getByRole('button', { name: 'Edit job', exact: true }).click();
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
@@ -211,8 +210,9 @@ export async function nativeJobsBrowser(buildRoot) {
     await clickCompanionNav(page, 'Jobs');
     await page.locator('.workspace-page:not([hidden]) .jobs-workspace').getByRole('button', { name: 'Refresh', exact: true }).click();
     const applicationRun = page.getByLabel('Active application run', { exact: true });
-    await applicationRun.getByText('Locked inputs', { exact: true }).waitFor();
-    await applicationRun.getByText('1 job in this run.', { exact: false }).waitFor();
+    const runSummary = applicationRun.locator('summary');
+    await runSummary.getByText('1 job', { exact: true }).waitFor();
+    await runSummary.click();
     await applicationRun.getByText('confirmed facts stay locked until the run ends', { exact: false }).waitFor();
     await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
     await page.setViewportSize({width:390,height:844});

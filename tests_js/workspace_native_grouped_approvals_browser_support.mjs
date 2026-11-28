@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -82,7 +82,7 @@ export async function nativeGroupedApprovalsBrowser(page, root, fixture, buildRo
   await panel.getByText(/No current session approval\./).waitFor();
   assert.equal(JSON.parse(await readFile(sessionPath, 'utf8')).approvals.length, 1);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-  await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(modal).click();
   return { previewReadOnly: true, sessionOnlyCommit: true, activityRefresh: true,
     approvalInvalidation: true, valueFree: true, narrow: true, pythonAbsentFromPath: true };
 }

@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -86,15 +86,13 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   assert.equal(activity.activity.job.status, 'ready');
   assert.equal(activity.activity.job.revision, selected.job.revision);
   assert.deepEqual((await cli('snapshot')).snapshot.jobs.find(job => job.id === id), selected.job);
-  // Reload closes the old editor and loads the canonical revision before reopening.
+  // Reload keeps the open job URL and reads its current canonical revision.
+  assert.equal(new URL(page.url()).searchParams.get('job'), id);
   await page.reload();
-  await clickCompanionNav(page, 'Jobs');
-  await page.getByRole('button', { name: new RegExp(role) })
-    .filter({ hasText: new RegExp(`revision ${selected.job.revision}$`) }).click();
-  await panel.getByText(/Status: ready/i).waitFor();
+  await panel.getByText(new RegExp(`Status: ready · Revision ${selected.job.revision}`, 'i')).waitFor();
   assert.equal(await modal.locator('.job-drawer-summary dd').first().innerText(), 'Task wrapper company');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-  await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  await jobDetailBack(modal).click();
   return { intakeVisible: true, envelopes: true, ownerConfirmationRequired: true,
     canonicalReload: true, activitySnapshotAgreement: true, pythonAbsentFromPath: true };
 }

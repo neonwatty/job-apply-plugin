@@ -8,10 +8,10 @@ const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const read=path=>readFile(join(root,path),'utf8');
 
 test('dedicated account workspace keeps redacted configuration separate from automation authority',async()=>{
-  const [legacy,legacyAutomation,automation,companion,realm]=await Promise.all([read('workspace/index.html'),read('workspace/features/automation.js'),read('apps/companion/components/Automation.tsx'),read('apps/companion/components/Companion.tsx'),read('apps/companion/components/AutomationRealm.tsx')]);
+  const [legacy,legacyAutomation,automation,companion,realm]=await Promise.all([read('workspace/index.html'),read('workspace/features/automation.js'),read('apps/companion/components/Automation.tsx'),read('apps/companion/components/WorkspaceNavigation.tsx'),read('apps/companion/components/AutomationRealm.tsx')]);
   assert.match(legacy,/id="nav-accounts"[\s\S]*Accounts &amp; Sign-in/);
   assert.match(legacy,/id="accounts-workspace"[\s\S]*Workday stays Keychain-managed[\s\S]*MyGreenhouse[\s\S]*Oracle remains email-only[\s\S]*direct Greenhouse applications require no account/);
-  assert.match(companion,/navButton\('accounts','Accounts & Sign-in'\)/);
+  assert.match(companion,/tab: 'accounts', label: 'Accounts & Sign-in'/);
   assert.match(realm,/Saved account metadata[\s\S]*Browser session/);
   assert.match(automation,/Sign in through your browser; credentials and email codes stay out of this workspace/);
   assert.doesNotMatch(automation,/Shared credential version|Workday credential strategy|Allow protected Workday preparation/);

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AnswerFields } from './answer-fields';
 import { AnswerCleanup } from './AnswerCleanup';
 import { PendingAnswers } from './PendingAnswers';
@@ -7,6 +7,30 @@ import { DetailDrawer } from './DetailDrawer';
 import { string, get, has, int, object, parse, serialize } from '../../../src/contracts/workspace/values';
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
+
+function AnswerListRow({item, consentOnly, disabled, open}: {
+  item: Document; consentOnly: boolean; disabled: boolean; open: () => void;
+}) {
+  const metadataId = useId();
+  const key = string(get(item, 'key'))!;
+  const question = string(get(item, 'question')) || key;
+  const redacted = get(item, 'valueRedacted') === true;
+  const state = redacted ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value';
+  const intent = get(item, 'consentIntent');
+  const kind = intent ? string(get(object(intent, 'consent intent'), 'kind'))?.replaceAll('_', ' ') : null;
+  const scope = get(item, 'scope');
+  const employer = scope ? string(get(object(scope, 'scope'), 'employer')) : null;
+  const scopeLabel = scope && object(scope, 'scope').size ? employer ?? 'Specific scope' : 'General';
+  return <li><button className="answer-row" type="button" aria-label={question} aria-describedby={metadataId}
+    disabled={disabled} onClick={open}>
+    <span className="answer-row-title"><span className="answer-question-mark" aria-hidden="true">Q</span><span>{question}</span></span>
+    <span className="answer-row-metadata" id={metadataId}>
+      {consentOnly && <span className="answer-value-state">{kind} · {scopeLabel} · {string(get(item, 'source')) ?? 'Unknown source'}</span>}
+      <span className={redacted ? 'answer-value-state sensitive' : 'answer-value-state'}>{state}</span>
+    </span>
+    <span className="answer-row-action" aria-hidden="true">Open →</span>
+  </button></li>;
+}
 
 export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey = 0 }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void; consentOnly?: boolean; refreshKey?:number }) {
   const [pendingBusy, setPendingBusy] = useState(false);
@@ -37,8 +61,9 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
   const listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousRefreshKey = useRef(refreshKey);
-  const dirty = creating || invalid || base !== null && draft !== null && serialize(draft) !== serialize(answerDraft(base));
-  useEffect(() => { dirtyChanged(dirty || busy || mergeBusy || pendingBusy); return () => dirtyChanged(false); }, [dirty, busy, mergeBusy, pendingBusy, dirtyChanged]);
+  const initialDraft = creating ? newAnswerDraft(consentOnly) : base ? answerDraft(base) : null;
+  const dirty = invalid || remember || Boolean(draft && initialDraft && serialize(draft) !== serialize(initialDraft));
+  useLayoutEffect(() => { dirtyChanged(dirty || busy || mergeBusy || pendingBusy); return () => dirtyChanged(false); }, [dirty, busy, mergeBusy, pendingBusy, dirtyChanged]);
   useEffect(() => () => { generation.current++; listGeneration.current++; request.current?.abort(); listRequest.current?.abort(); }, []);
   useEffect(() => { if (focusEditorVersion) heading.current?.focus(); }, [focusEditorVersion]);
   async function refreshList() {
@@ -123,13 +148,13 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
     setFocusEditorVersion(value => value + 1);
   }
   function cancelNew() {
-    if (!confirm('Discard this new answer?')) return;
+    if (dirty && !confirm('Discard this new answer?')) return;
     setCreating(false);
     setDraft(null);
     setRemember(false);
     setInvalid(false);
     setError('');
-    setNotice('New answer discarded.');
+    setNotice(dirty ? 'New answer discarded.' : '');
   }
   function closeEditor() {
     if (busy || pendingBusy || mergeBusy) return;
@@ -200,12 +225,44 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
       } catch { /* Preserve the original mutation error and draft. */ }
     } finally { if (version === generation.current) setBusy(false); }
   }
+  const consentGroups = new Map<string, Document[]>();
+  if (consentOnly) for (const item of items) {
+    const intent = get(item, 'consentIntent');
+    const purpose = intent ? string(get(object(intent, 'consent intent'), 'purpose')) : null;
+    const title = purpose ? purpose[0]!.toUpperCase() + purpose.slice(1).replaceAll('_', ' ').replace(/\bsms\b/gu, 'SMS') : 'Purpose not recorded';
+    const group = consentGroups.get(title) ?? [];
+    group.push(item);
+    consentGroups.set(title, group);
+  }
+  function renderAnswer(item:Document) {
+    const key = string(get(item, 'key'))!;
+    return <AnswerListRow key={key} item={item} consentOnly={consentOnly}
+      disabled={pendingBusy || mergeBusy || busy || invalid} open={() => void select(key)} />;
+  }
   const label = consentOnly ? 'Consent defaults' : 'Answers';
   return <section className="answers-workspace" aria-labelledby="answers-workspace-title">
     <header className="workspace-hero">
-      <div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="answers-workspace-title">{consentOnly ? 'Consent defaults' : 'Answers'}</h1><p>{consentOnly ? 'Save choices by purpose. Always review the live notice and approve the current form; sensitive choices stay hidden until you reveal them.' : 'Review answers you can reuse on applications. Sensitive values stay hidden until you reveal them.'}</p></div>
-      <div className="workspace-hero-actions"><button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy} onClick={() => void refreshList()}>Refresh {label.toLowerCase()}</button><button className="primary" disabled={pendingBusy || mergeBusy || busy} onClick={startNew}>New {consentOnly ? 'consent default' : 'answer'}</button></div>
+      <div className="workspace-hero-copy"><p className="eyebrow">Your materials</p><h1 id="answers-workspace-title">{consentOnly ? 'Consent defaults' : 'Answers'}</h1><p>{consentOnly ? 'Save choices by purpose.' : 'Review answers you can reuse on applications.'} Sensitive values stay hidden until you reveal them.</p></div>
+      <div className="workspace-hero-actions"><button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy} aria-label={`Refresh ${label.toLowerCase()}`} onClick={() => void refreshList()}>Refresh</button><button className="primary" disabled={pendingBusy || mergeBusy || busy} onClick={startNew}>New {consentOnly ? 'consent default' : 'answer'}</button></div>
     </header>
+    <section className="workspace-panel answers-panel" aria-labelledby="answer-library-heading">
+      <div className="workspace-panel-heading"><h2 id="answer-library-heading" className="visually-hidden">{label}</h2>
+        <form className="answer-filters" onSubmit={event => { event.preventDefault(); void refreshList(); }}>
+          <label>Find {label.toLowerCase()}<input type="search" placeholder="Question or alias" value={query} onChange={event => setQuery(event.target.value)} /></label>
+          <label>Review status<select aria-label="Review status" value={status} onChange={event => setStatus(event.target.value)}>
+            <option value="accepted">Accepted</option><option value="pending">Pending</option><option value="declined">Declined</option><option value="all">All</option>
+          </select></label>
+          <button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy} aria-label={`Search ${label.toLowerCase()}`}>Search</button>
+        </form>
+      </div>
+      {consentOnly && <p className="consent-review-note">Review the live notice and approve the current form each time.</p>}
+      <p className="workspace-status" role="status">{loading ? 'Loading answers…' : !base && !creating ? notice : ''}</p>
+      {!base && !creating && error && <p className="error" role="alert">{error}</p>}
+      {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : `No ${label.toLowerCase()} to show.`}</strong></div>}
+      {consentOnly ? [...consentGroups].map(([purpose, records]) => <div className="consent-group" key={purpose}>
+        <h3>{purpose}</h3><ul className="answer-list-native">{records.map(renderAnswer)}</ul>
+      </div>) : <ul className="answer-list-native">{items.map(renderAnswer)}</ul>}
+    </section>
     {consentOnly && migrationSuggestions.length > 0 && <section className="workspace-panel" aria-label="Possible saved consent choices">
       <h2>Review existing answers</h2><p>These answers may belong in Consent defaults. Review each purpose and scope before marking it; this suggestion does not change saved data.</p>
       <ul>{migrationSuggestions.map(item => <li key={string(get(item, 'key'))}>
@@ -214,35 +271,6 @@ export function Answers({ client, dirtyChanged, consentOnly = false, refreshKey 
         {get(item, 'requiresRetentionConsent') === true && ' · Needs your permission to remember this as a sensitive decision'}
       </li>)}</ul>
     </section>}
-    <section className="workspace-panel answers-panel" aria-labelledby="answer-library-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Library</p><h2 id="answer-library-heading">{label}</h2></div>
-        <form className="answer-filters" onSubmit={event => { event.preventDefault(); void refreshList(); }}>
-          <label>Find {label.toLowerCase()}<input type="search" placeholder="Question or alias" value={query} onChange={event => setQuery(event.target.value)} /></label>
-          <label>Review status<select aria-label="Review status" value={status} onChange={event => setStatus(event.target.value)}>
-            <option value="accepted">Accepted</option><option value="pending">Pending</option><option value="declined">Declined</option><option value="all">All</option>
-          </select></label>
-          <button className="secondary" disabled={pendingBusy || mergeBusy || loading || busy}>Search {label.toLowerCase()}</button>
-        </form>
-      </div>
-      <p className="workspace-status" role="status">{loading ? 'Loading answers…' : !base && !creating ? notice : ''}</p>
-      {!base && !creating && error && <p className="error" role="alert">{error}</p>}
-      {loaded && !items.length && <div className="workspace-empty answer-empty"><span className="answer-empty-mark" aria-hidden="true">?</span><strong>{query ? 'No matching answers.' : `No ${label.toLowerCase()} to show.`}</strong></div>}
-      <ul className="answer-list-native">{items.map(item => {
-        const key = string(get(item, 'key'))!;
-        const state = get(item, 'valueRedacted') === true ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value';
-        const intent = get(item, 'consentIntent');
-        const purpose = intent ? string(get(object(intent, 'consent intent'), 'purpose'))?.replaceAll('_', ' ') : null;
-        const kind = intent ? string(get(object(intent, 'consent intent'), 'kind'))?.replaceAll('_', ' ') : null;
-        const scope = get(item, 'scope');
-        const employer = scope ? string(get(object(scope, 'scope'), 'employer')) : null;
-        const scopeLabel = scope && object(scope, 'scope').size ? employer ?? 'Specific scope' : 'General';
-        return <li key={key}><div><span className="answer-question-mark" aria-hidden="true">Q</span><button className="text-action" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(key)}>{string(get(item, 'question')) || key}</button></div>
-          {consentOnly && <span className="answer-value-state">{purpose} · {kind} · {scopeLabel} · {string(get(item, 'source')) ?? 'Unknown source'}</span>}
-          <span className={get(item, 'valueRedacted') === true ? 'answer-value-state sensitive' : 'answer-value-state'}>{state}</span>
-          <span className="answer-row-action" aria-hidden="true">Open →</span>
-        </li>;
-      })}</ul>
-    </section>
     {(base || creating) && <DetailDrawer titleId="answer-editor-heading" close={closeEditor} className="answer-detail-drawer">
       <header className="detail-drawer-header"><div><p className="eyebrow">{consentOnly ? 'Consent default' : 'Answer'}</p>
         <h2 id="answer-editor-heading" ref={heading} tabIndex={-1} data-drawer-heading>{creating ? `New ${consentOnly ? 'consent default' : 'answer'}` : string(get(base!, 'question')) || 'Answer details'}</h2></div>

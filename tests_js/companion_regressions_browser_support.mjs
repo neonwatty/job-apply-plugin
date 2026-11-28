@@ -8,7 +8,7 @@ import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
 import { get, int, object, parse, serialize, string } from '../runtime/contracts/workspace/values.js';
 import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 const execute = promisify(execFile);
 
 /** All data and browser sessions are disposable; never touches an owner Store. */
@@ -72,6 +72,50 @@ export async function companionRegressionsBrowser(buildRoot) {
     await page.goto(startup.url);
     await page.getByRole('status', { name: 'Local data connected', exact: true }).waitFor();
 
+    const desktop = page.viewportSize();
+    await page.setViewportSize({ width: 320, height: 568 });
+    await clickCompanionNav(page, 'More');
+    const more = page.getByRole('navigation', { name: 'More workspace sections', exact: true });
+    const settings = more.getByRole('button', { name: 'Settings', exact: true });
+    await settings.waitFor();
+    const menu = await more.boundingBox();
+    const first = await settings.boundingBox();
+    assert.equal(await more.getByRole('button').first().getAttribute('aria-label'), 'Settings');
+    assert.ok(first.height >= 44 && first.y + first.height < 504);
+    assert.ok(first.width >= menu.width - 2, 'the full settings row is tappable');
+    await settings.click();
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+    const pageTransitions = page.getByRole('combobox', { name: 'Page transitions', exact: true });
+    await pageTransitions.waitFor();
+    assert.equal(await pageTransitions.getAttribute('aria-describedby'), 'page-transition-help');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.goBack();
+    await settings.waitFor();
+    for (const [section, opener] of [['Answers', 'New answer'], ['Resumes', /Fact regression resume/]]) {
+      await clickCompanionNav(page, section);
+      await page.getByRole('button', { name: opener }).click();
+      await page.locator('dialog:modal .job-drawer-close:not(:disabled)').waitFor();
+      await page.goBack();
+      await settings.waitFor();
+      assert.equal(await page.locator('dialog:modal').count(), 0);
+      await settings.click();
+      await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+      await page.goBack();
+      await settings.waitFor();
+    }
+    await page.setViewportSize(desktop);
+
+    const staleJobUrl = new URL(startup.url);
+    staleJobUrl.search = 'view=jobs&job=missing-regression-job';
+    await page.goto(staleJobUrl.href);
+    await page.getByRole('alert').filter({hasText:'This job is unavailable.'}).waitFor();
+    await page.getByRole('button', {name:'New job',exact:true}).click();
+    const newJob = page.locator('dialog.job-drawer');
+    await newJob.getByRole('heading', {name:'New job',exact:true}).waitFor();
+    assert.equal(new URL(page.url()).searchParams.has('job'),false);
+    await jobDetailBack(newJob).click();
+    await newJob.waitFor({state:'hidden'});
+
     // A cached Jobs page must release its top-layer modal when it navigates to Answers.
     await clickCompanionNav(page, 'Jobs');
     await page.getByRole('button', { name: /Pending regression role/ }).click();
@@ -79,8 +123,11 @@ export async function companionRegressionsBrowser(buildRoot) {
     await page.getByRole('heading', { name: 'Answers', exact: true, level: 1 }).waitFor();
     assert.equal(await page.locator('dialog:modal').count(), 0);
     await page.getByRole('searchbox', { name: 'Find answers', exact: true }).fill('interaction works');
-    await clickCompanionNav(page, 'Jobs');
-    await page.getByRole('button', { name: 'Close job details', exact: true }).click();
+    await page.goBack();
+    const reopenedJob = page.locator('dialog.job-drawer');
+    await reopenedJob.getByRole('heading', { name: 'Pending regression role', exact: true }).waitFor();
+    await jobDetailBack(reopenedJob).click();
+    await reopenedJob.waitFor({ state: 'hidden' });
     assert.equal(await page.locator('dialog:modal').count(), 0);
 
     await clickCompanionNav(page, 'Resumes');

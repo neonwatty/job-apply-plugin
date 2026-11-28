@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import { reactTrashBrowser } from './workspace_react_trash_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
@@ -234,7 +234,7 @@ async function productionBrowser(root) {
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Preserved React draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'Other writer');
     await page.getByRole('button', { name: 'Cancel editing', exact: true }).click();
-    await page.getByRole('button', { name: 'Close job details', exact: true }).click();
+    await jobDetailBack(page.locator('dialog.job-drawer')).click();
     await nextDraftAndRecovery(page, origin, headers);
     await nextLateRead(page);
     const trash = await reactTrashBrowser(page, { origin, headers });

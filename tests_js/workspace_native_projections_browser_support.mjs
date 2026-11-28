@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 
 export async function projectionsBrowser(page, {markReady}) {
@@ -21,10 +21,27 @@ export async function projectionsBrowser(page, {markReady}) {
   const attention = page.getByRole('region', {name:'Needs Attention',exact:true});
   const queueJob = attention.getByRole('button', {name:/CLI writer Native fixture role Needs information/});
   await queueJob.waitFor();
-  await attention.getByLabel('Filter by reason').selectOption('expired_agent_attempt');
-  await attention.getByText('No jobs match this reason filter.',{exact:true}).waitFor();
-  await attention.getByLabel('Filter by reason').selectOption('');
+  const phone = page.viewportSize();
+  await page.setViewportSize({width:1280,height:900});
   await queueJob.click();
+  const action = attention.getByRole('button',{name:'See what’s missing',exact:true});
+  await action.waitFor();
+  await attention.getByLabel('Filter by reason').selectOption('expired_agent_attempt');
+  const noMatches = attention.getByText('No jobs match this reason filter.',{exact:true});
+  await noMatches.waitFor();
+  assert.equal(await action.isVisible(),false);
+  await page.waitForURL(url => !url.searchParams.has('job'));
+  await page.goForward();
+  await page.waitForURL(url => url.searchParams.has('job'));
+  await noMatches.waitFor();
+  assert.equal(await action.isVisible(),false);
+  await page.goBack();
+  await page.waitForURL(url => !url.searchParams.has('job'));
+  await attention.getByLabel('Filter by reason').selectOption('');
+  await page.setViewportSize(phone);
+  await queueJob.click();
+  assert.equal(await attention.getByRole('list', {name:'Choose a job to review'}).isVisible(),false);
+  await page.waitForFunction(() => document.activeElement?.dataset.workspaceFocus === 'attention-detail');
   await attention.getByRole('button', {name:'See what’s missing',exact:true}).click();
   const modal = page.locator('dialog.job-drawer');
   await modal.waitFor();
@@ -40,12 +57,17 @@ export async function projectionsBrowser(page, {markReady}) {
   await activity.getByText(/last loaded job data/).waitFor({state:'hidden'});
   await modal.getByRole('button',{name:'Edit job',exact:true}).click();
   await modal.locator('[name="notes"]').fill('Projection navigation draft');
+  const draftUrl = page.url();
   page.once('dialog',dialog=>dialog.dismiss());
-  await modal.getByRole('button',{name:'Close job details',exact:true}).click();
+  await page.goBack();
+  await page.waitForURL(draftUrl);
   assert.equal(await modal.locator('[name="notes"]').inputValue(),'Projection navigation draft');
   page.once('dialog',dialog=>dialog.accept());
-  await modal.getByRole('button',{name:'Close job details',exact:true}).click();
-  await clickCompanionNav(page, 'Needs Attention');
+  await jobDetailBack(modal).click();
+  const queueBack = attention.getByRole('button', {name:'Back to Needs Attention',exact:true});
+  await queueBack.waitFor();
+  await page.waitForFunction(() => document.activeElement?.dataset.workspaceFocus?.startsWith('attention-action:'));
+  await queueBack.click();
   await queueJob.waitFor();
   await markReady();
   await attention.getByRole('button',{name:'Refresh attention',exact:true}).click();

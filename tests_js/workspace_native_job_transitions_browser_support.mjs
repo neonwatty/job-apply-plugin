@@ -1,4 +1,4 @@
-import { clickCompanionNav } from './workspace_companion_nav_support.mjs';
+import { clickCompanionNav, jobDetailBack } from './workspace_companion_nav_support.mjs';
 import assert from 'node:assert/strict';
 import { readyPacket } from './workspace_native_claims_support.mjs';
 
@@ -16,7 +16,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
 
   const modal = page.locator('dialog.job-drawer');
   const status = modal.getByRole('region', { name: 'Job status', exact: true });
-  const close = modal.getByRole('button', { name: 'Close job details', exact: true });
+  const close = jobDetailBack(modal);
   async function open() {
     await clickCompanionNav(page, 'Jobs');
     await page.locator('[data-job-create]:enabled').waitFor();
@@ -145,6 +145,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await handoff.getByText('Attach resume',{exact:true}).waitFor();
   const readyForReview = await change('Mark ready', 'ready');
   await close.click();
+  await clickCompanionNav(page, 'Jobs');
 
   const resumed = await api('/api/claims/acquire', {
     jobId, expectedRevision: readyForReview.revision, ownerLabel: 'Transition fixture',
@@ -174,6 +175,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await activity.getByRole('alert').filter({hasText:/last loaded job data/}).waitFor();
   assert.equal(await handoff.getByRole('button',{name:'Record as submitted',exact:true}).isEnabled(),true);
   await page.unroute(activityPath);
+  await close.click();
   await page.reload();
   await clickCompanionNav(page, 'Needs Attention');
   await attention.getByRole('button', {name:/Transition conflict writer Native fixture role Awaiting your review/}).click();
@@ -211,6 +213,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
   await modal.waitFor({state:'hidden'});
   const edited = await readJob();
   assert.equal(edited.url, correctedUrl);
+  await clickCompanionNav(page, 'Jobs');
   await page.getByRole('button', {name:/Native fixture role.*Awaiting your review/}).click();
   await handoff.getByRole('heading', {name:'Review details unavailable',exact:true}).waitFor();
   assert.equal(await handoff.getByText('Required fields reported complete',{exact:true}).count(), 0);
@@ -309,7 +312,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInput
     releasePost();
     assert.equal((await acknowledged).status(), 200);
     await getStarted;
-    await modal.getByRole('button', { name: 'Close job details', exact: true }).waitFor();
+    await jobDetailBack(modal).waitFor();
     await close.click();
     let navigationPrompts = 0;
     const dismiss = dialog => { navigationPrompts++; return dialog.dismiss(); };

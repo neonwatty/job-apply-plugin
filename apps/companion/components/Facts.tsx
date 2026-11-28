@@ -1,14 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, type Client } from './client';
 import { FactValue } from './FactValue';
+import { PythonObject } from '../../../src/contracts/python-object';
 import { FactGroups } from './FactGroups';
 import { TitleDiscovery } from './TitleDiscovery';
-import { copy,get,has,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
+import { copy,get,has,set,text,keys,same,parse,string,serialize,type Document,type Value } from '../../../src/contracts/workspace/values';
 import { formatActivityTime } from './projection-view';
 import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './facts-model';
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
 const settingsNames=['applicationPreferences','agentModelPreferences'];
 const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>!settingsNames.includes(name)&&name.toLowerCase().includes(query.toLowerCase()));
+function ReadFact({label,value}: {label:string;value:Value}) {
+  const entries: [string, Value][] | null = Array.isArray(value)
+    ? value.map((entry,index)=>[`Entry ${index+1}`,entry])
+    : value instanceof PythonObject ? keys(value).map(key=>[key,get(value,key)]) : null;
+  if(entries) {
+    const unit=Array.isArray(value)?'entry':'field';
+    const count=entries.length===1?unit:unit==='entry'?'entries':'fields';
+    if(!entries.length)return <><strong>{label}</strong><span>0 {count}</span></>;
+    return <details>
+      <summary><strong>{label}</strong> <span>· {entries.length} {count}</span></summary>
+      <ul>{entries.map(([name,entry])=><li key={name}><ReadFact label={name} value={entry}/></li>)}</ul>
+    </details>;
+  }
+  const content=typeof value==='boolean'?value?'Yes':'No':value===null?'No value':(string(value)??serialize(value))||'Empty';
+  return <><strong>{label}</strong><span>{content}</span></>;
+}
+
 function FactSource({sources, saved, changed}: {
   sources: ReturnType<typeof factProvenance>;
   saved: boolean;
@@ -35,6 +53,7 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[key,setKey]=useState('firstName'),[kind,setKind]=useState('text');
   const [invalid,setInvalid]=useState(false),[editorVersion,setEditorVersion]=useState(0);
   const [query,setQuery]=useState(''),[groupDirty,setGroupDirty]=useState(false),[titleDirty,setTitleDirty]=useState(false),[addOpen,setAddOpen]=useState(false);
+  const [editingFacts,setEditingFacts]=useState(false);
   const alive=useRef(false), generation=useRef(0), request=useRef<AbortController|null>(null);
   const previousRefreshKey=useRef(refreshKey);
   const form=useRef<HTMLFormElement|null>(null);
@@ -88,11 +107,17 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
       <button disabled={busy} onClick={()=>{setDraft(reapplyDraft(base.profile,draft,latest.profile));setBase(latest);setLatest(null);setError('');setNotice('Draft reapplied. Review it before saving.');}}>Reapply my facts draft</button>
       <button disabled={busy} onClick={()=>{if(confirm('Discard your facts draft and load saved facts?')){setBase(latest);setDraft(latest.profile);setLatest(null);setError('');}}}>Load saved facts</button>
     </aside>}
-    {base&&draft&&<section className="workspace-panel facts-panel" aria-labelledby="facts-form-title">
+    {base&&draft&&<section className="workspace-panel facts-panel" aria-labelledby="facts-form-title"
+      data-editing={editingFacts || dirty || invalid}>
       <div className="workspace-panel-heading">
         <div><p className="eyebrow">Local profile</p><h2 id="facts-form-title">Applicant facts</h2></div>
         <div className="facts-heading-actions"><p className="facts-revision">Revision {base.revision}</p>
-          <button className="secondary" type="button" onClick={()=>setAddOpen(value=>!value)} aria-expanded={addOpen} aria-controls="fact-add-panel">{addOpen?'Close new fact':'Add a fact'}</button></div>
+          <button className="secondary facts-edit-toggle" type="button" disabled={busy || dirty || invalid}
+            aria-expanded={editingFacts || dirty || invalid} onClick={()=>{
+              if(editingFacts)setAddOpen(false);
+              setEditingFacts(value=>!value);
+            }}>{editingFacts?'Done editing':'Edit facts'}</button>
+          <button className="secondary facts-add-toggle" type="button" onClick={()=>{setEditingFacts(true);setAddOpen(value=>!value);}} aria-expanded={addOpen} aria-controls="fact-add-panel">{addOpen?'Close new fact':'Add a fact'}</button></div>
       </div>
       <form id="facts-form" ref={form} onChange={event=>setInvalid(!event.currentTarget.checkValidity())} onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy}>
         <legend className="visually-hidden">Profile facts</legend>
@@ -100,10 +125,11 @@ export function Facts({client,dirtyChanged,refreshKey=0}:{client:Client;dirtyCha
         {!visibleFactNames(draft,'').length&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No facts saved yet.</strong></div>}
         {visibleFactNames(draft,'').length>0&&!visibleFactNames(draft,query).length&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
         <div className="facts-list">{visibleFactNames(draft,'').map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
-          <FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/>
+          <div className="fact-reading-view"><ReadFact label={name} value={get(draft,name)}/></div>
+          <div className="fact-edit-controls"><FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/></div>
           <FactSource sources={factProvenance(base,name)} saved={has(base.profile,name)}
             changed={!same(get(base.profile,name),get(draft,name))}/>
-          <button className="text-action" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>
+          <button className="text-action fact-edit-controls" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>
         </div>)}</div>
         {addOpen&&<fieldset id="fact-add-panel" className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard or custom application field.</p>
           <div className="fact-add-grid"><label>Fact name<input list="fact-names" value={key} onChange={event=>setKey(event.target.value)}/><datalist id="fact-names">{sections.map(name=><option key={name} value={name}/>)}</datalist></label>

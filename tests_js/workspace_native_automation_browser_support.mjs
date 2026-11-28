@@ -22,14 +22,19 @@ export async function nativeAutomationBrowser(page, root) {
   await workspace.getByText('No application run is active.',{exact:true}).waitFor();
   const refreshedJob={id:'refreshed-job',url:'https://example.invalid/refreshed',status:'ready',revision:1,
     role:'Refreshed role',company:'Synthetic employer'};
+  const unavailableJobs = Array.from({length:3}, (_,index) => ({
+    ...refreshedJob, id:`unavailable-${index}`, role:`Previously reviewed job ${index}`, status:'awaiting_review',
+  }));
+  const queuedJobs = [refreshedJob,...unavailableJobs];
   await page.route('**/api/state',async route=>{
     const response=await route.fetch(),body=await response.json();
-    await route.fulfill({response,json:{...body,jobs:[...body.jobs,refreshedJob],applicationRun:{
+    await route.fulfill({response,json:{...body,jobs:[...body.jobs,...queuedJobs],applicationRun:{
       runId:'refreshed-run',revision:1,selection:{resumeId:'synthetic-resume',factRevision:1},
-      queueVersions:[{revision:1,jobIds:[refreshedJob.id]}],
+      queueVersions:[{revision:1,jobIds:queuedJobs.map(job=>job.id)}],
     }}});
   });
   await workspace.getByRole('button',{name:'Refresh',exact:true}).click();
+  await workspace.getByRole('button',{name:'Continue to jobs',exact:true}).click();
   await workspace.getByText('Refreshed role · Synthetic employer',{exact:true}).waitFor();
   const refreshedChoice=workspace.getByRole('checkbox',{name:/Refreshed role/});
   await refreshedChoice.check();
@@ -38,6 +43,53 @@ export async function nativeAutomationBrowser(page, root) {
   await refreshedChoice.uncheck();
   await page.waitForFunction(()=>[...document.querySelectorAll('.automation-workspace button')]
     .some(button=>button.textContent?.trim()==='Refresh'&&!button.disabled));
+  const approvals=[];
+  const approvalPath='**/api/application-authority';
+  await page.route(approvalPath,async route=>{
+    approvals.push(route.request().postDataJSON());
+    await route.fulfill({status:409,json:{error:{message:'Synthetic approval test'}}});
+  });
+  try {
+    await refreshedChoice.check();
+    await workspace.getByRole('button',{name:'Back',exact:true}).click();
+    await workspace.getByRole('button',{name:'Continue to jobs',exact:true}).click();
+    assert.equal(await refreshedChoice.isChecked(),true);
+    const disclosure=workspace.getByText('3 unavailable jobs',{exact:true});
+    const unavailableChoice=workspace.getByRole('checkbox',{name:/Previously reviewed job 0/});
+    await disclosure.waitFor();
+    assert.equal(await unavailableChoice.isVisible(),false);
+    await disclosure.click();
+    assert.equal(await unavailableChoice.isDisabled(),true);
+    const review=workspace.getByRole('button',{name:'Review approval',exact:true});
+    const viewport=page.viewportSize();
+    try {
+      for(const size of [{width:320,height:568},{width:390,height:844}]) {
+        await page.setViewportSize(size);
+        await page.evaluate(()=>window.scrollTo(0,0));
+        assert.equal(await review.evaluate(button=>{
+          const bounds=button.getBoundingClientRect();
+          const nav=document.querySelector('.phone-navigation').getBoundingClientRect();
+          const hit=document.elementFromPoint(bounds.left+bounds.width/2,bounds.top+bounds.height/2);
+          return bounds.top>=0&&bounds.bottom<=nav.top&&hit?.closest('button')===button;
+        }),true,`Review approval stays tappable above navigation at ${size.width}px`);
+      }
+    } finally {
+      await page.setViewportSize(viewport);
+    }
+    await review.click();
+    await workspace.getByRole('heading',{name:'Confirm approval',exact:true}).waitFor();
+    await workspace.locator('.approval-scope').getByText('Refreshed role · Synthetic employer',{exact:true}).waitFor();
+    assert.deepEqual(approvals,[]);
+    await workspace.getByRole('button',{name:'Approve bounded mode',exact:true}).click();
+    await workspace.getByRole('alert').filter({hasText:'Synthetic approval test'}).waitFor();
+    assert.equal(approvals.length,1);
+    assert.deepEqual(approvals[0].authority.jobIds,[refreshedJob.id]);
+    assert.equal(approvals[0].authority.runId,'refreshed-run');
+    await workspace.getByRole('button',{name:'Back',exact:true}).click();
+    await refreshedChoice.uncheck();
+  } finally {
+    await page.unroute(approvalPath);
+  }
   await page.unroute('**/api/state');
   await workspace.getByText('Trusted Fill approvals',{exact:true}).click();
   await workspace.getByLabel('Job ID for status or revocation',{exact:true}).fill('missing-job');

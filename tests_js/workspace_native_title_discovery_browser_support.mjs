@@ -13,6 +13,8 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
     await page.getByLabel('Fact name', { exact: true }).fill('firstName');
     await page.getByRole('button', { name: 'Add fact', exact: true }).click();
   }
+  const editFacts = page.getByRole('button', { name: 'Edit facts', exact: true });
+  if (await editFacts.isVisible()) await editFacts.click();
   await page.getByLabel('firstName', { exact: true }).fill('Unsent facts draft');
   const before = JSON.parse(await readFile(profilePath, 'utf8'));
   const panel = page.locator('#title-discovery');
@@ -181,7 +183,7 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await panel.getByRole('button', { name: 'Add title manually' }).click();
   await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).fill('Staff Forward Deployed Engineer');
   page.once('dialog', dialog => dialog.dismiss());
-  await clickCompanionNav(page, 'Overview');
+  await clickCompanionNav(page, 'Jobs');
   await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).waitFor();
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), unchanged);
   await panel.getByRole('button', { name: 'Cancel' }).click();
