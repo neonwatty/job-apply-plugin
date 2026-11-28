@@ -231,7 +231,16 @@ test('exact browser observations are stable across processes and deny masked or 
     assert.doesNotMatch(stdout, /PRIVATE|synthetic\.txt/);
     assert.throws(() => service.preview({ jobs: [{ ...item, reviewFingerprint: digest('c') }] }), /private browser review fingerprint/);
     await assert.rejects(service.preview({ jobs: [{ ...other, reviewFingerprint: bound.reviewFingerprint }] }), /does not match this job/);
-    assert.throws(() => service.fingerprint({ ...item, observation: observation(item.jobId, '<redacted>') }), /exact observed form values/);
+    const masked = { ...item, observation: observation(item.jobId, '<redacted>') };
+    assert.throws(() => service.fingerprint(masked), /an observed form value appears masked/);
+    assert.throws(() => service.fingerprint({ ...item, observation: observation(item.jobId, '***') }),
+      /an observed form value appears masked/);
+    await writeFile(file, JSON.stringify(masked), { mode: 0o600 });
+    await assert.rejects(promisify(execFile)(process.execPath, args), error => {
+      assert.match(error.stderr, /an observed form value appears masked/);
+      assert.doesNotMatch(error.stderr, /<redacted>|PRIVATE/);
+      return true;
+    });
     assert.throws(() => service.fingerprint({ ...item, observation: { ...form, complete: false } }), /exact observed form values/);
     const preview = await service.preview({ jobs: [bound] });
     const approval = await service.preview({ jobs: [bound] }, preview.previewId);

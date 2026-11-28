@@ -41,6 +41,7 @@ test('Job Apply instructions preserve Review and bind agent submission to exact 
   assert.match(reference, /Only a current `claimed` response authorizes one click/);
   assert.match(reference, /After the claim returns, re-observe the same tab and confirm its fingerprint still matches immediately before that single click/);
   assert.match(reference, /verify it before any manual retry/);
+  assert.match(reference, /Before a claim, stop if the browser masks a form value.*tab\.markHandoff\(\).*Chrome.*no agent attempt.*manual submission/);
 });
 
 test('final-action instruction check accepts manual review and rejects unguarded final actions', () => {
