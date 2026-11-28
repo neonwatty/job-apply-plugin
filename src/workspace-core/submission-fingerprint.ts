@@ -12,7 +12,8 @@ function record(input: unknown, keys: string[]): Record<string, unknown> {
 }
 
 function exactText(value: unknown, allowEmpty = false): string {
-  if (typeof value !== 'string' || (!allowEmpty && !value.trim()) || masked.test(value.trim())) invalid();
+  if (typeof value !== 'string' || (!allowEmpty && !value.trim())) invalid();
+  if (masked.test(value.trim())) throw new JobsError('an observed form value appears masked, so its exact value cannot be rechecked');
   return value;
 }
 

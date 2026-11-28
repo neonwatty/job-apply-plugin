@@ -9,8 +9,10 @@ function record(input, keys) {
     return input;
 }
 function exactText(value, allowEmpty = false) {
-    if (typeof value !== 'string' || (!allowEmpty && !value.trim()) || masked.test(value.trim()))
+    if (typeof value !== 'string' || (!allowEmpty && !value.trim()))
         invalid();
+    if (masked.test(value.trim()))
+        throw new JobsError('an observed form value appears masked, so its exact value cannot be rechecked');
     return value;
 }
 function destination(value) {
